@@ -1,7 +1,7 @@
-# Tauri + React + Typescript
+# Mosaic
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+[简体中文](./README.zh.md) | English
 
-## Recommended IDE Setup
+> "Reintegrate the fragmented self, one pixel at a time."
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+A digital second brain that combines note-taking with deep emotional visualization.
