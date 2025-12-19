@@ -23,5 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# Editor
 .vscode/
 .cursor/
+
+# Environment Variables
+.env
