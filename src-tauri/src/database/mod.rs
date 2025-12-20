@@ -8,6 +8,8 @@ use std::str::FromStr;
 use tauri::{AppHandle, Manager};
 use tracing::{error, info};
 
+pub mod schema;
+
 pub type DBPool = Pool<Sqlite>;
 
 pub async fn init_db(app_handle: &AppHandle) -> Result<DBPool, Box<dyn std::error::Error>> {
