@@ -26,4 +26,7 @@ sqlx = { version = "0.8.6", features = ["sqlite", "runtime-tokio", "tls-native-t
 thiserror = "2.0.17"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4"] }
+image = "0.25"
+chrono = { version = "0.4", features = ["serde"] }
 
