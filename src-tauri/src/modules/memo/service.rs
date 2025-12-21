@@ -1,8 +1,9 @@
-use super::models::CreateMemoRequest;
+use super::models::{CreateMemoRequest, UpdateMemoRequest};
 use crate::database::DBPool;
 use crate::error::{AppError, AppResult};
 use crate::modules::asset::constants::infer_resource_type_and_mime;
 use crate::modules::asset::storage::get_assets_dir;
+use crate::modules::diary::service::{decrement_memo_count, increment_memo_count};
 use chrono::Utc;
 use sqlx::Sqlite;
 use std::fs;
@@ -52,7 +53,7 @@ pub async fn create_memo(
   .bind(req.tags.unwrap_or_else(|| "[]".to_string()))
   .bind(false)
   .bind(false)
-  .bind(today)
+  .bind(&today)
   .bind(now)
   .bind(now)
   .execute(&mut *tx)
@@ -79,6 +80,7 @@ pub async fn create_memo(
     }
 
     tx.commit().await?;
+    increment_memo_count(pool, &today).await?;
     Ok(memo_id)
 }
 
@@ -247,7 +249,7 @@ pub async fn get_memos_by_date(
 pub async fn update_memo(
     pool: &DBPool,
     app_handle: &AppHandle,
-    req: super::models::UpdateMemoRequest,
+    req: UpdateMemoRequest,
 ) -> AppResult<()> {
     let mut tx = pool.begin().await?;
     let now = Utc::now().timestamp_millis();
@@ -320,5 +322,68 @@ pub async fn update_memo(
     }
 
     tx.commit().await?;
+    Ok(())
+}
+
+pub async fn delete_memo(pool: &DBPool, memo_id: &str) -> AppResult<()> {
+    let diary_date: Option<String> = sqlx::query_scalar(
+        "SELECT diary_date FROM memos WHERE id = ? AND is_deleted = 0"
+    )
+    .bind(memo_id)
+    .fetch_optional(pool)
+    .await?;
+
+    let now = Utc::now().timestamp_millis();
+    let rows_affected = sqlx::query("UPDATE memos SET is_deleted = 1, updated_at = ? WHERE id = ?")
+        .bind(now)
+        .bind(memo_id)
+        .execute(pool)
+        .await?
+        .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(AppError::NotFound(format!("Memo not found: {}", memo_id)));
+    }
+
+    if let Some(date) = diary_date {
+        decrement_memo_count(pool, &date).await?;
+    }
+
+    Ok(())
+}
+
+pub async fn archive_memo(pool: &DBPool, memo_id: &str) -> AppResult<()> {
+    let now = Utc::now().timestamp_millis();
+    let rows_affected = sqlx::query(
+        "UPDATE memos SET is_archived = 1, updated_at = ? WHERE id = ? AND is_deleted = 0",
+    )
+    .bind(now)
+    .bind(memo_id)
+    .execute(pool)
+    .await?
+    .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(AppError::NotFound(format!("Memo not found: {}", memo_id)));
+    }
+
+    Ok(())
+}
+
+pub async fn unarchive_memo(pool: &DBPool, memo_id: &str) -> AppResult<()> {
+    let now = Utc::now().timestamp_millis();
+    let rows_affected = sqlx::query(
+        "UPDATE memos SET is_archived = 0, updated_at = ? WHERE id = ? AND is_deleted = 0",
+    )
+    .bind(now)
+    .bind(memo_id)
+    .execute(pool)
+    .await?
+    .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(AppError::NotFound(format!("Memo not found: {}", memo_id)));
+    }
+
     Ok(())
 }

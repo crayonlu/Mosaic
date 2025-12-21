@@ -1,7 +1,7 @@
 use crate::database::DBPool;
 use crate::error::AppResult;
 use crate::modules::memo::models::{
-    CreateMemoRequest, ListMemosRequest, MemoWithResources, PaginatedResponse,
+    CreateMemoRequest, ListMemosRequest, MemoWithResources, PaginatedResponse, UpdateMemoRequest,
 };
 use crate::modules::memo::service;
 use tauri::{AppHandle, State};
@@ -35,4 +35,28 @@ pub async fn get_memos_by_date(
     date: String,
 ) -> AppResult<Vec<MemoWithResources>> {
     service::get_memos_by_date(pool.inner(), &date).await
+}
+
+#[tauri::command]
+pub async fn update_memo(
+    app_handle: AppHandle,
+    pool: State<'_, DBPool>,
+    req: UpdateMemoRequest,
+) -> AppResult<()> {
+    service::update_memo(pool.inner(), &app_handle, req).await
+}
+
+#[tauri::command]
+pub async fn delete_memo(pool: State<'_, DBPool>, memo_id: String) -> AppResult<()> {
+    service::delete_memo(pool.inner(), &memo_id).await
+}
+
+#[tauri::command]
+pub async fn archive_memo(pool: State<'_, DBPool>, memo_id: String) -> AppResult<()> {
+    service::archive_memo(pool.inner(), &memo_id).await
+}
+
+#[tauri::command]
+pub async fn unarchive_memo(pool: State<'_, DBPool>, memo_id: String) -> AppResult<()> {
+    service::unarchive_memo(pool.inner(), &memo_id).await
 }
