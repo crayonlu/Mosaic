@@ -86,8 +86,10 @@ impl Type<Sqlite> for MoodKey {
 }
 
 impl<'q> Encode<'q, Sqlite> for MoodKey {
-    fn encode_by_ref(&self, buf: &mut Vec<sqlx::sqlite::SqliteArgumentValue<'q>>)
-      -> Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync>> {
+    fn encode_by_ref(
+        &self,
+        buf: &mut Vec<sqlx::sqlite::SqliteArgumentValue<'q>>,
+    ) -> Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync>> {
         let s = self.as_str().to_string();
         <String as Encode<'q, Sqlite>>::encode_by_ref(&s, buf)
     }
