@@ -11,6 +11,9 @@ use modules::memo::commands::{
     archive_memo, create_memo, delete_memo, get_memo, get_memos_by_date, list_memos,
     unarchive_memo, update_memo,
 };
+use modules::user::commands::{
+    get_or_create_default_user, get_user, update_user, upload_avatar,
+};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -32,6 +35,10 @@ pub fn run() {
             list_diaries,
             update_diary_mood,
             update_diary_summary,
+            get_user,
+            get_or_create_default_user,
+            update_user,
+            upload_avatar,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
