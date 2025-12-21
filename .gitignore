@@ -29,3 +29,6 @@ dist-ssr
 
 # Environment Variables
 .env
+
+# android
+gen/

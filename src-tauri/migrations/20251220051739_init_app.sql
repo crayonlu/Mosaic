@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS diaries (
   -- created at(ms)
   created_at INTEGER NOT NULL,
   -- updated at(ms)(for sync)
-  updated_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
 );
 
 -- memos table
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS memos (
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   
-  FOREIGN KEY (diary_date) REFERENCES diaries(date) ON DELETE SET NULL,
+  FOREIGN KEY (diary_date) REFERENCES diaries(date) ON DELETE SET NULL
 );
 
 -- resources table
@@ -61,8 +61,7 @@ CREATE TABLE IF NOT EXISTS resources (
   size INTEGER NOT NULL DEFAULT 0,
 
   created_at INTEGER NOT NULL,
-
-  FOREIGN KEY (memo_id) REFERENCES memos(id) ON DELETE CASCADE,
+  FOREIGN KEY (memo_id) REFERENCES memos(id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_memos_inbox ON memos(is_archived, is_deleted, created_at DESC);
