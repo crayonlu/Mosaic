@@ -25,4 +25,3 @@ pub fn infer_resource_type_and_mime(ext: &str) -> (String, String) {
         ("file".to_string(), "application/octet-stream".to_string())
     }
 }
-

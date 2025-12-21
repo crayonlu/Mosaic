@@ -1,6 +1,6 @@
+use crate::database::schema::ResourceType;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use crate::database::schema::ResourceType;
 
 #[derive(Debug, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -44,7 +44,7 @@ pub struct CreateMemoRequest {
     pub tags: Option<String>,
     // call the upload interface first
     // and then submit the content + filenames
-    pub resource_filenames: Vec<String>, 
+    pub resource_filenames: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]

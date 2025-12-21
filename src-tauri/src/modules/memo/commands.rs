@@ -1,8 +1,10 @@
-use tauri::{AppHandle, State};
-use crate::error::AppResult;
-use crate::modules::memo::service;
-use crate::modules::memo::models::{CreateMemoRequest, ListMemosRequest, MemoWithResources, PaginatedResponse};
 use crate::database::DBPool;
+use crate::error::AppResult;
+use crate::modules::memo::models::{
+    CreateMemoRequest, ListMemosRequest, MemoWithResources, PaginatedResponse,
+};
+use crate::modules::memo::service;
+use tauri::{AppHandle, State};
 
 #[tauri::command]
 pub async fn create_memo(
@@ -15,10 +17,7 @@ pub async fn create_memo(
 }
 
 #[tauri::command]
-pub async fn get_memo(
-    pool: State<'_, DBPool>,
-    memo_id: String,
-) -> AppResult<MemoWithResources> {
+pub async fn get_memo(pool: State<'_, DBPool>, memo_id: String) -> AppResult<MemoWithResources> {
     service::get_memo_by_id(pool.inner(), &memo_id).await
 }
 
