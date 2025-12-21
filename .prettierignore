@@ -1,0 +1,14 @@
+node_modules
+dist
+build
+*.lock
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+.DS_Store
+*.log
+src-tauri
+target
+gen
+vite-env.d.ts
+src/components/ui/

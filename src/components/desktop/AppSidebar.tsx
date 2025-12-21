@@ -1,9 +1,18 @@
-import { Calendar, PenBox, Inbox, Search, Settings, User as UserIcon, Moon, Sun } from "lucide-react"
-import { useLocation, Link } from "react-router-dom"
-import { useEffect, useState } from "react"
-import { userCommands } from "@/utils/callRust"
-import type { User } from "@/types/user"
-import { useTheme } from "@/hooks/use-theme"
+import {
+  Calendar,
+  PenBox,
+  Inbox,
+  Search,
+  Settings,
+  User as UserIcon,
+  Moon,
+  Sun,
+} from 'lucide-react'
+import { useLocation, Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { userCommands } from '@/utils/callRust'
+import type { User } from '@/types/user'
+import { useTheme } from '@/hooks/use-theme'
 import {
   Sidebar,
   SidebarContent,
@@ -16,15 +25,15 @@ import {
   SidebarHeader,
   SidebarFooter,
   SidebarRail,
-} from "@/components/ui/sidebar"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import Icon from "@/assets/icon.png"
+} from '@/components/ui/sidebar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import Icon from '@/assets/icon.png'
 
 const items = [
-  { title: "记录", url: "/", icon: PenBox },
-  { title: "回顾", url: "/inbox", icon: Inbox },
-  { title: "日历", url: "/calendar", icon: Calendar },
-  { title: "搜索", url: "/search", icon: Search },
+  { title: '记录', url: '/', icon: PenBox },
+  { title: '回顾', url: '/inbox', icon: Inbox },
+  { title: '日历', url: '/calendar', icon: Calendar },
+  { title: '搜索', url: '/search', icon: Search },
 ]
 
 export function AppSidebar() {
@@ -57,11 +66,7 @@ export function AppSidebar() {
               tooltip={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
               className="hover:bg-primary/5 hover:text-primary transition-all"
             >
-              {theme === 'dark' ? (
-                <Sun className="size-4" />
-              ) : (
-                <Moon className="size-4" />
-              )}
+              {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -69,13 +74,13 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Welcome to Mosaic, {user?.username || "new user"}</SidebarGroupLabel>
+          <SidebarGroupLabel>Welcome to Mosaic, {user?.username || 'new user'}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {items.map(item => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
+                  <SidebarMenuButton
+                    asChild
                     isActive={location.pathname === item.url}
                     tooltip={item.title}
                     className="hover:bg-primary/5 transition-all"
@@ -90,22 +95,29 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        
       </SidebarContent>
 
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center justify-between">
-            <SidebarMenuButton size="lg" className="hover:bg-transparent hover:text-primary transition-all w-auto">
+            <SidebarMenuButton
+              size="lg"
+              className="hover:bg-transparent hover:text-primary transition-all w-auto"
+            >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user?.avatarUrl} alt="Crayon" />
-                <AvatarFallback><UserIcon className="size-4" /></AvatarFallback>
+                <AvatarFallback>
+                  <UserIcon className="size-4" />
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user?.username || "new user"}</span>
+                <span className="truncate font-semibold">{user?.username || 'new user'}</span>
               </div>
             </SidebarMenuButton>
-            <Link to="/settings" className="flex items-center gap-1 hover:text-primary hover:bg-primary/10 p-2 rounded-md transition-all">
+            <Link
+              to="/settings"
+              className="flex items-center gap-1 hover:text-primary hover:bg-primary/10 p-2 rounded-md transition-all"
+            >
               <Settings className="size-5" />
             </Link>
           </SidebarMenuItem>

@@ -1,26 +1,8 @@
-import { useEffect, useState } from 'react';
-
-type Theme = 'light' | 'dark';
+import { useAppStore } from '@/stores/app-store'
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'light';
-    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-  });
+  const theme = useAppStore(state => state.theme)
+  const toggleTheme = useAppStore(state => state.toggleTheme)
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  };
-
-  return { theme, toggleTheme };
+  return { theme, toggleTheme }
 }
-
