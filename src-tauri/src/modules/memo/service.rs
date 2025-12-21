@@ -4,6 +4,7 @@ use crate::error::{AppError, AppResult};
 use crate::modules::asset::constants::infer_resource_type_and_mime;
 use crate::modules::asset::storage::get_assets_dir;
 use chrono::Utc;
+use sqlx::Sqlite;
 use std::fs;
 use std::path::Path;
 use tauri::AppHandle;
@@ -241,4 +242,83 @@ pub async fn get_memos_by_date(
 
     let result = list_memos(pool, req).await?;
     Ok(result.items)
+}
+
+pub async fn update_memo(
+    pool: &DBPool,
+    app_handle: &AppHandle,
+    req: super::models::UpdateMemoRequest,
+) -> AppResult<()> {
+    let mut tx = pool.begin().await?;
+    let now = Utc::now().timestamp_millis();
+
+    // check if the memo exists
+    let memo_exists =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM memos WHERE id = ? AND is_deleted = 0")
+            .bind(&req.id)
+            .fetch_one(&mut *tx)
+            .await?;
+    if memo_exists == 0 {
+        return Err(AppError::NotFound(format!("Memo not found: {}", req.id)));
+    }
+
+    // update it
+    if req.content.is_some() || req.tags.is_some() {
+        let mut update_fields = Vec::new();
+        let mut query_builder = sqlx::QueryBuilder::<Sqlite>::new("UPDATE memos SET ");
+
+        if req.content.is_some() {
+            update_fields.push("content = ?");
+        }
+        if req.tags.is_some() {
+            update_fields.push("tags = ?");
+        }
+        update_fields.push("updated_at = ?");
+
+        query_builder.push(update_fields.join(", "));
+        query_builder.push(" WHERE id = ?");
+
+        let mut query = sqlx::query(&query_builder.sql());
+
+        if let Some(ref content) = req.content {
+            query = query.bind(content);
+        }
+        if let Some(ref tags) = req.tags {
+            query = query.bind(tags);
+        }
+        query = query.bind(now).bind(&req.id);
+
+        query.execute(&mut *tx).await?;
+    }
+
+    if let Some(ref resource_filenames) = req.resource_filenames {
+        sqlx::query("DELETE FROM resources WHERE memo_id = ?")
+            .bind(&req.id)
+            .execute(&mut *tx)
+            .await?;
+
+        for filename in resource_filenames {
+            let (size, mime_type, resource_type) = get_file_info(app_handle, &filename).await?;
+            let res_id = Uuid::new_v4().to_string();
+
+            sqlx::query(
+                r#"
+                    INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, size, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                "#
+            )
+            .bind(res_id)
+            .bind(&req.id)
+            .bind(filename)
+            .bind(resource_type)
+            .bind(mime_type)
+            .bind(size)
+            .bind(now)
+            .execute(&mut *tx)
+            .await?;
+        }
+    }
+
+    tx.commit().await?;
+    Ok(())
 }
