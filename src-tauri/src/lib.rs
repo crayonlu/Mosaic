@@ -3,7 +3,14 @@ mod error;
 mod modules;
 
 use modules::asset::commands::upload_files;
-use modules::memo::commands::{create_memo, get_memo, get_memos_by_date, list_memos};
+use modules::diary::commands::{
+    create_or_update_diary, get_diary_by_date, list_diaries, update_diary_mood,
+    update_diary_summary,
+};
+use modules::memo::commands::{
+    archive_memo, create_memo, delete_memo, get_memo, get_memos_by_date, list_memos,
+    unarchive_memo, update_memo,
+};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -16,6 +23,15 @@ pub fn run() {
             get_memo,
             list_memos,
             get_memos_by_date,
+            update_memo,
+            delete_memo,
+            archive_memo,
+            unarchive_memo,
+            create_or_update_diary,
+            get_diary_by_date,
+            list_diaries,
+            update_diary_mood,
+            update_diary_summary,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

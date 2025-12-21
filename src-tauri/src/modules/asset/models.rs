@@ -1,5 +1,5 @@
 use crate::database::schema::ResourceType;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -12,10 +12,4 @@ pub struct UploadedResource {
     pub mime_type: String,
     // 'image', 'voice', 'video'
     pub resource_type: ResourceType,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UploadFilesRequest {
-    pub file_paths: Vec<String>,
 }
