@@ -1,16 +1,18 @@
 // CSS Imports
 import "./styles/App.css";
-import './styles/globals.css';
 
-// Component Imports
-import { Badge } from "@/components/ui/badge";
+// Router Imports
+import { Routes, Route } from "react-router-dom";
+import DeskTopHome from "./pages/desktop/DeskTopHome";
+
 
 function App() {
-
   return (
-    <main className="container">
-      <Badge variant="outline">Welcome to Mosaic</Badge>
-    </main>
+    <>
+      <Routes>
+        <Route path="/" element={<DeskTopHome />} />
+      </Routes>
+    </>
   );
 }
 
