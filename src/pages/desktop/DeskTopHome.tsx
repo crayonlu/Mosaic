@@ -1,4 +1,4 @@
-import DeskTopLayout from "@/components/layout/DeskTopLayout";
+import DeskTopLayout from '@/components/layout/DeskTopLayout'
 export default function DeskTopHome() {
   return (
     <DeskTopLayout>
@@ -6,5 +6,5 @@ export default function DeskTopHome() {
         <h1>Home</h1>
       </div>
     </DeskTopLayout>
-  );
+  )
 }
