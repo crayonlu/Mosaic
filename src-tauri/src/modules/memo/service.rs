@@ -326,12 +326,11 @@ pub async fn update_memo(
 }
 
 pub async fn delete_memo(pool: &DBPool, memo_id: &str) -> AppResult<()> {
-    let diary_date: Option<String> = sqlx::query_scalar(
-        "SELECT diary_date FROM memos WHERE id = ? AND is_deleted = 0"
-    )
-    .bind(memo_id)
-    .fetch_optional(pool)
-    .await?;
+    let diary_date: Option<String> =
+        sqlx::query_scalar("SELECT diary_date FROM memos WHERE id = ? AND is_deleted = 0")
+            .bind(memo_id)
+            .fetch_optional(pool)
+            .await?;
 
     let now = Utc::now().timestamp_millis();
     let rows_affected = sqlx::query("UPDATE memos SET is_deleted = 1, updated_at = ? WHERE id = ?")

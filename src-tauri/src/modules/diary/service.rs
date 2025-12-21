@@ -2,7 +2,6 @@ use super::models::{
     CreateOrUpdateDiaryRequest, Diary, DiaryWithMemos, ListDiariesRequest, UpdateDiaryMoodRequest,
     UpdateDiarySummaryRequest,
 };
-use crate::database::schema::MoodKey;
 use crate::database::DBPool;
 use crate::error::{AppError, AppResult};
 use crate::modules::memo::service;
@@ -129,10 +128,10 @@ pub async fn list_diaries(
 
     let mut where_conditions = vec![];
 
-    if let Some(ref start_date) = req.start_date {
+    if req.start_date.is_some() {
         where_conditions.push("date >= ?");
     }
-    if let Some(ref end_date) = req.end_date {
+    if req.end_date.is_some() {
         where_conditions.push("date <= ?");
     }
 
