@@ -1,8 +1,9 @@
-import { Calendar, PenBox, Inbox, Search, Settings, User as UserIcon } from "lucide-react"
+import { Calendar, PenBox, Inbox, Search, Settings, User as UserIcon, Moon, Sun } from "lucide-react"
 import { useLocation, Link } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { userCommands } from "@/utils/callRust"
 import type { User } from "@/types/user"
+import { useTheme } from "@/hooks/use-theme"
 import {
   Sidebar,
   SidebarContent,
@@ -29,6 +30,7 @@ const items = [
 export function AppSidebar() {
   const location = useLocation()
   const [user, setUser] = useState<User | null>(null)
+  const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
     userCommands.getUser().then(setUser).catch(console.error)
@@ -36,9 +38,9 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
+        <SidebarMenu className="flex flex-row items-center justify-between">
+          <SidebarMenuItem className="group-data-[collapsible=icon]:hidden">
+            <SidebarMenuButton asChild className="hover:bg-transparent hover:text-inherit">
               <Link to="/">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg text-sidebar-primary-foreground">
                   <img src={Icon} alt="Mosaic" className="size-8" />
@@ -47,6 +49,19 @@ export function AppSidebar() {
                   <span className="font-bold">Mosaic</span>
                 </div>
               </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={toggleTheme}
+              tooltip={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+              className="hover:bg-primary/5 hover:text-primary transition-all"
+            >
+              {theme === 'dark' ? (
+                <Sun className="size-4" />
+              ) : (
+                <Moon className="size-4" />
+              )}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -63,7 +78,7 @@ export function AppSidebar() {
                     asChild 
                     isActive={location.pathname === item.url}
                     tooltip={item.title}
-                    className="hover:bg-primary/5 hover:text-primary transition-all"
+                    className="hover:bg-primary/5 transition-all"
                   >
                     <Link to={item.url}>
                       <item.icon />
@@ -81,7 +96,7 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center justify-between">
-            <SidebarMenuButton size="lg" className="hover:bg-transparent hover:text-inherit">
+            <SidebarMenuButton size="lg" className="hover:bg-transparent hover:text-primary transition-all w-auto">
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user?.avatarUrl} alt="Crayon" />
                 <AvatarFallback><UserIcon className="size-4" /></AvatarFallback>
