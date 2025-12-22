@@ -74,6 +74,14 @@ export const diaryCommands = {
 
 export const assetCommands = {
   uploadFiles: (filePaths: string[]) => callRust<UploadedResource[]>('upload_files', { filePaths }),
+
+  saveTempAudio: (filename: string, data: number[]) =>
+    callRust<string>('save_temp_audio', { filename, data }),
+
+  saveTempFile: (filename: string, data: number[]) =>
+    callRust<string>('save_temp_file', { filename, data }),
+
+  readAudioFile: (filename: string) => callRust<number[]>('read_audio_file', { filename }),
 }
 
 export default {
