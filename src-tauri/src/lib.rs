@@ -2,7 +2,7 @@ mod database;
 mod error;
 mod modules;
 
-use modules::asset::commands::{upload_files, save_temp_audio, save_temp_file, read_audio_file};
+use modules::asset::commands::{read_audio_file, save_temp_audio, save_temp_file, upload_files};
 use modules::diary::commands::{
     create_or_update_diary, get_diary_by_date, list_diaries, update_diary_mood,
     update_diary_summary,
@@ -11,9 +11,7 @@ use modules::memo::commands::{
     archive_memo, create_memo, delete_memo, get_memo, get_memos_by_date, list_memos,
     unarchive_memo, update_memo,
 };
-use modules::user::commands::{
-    get_or_create_default_user, get_user, update_user, upload_avatar,
-};
+use modules::user::commands::{get_or_create_default_user, get_user, update_user, upload_avatar};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -45,7 +43,7 @@ pub fn run() {
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
+            tauri::async_runtime::block_on(async {
                 match database::init_db(&app_handle).await {
                     Ok(pool) => {
                         app_handle.manage(pool);
@@ -53,6 +51,7 @@ pub fn run() {
                     }
                     Err(e) => {
                         tracing::error!("Failed to initialize database: {}", e);
+                        panic!("Failed to initialize database: {}", e);
                     }
                 }
             });

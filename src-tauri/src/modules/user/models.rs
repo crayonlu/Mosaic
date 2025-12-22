@@ -19,4 +19,3 @@ pub struct UpdateUserRequest {
     pub avatar_path: Option<String>,
     pub avatar_url: Option<String>,
 }
-

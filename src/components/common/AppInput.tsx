@@ -13,7 +13,6 @@ import {
   InputGroupAddon,
   InputGroupButton,
   InputGroupText,
-  InputGroupTextarea,
 } from "@/components/ui/input-group"
 import {
   Tooltip,
@@ -23,6 +22,7 @@ import {
 import { useInput } from "@/hooks/use-input"
 import { VoiceRecordingDialog } from "@/components/common/VoiceRecordingDialog"
 import { InputResources } from "@/components/common/InputResources"
+import { RichTextEditor } from "@/components/common/RichTextEditor"
 import { useInputStore } from "@/stores/input-store"
 import { useVoiceRecorder } from "@/hooks/use-voice-recorder"
 import { cn } from "@/lib/utils"
@@ -56,10 +56,8 @@ export function AppInput({
     isExpanded,
     inputValue,
     fileInputRef,
-    textareaRef,
     handleInputChange,
     handleSubmit,
-    handleKeyDown,
     handleFileUpload,
     triggerFileSelect,
     handleToggleExpand,
@@ -96,19 +94,25 @@ export function AppInput({
   }
 
   return (
-    <div className={`${className} h-full flex flex-col`}>
-      <InputGroup className="flex-1 flex flex-col">
-        <InputGroupTextarea
-          ref={textareaRef}
-          value={inputValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className={`transition-all duration-300 ease-in-out resize-none ${
-            isExpanded ? "min-h-0 flex-1" : ""
-          }`}
-        />
-        <InputGroupAddon align="block-end" className="border-t">
+    <div className={`${className} h-full flex flex-col relative`}>
+      <InputGroup className="flex-1 flex flex-col h-full min-h-0 relative overflow-hidden">
+        <div className={`transition-all duration-500 ease-in-out w-full overflow-auto flex-1 min-h-0 ${
+          isExpanded ? "flex flex-col" : ""
+        }`}>
+          <RichTextEditor
+            content={inputValue}
+            onChange={handleInputChange}
+            placeholder={placeholder}
+            editable={true}
+            onSave={handleSubmit}
+            isExpanded={isExpanded}
+            className={cn(
+              isExpanded ? "flex-1" : "",
+              "border-0"
+            )}
+          />
+        </div>
+        <InputGroupAddon align="block-end" className="border-t shrink-0 bg-background">
           <div className="flex items-center gap-2 w-full">
             <input
               ref={fileInputRef}
@@ -184,7 +188,7 @@ export function AppInput({
                 size="sm"
                 variant="default"
                 onClick={handleSubmit}
-                disabled={(!inputValue.trim() && resourceFilenames.length === 0) || uploadingFiles.length > 0}
+                disabled={(!inputValue || (inputValue.replace(/<[^>]*>/g, '').trim() === '' && resourceFilenames.length === 0)) || uploadingFiles.length > 0}
                 className="gap-2"
               >
                 {uploadingFiles.length > 0 ? (

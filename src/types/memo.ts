@@ -1,7 +1,7 @@
 export interface Memo {
   id: string
   content: string
-  tags: string
+  tags: string[]
   isArchived: boolean
   isDeleted: boolean
   diaryDate?: string
@@ -22,7 +22,7 @@ export interface Resource {
 export interface MemoWithResources {
   id: string
   content: string
-  tags: string
+  tags: string[]
   isArchived: boolean
   isDeleted: boolean
   diaryDate?: string
@@ -33,7 +33,7 @@ export interface MemoWithResources {
 
 export interface CreateMemoRequest {
   content: string
-  tags?: string
+  tags?: string[]
   resourceFilenames?: string[]
 }
 
@@ -48,6 +48,6 @@ export interface ListMemosRequest {
 export interface UpdateMemoRequest {
   id: string
   content?: string
-  tags?: string
+  tags?: string[]
   resourceFilenames?: string[]
 }

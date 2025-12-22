@@ -29,13 +29,11 @@ pub async fn save_temp_audio(
         .map_err(crate::error::AppError::from)?;
 
     if !temp_dir.exists() {
-        fs::create_dir_all(&temp_dir)
-            .map_err(|e| crate::error::AppError::Io(e))?;
+        fs::create_dir_all(&temp_dir).map_err(|e| crate::error::AppError::Io(e))?;
     }
 
     let file_path = temp_dir.join(&filename);
-    let mut file = fs::File::create(&file_path)
-        .map_err(|e| crate::error::AppError::Io(e))?;
+    let mut file = fs::File::create(&file_path).map_err(|e| crate::error::AppError::Io(e))?;
 
     file.write_all(&data)
         .map_err(|e| crate::error::AppError::Io(e))?;
@@ -55,13 +53,11 @@ pub async fn save_temp_file(
         .map_err(crate::error::AppError::from)?;
 
     if !temp_dir.exists() {
-        fs::create_dir_all(&temp_dir)
-            .map_err(|e| crate::error::AppError::Io(e))?;
+        fs::create_dir_all(&temp_dir).map_err(|e| crate::error::AppError::Io(e))?;
     }
 
     let file_path = temp_dir.join(&filename);
-    let mut file = fs::File::create(&file_path)
-        .map_err(|e| crate::error::AppError::Io(e))?;
+    let mut file = fs::File::create(&file_path).map_err(|e| crate::error::AppError::Io(e))?;
 
     file.write_all(&data)
         .map_err(|e| crate::error::AppError::Io(e))?;
@@ -70,10 +66,7 @@ pub async fn save_temp_file(
 }
 
 #[tauri::command]
-pub async fn read_audio_file(
-    app_handle: AppHandle,
-    filename: String,
-) -> AppResult<Vec<u8>> {
+pub async fn read_audio_file(app_handle: AppHandle, filename: String) -> AppResult<Vec<u8>> {
     let assets_dir = storage::get_assets_dir(&app_handle)?;
     let file_path = assets_dir.join(&filename);
 

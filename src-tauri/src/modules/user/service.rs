@@ -52,10 +52,7 @@ pub async fn get_or_create_default_user(pool: &DBPool) -> AppResult<super::model
         .ok_or_else(|| AppError::NotFound("User not found after creation".to_string()))
 }
 
-pub async fn update_user(
-    pool: &DBPool,
-    req: UpdateUserRequest,
-) -> AppResult<super::models::User> {
+pub async fn update_user(pool: &DBPool, req: UpdateUserRequest) -> AppResult<super::models::User> {
     let user = get_or_create_default_user(pool).await?;
     let now = Utc::now().timestamp_millis();
 
@@ -143,4 +140,3 @@ pub async fn upload_avatar(
 
     update_user(pool, req).await
 }
-

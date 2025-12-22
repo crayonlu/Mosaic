@@ -37,11 +37,48 @@ pub async fn create_memo(
     app_handle: &AppHandle,
     req: CreateMemoRequest,
 ) -> AppResult<String> {
-    let mut tx = pool.begin().await?;
-
     let memo_id = Uuid::new_v4().to_string();
     let now = Utc::now().timestamp_millis();
     let today = Utc::now().date_naive().to_string();
+
+    let mut tx = pool.begin().await?;
+
+    let diary_exists: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM diaries WHERE date = ?")
+            .bind(&today)
+            .fetch_one(&mut *tx)
+            .await?;
+
+    if diary_exists == 0 {
+        sqlx::query(
+            r#"
+            INSERT INTO diaries (
+            date,
+            summary,
+            mood_key,
+            mood_score,
+            tags,
+            cover_image_id,
+            memo_count,
+            created_at,
+            updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            "#,
+        )
+        .bind(&today)
+        .bind("")
+        .bind("neutral")
+        .bind(50)
+        .bind("[]")
+        .bind::<Option<String>>(None)
+        .bind(0_i64)
+        .bind(now)
+        .bind(now)
+        .execute(&mut *tx)
+        .await?;
+    }
+
     sqlx::query(
     r#"
       INSERT INTO memos (id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at)
@@ -50,7 +87,10 @@ pub async fn create_memo(
   )
   .bind(&memo_id)
   .bind(req.content)
-  .bind(req.tags.unwrap_or_else(|| "[]".to_string()))
+  .bind(
+    serde_json::to_string(&req.tags.unwrap_or_default())
+      .unwrap_or_else(|_| "[]".to_string())
+  )
   .bind(false)
   .bind(false)
   .bind(&today)
@@ -89,7 +129,7 @@ pub async fn get_memo_by_id(
     memo_id: &str,
 ) -> AppResult<super::models::MemoWithResources> {
     // inbox: is_deleted = 0
-    let memo = sqlx::query_as::<_, super::models::Memo>(
+    let memo_row = sqlx::query_as::<_, super::models::MemoRow>(
         r#"
       SELECT id, content, tags, is_archived, diary_date, created_at
       FROM memos
@@ -100,6 +140,8 @@ pub async fn get_memo_by_id(
     .fetch_optional(pool)
     .await?
     .ok_or_else(|| AppError::NotFound(format!("Memo not found: {}", memo_id)))?;
+    
+    let memo: super::models::Memo = memo_row.into();
     // then search resources
     let resources = sqlx::query_as::<_, super::models::Resource>(
         r#"
@@ -165,17 +207,18 @@ pub async fn list_memos(
         where_clause
     );
 
-    let mut memos_query_builder = sqlx::query_as::<_, super::models::Memo>(&memos_query);
+    let mut memos_query_builder = sqlx::query_as::<_, super::models::MemoRow>(&memos_query);
 
     if let Some(ref diary_date) = req.diary_date {
         memos_query_builder = memos_query_builder.bind(diary_date);
     }
 
-    let memos = memos_query_builder
+    let memo_rows = memos_query_builder
         .bind(page_size as i64)
         .bind(offset as i64)
         .fetch_all(pool)
         .await?;
+    let memos: Vec<super::models::Memo> = memo_rows.into_iter().map(|row| row.into()).collect();
     let memo_ids: Vec<String> = memos.iter().map(|m| m.id.clone()).collect();
     let resources = if memo_ids.is_empty() {
         vec![]
@@ -286,7 +329,9 @@ pub async fn update_memo(
             query = query.bind(content);
         }
         if let Some(ref tags) = req.tags {
-            query = query.bind(tags);
+            let tags_json = serde_json::to_string(tags)
+                .unwrap_or_else(|_| "[]".to_string());
+            query = query.bind(tags_json);
         }
         query = query.bind(now).bind(&req.id);
 
