@@ -1,0 +1,122 @@
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.551 0.027 264.364) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: oklch(0.551 0.027 264.364);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(0.451 0.027 264.364);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: oklch(0.351 0.027 264.364);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.dark * {
+  scrollbar-color: oklch(0.707 0.022 261.325) transparent;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background-color: oklch(0.707 0.022 261.325);
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(0.807 0.022 261.325);
+}
+
+.dark *::-webkit-scrollbar-thumb:active {
+  background-color: oklch(0.907 0.022 261.325);
+}
+
+.memo-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.551 0.027 264.364) transparent;
+}
+
+.memo-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.memo-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.memo-scrollbar::-webkit-scrollbar-thumb {
+  background-color: oklch(0.551 0.027 264.364);
+  border-radius: 999px;
+  transition: background-color 0.2s ease;
+}
+
+.memo-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(0.451 0.027 264.364);
+}
+
+.dark .memo-scrollbar {
+  scrollbar-color: oklch(0.707 0.022 261.325) transparent;
+}
+
+.dark .memo-scrollbar::-webkit-scrollbar-thumb {
+  background-color: oklch(0.707 0.022 261.325);
+}
+
+.dark .memo-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(0.807 0.022 261.325);
+}
+
+.editor-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.551 0.027 264.364) transparent;
+}
+
+.editor-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.editor-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-scrollbar::-webkit-scrollbar-thumb {
+  background-color: oklch(0.551 0.027 264.364);
+  border-radius: 999px;
+  transition: background-color 0.2s ease;
+}
+
+.editor-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(0.451 0.027 264.364);
+}
+
+.dark .editor-scrollbar {
+  scrollbar-color: oklch(0.707 0.022 261.325) transparent;
+}
+
+.dark .editor-scrollbar::-webkit-scrollbar-thumb {
+  background-color: oklch(0.707 0.022 261.325);
+}
+
+.dark .editor-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(0.807 0.022 261.325);
+}

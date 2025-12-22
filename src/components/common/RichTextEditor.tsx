@@ -2,7 +2,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Code } from '@tiptap/extension-code'
-import { CodeBlock } from '@tiptap/extension-code-block'
+import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import { Link } from '@tiptap/extension-link'
 import { TaskList } from '@tiptap/extension-task-list'
 import { TaskItem } from '@tiptap/extension-task-item'
@@ -14,9 +14,57 @@ import { Underline } from '@tiptap/extension-underline'
 import { Highlight } from '@tiptap/extension-highlight'
 import { Markdown } from 'tiptap-markdown'
 import { useEffect, useState } from 'react'
+import { createLowlight } from 'lowlight'
 import { cn } from '@/lib/utils'
 import { Toolbar } from './RichTextEditor/Toolbar'
 import { LinkDialog } from './RichTextEditor/LinkDialog'
+
+// 导入常用语言的语法高亮
+import javascript from 'highlight.js/lib/languages/javascript'
+import typescript from 'highlight.js/lib/languages/typescript'
+import css from 'highlight.js/lib/languages/css'
+import html from 'highlight.js/lib/languages/xml'
+import json from 'highlight.js/lib/languages/json'
+import python from 'highlight.js/lib/languages/python'
+import java from 'highlight.js/lib/languages/java'
+import cpp from 'highlight.js/lib/languages/cpp'
+import csharp from 'highlight.js/lib/languages/csharp'
+import go from 'highlight.js/lib/languages/go'
+import rust from 'highlight.js/lib/languages/rust'
+import sql from 'highlight.js/lib/languages/sql'
+import bash from 'highlight.js/lib/languages/bash'
+import markdown from 'highlight.js/lib/languages/markdown'
+import yaml from 'highlight.js/lib/languages/yaml'
+import xml from 'highlight.js/lib/languages/xml'
+
+const lowlight = createLowlight()
+
+lowlight.register('javascript', javascript)
+lowlight.register('typescript', typescript)
+lowlight.register('js', javascript)
+lowlight.register('ts', typescript)
+lowlight.register('css', css)
+lowlight.register('html', html)
+lowlight.register('json', json)
+lowlight.register('python', python)
+lowlight.register('py', python)
+lowlight.register('java', java)
+lowlight.register('cpp', cpp)
+lowlight.register('c++', cpp)
+lowlight.register('csharp', csharp)
+lowlight.register('c#', csharp)
+lowlight.register('go', go)
+lowlight.register('rust', rust)
+lowlight.register('rs', rust)
+lowlight.register('sql', sql)
+lowlight.register('bash', bash)
+lowlight.register('sh', bash)
+lowlight.register('shell', bash)
+lowlight.register('markdown', markdown)
+lowlight.register('md', markdown)
+lowlight.register('yaml', yaml)
+lowlight.register('yml', yaml)
+lowlight.register('xml', xml)
 
 interface RichTextEditorProps {
   content: string
@@ -46,9 +94,11 @@ export function RichTextEditor({
         heading: {
           levels: [1, 2, 3],
         },
+        codeBlock: false,
       }),
       Code,
-      CodeBlock.configure({
+      CodeBlockLowlight.configure({
+        lowlight,
         HTMLAttributes: {
           class: 'code-block',
         },

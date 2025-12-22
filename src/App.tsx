@@ -1,5 +1,7 @@
 // CSS Imports
 import './styles/App.css'
+import './styles/editer.css'
+import './styles/scroll-bar.css'
 
 // Router Imports
 import { Routes, Route } from 'react-router-dom'
