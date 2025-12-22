@@ -69,28 +69,28 @@ export default function DeskTopHome() {
 
   return (
     <DeskTopLayout>
-      <div className="h-[calc(100dvh-5rem)] overflow-hidden flex flex-col">
+      <div className="h-[calc(100dvh-5rem)] overflow-hidden flex flex-col relative">
         <div
-          className={`w-full pb-4 transition-all duration-500 ease-in-out memo-scrollbar overflow-y-auto ${
+          className={`w-full pb-4 transition-all duration-500 ease-in-out memo-scrollbar overflow-y-auto flex-1 min-h-0 ${
             isInputExpanded
-              ? 'opacity-0 pointer-events-none max-h-0 overflow-hidden'
-              : 'opacity-100 flex-1'
+              ? 'opacity-0 pointer-events-none invisible'
+              : 'opacity-100 visible'
           }`}
         >
           <MemoList ref={memoListRef} date={formattedDate} onMemoClick={handleMemoClick} />
         </div>
         <div
-          className={`w-full transition-all duration-500 ease-in-out relative ${
+          className={`w-full absolute left-0 right-0 bottom-0 transition-all duration-500 ease-in-out ${
             isInputExpanded 
-              ? 'flex-1 min-h-0' 
-              : 'shrink-0'
+              ? 'top-0' 
+              : 'h-auto'
           }`}
         >
           <AppInput
             placeholder="输入内容..."
             onSubmit={handleSubmit}
             onFileUpload={handleFileUpload}
-            className="h-full max-h-[calc(100dvh-5rem)]"
+            className={`h-full transition-all duration-500 ease-in-out ${isInputExpanded ? 'max-h-full' : 'max-h-[calc(100dvh-5rem)]'}`}
           />
         </div>
       </div>
