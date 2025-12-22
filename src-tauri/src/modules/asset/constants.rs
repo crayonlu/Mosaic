@@ -1,6 +1,6 @@
 pub const IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "webp", "gif"];
-pub const AUDIO_EXTENSIONS: &[&str] = &["mp3", "wav", "m4a", "aac"];
-pub const VIDEO_EXTENSIONS: &[&str] = &["mp4", "mov"];
+pub const AUDIO_EXTENSIONS: &[&str] = &["mp3", "wav", "m4a", "aac", "ogg", "flac", "webm"];
+pub const VIDEO_EXTENSIONS: &[&str] = &["mp4", "mov", "avi", "mkv"];
 
 pub fn is_image_format(ext: &str) -> bool {
     IMAGE_EXTENSIONS.contains(&ext)

@@ -15,10 +15,7 @@ pub async fn get_or_create_default_user(pool: State<'_, DBPool>) -> AppResult<Us
 }
 
 #[tauri::command]
-pub async fn update_user(
-    pool: State<'_, DBPool>,
-    req: UpdateUserRequest,
-) -> AppResult<User> {
+pub async fn update_user(pool: State<'_, DBPool>, req: UpdateUserRequest) -> AppResult<User> {
     service::update_user(pool.inner(), req).await
 }
 
@@ -30,4 +27,3 @@ pub async fn upload_avatar(
 ) -> AppResult<User> {
     service::upload_avatar(pool.inner(), &app_handle, &source_path).await
 }
-

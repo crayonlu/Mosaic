@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect } from 'react'
+import { useCallback, useRef } from 'react'
 import { useInputStore } from '@/stores/input-store'
 
 interface UseInputOptions {
@@ -18,31 +18,21 @@ export function useInput(options?: UseInputOptions) {
   } = useInputStore()
 
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setInputValue(e.target.value)
+    (value: string) => {
+      setInputValue(value)
     },
     [setInputValue]
   )
 
   const handleSubmit = useCallback(() => {
-    if (inputValue.trim() || resourceFilenames.length > 0) {
-      options?.onSubmit?.(inputValue, resourceFilenames)
+    const textContent = inputValue ? inputValue.replace(/<[^>]*>/g, '').trim() : ''
+    if (textContent || resourceFilenames.length > 0) {
+      options?.onSubmit?.(inputValue || '', resourceFilenames)
       clearInputValue()
     }
   }, [inputValue, resourceFilenames, options, clearInputValue])
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault()
-        handleSubmit()
-      }
-    },
-    [handleSubmit]
-  )
 
   const handleFileUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,25 +56,12 @@ export function useInput(options?: UseInputOptions) {
     toggleExpanded()
   }, [toggleExpanded])
 
-  useEffect(() => {
-    if (isExpanded && textareaRef.current) {
-      setTimeout(() => {
-        textareaRef.current?.focus()
-      }, 100)
-    }
-  }, [isExpanded])
-
   return {
-
     isExpanded,
     inputValue,
-
     fileInputRef,
-    textareaRef,
-
     handleInputChange,
     handleSubmit,
-    handleKeyDown,
     handleFileUpload,
     triggerFileSelect,
     handleVoiceInput,

@@ -1,17 +1,58 @@
 use crate::database::schema::ResourceType;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer, Deserializer};
 use sqlx::FromRow;
 
-#[derive(Debug, Serialize, FromRow)]
+// Helper function to serialize Vec<String> to JSON string
+fn serialize_tags<S>(tags: &String, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let tags_vec: Vec<String> = serde_json::from_str(tags).unwrap_or_default();
+    tags_vec.serialize(serializer)
+}
+
+// Helper function to deserialize JSON string to Vec<String>
+fn deserialize_tags<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let tags_vec: Vec<String> = Vec::deserialize(deserializer)?;
+    Ok(serde_json::to_string(&tags_vec).map_err(serde::de::Error::custom)?)
+}
+
+#[derive(Debug, FromRow)]
+pub struct MemoRow {
+    pub id: String,
+    pub content: String,
+    pub tags: String, // JSON string in database
+    pub is_archived: bool,
+    pub diary_date: Option<String>,
+    pub created_at: i64,
+}
+
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Memo {
     pub id: String,
     pub content: String,
-    // JSON string
-    pub tags: String,
+    #[serde(serialize_with = "serialize_tags")]
+    pub tags: String, // Stored as JSON string, serialized as Vec<String>
     pub is_archived: bool,
     pub diary_date: Option<String>,
     pub created_at: i64,
+}
+
+impl From<MemoRow> for Memo {
+    fn from(row: MemoRow) -> Self {
+        Memo {
+            id: row.id,
+            content: row.content,
+            tags: row.tags,
+            is_archived: row.is_archived,
+            diary_date: row.diary_date,
+            created_at: row.created_at,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -41,7 +82,7 @@ pub struct MemoWithResources {
 #[serde(rename_all = "camelCase")]
 pub struct CreateMemoRequest {
     pub content: String,
-    pub tags: Option<String>,
+    pub tags: Option<Vec<String>>,
     // call the upload interface first
     // and then submit the content + filenames
     pub resource_filenames: Vec<String>,
@@ -67,7 +108,7 @@ pub struct ListMemosRequest {
 pub struct UpdateMemoRequest {
     pub id: String,
     pub content: Option<String>,
-    pub tags: Option<String>,
+    pub tags: Option<Vec<String>>,
     pub resource_filenames: Option<Vec<String>>,
 }
 
