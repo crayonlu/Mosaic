@@ -86,7 +86,6 @@ export function ResourcePreview({
             <X className="h-3 w-3" />
           </Button>
           <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-2">
-            <div className="text-xs text-white truncate">{filename}</div>
             {size && (
               <div className="text-[10px] text-white/80">{formatSize(size)}</div>
             )}
@@ -152,6 +151,40 @@ export function ResourcePreview({
   }
 
   if (type === 'audio') {
+    const [currentTime, setCurrentTime] = useState(0)
+    const progressRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+      const audio = audioRef.current
+      if (!audio) return
+
+      const handleTimeUpdate = () => setCurrentTime(audio.currentTime)
+
+      audio.addEventListener('timeupdate', handleTimeUpdate)
+
+      return () => {
+        audio.removeEventListener('timeupdate', handleTimeUpdate)
+      }
+    }, [])
+
+    const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      const audio = audioRef.current
+      if (!audio || !progressRef.current) return
+
+      const audioDuration = audio.duration
+      if (!audioDuration || audioDuration <= 0) return
+
+      const rect = progressRef.current.getBoundingClientRect()
+      const clickX = e.clientX - rect.left
+      const percentage = clickX / rect.width
+      const newTime = percentage * audioDuration
+      audio.currentTime = newTime
+      setCurrentTime(newTime)
+    }
+
+    const audioDuration = audioRef.current?.duration || 0
+    const progressPercentage = audioDuration > 0 ? (currentTime / audioDuration) * 100 : 0
+
     return (
       <div className="rounded-lg border bg-card overflow-hidden">
         <div className="px-3 py-2.5 bg-background">
@@ -168,7 +201,22 @@ export function ResourcePreview({
                 <Play className="h-3.5 w-3.5 ml-0.5" />
               )}
             </Button>
-            <div className="flex-1 min-w-0"></div>
+            <div
+              ref={progressRef}
+              className="relative h-1.5 flex-1 bg-muted/60 rounded-full cursor-pointer group overflow-hidden"
+              onClick={handleProgressClick}
+            >
+              <div
+                className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all"
+                style={{ width: `${Math.max(progressPercentage, 0)}%` }}
+              />
+              {progressPercentage > 0 && (
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 h-2.5 w-2.5 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm border border-background"
+                  style={{ left: `calc(${progressPercentage}% - 5px)` }}
+                />
+              )}
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -186,6 +234,7 @@ export function ResourcePreview({
           onPause={() => setIsPlaying(false)}
           onEnded={() => {
             setIsPlaying(false)
+            setCurrentTime(0)
           }}
           className="hidden"
         />
