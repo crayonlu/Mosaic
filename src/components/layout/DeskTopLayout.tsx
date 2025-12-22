@@ -5,7 +5,7 @@ import { useTime } from '@/hooks/use-time'
 import { userCommands } from '@/utils/callRust'
 import { useEffect, useState } from 'react'
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function Layout({ children, className }: { children: React.ReactNode, className?: string }) {
   const { sidebarOpen, setSidebarOpen } = useSidebar()
   const { greeting, formattedDateWithWeek } = useTime()
   const [username, setUsername] = useState('')
@@ -29,7 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {formattedDateWithWeek}
           </div>
         </header>
-        <div className="flex-1 p-4 h-[calc(100dvh-3rem)] overflow-y-auto">{children}</div>
+        <div className={`flex-1 p-4 h-[calc(100dvh-3rem)] overflow-y-auto ${className}`}>{children}</div>
       </SidebarInset>
     </SidebarProvider>
   )

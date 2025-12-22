@@ -15,8 +15,6 @@ import {
   CheckSquare,
   Link,
   Code2,
-  Table,
-  Minus,
   Undo2,
   Redo2,
   RemoveFormatting,
@@ -24,6 +22,7 @@ import {
 import { ToolbarButton } from './ToolbarButton'
 import { InsertMenu } from './InsertMenu'
 import { LinkDialog } from './LinkDialog'
+import { CodeBlockLanguageSelector } from './CodeBlockLanguageSelector'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 
@@ -208,6 +207,7 @@ export function Toolbar({ editor, className }: ToolbarProps) {
           <ToolbarButton key={btn.label} editor={editor} {...btn} />
         ))}
         <InsertMenu editor={editor} />
+        <CodeBlockLanguageSelector editor={editor} />
       </div>
 
       <div className="w-px h-6 bg-border mx-1" />

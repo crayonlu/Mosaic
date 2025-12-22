@@ -68,31 +68,28 @@ export default function DeskTopHome() {
   }
 
   return (
-    <DeskTopLayout>
-      <div className="h-[calc(100dvh-5rem)] overflow-hidden flex flex-col relative">
+    <DeskTopLayout className='relative'>
+      <div className="h-[calc(100dvh-20rem)] overflow-hidden flex flex-col">
         <div
-          className={`w-full pb-4 transition-all duration-500 ease-in-out memo-scrollbar overflow-y-auto flex-1 min-h-0 ${
-            isInputExpanded
-              ? 'opacity-0 pointer-events-none invisible'
-              : 'opacity-100 visible'
+          className={`w-full pb-4 transition-all duration-500 ease-in-out memo-scrollbar overflow-y-auto flex-1 min-h-0
           }`}
         >
           <MemoList ref={memoListRef} date={formattedDate} onMemoClick={handleMemoClick} />
         </div>
-        <div
-          className={`w-full absolute left-0 right-0 bottom-0 transition-all duration-500 ease-in-out ${
-            isInputExpanded 
-              ? 'top-0' 
-              : 'h-auto'
-          }`}
-        >
-          <AppInput
-            placeholder="输入内容..."
-            onSubmit={handleSubmit}
-            onFileUpload={handleFileUpload}
-            className={`h-full transition-all duration-500 ease-in-out ${isInputExpanded ? 'max-h-full' : 'max-h-[calc(100dvh-5rem)]'}`}
-          />
-        </div>
+      </div>
+      <div
+        className={`w-full absolute left-0 right-0 bottom-0 transition-all duration-500 ease-in-out ${
+          isInputExpanded 
+            ? 'h-full' 
+            : 'h-64'
+        }`}
+      >
+        <AppInput
+          placeholder="输入内容..."
+          onSubmit={handleSubmit}
+          onFileUpload={handleFileUpload}
+          className="h-full"
+        />
       </div>
       <MemoDetail
         memo={selectedMemo}

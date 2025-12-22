@@ -76,7 +76,7 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
             return (
               <div
                 key={memo.id}
-                className="group rounded-lg border bg-card p-4 text-sm text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer hover:border-primary/50"
+                className="group rounded-lg border bg-card overflow-hidden text-sm text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer hover:border-primary/50"
                 onClick={() => onMemoClick?.(memo)}
               >
                 <div>
@@ -88,41 +88,44 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
                       className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1"
                     />
                   ) : (
-                    <span className="text-muted-foreground italic">无文字内容</span>
+                    <div className="text-muted-foreground italic p-4">无文字内容</div>
                   )}
                 </div>
-                
-                {resourcePreviews.length > 0 && (
-                  <div className="mt-3 flex items-center gap-3 flex-wrap">
-                    {resourcePreviews.map((preview, index) => {
-                      const Icon = preview.icon
-                      return (
-                        <div
-                          key={index}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground"
-                        >
-                          <Icon className="h-3.5 w-3.5" />
-                          <span>{preview.count} {preview.label}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+                { resourcePreviews.length > 0 || memo.tags.length > 0 && (
+                  <div className='p-4 border-t'>
+                    {resourcePreviews.length > 0 && (
+                      <div className="mt-3 flex items-center gap-3 flex-wrap">
+                        {resourcePreviews.map((preview, index) => {
+                          const Icon = preview.icon
+                          return (
+                            <div
+                              key={index}
+                              className="inline-flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground"
+                            >
+                              <Icon className="h-3.5 w-3.5" />
+                              <span>{preview.count} {preview.label}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
 
-                {memo.tags && memo.tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {memo.tags.slice(0, 3).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs font-medium"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {memo.tags.length > 3 && (
-                      <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        +{memo.tags.length - 3}
-                      </span>
+                    {memo.tags && memo.tags.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {memo.tags.slice(0, 3).map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs font-medium"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {memo.tags.length > 3 && (
+                          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                            +{memo.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

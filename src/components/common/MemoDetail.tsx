@@ -285,9 +285,11 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
           ) : (
             <div className="prose prose-sm max-w-none">
               {memo.content ? (
-                <div
-                  className="text-base leading-relaxed text-foreground"
-                  dangerouslySetInnerHTML={{ __html: memo.content }}
+                <RichTextEditor
+                  content={memo.content}
+                  onChange={() => {}}
+                  editable={false}
+                  className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1"
                 />
               ) : (
                 <span className="text-muted-foreground italic">无文字内容</span>
