@@ -1,7 +1,6 @@
 import { Loader2, Image as ImageIcon, Video as VideoIcon, Mic } from 'lucide-react'
 import { useInputStore } from '@/stores/input-store'
 import { ResourcePreview } from '@/components/common/ResourcePreview'
-import { cn } from '@/lib/utils'
 
 export function InputResources() {
   const { resourcePreviews, uploadingFiles, removeResource } = useInputStore()
@@ -32,7 +31,7 @@ export function InputResources() {
   const audios = resourcePreviews.filter((p) => p.type === 'audio')
 
   return (
-    <div className="px-3 py-2 border-t bg-muted/30 space-y-3">
+    <div className="px-3 py-2 border-t bg-muted/30 space-y-3 w-full">
       {uploadingFiles.length > 0 && (
         <div className="space-y-2">
           {uploadingFiles.map((file) => (
