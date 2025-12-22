@@ -1,9 +1,22 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import { Code } from '@tiptap/extension-code'
+import { CodeBlock } from '@tiptap/extension-code-block'
+import { Link } from '@tiptap/extension-link'
+import { TaskList } from '@tiptap/extension-task-list'
+import { TaskItem } from '@tiptap/extension-task-item'
+import { Table } from '@tiptap/extension-table'
+import { TableRow } from '@tiptap/extension-table-row'
+import { TableCell } from '@tiptap/extension-table-cell'
+import { TableHeader } from '@tiptap/extension-table-header'
+import { Underline } from '@tiptap/extension-underline'
+import { Highlight } from '@tiptap/extension-highlight'
 import { Markdown } from 'tiptap-markdown'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { Toolbar } from './RichTextEditor/Toolbar'
+import { LinkDialog } from './RichTextEditor/LinkDialog'
 
 interface RichTextEditorProps {
   content: string
@@ -25,6 +38,7 @@ export function RichTextEditor({
   isExpanded = false,
 }: RichTextEditorProps) {
   const [, setRenderCounter] = useState(0)
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
 
   const editor = useEditor({
     extensions: [
@@ -32,6 +46,32 @@ export function RichTextEditor({
         heading: {
           levels: [1, 2, 3],
         },
+      }),
+      Code,
+      CodeBlock.configure({
+        HTMLAttributes: {
+          class: 'code-block',
+        },
+      }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-primary underline',
+        },
+      }),
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      Underline,
+      Highlight.configure({
+        multicolor: false,
       }),
       Markdown,
       Placeholder.configure({
@@ -53,9 +93,28 @@ export function RichTextEditor({
         ),
       },
       handleKeyDown: (_view, event) => {
+        // Ctrl/Cmd + Enter 保存
         if (editable && onSave && (event.ctrlKey || event.metaKey) && event.key === 'Enter') {
           event.preventDefault()
           onSave()
+          return true
+        }
+        // Ctrl/Cmd + K 插入链接
+        if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+          event.preventDefault()
+          setIsLinkDialogOpen(true)
+          return true
+        }
+        // Ctrl/Cmd + \ 清除格式
+        if ((event.ctrlKey || event.metaKey) && event.key === '\\') {
+          event.preventDefault()
+          editor.chain().focus().clearNodes().unsetAllMarks().run()
+          return true
+        }
+        // Ctrl/Cmd + Shift + ` 代码块
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === '`') {
+          event.preventDefault()
+          editor.chain().focus().toggleCodeBlock().run()
           return true
         }
         return false
@@ -86,137 +145,20 @@ export function RichTextEditor({
 
   return (
     <div className="w-full h-full border bg-background flex flex-col overflow-hidden">
-      {editable && (
-        <div className="flex items-center gap-1 border-b p-2 flex-wrap shrink-0">
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            disabled={!editor.can().chain().focus().toggleBold().run()}
-            className={cn(
-              'px-2 py-1 rounded text-sm transition-colors',
-              editor.isActive('bold')
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            )}
-          >
-            <strong>B</strong>
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            disabled={!editor.can().chain().focus().toggleItalic().run()}
-            className={cn(
-              'px-2 py-1 rounded text-sm transition-colors',
-              editor.isActive('italic')
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            )}
-          >
-            <em>I</em>
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-            disabled={!editor.can().chain().focus().toggleStrike().run()}
-            className={cn(
-              'px-2 py-1 rounded text-sm transition-colors',
-              editor.isActive('strike')
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            )}
-          >
-            <s>S</s>
-          </button>
-          <div className="w-px h-6 bg-border mx-1" />
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            className={cn(
-              'px-2 py-1 rounded text-sm transition-colors',
-              editor.isActive('heading', { level: 1 })
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            )}
-          >
-            H1
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className={cn(
-              'px-2 py-1 rounded text-sm transition-colors',
-              editor.isActive('heading', { level: 2 })
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            )}
-          >
-            H2
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-            className={cn(
-              'px-2 py-1 rounded text-sm transition-colors',
-              editor.isActive('heading', { level: 3 })
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            )}
-          >
-            H3
-          </button>
-          <div className="w-px h-6 bg-border mx-1" />
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={cn(
-              'px-2 py-1 rounded text-sm transition-colors',
-              editor.isActive('bulletList')
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            )}
-          >
-            •
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={cn(
-              'px-2 py-1 rounded text-sm transition-colors',
-              editor.isActive('orderedList')
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            )}
-          >
-            1.
-          </button>
-          <div className="w-px h-6 bg-border mx-1" />
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={cn(
-              'px-2 py-1 rounded text-sm transition-colors',
-              editor.isActive('blockquote')
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            )}
-          >
-            "
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().setHorizontalRule().run()}
-            className="px-2 py-1 rounded text-sm transition-colors hover:bg-muted"
-          >
-            ─
-          </button>
-        </div>
-      )}
+      {editable && editor && <Toolbar editor={editor} />}
       <div className={cn(
         "flex-1 min-h-0 overflow-auto editor-scrollbar",
         isExpanded ? "max-h-none" : "max-h-[calc(100dvh-28rem)]"
       )}>
         <EditorContent editor={editor} />
       </div>
+      {editable && editor && (
+        <LinkDialog
+          editor={editor}
+          open={isLinkDialogOpen}
+          onOpenChange={setIsLinkDialogOpen}
+        />
+      )}
     </div>
   )
 }
