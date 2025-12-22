@@ -2,7 +2,7 @@ mod database;
 mod error;
 mod modules;
 
-use modules::asset::commands::upload_files;
+use modules::asset::commands::{upload_files, save_temp_audio, save_temp_file, read_audio_file};
 use modules::diary::commands::{
     create_or_update_diary, get_diary_by_date, list_diaries, update_diary_mood,
     update_diary_summary,
@@ -22,6 +22,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             upload_files,
+            save_temp_audio,
+            save_temp_file,
+            read_audio_file,
             create_memo,
             get_memo,
             list_memos,
