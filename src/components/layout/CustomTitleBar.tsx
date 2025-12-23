@@ -1,14 +1,14 @@
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useTime } from '@/hooks/use-time'
-import { userCommands } from '@/utils/callRust'
 import { minimizeWindow, toggleMaximize, closeWindow, isMaximized } from '@/utils/window-controls'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { Minimize, Maximize, Minimize2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useUserStore } from '@/stores/user-store'
 
 export function CustomTitleBar() {
   const { greeting, formattedDateWithWeek } = useTime()
-  const [username, setUsername] = useState('')
+  const { user } = useUserStore()
   const [maximized, setMaximized] = useState(false)
 
   async function checkMaximized() {
@@ -17,7 +17,6 @@ export function CustomTitleBar() {
   }
 
   useEffect(() => {
-    userCommands.getUser().then(user => setUsername(user?.username || '')).catch(console.error)
     checkMaximized()
     
     const window = getCurrentWindow()
@@ -47,7 +46,7 @@ export function CustomTitleBar() {
         <SidebarTrigger className="-ml-1 hover:text-primary hover:bg-primary/10 p-2 rounded-md transition-all" />
         <div className="text-sm text-gray-500">
           {greeting}
-          {username ? '，' + username : ''}
+          {user?.username ? '，' + user.username : ''}
         </div>
       </div>
       

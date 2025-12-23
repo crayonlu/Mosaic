@@ -9,10 +9,9 @@ import {
   Sun,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { userCommands } from '@/utils/callRust'
-import type { User } from '@/types/user'
+import { useEffect } from 'react'
 import { useTheme } from '@/hooks/use-theme'
+import { useUserStore } from '@/stores/user-store'
 import {
   Sidebar,
   SidebarContent,
@@ -27,6 +26,7 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useAvatarUrl } from '@/utils/avatar-helpers'
 import Icon from '@/assets/icon.png'
 
 const items = [
@@ -38,11 +38,14 @@ const items = [
 
 export function AppSidebar() {
   const location = useLocation()
-  const [user, setUser] = useState<User | null>(null)
+  const { user, loadUser } = useUserStore()
   const { theme, toggleTheme } = useTheme()
+  const avatarUrl = useAvatarUrl(user?.avatarPath, user?.avatarUrl)
 
   useEffect(() => {
-    userCommands.getUser().then(setUser).catch(console.error)
+    if (!user) {
+      loadUser()
+    }
   }, [])
   return (
     <Sidebar collapsible="icon">
@@ -105,7 +108,7 @@ export function AppSidebar() {
               className="hover:bg-transparent hover:text-primary transition-all w-auto"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user?.avatarUrl} alt="Crayon" />
+                <AvatarImage src={avatarUrl} alt={user?.username || 'User'} />
                 <AvatarFallback>
                   <UserIcon className="size-4" />
                 </AvatarFallback>
