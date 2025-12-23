@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Editor } from '@tiptap/react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
@@ -24,7 +19,7 @@ export function LinkDialog({ editor, open, onOpenChange }: LinkDialogProps) {
       const { from, to } = editor.state.selection
       const selectedText = editor.state.doc.textBetween(from, to, ' ')
       const linkAttrs = editor.getAttributes('link')
-      
+
       setText(selectedText || linkAttrs.text || '')
       setUrl(linkAttrs.href || '')
     }
@@ -32,7 +27,7 @@ export function LinkDialog({ editor, open, onOpenChange }: LinkDialogProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!url.trim()) {
       onOpenChange(false)
       return
@@ -43,21 +38,13 @@ export function LinkDialog({ editor, open, onOpenChange }: LinkDialogProps) {
     } else {
       const { from, to } = editor.state.selection
       const hasSelection = from !== to
-      
+
       if (hasSelection) {
         editor.chain().focus().setLink({ href: url }).run()
       } else if (text.trim()) {
-        editor
-          .chain()
-          .focus()
-          .insertContent(`<a href="${url}">${text}</a>`)
-          .run()
+        editor.chain().focus().insertContent(`<a href="${url}">${text}</a>`).run()
       } else {
-        editor
-          .chain()
-          .focus()
-          .insertContent(`<a href="${url}">${url}</a>`)
-          .run()
+        editor.chain().focus().insertContent(`<a href="${url}">${url}</a>`).run()
       }
     }
 
@@ -89,7 +76,7 @@ export function LinkDialog({ editor, open, onOpenChange }: LinkDialogProps) {
             <Input
               id="link-text"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={e => setText(e.target.value)}
               placeholder="链接显示的文本"
             />
           </div>
@@ -101,7 +88,7 @@ export function LinkDialog({ editor, open, onOpenChange }: LinkDialogProps) {
               id="link-url"
               type="url"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={e => setUrl(e.target.value)}
               placeholder="https://example.com"
               autoFocus
             />
@@ -124,4 +111,3 @@ export function LinkDialog({ editor, open, onOpenChange }: LinkDialogProps) {
     </Dialog>
   )
 }
-

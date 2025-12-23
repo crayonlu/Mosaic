@@ -18,4 +18,3 @@ export function formatTime(seconds: number): string {
   const secs = dur.seconds()
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
-

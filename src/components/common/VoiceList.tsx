@@ -15,13 +15,11 @@ export function VoiceList({ resources, onDelete, className }: VoiceListProps) {
   const [playingId, setPlayingId] = useState<string | null>(null)
   const audioRefsRef = useRef<Map<string, HTMLAudioElement>>(new Map())
 
-  const voiceResources = resources.filter(
-    (r) => r.resourceType === 'voice'
-  )
+  const voiceResources = resources.filter(r => r.resourceType === 'voice')
 
   useEffect(() => {
     return () => {
-      audioRefsRef.current.forEach((audio) => {
+      audioRefsRef.current.forEach(audio => {
         audio.pause()
         audio.src = ''
       })
@@ -53,7 +51,7 @@ export function VoiceList({ resources, onDelete, className }: VoiceListProps) {
       return
     }
 
-    audioRefsRef.current.forEach((audio) => {
+    audioRefsRef.current.forEach(audio => {
       audio.pause()
     })
     setPlayingId(null)
@@ -93,11 +91,8 @@ export function VoiceList({ resources, onDelete, className }: VoiceListProps) {
   return (
     <div className={className}>
       <div className="space-y-2">
-        {voiceResources.map((resource) => (
-          <div
-            key={resource.id}
-            className="flex items-center gap-3 rounded-lg border bg-card p-3"
-          >
+        {voiceResources.map(resource => (
+          <div key={resource.id} className="flex items-center gap-3 rounded-lg border bg-card p-3">
             <Button
               variant="ghost"
               size="icon"
@@ -111,12 +106,9 @@ export function VoiceList({ resources, onDelete, className }: VoiceListProps) {
               )}
             </Button>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium truncate">
-                {resource.filename}
-              </div>
+              <div className="text-sm font-medium truncate">{resource.filename}</div>
               <div className="text-xs text-muted-foreground">
-                {formatDuration(resource.createdAt)} ·{' '}
-                {(resource.size / 1024).toFixed(1)} KB
+                {formatDuration(resource.createdAt)} · {(resource.size / 1024).toFixed(1)} KB
               </div>
             </div>
             {onDelete && (
@@ -135,4 +127,3 @@ export function VoiceList({ resources, onDelete, className }: VoiceListProps) {
     </div>
   )
 }
-

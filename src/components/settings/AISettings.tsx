@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { SettingsSection } from './SettingsSection'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@radix-ui/react-label'
@@ -73,6 +72,7 @@ export function AISettings() {
       )
       setTestResult(result)
     } catch (error) {
+      console.error('Failed to test AI connection:', error)
       setTestResult(false)
     } finally {
       setTesting(false)
@@ -92,120 +92,120 @@ export function AISettings() {
   }
 
   return (
-    <div className="space-y-6">
-      <SettingsSection title="AI配置" description="配置AI服务的API信息">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="provider">API 规范</Label>
-            <Select value={config.provider} onValueChange={handleProviderChange}>
-              <SelectTrigger id="provider">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="openai">OpenAI 规范</SelectItem>
-                <SelectItem value="anthropic">Anthropic 规范</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              选择使用的 API 规范，而非具体的服务提供商
-            </p>
-          </div>
+    <div className="space-y-2">
+      <div className="flex flex-col gap-1">
+        <Label className="text-sm" htmlFor="provider">
+          API 规范
+        </Label>
+        <Select value={config.provider} onValueChange={handleProviderChange}>
+          <SelectTrigger id="provider">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="openai">OpenAI</SelectItem>
+            <SelectItem value="anthropic">Anthropic</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="baseUrl">Base URL</Label>
-            <Input
-              id="baseUrl"
-              value={config.baseUrl}
-              onChange={e => setConfig({ ...config, baseUrl: e.target.value })}
-              placeholder="https://api.openai.com"
-            />
-          </div>
+      <div className="flex flex-col gap-1">
+        <Label className="text-sm" htmlFor="baseUrl">
+          Base URL
+        </Label>
+        <Input
+          id="baseUrl"
+          value={config.baseUrl}
+          onChange={e => setConfig({ ...config, baseUrl: e.target.value })}
+          placeholder="https://api.openai.com"
+        />
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="apiKey">API Key</Label>
-            <Input
-              id="apiKey"
-              type="password"
-              value={config.apiKey}
-              onChange={e => setConfig({ ...config, apiKey: e.target.value })}
-              placeholder="sk-..."
-            />
-          </div>
+      <div className="flex flex-col gap-1">
+        <Label className="text-sm" htmlFor="apiKey">
+          API Key
+        </Label>
+        <Input
+          id="apiKey"
+          type="password"
+          value={config.apiKey}
+          onChange={e => setConfig({ ...config, apiKey: e.target.value })}
+          placeholder="sk-..."
+        />
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="model">模型名称</Label>
-            <Input
-              id="model"
-              value={config.model || ''}
-              onChange={e => setConfig({ ...config, model: e.target.value })}
-              placeholder="例如: gpt-4o, claude-3-5-sonnet-20241022"
-            />
-            <p className="text-xs text-muted-foreground">
-              输入要使用的模型名称
-            </p>
-          </div>
-        </div>
-      </SettingsSection>
+      <div className="flex flex-col gap-1">
+        <Label className="text-sm" htmlFor="model">
+          模型名称
+        </Label>
+        <Input
+          id="model"
+          value={config.model || ''}
+          onChange={e => setConfig({ ...config, model: e.target.value })}
+          placeholder="例如: gpt-4o, claude-3-5-sonnet-20241022"
+        />
+      </div>
 
-      <SettingsSection title="高级设置" description="可选的高级配置项">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="temperature">Temperature</Label>
-            <Input
-              id="temperature"
-              type="number"
-              min="0"
-              max="2"
-              step="0.1"
-              value={config.temperature ?? ''}
-              onChange={e =>
-                setConfig({
-                  ...config,
-                  temperature: e.target.value ? parseFloat(e.target.value) : undefined,
-                })
-              }
-              placeholder="0.7"
-            />
-          </div>
+      <div className="flex flex-col gap-1">
+        <Label className="text-sm" htmlFor="temperature">
+          Temperature
+        </Label>
+        <Input
+          id="temperature"
+          type="number"
+          min="0"
+          max="2"
+          step="0.1"
+          value={config.temperature ?? ''}
+          onChange={e =>
+            setConfig({
+              ...config,
+              temperature: e.target.value ? parseFloat(e.target.value) : undefined,
+            })
+          }
+          placeholder="0.7"
+        />
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="maxTokens">Max Tokens</Label>
-            <Input
-              id="maxTokens"
-              type="number"
-              min="1"
-              value={config.maxTokens ?? ''}
-              onChange={e =>
-                setConfig({
-                  ...config,
-                  maxTokens: e.target.value ? parseInt(e.target.value, 10) : undefined,
-                })
-              }
-              placeholder="2000"
-            />
-          </div>
+      <div className="flex flex-col gap-1">
+        <Label className="text-sm" htmlFor="maxTokens">
+          Max Tokens
+        </Label>
+        <Input
+          id="maxTokens"
+          type="number"
+          min="1"
+          value={config.maxTokens ?? ''}
+          onChange={e =>
+            setConfig({
+              ...config,
+              maxTokens: e.target.value ? parseInt(e.target.value, 10) : undefined,
+            })
+          }
+          placeholder="2000"
+        />
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="timeout">Timeout (秒)</Label>
-            <Input
-              id="timeout"
-              type="number"
-              min="1"
-              value={config.timeout ?? ''}
-              onChange={e =>
-                setConfig({
-                  ...config,
-                  timeout: e.target.value ? parseInt(e.target.value, 10) : undefined,
-                })
-              }
-              placeholder="30"
-            />
-          </div>
-        </div>
-      </SettingsSection>
+      <div className="flex flex-col gap-1">
+        <Label className="text-sm" htmlFor="timeout">
+          Timeout (秒)
+        </Label>
+        <Input
+          id="timeout"
+          type="number"
+          min="1"
+          value={config.timeout ?? ''}
+          onChange={e =>
+            setConfig({
+              ...config,
+              timeout: e.target.value ? parseInt(e.target.value, 10) : undefined,
+            })
+          }
+          placeholder="30"
+        />
+      </div>
 
       <div className="flex items-center gap-4 justify-center">
-        <Button className='flex-1' onClick={handleSave} disabled={loading}>
+        <Button className="flex-1" onClick={handleSave} disabled={loading}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
           保存
         </Button>
@@ -220,9 +220,8 @@ export function AISettings() {
           )}
           测试连接
         </Button>
-        {saved && <span className="text-sm text-green-500">已保存</span>}
+        {saved && <span className="text-xs text-green-500">已保存</span>}
       </div>
     </div>
   )
 }
-

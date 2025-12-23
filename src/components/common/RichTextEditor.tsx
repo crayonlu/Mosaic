@@ -199,20 +199,17 @@ export function RichTextEditor({
   return (
     <div className="w-full h-full border bg-background flex flex-col overflow-hidden">
       {editable && editor && <Toolbar editor={editor} />}
-      <div className={cn(
-        "flex-1 min-h-0 overflow-auto editor-scrollbar",
-        isExpanded ? "max-h-none" : "max-h-[calc(100dvh-26rem)]"
-      )}>
+      <div
+        className={cn(
+          'flex-1 min-h-0 overflow-auto editor-scrollbar',
+          isExpanded ? 'max-h-none' : 'max-h-[calc(100dvh-26rem)]'
+        )}
+      >
         <EditorContent editor={editor} />
       </div>
       {editable && editor && (
-        <LinkDialog
-          editor={editor}
-          open={isLinkDialogOpen}
-          onOpenChange={setIsLinkDialogOpen}
-        />
+        <LinkDialog editor={editor} open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen} />
       )}
     </div>
   )
 }
-

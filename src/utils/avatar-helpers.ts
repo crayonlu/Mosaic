@@ -22,7 +22,7 @@ export async function getAvatarUrl(
   try {
     const fileData = await assetCommands.readAudioFile(avatarPath)
     const uint8Array = new Uint8Array(fileData)
-    
+
     const ext = avatarPath.split('.').pop()?.toLowerCase()
     let mimeType = 'image/webp'
     if (ext === 'jpg' || ext === 'jpeg') {
@@ -35,9 +35,9 @@ export async function getAvatarUrl(
 
     const blob = new Blob([uint8Array], { type: mimeType })
     const blobUrl = URL.createObjectURL(blob)
-    
+
     avatarUrlCache.set(avatarPath, blobUrl)
-    
+
     return blobUrl
   } catch (error) {
     console.error('Failed to load avatar:', error)
@@ -50,13 +50,11 @@ export function useAvatarUrl(
   avatarUrl?: string | null
 ): string | undefined {
   const [url, setUrl] = useState<string | undefined>(() => {
-    if (avatarUrl)
-      return avatarUrl
-    if (avatarPath && avatarUrlCache.has(avatarPath))
-      return avatarUrlCache.get(avatarPath)
+    if (avatarUrl) return avatarUrl
+    if (avatarPath && avatarUrlCache.has(avatarPath)) return avatarUrlCache.get(avatarPath)
     return undefined
   })
-  
+
   const previousPathRef = useRef<string | null | undefined>(avatarPath)
   const previousUrlRef = useRef<string | null | undefined>(avatarUrl)
 

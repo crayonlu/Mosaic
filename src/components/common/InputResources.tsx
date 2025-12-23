@@ -26,19 +26,16 @@ export function InputResources() {
     return null
   }
 
-  const images = resourcePreviews.filter((p) => p.type === 'image')
-  const videos = resourcePreviews.filter((p) => p.type === 'video')
-  const audios = resourcePreviews.filter((p) => p.type === 'audio')
+  const images = resourcePreviews.filter(p => p.type === 'image')
+  const videos = resourcePreviews.filter(p => p.type === 'video')
+  const audios = resourcePreviews.filter(p => p.type === 'audio')
 
   return (
     <div className="px-3 py-2 border-t bg-muted/30 space-y-3 w-full">
       {uploadingFiles.length > 0 && (
         <div className="space-y-2">
-          {uploadingFiles.map((file) => (
-            <div
-              key={file.name}
-              className="flex items-center gap-2 rounded-lg border bg-card p-2"
-            >
+          {uploadingFiles.map(file => (
+            <div key={file.name} className="flex items-center gap-2 rounded-lg border bg-card p-2">
               <div className="flex items-center justify-center h-8 w-8 rounded bg-muted">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
@@ -57,7 +54,7 @@ export function InputResources() {
       )}
       {images.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-          {images.map((preview) => (
+          {images.map(preview => (
             <ResourcePreview
               key={preview.filename}
               filename={preview.filename}
@@ -71,7 +68,7 @@ export function InputResources() {
       )}
       {videos.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {videos.map((preview) => (
+          {videos.map(preview => (
             <ResourcePreview
               key={preview.filename}
               filename={preview.filename}
@@ -85,7 +82,7 @@ export function InputResources() {
       )}
       {audios.length > 0 && (
         <div className="space-y-2">
-          {audios.map((preview) => (
+          {audios.map(preview => (
             <ResourcePreview
               key={preview.filename}
               filename={preview.filename}
@@ -100,4 +97,3 @@ export function InputResources() {
     </div>
   )
 }
-

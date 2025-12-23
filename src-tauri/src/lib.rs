@@ -16,7 +16,6 @@ use modules::settings::commands::{
     register_close_shortcut, register_show_shortcut, set_setting, test_ai_connection,
     unregister_shortcut,
 };
-use modules::settings::export::export_data;
 use modules::user::commands::{get_or_create_default_user, get_user, update_user, upload_avatar};
 use tauri::Manager;
 
@@ -69,7 +68,6 @@ pub fn run() {
             register_show_shortcut,
             register_close_shortcut,
             unregister_shortcut,
-            export_data,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

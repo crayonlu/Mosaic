@@ -7,6 +7,7 @@ import {
   User as UserIcon,
   Moon,
   Sun,
+  Archive
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import { useEffect } from 'react'
@@ -31,6 +32,7 @@ import Icon from '@/assets/icon.png'
 
 const items = [
   { title: '记录', url: '/', icon: PenBox },
+  { title: '归档', url: '/archive', icon: Archive },
   { title: '回顾', url: '/inbox', icon: Inbox },
   { title: '日历', url: '/calendar', icon: Calendar },
   { title: '搜索', url: '/search', icon: Search },

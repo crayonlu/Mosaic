@@ -185,7 +185,7 @@ export function Toolbar({ editor, className }: ToolbarProps) {
   return (
     <div className={cn('flex items-center gap-1 border-b p-2 flex-wrap shrink-0', className)}>
       <div className="flex items-center gap-1">
-        {formatButtons.map((btn) => (
+        {formatButtons.map(btn => (
           <ToolbarButton key={btn.label} editor={editor} {...btn} />
         ))}
       </div>
@@ -193,7 +193,7 @@ export function Toolbar({ editor, className }: ToolbarProps) {
       <div className="w-px h-6 bg-border mx-1" />
 
       <div className="flex items-center gap-1">
-        {structureButtons.map((btn) => (
+        {structureButtons.map(btn => (
           <ToolbarButton key={btn.label} editor={editor} {...btn} />
         ))}
       </div>
@@ -201,7 +201,7 @@ export function Toolbar({ editor, className }: ToolbarProps) {
       <div className="w-px h-6 bg-border mx-1" />
 
       <div className="flex items-center gap-1">
-        {insertButtons.map((btn) => (
+        {insertButtons.map(btn => (
           <ToolbarButton key={btn.label} editor={editor} {...btn} />
         ))}
         <InsertMenu editor={editor} />
@@ -212,17 +212,12 @@ export function Toolbar({ editor, className }: ToolbarProps) {
       <div className="w-px h-6 bg-border mx-1" />
 
       <div className="flex items-center gap-1">
-        {otherButtons.map((btn) => (
+        {otherButtons.map(btn => (
           <ToolbarButton key={btn.label} editor={editor} {...btn} />
         ))}
       </div>
 
-      <LinkDialog
-        editor={editor}
-        open={isLinkDialogOpen}
-        onOpenChange={setIsLinkDialogOpen}
-      />
+      <LinkDialog editor={editor} open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen} />
     </div>
   )
 }
-

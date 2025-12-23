@@ -15,7 +15,7 @@ export const useUserStore = create<UserState>(set => ({
   loadUser: async () => {
     set({ loading: true })
     try {
-      const user = await userCommands.getUser()
+      const user = await userCommands.getOrCreateDefaultUser()
       set({ user })
     } catch (error) {
       console.error('Failed to load user:', error)
@@ -25,4 +25,3 @@ export const useUserStore = create<UserState>(set => ({
   },
   updateUser: user => set({ user }),
 }))
-

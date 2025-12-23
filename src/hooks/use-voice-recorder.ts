@@ -18,14 +18,14 @@ export function useVoiceRecorder() {
 
       audioChunksRef.current = []
 
-      mediaRecorder.ondataavailable = (event) => {
+      mediaRecorder.ondataavailable = event => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data)
         }
       }
 
       mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach((track) => track.stop())
+        stream.getTracks().forEach(track => track.stop())
       }
 
       mediaRecorder.start()
@@ -38,12 +38,15 @@ export function useVoiceRecorder() {
     }
   }, [setVoiceRecordingState])
 
-  const stopRecording = useCallback(async (): Promise<{ filename: string; previewUrl: string } | null> => {
+  const stopRecording = useCallback(async (): Promise<{
+    filename: string
+    previewUrl: string
+  } | null> => {
     if (!mediaRecorderRef.current || !isRecording) {
       return null
     }
 
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const mediaRecorder = mediaRecorderRef.current!
 
       mediaRecorder.onstop = async () => {
@@ -98,7 +101,7 @@ export function useVoiceRecorder() {
   const cancelRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop()
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
       audioChunksRef.current = []
       setIsRecording(false)
       setIsProcessing(false)
@@ -114,4 +117,3 @@ export function useVoiceRecorder() {
     cancelRecording,
   }
 }
-

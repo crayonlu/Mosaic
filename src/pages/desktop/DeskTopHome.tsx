@@ -10,7 +10,7 @@ import { useFileUpload } from '@/hooks/use-file-upload'
 import type { MemoWithResources } from '@/types/memo'
 
 export default function DeskTopHome() {
-  const isInputExpanded = useInputStore((state) => state.isExpanded)
+  const isInputExpanded = useInputStore(state => state.isExpanded)
   const { formattedDate } = useTime()
   const { uploadFiles } = useFileUpload()
   const { addResource, clearInputValue, clearResources } = useInputStore()
@@ -35,7 +35,7 @@ export default function DeskTopHome() {
   const handleFileUpload = async (files: FileList) => {
     try {
       const uploadedFiles = await uploadFiles(files)
-      uploadedFiles.forEach((fileInfo) => {
+      uploadedFiles.forEach(fileInfo => {
         addResource(fileInfo.filename, fileInfo.previewUrl, fileInfo.type, fileInfo.size)
       })
     } catch (error) {
@@ -68,7 +68,7 @@ export default function DeskTopHome() {
   }
 
   return (
-    <DeskTopLayout className='relative'>
+    <DeskTopLayout className="relative">
       <div className="h-[calc(100dvh-20rem)] overflow-hidden flex flex-col">
         <div
           className={`w-full pb-4 transition-all duration-500 ease-in-out memo-scrollbar overflow-y-auto flex-1 min-h-0
@@ -79,9 +79,7 @@ export default function DeskTopHome() {
       </div>
       <div
         className={`w-full absolute left-0 right-0 bottom-0 transition-all duration-500 ease-in-out ${
-          isInputExpanded 
-            ? 'h-full' 
-            : 'h-64'
+          isInputExpanded ? 'h-full' : 'h-64'
         }`}
       >
         <AppInput

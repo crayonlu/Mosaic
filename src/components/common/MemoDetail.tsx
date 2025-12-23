@@ -1,12 +1,31 @@
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, Play, Pause, Image as ImageIcon, Video as VideoIcon, FileText, Calendar, Tag, Edit2, Save, X, Trash2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  Play,
+  Pause,
+  Image as ImageIcon,
+  Video as VideoIcon,
+  FileText,
+  Calendar,
+  Tag,
+  Edit2,
+  Save,
+  X,
+  Trash2,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet'
 import { RichTextEditor } from '@/components/common/RichTextEditor'
 import type { MemoWithResources } from '@/types/memo'
 import { assetCommands, memoCommands } from '@/utils/callRust'
 import dayjs from 'dayjs'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface MemoDetailProps {
   memo: MemoWithResources | null
@@ -240,12 +259,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
             </div>
             {!isEditing ? (
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleStartEdit}
-                  disabled={isDeleting}
-                >
+                <Button variant="ghost" size="sm" onClick={handleStartEdit} disabled={isDeleting}>
                   <Edit2 className="h-4 w-4 mr-1" />
                   编辑
                 </Button>
@@ -321,7 +335,9 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                       <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="text-xs text-white">{resource.filename}</div>
-                        <div className="text-[10px] text-white/80 mt-1">{formatSize(resource.size)}</div>
+                        <div className="text-[10px] text-white/80 mt-1">
+                          {formatSize(resource.size)}
+                        </div>
                       </div>
                     </div>
                   )
@@ -341,7 +357,10 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                   const url = videoUrls.get(resource.id)
                   if (!url) return null
                   return (
-                    <div key={resource.id} className="relative rounded-lg border bg-card overflow-hidden">
+                    <div
+                      key={resource.id}
+                      className="relative rounded-lg border bg-card overflow-hidden"
+                    >
                       <video
                         ref={el => {
                           if (el) videoRefsRef.current.set(resource.id, el)
@@ -366,7 +385,9 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                       </div>
                       <div className="p-3 bg-card">
                         <div className="text-sm font-medium truncate">{resource.filename}</div>
-                        <div className="text-xs text-muted-foreground mt-1">{formatSize(resource.size)}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {formatSize(resource.size)}
+                        </div>
                       </div>
                     </div>
                   )
@@ -402,7 +423,9 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                         </Button>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium truncate">{resource.filename}</div>
-                          <div className="text-xs text-muted-foreground mt-1">{formatSize(resource.size)}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {formatSize(resource.size)}
+                          </div>
                         </div>
                       </div>
                       <audio
@@ -441,7 +464,9 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                       <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{resource.filename}</div>
-                        <div className="text-xs text-muted-foreground mt-1">{formatSize(resource.size)}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {formatSize(resource.size)}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -490,7 +515,9 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                     className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white"
                     onClick={e => {
                       e.stopPropagation()
-                      setCurrentImageIndex(prev => (prev > 0 ? prev - 1 : imageResources.length - 1))
+                      setCurrentImageIndex(prev =>
+                        prev > 0 ? prev - 1 : imageResources.length - 1
+                      )
                     }}
                   >
                     <ArrowLeft className="h-5 w-5" />
@@ -501,7 +528,9 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                     className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white"
                     onClick={e => {
                       e.stopPropagation()
-                      setCurrentImageIndex(prev => (prev < imageResources.length - 1 ? prev + 1 : 0))
+                      setCurrentImageIndex(prev =>
+                        prev < imageResources.length - 1 ? prev + 1 : 0
+                      )
                     }}
                   >
                     <ArrowLeft className="h-5 w-5 rotate-180" />
@@ -515,14 +544,15 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
           </div>
         )}
       </SheetContent>
-      <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => !isDeleting && setIsDeleteDialogOpen(open)}>
+      <Dialog
+        open={isDeleteDialogOpen}
+        onOpenChange={open => !isDeleting && setIsDeleteDialogOpen(open)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>删除 memo</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            确定要删除这条 memo 吗？此操作不可撤销。
-          </p>
+          <p className="text-sm text-muted-foreground">确定要删除这条 memo 吗？此操作不可撤销。</p>
           <DialogFooter className="mt-4 flex justify-end gap-2">
             <Button
               variant="outline"
@@ -549,4 +579,3 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     </Sheet>
   )
 }
-

@@ -24,4 +24,3 @@ export async function isMaximized(): Promise<boolean> {
   const window = getCurrentWindow()
   return await window.isMaximized()
 }
-

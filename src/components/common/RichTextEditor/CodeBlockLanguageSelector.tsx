@@ -97,7 +97,7 @@ export function CodeBlockLanguageSelector({ editor }: CodeBlockLanguageSelectorP
       </Button>
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 z-50 bg-popover border rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[120px]">
-          {languages.map((lang) => (
+          {languages.map(lang => (
             <button
               key={lang.value}
               type="button"
@@ -115,4 +115,3 @@ export function CodeBlockLanguageSelector({ editor }: CodeBlockLanguageSelectorP
     </div>
   )
 }
-
