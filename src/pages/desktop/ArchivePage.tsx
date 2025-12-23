@@ -1,0 +1,343 @@
+import { useState, useEffect, useMemo } from 'react'
+import dayjs from 'dayjs'
+import { Calendar, Archive, Trash2, CheckSquare, Square, Loader2 } from 'lucide-react'
+import DeskTopLayout from '@/components/layout/DeskTopLayout'
+import { Button } from '@/components/ui/button'
+import { Calendar as CalendarComponent } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Separator } from '@/components/ui/separator'
+import { MemoCard } from '@/components/archive/MemoCard'
+import { ArchiveDialog } from '@/components/archive/ArchiveDialog'
+import { MemoDetail } from '@/components/common/MemoDetail'
+import { memoCommands, diaryCommands } from '@/utils/callRust'
+import type { MemoWithResources } from '@/types/memo'
+
+type Mode = 'view' | 'select'
+
+export default function ArchivePage() {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [memos, setMemos] = useState<MemoWithResources[]>([])
+  const [loading, setLoading] = useState(true)
+  const [mode, setMode] = useState<Mode>('view')
+  const [selectedMemos, setSelectedMemos] = useState<Set<string>>(new Set())
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false)
+  const [isArchiving, setIsArchiving] = useState(false)
+  const [selectedMemo, setSelectedMemo] = useState<MemoWithResources | null>(null)
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
+
+  const formattedDate = dayjs(selectedDate).utc().format('YYYY-MM-DD')
+  const dateDisplay = dayjs(selectedDate).format('M月D日 dddd')
+
+  const fetchMemos = async () => {
+    try {
+      setLoading(true)
+      const data = await memoCommands.getMemosByDate(formattedDate)
+      setMemos(data.filter(memo => !memo.isDeleted))
+    } catch (error) {
+      console.error('获取memos失败:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchMemos()
+    setSelectedMemos(new Set())
+    setMode('view')
+  }, [formattedDate])
+
+  const groupedMemos = useMemo(() => {
+    const groups: Record<string, MemoWithResources[]> = {}
+
+    memos.forEach(memo => {
+      const hour = dayjs(memo.createdAt).format('HH')
+      const hourLabel = `${hour}:00-${parseInt(hour) + 1}:00`
+      if (!groups[hourLabel]) {
+        groups[hourLabel] = []
+      }
+      groups[hourLabel].push(memo)
+    })
+
+    return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a))
+  }, [memos])
+
+  const handleModeToggle = () => {
+    setMode(mode === 'view' ? 'select' : 'view')
+    setSelectedMemos(new Set())
+  }
+
+  const handleMemoSelect = (memoId: string, selected: boolean) => {
+    const newSelected = new Set(selectedMemos)
+    if (selected) {
+      newSelected.add(memoId)
+    } else {
+      newSelected.delete(memoId)
+    }
+    setSelectedMemos(newSelected)
+  }
+
+  const handleSelectAll = () => {
+    if (selectedMemos.size === memos.length) {
+      setSelectedMemos(new Set())
+    } else {
+      setSelectedMemos(new Set(memos.map(m => m.id)))
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedMemos.size === 0) return
+
+    try {
+      const promises = Array.from(selectedMemos).map(id =>
+        memoCommands.deleteMemo(id)
+      )
+      await Promise.all(promises)
+      await fetchMemos()
+      setSelectedMemos(new Set())
+      setMode('view')
+    } catch (error) {
+      console.error('批量删除失败:', error)
+    }
+  }
+
+  const handleArchiveSelected = () => {
+    if (selectedMemos.size === 0) return
+    setIsArchiveDialogOpen(true)
+  }
+
+  const handleArchiveConfirm = async (summary?: string, moodKey?: string, moodScore?: number) => {
+    if (selectedMemos.size === 0) return
+
+    try {
+      setIsArchiving(true)
+
+      await diaryCommands.createOrUpdateDiary({
+        date: formattedDate,
+        summary,
+        moodKey: moodKey as any,
+        moodScore,
+      })
+
+      const promises = Array.from(selectedMemos).map(id =>
+        memoCommands.archiveMemo(id)
+      )
+      await Promise.all(promises)
+
+      await fetchMemos()
+      setSelectedMemos(new Set())
+      setMode('view')
+      setIsArchiveDialogOpen(false)
+    } catch (error) {
+      console.error('归档失败:', error)
+    } finally {
+      setIsArchiving(false)
+    }
+  }
+
+  const handleMemoClick = (memo: MemoWithResources) => {
+    setSelectedMemo(memo)
+    setIsDetailOpen(true)
+  }
+
+  const handleDetailClose = () => {
+    setIsDetailOpen(false)
+    setTimeout(() => setSelectedMemo(null), 300)
+  }
+
+  const handleMemoUpdate = async () => {
+    await fetchMemos()
+    if (selectedMemo) {
+      const updatedMemo = await memoCommands.getMemo(selectedMemo.id)
+      setSelectedMemo(updatedMemo)
+    }
+  }
+
+  const handleMemoDelete = async () => {
+    await fetchMemos()
+    setIsDetailOpen(false)
+    setTimeout(() => setSelectedMemo(null), 300)
+  }
+
+  return (
+    <DeskTopLayout className="relative">
+      <div className="h-full flex flex-col">
+        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
+          <div className="flex items-center justify-between px-6 pb-4 pt-2">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Archive className="h-5 w-5" />
+                <span className="text-lg font-semibold">归档</span>
+              </div>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {dateDisplay}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    initialFocus
+                    className="rounded-md border-0"
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <Badge variant="secondary" className="text-xs">
+                {memos.length} 条memo
+              </Badge>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant={mode === 'select' ? 'default' : 'outline'}
+                size="sm"
+                onClick={handleModeToggle}
+                className="gap-2"
+              >
+                {mode === 'select' ? (
+                  <>
+                    <Square className="h-4 w-4" />
+                    选择模式
+                  </>
+                ) : (
+                  <>
+                    <CheckSquare className="h-4 w-4" />
+                    选择模式
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : memos.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Archive className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">暂无memo</h3>
+              <p className="text-sm text-muted-foreground">
+                {dayjs(selectedDate).isSame(dayjs(), 'day')
+                  ? '今天还没有创建memo'
+                  : `${dateDisplay}没有memo记录`}
+              </p>
+            </div>
+          ) : (
+            <div className="p-6 space-y-8">
+              {groupedMemos.map(([timeRange, timeMemos]) => (
+                <div key={timeRange}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      {timeRange}
+                    </div>
+                    <Separator className="flex-1" />
+                    <Badge variant="outline" className="text-xs">
+                      {timeMemos.length} 条
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-3">
+                    {timeMemos.map(memo => (
+                      <MemoCard
+                        key={memo.id}
+                        memo={memo}
+                        mode={mode}
+                        selected={selectedMemos.has(memo.id)}
+                        onSelect={handleMemoSelect}
+                        onClick={() => {
+                          if (mode === 'view') {
+                            handleMemoClick(memo)
+                          }
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {mode === 'select' && memos.length > 0 && (
+          <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky bottom-0 z-10">
+            <div className="flex items-center justify-between px-6 pt-4 pb-2">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={selectedMemos.size === memos.length && memos.length > 0}
+                  onCheckedChange={handleSelectAll}
+                />
+                  <span className="text-sm font-medium">
+                    全选 ({selectedMemos.size}/{memos.length})
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setMode('view')}
+                  className="text-muted-foreground"
+                >
+                  取消
+                </Button>
+
+                {selectedMemos.size > 0 && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDeleteSelected}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      删除 ({selectedMemos.size})
+                    </Button>
+
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleArchiveSelected}
+                      className="gap-2"
+                    >
+                      <Archive className="h-4 w-4" />
+                      归档 ({selectedMemos.size})
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <ArchiveDialog
+          open={isArchiveDialogOpen}
+          onClose={() => setIsArchiveDialogOpen(false)}
+          selectedCount={selectedMemos.size}
+          date={formattedDate}
+          onConfirm={handleArchiveConfirm}
+          isLoading={isArchiving}
+        />
+
+        <MemoDetail
+          memo={selectedMemo}
+          open={isDetailOpen}
+          onClose={handleDetailClose}
+          onUpdate={handleMemoUpdate}
+          onDelete={handleMemoDelete}
+        />
+      </div>
+    </DeskTopLayout>
+  )
+}
