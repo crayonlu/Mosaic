@@ -27,4 +27,3 @@ export interface ShortcutConfig {
   showShortcut: string
   closeShortcut: string
 }
-

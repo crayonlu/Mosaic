@@ -78,7 +78,7 @@ export function ResourcePreview({
             variant="ghost"
             size="icon"
             className="absolute top-1 right-1 h-6 w-6 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation()
               onRemove()
             }}
@@ -86,9 +86,7 @@ export function ResourcePreview({
             <X className="h-3 w-3" />
           </Button>
           <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-2">
-            {size && (
-              <div className="text-[10px] text-white/80">{formatSize(size)}</div>
-            )}
+            {size && <div className="text-[10px] text-white/80">{formatSize(size)}</div>}
           </div>
         </div>
         <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
@@ -122,11 +120,7 @@ export function ResourcePreview({
             className="h-10 w-10 bg-black/50 hover:bg-black/70 text-white rounded-full"
             onClick={handlePlayPause}
           >
-            {isPlaying ? (
-              <Pause className="h-5 w-5" />
-            ) : (
-              <Play className="h-5 w-5 ml-0.5" />
-            )}
+            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
           </Button>
         </div>
         <Button
@@ -142,9 +136,7 @@ export function ResourcePreview({
             <VideoIcon className="h-3 w-3" />
             <span className="truncate">{filename}</span>
           </div>
-          {size && (
-            <div className="text-[10px] text-white/80">{formatSize(size)}</div>
-          )}
+          {size && <div className="text-[10px] text-white/80">{formatSize(size)}</div>}
         </div>
       </div>
     )
@@ -242,7 +234,5 @@ export function ResourcePreview({
     )
   }
 
-
   return null
 }
-

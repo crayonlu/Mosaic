@@ -68,4 +68,3 @@ export function useInput(options?: UseInputOptions) {
     handleToggleExpand,
   }
 }
-

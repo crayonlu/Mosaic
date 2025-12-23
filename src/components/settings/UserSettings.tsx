@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { SettingsSection } from './SettingsSection'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@radix-ui/react-label'
@@ -68,59 +67,48 @@ export function UserSettings() {
   }
 
   return (
-    <div className="space-y-6">
-      <SettingsSection title="用户信息" description="管理您的个人信息">
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={avatarUrl} alt={user?.username || 'User'} />
-              <AvatarFallback>
-                <UserIcon className="h-10 w-10" />
-              </AvatarFallback>
-            </Avatar>
-            <div className="space-y-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              <Button
-                variant="outline"
-                onClick={handleAvatarUpload}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : null}
-                更换头像
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                支持 PNG、JPG、JPEG、WebP 格式
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="username">用户名</Label>
-            <Input
-              id="username"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              placeholder="输入用户名"
-            />
-          </div>
-
-          <div className='flex-1'>
-            <Button className='w-full' onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              保存
-            </Button>
-          </div>
+    <div className="space-y-2">
+      <div className="flex items-center gap-4">
+        <Avatar className="h-20 w-20">
+          <AvatarImage src={avatarUrl} alt={user?.username || 'User'} />
+          <AvatarFallback>
+            <UserIcon className="h-10 w-10" />
+          </AvatarFallback>
+        </Avatar>
+        <div className="space-y-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <Button variant="outline" onClick={handleAvatarUpload} disabled={uploading}>
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            更换头像
+          </Button>
+          <p className="text-xs text-muted-foreground">支持 PNG、JPG、JPEG、WebP 格式</p>
         </div>
-      </SettingsSection>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <Label className="text-sm" htmlFor="username">
+          用户名
+        </Label>
+        <Input
+          id="username"
+          value={username}
+          onChange={e => setUsername(e.target.value)}
+          placeholder="输入用户名"
+        />
+      </div>
+
+      <div className="flex-1">
+        <Button className="w-full" onClick={handleSave} disabled={saving}>
+          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          保存
+        </Button>
+      </div>
     </div>
   )
 }
-

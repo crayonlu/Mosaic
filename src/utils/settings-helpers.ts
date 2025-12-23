@@ -4,8 +4,7 @@ import type { Setting, SetSettingRequest, AIConfig, ShortcutConfig } from '@/typ
 export const settingsCommands = {
   getSetting: (key: string) => callRust<Setting | null>('get_setting', { key }),
 
-  getSettings: (category?: string) =>
-    callRust<Setting[]>('get_settings', { category }),
+  getSettings: (category?: string) => callRust<Setting[]>('get_settings', { category }),
 
   setSetting: (req: SetSettingRequest) => callRust<Setting>('set_setting', { req }),
 
@@ -24,8 +23,7 @@ export const settingsCommands = {
   registerCloseShortcut: (shortcut: string) =>
     callRust<void>('register_close_shortcut', { shortcut }),
 
-  unregisterShortcut: (shortcut: string) =>
-    callRust<void>('unregister_shortcut', { shortcut }),
+  unregisterShortcut: (shortcut: string) => callRust<void>('unregister_shortcut', { shortcut }),
 }
 
 export async function loadAIConfig(): Promise<AIConfig | null> {
@@ -118,4 +116,3 @@ export async function saveShortcutConfig(config: ShortcutConfig): Promise<void> 
     }),
   ])
 }
-

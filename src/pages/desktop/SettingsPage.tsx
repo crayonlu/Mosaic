@@ -4,9 +4,8 @@ import { AISettings } from '@/components/settings/AISettings'
 import { SystemSettings } from '@/components/settings/SystemSettings'
 import { UserSettings } from '@/components/settings/UserSettings'
 import { AppSettings } from '@/components/settings/AppSettings'
-import { DataManagement } from '@/components/settings/DataManagement'
 import { Separator } from '@/components/ui/separator'
-import { Bot, Settings as SettingsIcon, User, Monitor, Database } from 'lucide-react'
+import { Bot, Settings as SettingsIcon, User, Monitor } from 'lucide-react'
 
 type SettingsTab = 'ai' | 'system' | 'user' | 'app' | 'data'
 
@@ -15,7 +14,6 @@ const tabs = [
   { id: 'system' as SettingsTab, label: '系统设置', icon: SettingsIcon },
   { id: 'user' as SettingsTab, label: '用户信息', icon: User },
   { id: 'app' as SettingsTab, label: '应用设置', icon: Monitor },
-  { id: 'data' as SettingsTab, label: '数据管理', icon: Database },
 ]
 
 export default function SettingsPage() {
@@ -35,9 +33,7 @@ export default function SettingsPage() {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-muted'
+                      activeTab === tab.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -53,11 +49,9 @@ export default function SettingsPage() {
             {activeTab === 'system' && <SystemSettings />}
             {activeTab === 'user' && <UserSettings />}
             {activeTab === 'app' && <AppSettings />}
-            {activeTab === 'data' && <DataManagement />}
           </div>
         </div>
       </div>
     </DeskTopLayout>
   )
 }
-

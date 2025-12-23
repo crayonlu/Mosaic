@@ -26,9 +26,7 @@ export function ToolbarButton({
           className={cn(
             'size-8 rounded-md text-sm transition-colors flex items-center justify-center',
             'disabled:opacity-50 disabled:cursor-not-allowed',
-            active
-              ? 'bg-primary text-primary-foreground'
-              : 'hover:bg-muted',
+            active ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
             className
           )}
           aria-label={label}
@@ -42,4 +40,3 @@ export function ToolbarButton({
     </Tooltip>
   )
 }
-

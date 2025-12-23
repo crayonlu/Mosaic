@@ -102,7 +102,7 @@ export function HighlightColorSelector({ editor }: HighlightColorSelectorProps) 
             >
               <Palette className="h-3 w-3 text-muted-foreground" />
             </button>
-            {highlightColors.map((color) => (
+            {highlightColors.map(color => (
               <button
                 key={color.value}
                 type="button"

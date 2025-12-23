@@ -1,31 +1,20 @@
-import { useState } from "react"
-import {
-  Upload,
-  Mic,
-  Maximize2,
-  Minimize2,
-  CornerDownLeft,
-  Loader2,
-} from "lucide-react"
+import { useState } from 'react'
+import { Upload, Mic, Maximize2, Minimize2, CornerDownLeft, Loader2 } from 'lucide-react'
 
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupText,
-} from "@/components/ui/input-group"
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip"
-import { useInput } from "@/hooks/use-input"
-import { VoiceRecordingDialog } from "@/components/common/VoiceRecordingDialog"
-import { InputResources } from "@/components/common/InputResources"
-import { RichTextEditor } from "@/components/common/RichTextEditor"
-import { useInputStore } from "@/stores/input-store"
-import { useVoiceRecorder } from "@/hooks/use-voice-recorder"
-import { cn } from "@/lib/utils"
+} from '@/components/ui/input-group'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { useInput } from '@/hooks/use-input'
+import { VoiceRecordingDialog } from '@/components/common/VoiceRecordingDialog'
+import { InputResources } from '@/components/common/InputResources'
+import { RichTextEditor } from '@/components/common/RichTextEditor'
+import { useInputStore } from '@/stores/input-store'
+import { useVoiceRecorder } from '@/hooks/use-voice-recorder'
+import { cn } from '@/lib/utils'
 
 interface AppInputProps {
   placeholder?: string
@@ -36,7 +25,7 @@ interface AppInputProps {
 }
 
 export function AppInput({
-  placeholder = "输入内容...",
+  placeholder = '输入内容...',
   onSubmit,
   onFileUpload,
   onVoiceInput,
@@ -96,9 +85,7 @@ export function AppInput({
   return (
     <div className={`${className} h-full flex flex-col relative`}>
       <InputGroup className="rounded-none flex-1 flex flex-col justify-between h-full min-h-0 relative overflow-hidden">
-        <div className={`w-full overflow-auto flex-1 min-h-0 ${
-          isExpanded ? "flex flex-col" : ""
-        }`}>
+        <div className={`w-full overflow-auto flex-1 min-h-0 ${isExpanded ? 'flex flex-col' : ''}`}>
           <RichTextEditor
             content={inputValue}
             onChange={handleInputChange}
@@ -106,10 +93,7 @@ export function AppInput({
             editable={true}
             onSave={handleSubmit}
             isExpanded={isExpanded}
-            className={cn(
-              isExpanded ? "flex-1" : "",
-              "border-0"
-            )}
+            className={cn(isExpanded ? 'flex-1' : '', 'border-0')}
           />
         </div>
         <InputGroupAddon align="block-end" className="border-t shrink-0 bg-background">
@@ -155,30 +139,20 @@ export function AppInput({
                       'bg-destructive/10 text-destructive hover:bg-destructive/20'
                   )}
                 >
-                  <Mic
-                    className={cn(
-                      voiceRecordingState === 'recording' && 'animate-pulse'
-                    )}
-                  />
+                  <Mic className={cn(voiceRecordingState === 'recording' && 'animate-pulse')} />
                 </InputGroupButton>
               </TooltipTrigger>
               <TooltipContent>
-                {voiceRecordingState === 'recording'
-                  ? '正在录音...'
-                  : '语音输入'}
+                {voiceRecordingState === 'recording' ? '正在录音...' : '语音输入'}
               </TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <InputGroupButton
-                  size="icon-xs"
-                  variant="ghost"
-                  onClick={handleToggleExpand}
-                >
+                <InputGroupButton size="icon-xs" variant="ghost" onClick={handleToggleExpand}>
                   {isExpanded ? <Minimize2 /> : <Maximize2 />}
                 </InputGroupButton>
               </TooltipTrigger>
-              <TooltipContent>{isExpanded ? "收起" : "展开"}</TooltipContent>
+              <TooltipContent>{isExpanded ? '收起' : '展开'}</TooltipContent>
             </Tooltip>
             <div className="ml-auto flex items-center gap-2">
               <InputGroupText className="text-xs text-muted-foreground">
@@ -188,7 +162,12 @@ export function AppInput({
                 size="sm"
                 variant="default"
                 onClick={handleSubmit}
-                disabled={(!inputValue || (inputValue.replace(/<[^>]*>/g, '').trim() === '' && resourceFilenames.length === 0)) || uploadingFiles.length > 0}
+                disabled={
+                  !inputValue ||
+                  (inputValue.replace(/<[^>]*>/g, '').trim() === '' &&
+                    resourceFilenames.length === 0) ||
+                  uploadingFiles.length > 0
+                }
                 className="gap-2"
               >
                 {uploadingFiles.length > 0 ? (

@@ -30,7 +30,7 @@ function getKeyName(event: KeyboardEvent): string {
   if (event.key.startsWith('F') && /^F\d+$/.test(event.key)) {
     return event.key
   }
-  
+
   if (event.key.length === 1) {
     return event.key.toUpperCase()
   }
@@ -46,7 +46,7 @@ export function useKeyCapture() {
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     const key = event.key
-    
+
     if (['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
       keysPressedRef.current.add(key)
       const combo: KeyCombo = {
@@ -81,8 +81,14 @@ export function useKeyCapture() {
   const handleKeyUp = useCallback((event: KeyboardEvent) => {
     const key = event.key
     keysPressedRef.current.delete(key)
-    
-    if (keysPressedRef.current.size === 0 && !event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey) {
+
+    if (
+      keysPressedRef.current.size === 0 &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.shiftKey &&
+      !event.metaKey
+    ) {
       setIsCapturing(false)
     }
   }, [])
@@ -119,4 +125,3 @@ export function useKeyCapture() {
     stopCapture,
   }
 }
-

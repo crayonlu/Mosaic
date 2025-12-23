@@ -21,8 +21,7 @@ export function VoiceRecordingDialog({
   onCancel,
   isProcessing = false,
 }: VoiceRecordingDialogProps) {
-  const { recordingDuration, setRecordingDuration, setVoiceRecordingState } =
-    useInputStore()
+  const { recordingDuration, setRecordingDuration, setVoiceRecordingState } = useInputStore()
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -30,7 +29,7 @@ export function VoiceRecordingDialog({
       setRecordingDuration(0)
       setVoiceRecordingState('recording')
       intervalRef.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1)
+        setRecordingDuration(prev => prev + 1)
       }, 1000)
     } else {
       if (intervalRef.current) {
@@ -46,13 +45,12 @@ export function VoiceRecordingDialog({
     }
   }, [open, setRecordingDuration, setVoiceRecordingState])
 
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="sm:max-w-md"
         showCloseButton={false}
-        onInteractOutside={(e) => e.preventDefault()}
+        onInteractOutside={e => e.preventDefault()}
       >
         <div className="flex flex-col items-center gap-6 py-4">
           <div className="relative flex items-center justify-center">
@@ -85,12 +83,7 @@ export function VoiceRecordingDialog({
             ))}
           </div>
           <div className="flex items-center gap-3 w-full">
-            <Button
-              variant="outline"
-              onClick={onCancel}
-              className="flex-1"
-              disabled={isProcessing}
-            >
+            <Button variant="outline" onClick={onCancel} className="flex-1" disabled={isProcessing}>
               <X className="mr-2 h-4 w-4" />
               取消
             </Button>
@@ -118,4 +111,3 @@ export function VoiceRecordingDialog({
     </Dialog>
   )
 }
-

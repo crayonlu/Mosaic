@@ -26,11 +26,7 @@ export function InsertMenu({ editor }: InsertMenuProps) {
   }, [isOpen])
 
   const insertTable = () => {
-    editor
-      .chain()
-      .focus()
-      .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-      .run()
+    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
     setIsOpen(false)
   }
 
@@ -83,4 +79,3 @@ export function InsertMenu({ editor }: InsertMenuProps) {
     </div>
   )
 }
-

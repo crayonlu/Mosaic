@@ -27,7 +27,12 @@ interface InputState {
   toggleExpanded: () => void
   setInputValue: (value: string) => void
   clearInputValue: () => void
-  addResource: (filename: string, previewUrl?: string, type?: 'image' | 'audio' | 'video', size?: number) => void
+  addResource: (
+    filename: string,
+    previewUrl?: string,
+    type?: 'image' | 'audio' | 'video',
+    size?: number
+  ) => void
   removeResource: (filename: string) => void
   clearResources: () => void
   addUploadingFile: (file: UploadingFile) => void
@@ -38,7 +43,7 @@ interface InputState {
   resetVoiceRecording: () => void
 }
 
-export const useInputStore = create<InputState>((set) => ({
+export const useInputStore = create<InputState>(set => ({
   isExpanded: false,
   inputValue: '',
   resourceFilenames: [],
@@ -46,19 +51,19 @@ export const useInputStore = create<InputState>((set) => ({
   uploadingFiles: [],
   voiceRecordingState: 'idle',
   recordingDuration: 0,
-  setExpanded: (expanded) => set({ isExpanded: expanded }),
-  toggleExpanded: () => set((state) => ({ isExpanded: !state.isExpanded })),
-  setInputValue: (value) => set({ inputValue: value }),
+  setExpanded: expanded => set({ isExpanded: expanded }),
+  toggleExpanded: () => set(state => ({ isExpanded: !state.isExpanded })),
+  setInputValue: value => set({ inputValue: value }),
   clearInputValue: () => {
-    set((state) => {
-      state.resourcePreviews.forEach((preview) => {
+    set(state => {
+      state.resourcePreviews.forEach(preview => {
         URL.revokeObjectURL(preview.previewUrl)
       })
       return { inputValue: '', resourceFilenames: [], resourcePreviews: [] }
     })
   },
   addResource: (filename, previewUrl, type, size) =>
-    set((state) => {
+    set(state => {
       const newPreview: ResourcePreview = {
         filename,
         previewUrl: previewUrl || '',
@@ -70,41 +75,39 @@ export const useInputStore = create<InputState>((set) => ({
         resourcePreviews: [...state.resourcePreviews, newPreview],
       }
     }),
-  removeResource: (filename) =>
-    set((state) => {
-      const preview = state.resourcePreviews.find((p) => p.filename === filename)
+  removeResource: filename =>
+    set(state => {
+      const preview = state.resourcePreviews.find(p => p.filename === filename)
       if (preview && preview.previewUrl) {
         URL.revokeObjectURL(preview.previewUrl)
       }
       return {
-        resourceFilenames: state.resourceFilenames.filter((f) => f !== filename),
-        resourcePreviews: state.resourcePreviews.filter((p) => p.filename !== filename),
+        resourceFilenames: state.resourceFilenames.filter(f => f !== filename),
+        resourcePreviews: state.resourcePreviews.filter(p => p.filename !== filename),
       }
     }),
   clearResources: () => {
-    set((state) => {
-      state.resourcePreviews.forEach((preview) => {
+    set(state => {
+      state.resourcePreviews.forEach(preview => {
         URL.revokeObjectURL(preview.previewUrl)
       })
       return { resourceFilenames: [], resourcePreviews: [] }
     })
   },
-  addUploadingFile: (file) =>
-    set((state) => ({
+  addUploadingFile: file =>
+    set(state => ({
       uploadingFiles: [...state.uploadingFiles, file],
     })),
-  removeUploadingFile: (name) =>
-    set((state) => ({
-      uploadingFiles: state.uploadingFiles.filter((f) => f.name !== name),
+  removeUploadingFile: name =>
+    set(state => ({
+      uploadingFiles: state.uploadingFiles.filter(f => f.name !== name),
     })),
   clearUploadingFiles: () => set({ uploadingFiles: [] }),
-  setVoiceRecordingState: (state) => set({ voiceRecordingState: state }),
-  setRecordingDuration: (duration) =>
-    set((state) => ({
+  setVoiceRecordingState: state => set({ voiceRecordingState: state }),
+  setRecordingDuration: duration =>
+    set(state => ({
       recordingDuration:
         typeof duration === 'function' ? duration(state.recordingDuration) : duration,
     })),
-  resetVoiceRecording: () =>
-    set({ voiceRecordingState: 'idle', recordingDuration: 0 }),
+  resetVoiceRecording: () => set({ voiceRecordingState: 'idle', recordingDuration: 0 }),
 }))
-

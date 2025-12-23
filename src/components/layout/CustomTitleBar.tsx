@@ -18,15 +18,17 @@ export function CustomTitleBar() {
 
   useEffect(() => {
     checkMaximized()
-    
+
     const window = getCurrentWindow()
     let unlistenFn: (() => void) | null = null
-    
-    window.onResized(() => {
-      checkMaximized()
-    }).then(fn => {
-      unlistenFn = fn
-    })
+
+    window
+      .onResized(() => {
+        checkMaximized()
+      })
+      .then(fn => {
+        unlistenFn = fn
+      })
 
     return () => {
       if (unlistenFn) {
@@ -42,20 +44,18 @@ export function CustomTitleBar() {
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b px-4 titlebar-drag">
-      <div className='flex items-center gap-2 titlebar-no-drag'>
+      <div className="flex items-center gap-2 titlebar-no-drag">
         <SidebarTrigger className="-ml-1 hover:text-primary hover:bg-primary/10 p-2 rounded-md transition-all" />
         <div className="text-sm text-gray-500">
           {greeting}
           {user?.username ? '，' + user.username : ''}
         </div>
       </div>
-      
+
       <div className="flex-1 titlebar-drag" />
-      
-      <div className='flex items-center gap-2 titlebar-no-drag'>
-        <div className='text-sm text-gray-500 mr-2'>
-          {formattedDateWithWeek}
-        </div>
+
+      <div className="flex items-center gap-2 titlebar-no-drag">
+        <div className="text-sm text-gray-500 mr-2">{formattedDateWithWeek}</div>
         <button
           onClick={minimizeWindow}
           className="h-8 w-8 flex items-center justify-center hover:bg-muted rounded transition-colors"
@@ -66,7 +66,7 @@ export function CustomTitleBar() {
         <button
           onClick={handleMaximize}
           className="h-8 w-8 flex items-center justify-center hover:bg-muted rounded transition-colors"
-          aria-label={maximized ? "还原" : "最大化"}
+          aria-label={maximized ? '还原' : '最大化'}
         >
           {maximized ? <Minimize2 className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
         </button>
@@ -81,4 +81,3 @@ export function CustomTitleBar() {
     </header>
   )
 }
-

@@ -31,9 +31,13 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
       }
     }, [date])
 
-    useImperativeHandle(ref, () => ({
-      refetch: fetchMemos,
-    }), [fetchMemos])
+    useImperativeHandle(
+      ref,
+      () => ({
+        refetch: fetchMemos,
+      }),
+      [fetchMemos]
+    )
 
     useEffect(() => {
       fetchMemos()
@@ -44,16 +48,15 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
       const videos = memo.resources.filter(r => r.resourceType === 'video')
       const audios = memo.resources.filter(r => r.resourceType === 'voice')
       const files = memo.resources.filter(r => r.resourceType === 'file')
-      
+
       const previews = []
       if (images.length > 0) previews.push({ icon: ImageIcon, count: images.length, label: '图片' })
       if (videos.length > 0) previews.push({ icon: VideoIcon, count: videos.length, label: '视频' })
       if (audios.length > 0) previews.push({ icon: Volume2, count: audios.length, label: '音频' })
       if (files.length > 0) previews.push({ icon: FileText, count: files.length, label: '文件' })
-      
+
       return previews
     }
-
 
     if (loading) {
       return (
@@ -70,7 +73,7 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
     return (
       <div className={className}>
         <div className="space-y-2">
-          {memos.map((memo) => {
+          {memos.map(memo => {
             const resourcePreviews = getResourcePreview(memo)
 
             return (
@@ -91,44 +94,47 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
                     <div className="text-muted-foreground italic p-4">无文字内容</div>
                   )}
                 </div>
-                { resourcePreviews.length > 0 || memo.tags.length > 0 && (
-                  <div className='p-4 border-t'>
-                    {resourcePreviews.length > 0 && (
-                      <div className="mt-3 flex items-center gap-3 flex-wrap">
-                        {resourcePreviews.map((preview, index) => {
-                          const Icon = preview.icon
-                          return (
-                            <div
-                              key={index}
-                              className="inline-flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground"
-                            >
-                              <Icon className="h-3.5 w-3.5" />
-                              <span>{preview.count} {preview.label}</span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
+                {resourcePreviews.length > 0 ||
+                  (memo.tags.length > 0 && (
+                    <div className="p-4 border-t">
+                      {resourcePreviews.length > 0 && (
+                        <div className="mt-3 flex items-center gap-3 flex-wrap">
+                          {resourcePreviews.map((preview, index) => {
+                            const Icon = preview.icon
+                            return (
+                              <div
+                                key={index}
+                                className="inline-flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground"
+                              >
+                                <Icon className="h-3.5 w-3.5" />
+                                <span>
+                                  {preview.count} {preview.label}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
 
-                    {memo.tags && memo.tags.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {memo.tags.slice(0, 3).map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs font-medium"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {memo.tags.length > 3 && (
-                          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                            +{memo.tags.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                      {memo.tags && memo.tags.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {memo.tags.slice(0, 3).map((tag, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs font-medium"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {memo.tags.length > 3 && (
+                            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                              +{memo.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
               </div>
             )
           })}
@@ -139,4 +145,3 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
 )
 
 MemoList.displayName = 'MemoList'
-
