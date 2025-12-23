@@ -6,6 +6,7 @@ import './styles/scroll-bar.css'
 // Router Imports
 import { Routes, Route } from 'react-router-dom'
 import DeskTopHome from './pages/desktop/DeskTopHome'
+import ArchivePage from './pages/desktop/ArchivePage'
 import SettingsPage from './pages/desktop/SettingsPage'
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
     <>
       <Routes>
         <Route path="/" element={<DeskTopHome />} />
+        <Route path="/archive" element={<ArchivePage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </>
