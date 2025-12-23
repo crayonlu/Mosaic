@@ -277,7 +277,6 @@
 }
 
 .ProseMirror mark {
-  background: linear-gradient(to bottom, transparent 0%, oklch(0.95 0.2 90) 0%, oklch(0.95 0.2 90) 100%, transparent 100%);
   color: var(--foreground);
   padding: 0.15rem 0.1rem;
   border-radius: 0.25rem;
@@ -285,7 +284,11 @@
   box-decoration-break: clone;
 }
 
-.dark .ProseMirror mark {
+.ProseMirror mark:not([style]) {
+  background: linear-gradient(to bottom, transparent 0%, oklch(0.95 0.2 90) 0%, oklch(0.95 0.2 90) 100%, transparent 100%);
+}
+
+.dark .ProseMirror mark:not([style]) {
   background: linear-gradient(to bottom, transparent 0%, oklch(0.35 0.2 90) 0%, oklch(0.35 0.2 90) 100%, transparent 100%);
 }
 

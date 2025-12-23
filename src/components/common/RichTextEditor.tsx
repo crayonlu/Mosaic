@@ -95,6 +95,9 @@ export function RichTextEditor({
           levels: [1, 2, 3],
         },
         codeBlock: false,
+        code: false,
+        link: false,
+        underline: false,
       }),
       Code,
       CodeBlockLowlight.configure({
@@ -121,7 +124,7 @@ export function RichTextEditor({
       TableCell,
       Underline,
       Highlight.configure({
-        multicolor: false,
+        multicolor: true,
       }),
       Markdown,
       Placeholder.configure({
@@ -198,7 +201,7 @@ export function RichTextEditor({
       {editable && editor && <Toolbar editor={editor} />}
       <div className={cn(
         "flex-1 min-h-0 overflow-auto editor-scrollbar",
-        isExpanded ? "max-h-none" : "max-h-[calc(100dvh-28rem)]"
+        isExpanded ? "max-h-none" : "max-h-[calc(100dvh-26rem)]"
       )}>
         <EditorContent editor={editor} />
       </div>
