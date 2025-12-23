@@ -23,6 +23,7 @@ import { ToolbarButton } from './ToolbarButton'
 import { InsertMenu } from './InsertMenu'
 import { LinkDialog } from './LinkDialog'
 import { CodeBlockLanguageSelector } from './CodeBlockLanguageSelector'
+import { HighlightColorSelector } from './HighlightColorSelector'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 
@@ -183,7 +184,6 @@ export function Toolbar({ editor, className }: ToolbarProps) {
 
   return (
     <div className={cn('flex items-center gap-1 border-b p-2 flex-wrap shrink-0', className)}>
-      {/* 格式化组 */}
       <div className="flex items-center gap-1">
         {formatButtons.map((btn) => (
           <ToolbarButton key={btn.label} editor={editor} {...btn} />
@@ -192,7 +192,6 @@ export function Toolbar({ editor, className }: ToolbarProps) {
 
       <div className="w-px h-6 bg-border mx-1" />
 
-      {/* 结构组 */}
       <div className="flex items-center gap-1">
         {structureButtons.map((btn) => (
           <ToolbarButton key={btn.label} editor={editor} {...btn} />
@@ -201,18 +200,17 @@ export function Toolbar({ editor, className }: ToolbarProps) {
 
       <div className="w-px h-6 bg-border mx-1" />
 
-      {/* 插入组 */}
       <div className="flex items-center gap-1">
         {insertButtons.map((btn) => (
           <ToolbarButton key={btn.label} editor={editor} {...btn} />
         ))}
         <InsertMenu editor={editor} />
         <CodeBlockLanguageSelector editor={editor} />
+        <HighlightColorSelector editor={editor} />
       </div>
 
       <div className="w-px h-6 bg-border mx-1" />
 
-      {/* 其他组 */}
       <div className="flex items-center gap-1">
         {otherButtons.map((btn) => (
           <ToolbarButton key={btn.label} editor={editor} {...btn} />
