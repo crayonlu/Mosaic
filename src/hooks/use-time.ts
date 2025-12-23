@@ -1,5 +1,8 @@
 import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
 import 'dayjs/locale/zh-cn'
+
+dayjs.extend(utc)
 
 dayjs.locale('zh-cn')
 
@@ -19,7 +22,7 @@ function getGreeting(): string {
 export function useTime() {
   const now = dayjs()
   const formattedTime = now.format('HH:mm:ss')
-  const formattedDate = now.format('YYYY-MM-DD')
+  const formattedDate = now.utc().format('YYYY-MM-DD')
   const formattedDateWithWeek = now.format('M月D日 dddd')
   const greeting = getGreeting()
   return {
