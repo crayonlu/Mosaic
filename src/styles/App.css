@@ -177,3 +177,11 @@
     height: 100%;
   }
 }
+
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
+}
