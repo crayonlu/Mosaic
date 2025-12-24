@@ -2,7 +2,7 @@ mod database;
 mod error;
 mod modules;
 
-use modules::asset::commands::{read_audio_file, save_temp_audio, save_temp_file, upload_files};
+use modules::asset::commands::{read_audio_file, read_image_file, save_temp_audio, save_temp_file, upload_files};
 use modules::diary::commands::{
     create_or_update_diary, get_diary_by_date, list_diaries, update_diary_mood,
     update_diary_summary,
@@ -41,6 +41,7 @@ pub fn run() {
             save_temp_audio,
             save_temp_file,
             read_audio_file,
+            read_image_file,
             create_memo,
             get_memo,
             list_memos,

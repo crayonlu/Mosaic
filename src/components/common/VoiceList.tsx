@@ -81,7 +81,7 @@ export function VoiceList({ resources, onDelete, className }: VoiceListProps) {
   }
 
   const formatDuration = (createdAt: number) => {
-    return dayjs(createdAt).format('HH:mm')
+    return dayjs.utc(createdAt).local().format('HH:mm')
   }
 
   if (voiceResources.length === 0) {

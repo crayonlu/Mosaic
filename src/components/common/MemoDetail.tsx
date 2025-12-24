@@ -74,7 +74,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
       for (const resource of memo.resources) {
         try {
-          const fileData = await assetCommands.readAudioFile(resource.filename)
+          const fileData = await assetCommands.readImageFile(resource.filename)
           const uint8Array = new Uint8Array(fileData)
           const blob = new Blob([uint8Array], { type: resource.mimeType })
           const url = URL.createObjectURL(blob)
@@ -226,7 +226,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   }
 
   const formatTime = (timestamp: number) => {
-    return dayjs(timestamp).format('YYYY年MM月DD日 HH:mm')
+    return dayjs.utc(timestamp).local().format('YYYY年MM月DD日 HH:mm')
   }
 
   const formatSize = (bytes: number) => {

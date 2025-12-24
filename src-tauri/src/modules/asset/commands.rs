@@ -80,3 +80,19 @@ pub async fn read_audio_file(app_handle: AppHandle, filename: String) -> AppResu
     let data = fs::read(&file_path).map_err(|e| crate::error::AppError::Io(e))?;
     Ok(data)
 }
+
+#[tauri::command]
+pub async fn read_image_file(app_handle: AppHandle, filename: String) -> AppResult<Vec<u8>> {
+    let assets_dir = storage::get_assets_dir(&app_handle)?;
+    let file_path = assets_dir.join(&filename);
+
+    if !file_path.exists() {
+        return Err(crate::error::AppError::NotFound(format!(
+            "Image file not found: {}",
+            filename
+        )));
+    }
+
+    let data = fs::read(&file_path).map_err(|e| crate::error::AppError::Io(e))?;
+    Ok(data)
+}

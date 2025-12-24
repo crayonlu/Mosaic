@@ -82,6 +82,8 @@ export const assetCommands = {
     callRust<string>('save_temp_file', { filename, data }),
 
   readAudioFile: (filename: string) => callRust<number[]>('read_audio_file', { filename }),
+
+  readImageFile: (filename: string) => callRust<number[]>('read_image_file', { filename }),
 }
 
 export default {

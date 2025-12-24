@@ -4,7 +4,7 @@ use crate::error::{AppError, AppResult};
 use crate::modules::asset::constants::infer_resource_type_and_mime;
 use crate::modules::asset::storage::get_assets_dir;
 use crate::modules::diary::service::{decrement_memo_count, increment_memo_count};
-use chrono::Utc;
+use chrono::{Local, Utc};
 use sqlx::Sqlite;
 use std::fs;
 use std::path::Path;
@@ -39,7 +39,7 @@ pub async fn create_memo(
 ) -> AppResult<String> {
     let memo_id = Uuid::new_v4().to_string();
     let now = Utc::now().timestamp_millis();
-    let today = Utc::now().date_naive().to_string();
+    let today = Local::now().date_naive().to_string();
 
     let mut tx = pool.begin().await?;
 
