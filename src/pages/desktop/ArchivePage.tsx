@@ -26,17 +26,22 @@ export default function ArchivePage() {
   const [isArchiving, setIsArchiving] = useState(false)
   const [selectedMemo, setSelectedMemo] = useState<MemoWithResources | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [existingDiary, setExistingDiary] = useState<any>(null)
 
-  const formattedDate = dayjs(selectedDate).utc().format('YYYY-MM-DD')
+  const formattedDate = dayjs(selectedDate).format('YYYY-MM-DD')
   const dateDisplay = dayjs(selectedDate).format('M月D日 dddd')
 
   const fetchMemos = async () => {
     try {
       setLoading(true)
-      const data = await memoCommands.getMemosByDate(formattedDate)
-      setMemos(data.filter(memo => !memo.isDeleted))
+      const [memosData, diaryData] = await Promise.all([
+        memoCommands.getMemosByDate(formattedDate),
+        diaryCommands.getDiaryByDate(formattedDate).catch(() => null)
+      ])
+      setMemos(memosData.filter(memo => !memo.isDeleted))
+      setExistingDiary(diaryData)
     } catch (error) {
-      console.error('获取memos失败:', error)
+      console.error('获取数据失败:', error)
     } finally {
       setLoading(false)
     }
@@ -46,13 +51,14 @@ export default function ArchivePage() {
     fetchMemos()
     setSelectedMemos(new Set())
     setMode('view')
+    setExistingDiary(null)
   }, [formattedDate])
 
   const groupedMemos = useMemo(() => {
     const groups: Record<string, MemoWithResources[]> = {}
 
     memos.forEach(memo => {
-      const hour = dayjs(memo.createdAt).format('HH')
+      const hour = dayjs.utc(memo.createdAt).local().format('HH')
       const hourLabel = `${hour}:00-${parseInt(hour) + 1}:00`
       if (!groups[hourLabel]) {
         groups[hourLabel] = []
@@ -69,6 +75,10 @@ export default function ArchivePage() {
   }
 
   const handleMemoSelect = (memoId: string, selected: boolean) => {
+    // 查找对应的memo，检查是否已归档
+    const memo = memos.find(m => m.id === memoId)
+    if (memo?.isArchived) return // 已归档的memo不能选择
+
     const newSelected = new Set(selectedMemos)
     if (selected) {
       newSelected.add(memoId)
@@ -79,10 +89,21 @@ export default function ArchivePage() {
   }
 
   const handleSelectAll = () => {
-    if (selectedMemos.size === memos.length) {
+    const unarchivedMemos = memos.filter(m => !m.isArchived)
+    const selectedUnarchivedCount = Array.from(selectedMemos).filter(id =>
+      memos.find(m => m.id === id && !m.isArchived)
+    ).length
+
+    if (selectedUnarchivedCount === unarchivedMemos.length) {
+      // 如果所有未归档的memo都已选中，则取消全选
       setSelectedMemos(new Set())
     } else {
-      setSelectedMemos(new Set(memos.map(m => m.id)))
+      // 选择所有未归档的memo
+      const newSelected = new Set(selectedMemos)
+      unarchivedMemos.forEach(memo => {
+        newSelected.add(memo.id)
+      })
+      setSelectedMemos(newSelected)
     }
   }
 
@@ -160,6 +181,15 @@ export default function ArchivePage() {
     setTimeout(() => setSelectedMemo(null), 300)
   }
 
+  const handleUnarchiveMemo = async (memoId: string) => {
+    try {
+      await memoCommands.unarchiveMemo(memoId)
+      await fetchMemos()
+    } catch (error) {
+      console.error('取消归档失败:', error)
+    }
+  }
+
   return (
     <DeskTopLayout className="relative">
       <div className="h-full flex flex-col">
@@ -219,11 +249,11 @@ export default function ArchivePage() {
 
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center h-full">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : memos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="flex flex-col items-center justify-center text-center h-full">
               <Archive className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">暂无memo</h3>
               <p className="text-sm text-muted-foreground">
@@ -254,6 +284,7 @@ export default function ArchivePage() {
                         mode={mode}
                         selected={selectedMemos.has(memo.id)}
                         onSelect={handleMemoSelect}
+                        onUnarchive={handleUnarchiveMemo}
                         onClick={() => {
                           if (mode === 'view') {
                             handleMemoClick(memo)
@@ -274,11 +305,11 @@ export default function ArchivePage() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                 <Checkbox
-                  checked={selectedMemos.size === memos.length && memos.length > 0}
+                  checked={selectedMemos.size === memos.filter(m => !m.isArchived).length && memos.filter(m => !m.isArchived).length > 0}
                   onCheckedChange={handleSelectAll}
                 />
                   <span className="text-sm font-medium">
-                    全选 ({selectedMemos.size}/{memos.length})
+                    全选 ({selectedMemos.size}/{memos.filter(m => !m.isArchived).length})
                   </span>
                 </div>
               </div>
@@ -326,6 +357,7 @@ export default function ArchivePage() {
           onClose={() => setIsArchiveDialogOpen(false)}
           selectedCount={selectedMemos.size}
           date={formattedDate}
+          existingDiary={existingDiary}
           onConfirm={handleArchiveConfirm}
           isLoading={isArchiving}
         />

@@ -13,6 +13,11 @@ interface ArchiveDialogProps {
   onClose: () => void
   selectedCount: number
   date: string
+  existingDiary?: {
+    summary?: string
+    moodKey?: string
+    moodScore?: number
+  }
   onConfirm: (summary?: string, moodKey?: string, moodScore?: number) => Promise<void>
   isLoading: boolean
 }
@@ -33,12 +38,13 @@ export function ArchiveDialog({
   onClose,
   selectedCount,
   date,
+  existingDiary,
   onConfirm,
   isLoading
 }: ArchiveDialogProps) {
-  const [summary, setSummary] = useState('')
-  const [moodKey, setMoodKey] = useState<string>('')
-  const [moodScore, setMoodScore] = useState<number[]>([5])
+  const [summary, setSummary] = useState(existingDiary?.summary || '')
+  const [moodKey, setMoodKey] = useState<string>(existingDiary?.moodKey || '')
+  const [moodScore, setMoodScore] = useState<number[]>([existingDiary?.moodScore || 5])
 
   const handleConfirm = async () => {
     await onConfirm(
@@ -58,6 +64,7 @@ export function ArchiveDialog({
   }
 
   const dateDisplay = dayjs(date).format('M月D日 dddd')
+  const isUpdate = !!existingDiary
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -65,13 +72,16 @@ export function ArchiveDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Archive className="h-5 w-5" />
-            归档 {dateDisplay}
+            {isUpdate ? '更新日记' : '创建日记'} - {dateDisplay}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           <div className="text-sm text-muted-foreground">
-            将选中的 {selectedCount} 条memo归档为日记
+            {isUpdate
+              ? `将选中的 ${selectedCount} 条memo添加到 ${dateDisplay} 的日记中`
+              : `将选中的 ${selectedCount} 条memo归档为 ${dateDisplay} 的日记`
+            }
           </div>
 
           <div className="space-y-4">
