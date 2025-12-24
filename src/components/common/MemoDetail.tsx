@@ -38,6 +38,8 @@ interface MemoDetailProps {
 export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDetailProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedContent, setEditedContent] = useState('')
+  const [editedTags, setEditedTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -129,6 +131,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const handleStartEdit = () => {
     if (memo) {
       setEditedContent(memo.content)
+      setEditedTags([...memo.tags])
+      setTagInput('')
       setIsEditing(true)
     }
   }
@@ -136,6 +140,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const handleCancelEdit = () => {
     if (memo) {
       setEditedContent(memo.content)
+      setEditedTags([...memo.tags])
+      setTagInput('')
     }
     setIsEditing(false)
   }
@@ -148,6 +154,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       await memoCommands.updateMemo({
         id: memo.id,
         content: editedContent,
+        tags: editedTags,
       })
       setIsEditing(false)
       onUpdate?.()
@@ -155,6 +162,25 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       console.error('保存失败:', error)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleAddTag = () => {
+    const trimmedTag = tagInput.trim()
+    if (trimmedTag && !editedTags.includes(trimmedTag)) {
+      setEditedTags([...editedTags, trimmedTag])
+      setTagInput('')
+    }
+  }
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setEditedTags(editedTags.filter(tag => tag !== tagToRemove))
+  }
+
+  const handleTagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddTag()
     }
   }
 
@@ -279,7 +305,11 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 variant="default"
                 size="sm"
                 onClick={handleSave}
-                disabled={isSaving || editedContent === memo.content}
+                disabled={
+                  isSaving ||
+                  (editedContent === memo.content &&
+                    JSON.stringify(editedTags.sort()) === JSON.stringify(memo.tags.sort()))
+                }
               >
                 <Save className="h-4 w-4 mr-1" />
                 {isSaving ? '保存中...' : '保存'}
@@ -290,12 +320,57 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
         <div className="px-6 py-6 space-y-6">
           {isEditing ? (
-            <RichTextEditor
-              content={editedContent}
-              onChange={setEditedContent}
-              placeholder="输入内容..."
-              editable={true}
-            />
+            <div className="space-y-4">
+              <RichTextEditor
+                content={editedContent}
+                onChange={setEditedContent}
+                placeholder="输入内容..."
+                editable={true}
+              />
+
+              <div className="border rounded-lg p-4 bg-muted/30">
+                <div className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  标签
+                </div>
+                {editedTags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {editedTags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="hover:text-destructive"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={handleTagKeyDown}
+                    placeholder="添加标签..."
+                    className="flex-1 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddTag}
+                    className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                  >
+                    添加
+                  </button>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="prose prose-sm max-w-none">
               {memo.content ? (

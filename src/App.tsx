@@ -8,6 +8,7 @@ import { Routes, Route } from 'react-router-dom'
 import DeskTopHome from './pages/desktop/DeskTopHome'
 import ArchivePage from './pages/desktop/ArchivePage'
 import SettingsPage from './pages/desktop/SettingsPage'
+import CalendarPage from './pages/desktop/CalendarPage'
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <Routes>
         <Route path="/" element={<DeskTopHome />} />
         <Route path="/archive" element={<ArchivePage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </>

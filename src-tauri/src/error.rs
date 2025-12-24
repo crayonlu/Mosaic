@@ -15,6 +15,9 @@ pub enum AppError {
     #[error("Serialization error: {0}")]
     Json(#[from] serde_json::Error),
 
+    #[error("Date parsing error: {0}")]
+    DateParse(String),
+
     #[error("Image processing error: {0}")]
     Image(String),
 
@@ -38,6 +41,7 @@ impl Serialize for AppError {
             AppError::Io(_) => "IO_ERROR",
             AppError::Tauri(_) => "TAURI_ERROR",
             AppError::Json(_) => "JSON_ERROR",
+            AppError::DateParse(_) => "DATE_PARSE_ERROR",
             AppError::Image(_) => "IMAGE_ERROR",
             AppError::NotFound(_) => "NOT_FOUND_ERROR",
             AppError::Unknown(_) => "UNKNOWN_ERROR",

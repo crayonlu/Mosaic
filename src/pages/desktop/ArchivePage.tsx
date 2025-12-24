@@ -36,7 +36,7 @@ export default function ArchivePage() {
       setLoading(true)
       const [memosData, diaryData] = await Promise.all([
         memoCommands.getMemosByDate(formattedDate),
-        diaryCommands.getDiaryByDate(formattedDate).catch(() => null)
+        diaryCommands.getDiaryByDate(formattedDate).catch(() => null),
       ])
       setMemos(memosData.filter(memo => !memo.isDeleted))
       setExistingDiary(diaryData)
@@ -111,9 +111,7 @@ export default function ArchivePage() {
     if (selectedMemos.size === 0) return
 
     try {
-      const promises = Array.from(selectedMemos).map(id =>
-        memoCommands.deleteMemo(id)
-      )
+      const promises = Array.from(selectedMemos).map(id => memoCommands.deleteMemo(id))
       await Promise.all(promises)
       await fetchMemos()
       setSelectedMemos(new Set())
@@ -141,9 +139,7 @@ export default function ArchivePage() {
         moodScore,
       })
 
-      const promises = Array.from(selectedMemos).map(id =>
-        memoCommands.archiveMemo(id)
-      )
+      const promises = Array.from(selectedMemos).map(id => memoCommands.archiveMemo(id))
       await Promise.all(promises)
 
       await fetchMemos()
@@ -212,7 +208,7 @@ export default function ArchivePage() {
                   <CalendarComponent
                     mode="single"
                     selected={selectedDate}
-                    onSelect={(date) => date && setSelectedDate(date)}
+                    onSelect={date => date && setSelectedDate(date)}
                     initialFocus
                     className="rounded-md border-0"
                   />
@@ -267,9 +263,7 @@ export default function ArchivePage() {
               {groupedMemos.map(([timeRange, timeMemos]) => (
                 <div key={timeRange}>
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="text-sm font-medium text-muted-foreground">
-                      {timeRange}
-                    </div>
+                    <div className="text-sm font-medium text-muted-foreground">{timeRange}</div>
                     <Separator className="flex-1" />
                     <Badge variant="outline" className="text-xs">
                       {timeMemos.length} 条
@@ -304,10 +298,13 @@ export default function ArchivePage() {
             <div className="flex items-center justify-between px-6 pt-4 pb-2">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={selectedMemos.size === memos.filter(m => !m.isArchived).length && memos.filter(m => !m.isArchived).length > 0}
-                  onCheckedChange={handleSelectAll}
-                />
+                  <Checkbox
+                    checked={
+                      selectedMemos.size === memos.filter(m => !m.isArchived).length &&
+                      memos.filter(m => !m.isArchived).length > 0
+                    }
+                    onCheckedChange={handleSelectAll}
+                  />
                   <span className="text-sm font-medium">
                     全选 ({selectedMemos.size}/{memos.filter(m => !m.isArchived).length})
                   </span>

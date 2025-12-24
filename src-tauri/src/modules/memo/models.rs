@@ -1,5 +1,5 @@
 use crate::database::schema::ResourceType;
-use serde::{Deserialize, Serialize, Serializer, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sqlx::FromRow;
 
 // Helper function to serialize Vec<String> to JSON string

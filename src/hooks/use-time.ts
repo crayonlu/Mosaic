@@ -22,7 +22,7 @@ function getGreeting(): string {
 export function useTime() {
   const now = dayjs()
   const formattedTime = now.format('HH:mm:ss')
-  const formattedDate = now.utc().format('YYYY-MM-DD')
+  const formattedDate = now.local().format('YYYY-MM-DD')
   const formattedDateWithWeek = now.format('M月D日 dddd')
   const greeting = getGreeting()
   return {

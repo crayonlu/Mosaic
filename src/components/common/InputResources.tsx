@@ -31,11 +31,14 @@ export function InputResources() {
   const audios = resourcePreviews.filter(p => p.type === 'audio')
 
   return (
-    <div className="px-3 py-2 border-t bg-muted/30 space-y-3 w-full">
+    <div className="px-3 py-2 border-t bg-muted/30 w-full">
       {uploadingFiles.length > 0 && (
-        <div className="space-y-2">
+        <div className="flex gap-2 overflow-x-auto">
           {uploadingFiles.map(file => (
-            <div key={file.name} className="flex items-center gap-2 rounded-lg border bg-card p-2">
+            <div
+              key={file.name}
+              className="flex items-center gap-2 rounded-lg border bg-card p-2 min-w-0 flex-shrink-0"
+            >
               <div className="flex items-center justify-center h-8 w-8 rounded bg-muted">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
@@ -52,45 +55,51 @@ export function InputResources() {
           ))}
         </div>
       )}
+
       {images.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        <div className="flex gap-2 overflow-x-auto">
           {images.map(preview => (
-            <ResourcePreview
-              key={preview.filename}
-              filename={preview.filename}
-              previewUrl={preview.previewUrl}
-              type={preview.type}
-              size={preview.size}
-              onRemove={() => removeResource(preview.filename)}
-            />
+            <div key={preview.filename} className="flex-shrink-0">
+              <ResourcePreview
+                filename={preview.filename}
+                previewUrl={preview.previewUrl}
+                type={preview.type}
+                size={preview.size}
+                onRemove={() => removeResource(preview.filename)}
+              />
+            </div>
           ))}
         </div>
       )}
+
       {videos.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="flex gap-2 overflow-x-auto">
           {videos.map(preview => (
-            <ResourcePreview
-              key={preview.filename}
-              filename={preview.filename}
-              previewUrl={preview.previewUrl}
-              type={preview.type}
-              size={preview.size}
-              onRemove={() => removeResource(preview.filename)}
-            />
+            <div key={preview.filename} className="flex-shrink-0">
+              <ResourcePreview
+                filename={preview.filename}
+                previewUrl={preview.previewUrl}
+                type={preview.type}
+                size={preview.size}
+                onRemove={() => removeResource(preview.filename)}
+              />
+            </div>
           ))}
         </div>
       )}
+
       {audios.length > 0 && (
-        <div className="space-y-2">
+        <div className="flex gap-2 overflow-x-auto">
           {audios.map(preview => (
-            <ResourcePreview
-              key={preview.filename}
-              filename={preview.filename}
-              previewUrl={preview.previewUrl}
-              type={preview.type}
-              size={preview.size}
-              onRemove={() => removeResource(preview.filename)}
-            />
+            <div key={preview.filename} className="flex-shrink-0">
+              <ResourcePreview
+                filename={preview.filename}
+                previewUrl={preview.previewUrl}
+                type={preview.type}
+                size={preview.size}
+                onRemove={() => removeResource(preview.filename)}
+              />
+            </div>
           ))}
         </div>
       )}

@@ -2,11 +2,24 @@ import { useState } from 'react'
 import dayjs from 'dayjs'
 import { Archive, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
+import { MOOD_OPTIONS } from '@/utils/moodEmoji'
 
 interface ArchiveDialogProps {
   open: boolean
@@ -22,17 +35,6 @@ interface ArchiveDialogProps {
   isLoading: boolean
 }
 
-const MOOD_OPTIONS = [
-  { key: 'happy', label: '开心', emoji: '😊' },
-  { key: 'sad', label: '难过', emoji: '😢' },
-  { key: 'angry', label: '生气', emoji: '😠' },
-  { key: 'anxious', label: '焦虑', emoji: '😰' },
-  { key: 'calm', label: '平静', emoji: '😌' },
-  { key: 'excited', label: '激动', emoji: '🤩' },
-  { key: 'tired', label: '疲惫', emoji: '😴' },
-  { key: 'neutral', label: '平静', emoji: '😐' },
-] as const
-
 export function ArchiveDialog({
   open,
   onClose,
@@ -40,18 +42,14 @@ export function ArchiveDialog({
   date,
   existingDiary,
   onConfirm,
-  isLoading
+  isLoading,
 }: ArchiveDialogProps) {
   const [summary, setSummary] = useState(existingDiary?.summary || '')
   const [moodKey, setMoodKey] = useState<string>(existingDiary?.moodKey || '')
   const [moodScore, setMoodScore] = useState<number[]>([existingDiary?.moodScore || 5])
 
   const handleConfirm = async () => {
-    await onConfirm(
-      summary.trim() || undefined,
-      moodKey || undefined,
-      moodScore[0]
-    )
+    await onConfirm(summary.trim() || undefined, moodKey || undefined, moodScore[0])
   }
 
   const handleClose = () => {
@@ -80,8 +78,7 @@ export function ArchiveDialog({
           <div className="text-sm text-muted-foreground">
             {isUpdate
               ? `将选中的 ${selectedCount} 条memo添加到 ${dateDisplay} 的日记中`
-              : `将选中的 ${selectedCount} 条memo归档为 ${dateDisplay} 的日记`
-            }
+              : `将选中的 ${selectedCount} 条memo归档为 ${dateDisplay} 的日记`}
           </div>
 
           <div className="space-y-4">
@@ -91,7 +88,7 @@ export function ArchiveDialog({
                 id="summary"
                 placeholder="写下今天的心情或总结..."
                 value={summary}
-                onChange={(e) => setSummary(e.target.value)}
+                onChange={e => setSummary(e.target.value)}
                 rows={3}
                 disabled={isLoading}
               />
@@ -104,7 +101,7 @@ export function ArchiveDialog({
                   <SelectValue placeholder="选择今天的心情" />
                 </SelectTrigger>
                 <SelectContent>
-                  {MOOD_OPTIONS.map((mood) => (
+                  {MOOD_OPTIONS.map(mood => (
                     <SelectItem key={mood.key} value={mood.key}>
                       <div className="flex items-center gap-2">
                         <span>{mood.emoji}</span>
@@ -136,18 +133,10 @@ export function ArchiveDialog({
         </div>
 
         <DialogFooter className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={handleClose} disabled={isLoading}>
             取消
           </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={isLoading}
-            className="gap-2"
-          >
+          <Button onClick={handleConfirm} disabled={isLoading} className="gap-2">
             {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
             {isLoading ? '归档中...' : '确认归档'}
           </Button>
@@ -156,5 +145,3 @@ export function ArchiveDialog({
     </Dialog>
   )
 }
-
-

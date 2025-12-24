@@ -43,42 +43,6 @@ pub async fn create_memo(
 
     let mut tx = pool.begin().await?;
 
-    let diary_exists: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM diaries WHERE date = ?")
-            .bind(&today)
-            .fetch_one(&mut *tx)
-            .await?;
-
-    if diary_exists == 0 {
-        sqlx::query(
-            r#"
-            INSERT INTO diaries (
-            date,
-            summary,
-            mood_key,
-            mood_score,
-            tags,
-            cover_image_id,
-            memo_count,
-            created_at,
-            updated_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            "#,
-        )
-        .bind(&today)
-        .bind("")
-        .bind("neutral")
-        .bind(50)
-        .bind("[]")
-        .bind::<Option<String>>(None)
-        .bind(0_i64)
-        .bind(now)
-        .bind(now)
-        .execute(&mut *tx)
-        .await?;
-    }
-
     sqlx::query(
     r#"
       INSERT INTO memos (id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at)
@@ -120,7 +84,16 @@ pub async fn create_memo(
     }
 
     tx.commit().await?;
-    increment_memo_count(pool, &today).await?;
+
+    let diary_exists: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM diaries WHERE date = ?")
+        .bind(&today)
+        .fetch_one(pool)
+        .await?;
+
+    if diary_exists > 0 {
+        increment_memo_count(pool, &today).await?;
+    }
+
     Ok(memo_id)
 }
 
@@ -140,7 +113,7 @@ pub async fn get_memo_by_id(
     .fetch_optional(pool)
     .await?
     .ok_or_else(|| AppError::NotFound(format!("Memo not found: {}", memo_id)))?;
-    
+
     let memo: super::models::Memo = memo_row.into();
     // then search resources
     let resources = sqlx::query_as::<_, super::models::Resource>(
@@ -329,8 +302,7 @@ pub async fn update_memo(
             query = query.bind(content);
         }
         if let Some(ref tags) = req.tags {
-            let tags_json = serde_json::to_string(tags)
-                .unwrap_or_else(|_| "[]".to_string());
+            let tags_json = serde_json::to_string(tags).unwrap_or_else(|_| "[]".to_string());
             query = query.bind(tags_json);
         }
         query = query.bind(now).bind(&req.id);
@@ -390,7 +362,14 @@ pub async fn delete_memo(pool: &DBPool, memo_id: &str) -> AppResult<()> {
     }
 
     if let Some(date) = diary_date {
-        decrement_memo_count(pool, &date).await?;
+        let diary_exists: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM diaries WHERE date = ?")
+            .bind(&date)
+            .fetch_one(pool)
+            .await?;
+
+        if diary_exists > 0 {
+            decrement_memo_count(pool, &date).await?;
+        }
     }
 
     Ok(())

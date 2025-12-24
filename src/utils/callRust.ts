@@ -15,6 +15,16 @@ import type {
 } from '@/types/diary'
 import type { PaginatedResponse } from '@/types/common'
 import type { UploadedResource } from '@/types/asset'
+import type {
+  HeatMapData,
+  HeatMapQuery,
+  TimelineData,
+  TimelineQuery,
+  TrendsData,
+  TrendsQuery,
+  SummaryData,
+  SummaryQuery,
+} from '@/types/stats'
 
 export async function callRust<T = unknown>(
   cmd: string,
@@ -86,9 +96,17 @@ export const assetCommands = {
   readImageFile: (filename: string) => callRust<number[]>('read_image_file', { filename }),
 }
 
+export const statsCommands = {
+  getHeatmap: (query: HeatMapQuery) => callRust<HeatMapData>('get_heatmap', { query }),
+  getTimeline: (query: TimelineQuery) => callRust<TimelineData>('get_timeline', { query }),
+  getTrends: (query: TrendsQuery) => callRust<TrendsData>('get_trends', { query }),
+  getSummary: (query: SummaryQuery) => callRust<SummaryData>('get_summary', { query }),
+}
+
 export default {
   user: userCommands,
   memo: memoCommands,
   diary: diaryCommands,
   asset: assetCommands,
+  stats: statsCommands,
 }

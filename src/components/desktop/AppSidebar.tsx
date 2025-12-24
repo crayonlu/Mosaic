@@ -7,7 +7,7 @@ import {
   User as UserIcon,
   Moon,
   Sun,
-  Archive
+  Archive,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import { useEffect } from 'react'

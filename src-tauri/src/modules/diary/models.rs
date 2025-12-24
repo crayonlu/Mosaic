@@ -3,7 +3,7 @@ use crate::modules::memo::models::MemoWithResources;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-#[derive(Debug, Serialize, FromRow)]
+#[derive(Debug, Clone, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Diary {
     // date(YYYY-MM-DD)
@@ -14,8 +14,6 @@ pub struct Diary {
     pub mood_key: MoodKey,
     // mood score
     pub mood_score: i32,
-    // tags
-    pub tags: String,
     // cover image id(optional)
     pub cover_image_id: Option<String>,
     // memo count(that day contains how many memos)
