@@ -38,4 +38,3 @@ pub struct ShortcutConfig {
     pub show_shortcut: String,
     pub close_shortcut: String,
 }
-

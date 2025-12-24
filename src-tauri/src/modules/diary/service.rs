@@ -10,7 +10,7 @@ use chrono::Utc;
 pub async fn get_diary_by_date(pool: &DBPool, date: &str) -> AppResult<DiaryWithMemos> {
     let diary = sqlx::query_as::<_, Diary>(
         r#"
-        SELECT date, summary, mood_key, mood_score, tags, cover_image_id, memo_count, created_at, updated_at
+        SELECT date, summary, mood_key, mood_score, cover_image_id, memo_count, created_at, updated_at
         FROM diaries
         WHERE date = ?
         "#,
@@ -56,9 +56,6 @@ pub async fn create_or_update_diary(
         if req.mood_score.is_some() {
             update_parts.push("mood_score = ?");
         }
-        if req.tags.is_some() {
-            update_parts.push("tags = ?");
-        }
         if req.cover_image_id.is_some() {
             update_parts.push("cover_image_id = ?");
         }
@@ -81,9 +78,6 @@ pub async fn create_or_update_diary(
         if let Some(ref mood_score) = req.mood_score {
             query = query.bind(mood_score);
         }
-        if let Some(ref tags) = req.tags {
-            query = query.bind(tags);
-        }
         if let Some(ref cover_image_id) = req.cover_image_id {
             query = query.bind(cover_image_id);
         }
@@ -94,18 +88,16 @@ pub async fn create_or_update_diary(
         let summary = req.summary.unwrap_or_default();
         let mood_key = req.mood_key.unwrap_or_default();
         let mood_score = req.mood_score.unwrap_or(50);
-        let tags = req.tags.unwrap_or_else(|| "[]".to_string());
         sqlx::query(
             r#"
-            INSERT INTO diaries (date, summary, mood_key, mood_score, tags, cover_image_id, memo_count, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO diaries (date, summary, mood_key, mood_score, cover_image_id, memo_count, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             "#,
         )
         .bind(&req.date)
         .bind(summary)
         .bind(mood_key)
         .bind(mood_score)
-        .bind(tags)
         .bind(&req.cover_image_id)
         .bind(memo_count)
         .bind(now)
@@ -154,7 +146,7 @@ pub async fn list_diaries(
     let total = count_query_builder.fetch_one(pool).await?;
     let diaries_query = format!(
         r#"
-        SELECT date, summary, mood_key, mood_score, tags, cover_image_id, memo_count, created_at, updated_at
+        SELECT date, summary, mood_key, mood_score, cover_image_id, memo_count, created_at, updated_at
         FROM diaries
         {}
         ORDER BY date DESC
@@ -229,8 +221,8 @@ pub async fn increment_memo_count(pool: &DBPool, date: &str) -> AppResult<()> {
     let now = Utc::now().timestamp_millis();
     sqlx::query(
         r#"
-        UPDATE diaries 
-        SET memo_count = memo_count + 1, updated_at = ? 
+        UPDATE diaries
+        SET memo_count = memo_count + 1, updated_at = ?
         WHERE date = ?
         "#,
     )

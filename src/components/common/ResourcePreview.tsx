@@ -68,7 +68,7 @@ export function ResourcePreview({
           <img
             src={previewUrl}
             alt={filename}
-            className="w-full h-32 object-cover cursor-pointer transition-opacity hover:opacity-90"
+            className="w-full h-18 object-cover cursor-pointer transition-opacity hover:opacity-90"
             onClick={() => setIsImageModalOpen(true)}
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -77,16 +77,16 @@ export function ResourcePreview({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-1 right-1 h-6 w-6 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-1 right-1 h-4 w-4 bg-black/50 hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={e => {
               e.stopPropagation()
               onRemove()
             }}
           >
-            <X className="h-3 w-3" />
+            <X className="h-1 w-1 text-white" />
           </Button>
           <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-2">
-            {size && <div className="text-[10px] text-white/80">{formatSize(size)}</div>}
+            {size && <div className="text-[8px] text-white/80">{formatSize(size)}</div>}
           </div>
         </div>
         <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
@@ -108,7 +108,7 @@ export function ResourcePreview({
         <video
           ref={videoRef}
           src={previewUrl}
-          className="w-full h-32 object-cover"
+          className="w-full h-20 object-cover"
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}

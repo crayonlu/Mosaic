@@ -15,7 +15,6 @@ export interface Diary {
   summary?: string
   moodKey?: MoodKey
   moodScore?: number
-  tags?: string
   coverImageId?: string
   memoCount: number
   createdAt: number
@@ -31,7 +30,6 @@ export interface CreateOrUpdateDiaryRequest {
   summary?: string
   moodKey?: MoodKey
   moodScore?: number
-  tags?: string
   coverImageId?: string
 }
 

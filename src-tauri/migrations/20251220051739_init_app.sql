@@ -12,8 +12,6 @@ CREATE TABLE IF NOT EXISTS diaries (
   mood_key TEXT NOT NULL,
   -- emotional concentration
   mood_score INTEGER NOT NULL DEFAULT 50,
-  -- tags
-  tags TEXT NOT NULL DEFAULT '[]',
 
   -- cover image(optional)
   cover_image_id TEXT,
@@ -43,9 +41,7 @@ CREATE TABLE IF NOT EXISTS memos (
   diary_date TEXT,
 
   created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL,
-  
-  FOREIGN KEY (diary_date) REFERENCES diaries(date) ON DELETE SET NULL
+  updated_at INTEGER NOT NULL
 );
 
 -- resources table

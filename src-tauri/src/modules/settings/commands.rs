@@ -20,10 +20,7 @@ pub async fn get_settings(
 }
 
 #[tauri::command]
-pub async fn set_setting(
-    pool: State<'_, DBPool>,
-    req: SetSettingRequest,
-) -> AppResult<Setting> {
+pub async fn set_setting(pool: State<'_, DBPool>, req: SetSettingRequest) -> AppResult<Setting> {
     service::set_setting(pool.inner(), req).await
 }
 
@@ -77,7 +74,7 @@ pub async fn register_show_shortcut(app: AppHandle, shortcut: String) -> Result<
     let parsed = shortcut::parse_shortcut(&shortcut)?;
     let shortcut_obj = Shortcut::new(Some(parsed.modifiers), parsed.code);
     let app_handle = app.clone();
-    
+
     app.global_shortcut()
         .on_shortcut(shortcut_obj, move |_app, _shortcut, _event| {
             if let Some(window) = app_handle.get_webview_window("main") {
@@ -86,7 +83,7 @@ pub async fn register_show_shortcut(app: AppHandle, shortcut: String) -> Result<
             }
         })
         .map_err(|e| format!("Failed to register shortcut: {}", e))?;
-    
+
     Ok(())
 }
 
@@ -96,7 +93,7 @@ pub async fn register_close_shortcut(app: AppHandle, shortcut: String) -> Result
     let parsed = shortcut::parse_shortcut(&shortcut)?;
     let shortcut_obj = Shortcut::new(Some(parsed.modifiers), parsed.code);
     let app_handle = app.clone();
-    
+
     app.global_shortcut()
         .on_shortcut(shortcut_obj, move |_app, _shortcut, _event| {
             if let Some(window) = app_handle.get_webview_window("main") {
@@ -104,7 +101,7 @@ pub async fn register_close_shortcut(app: AppHandle, shortcut: String) -> Result
             }
         })
         .map_err(|e| format!("Failed to register shortcut: {}", e))?;
-    
+
     Ok(())
 }
 
@@ -113,10 +110,10 @@ pub async fn unregister_shortcut(app: AppHandle, shortcut: String) -> Result<(),
     use tauri_plugin_global_shortcut::Shortcut;
     let parsed = shortcut::parse_shortcut(&shortcut)?;
     let shortcut_obj = Shortcut::new(Some(parsed.modifiers), parsed.code);
-    
-    app.global_shortcut().unregister(shortcut_obj)
+
+    app.global_shortcut()
+        .unregister(shortcut_obj)
         .map_err(|e| format!("Failed to unregister shortcut: {}", e))?;
-    
+
     Ok(())
 }
-

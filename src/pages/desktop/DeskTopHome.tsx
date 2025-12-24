@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import DeskTopLayout from '@/components/layout/DeskTopLayout'
-import { AppInput } from '@/components/common/AppInput'
+import { AppInput, type AppInputRef } from '@/components/common/AppInput'
 import { MemoList, type MemoListRef } from '@/components/common/MemoList'
 import { MemoDetail } from '@/components/common/MemoDetail'
 import { useInputStore } from '@/stores/input-store'
@@ -17,15 +17,18 @@ export default function DeskTopHome() {
   const [selectedMemo, setSelectedMemo] = useState<MemoWithResources | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const memoListRef = useRef<MemoListRef>(null)
+  const appInputRef = useRef<AppInputRef>(null)
 
-  const handleSubmit = async (value: string, resourceFilenames?: string[]) => {
+  const handleSubmit = async (value: string, resourceFilenames?: string[], tags?: string[]) => {
     try {
       await memoCommands.createMemo({
         content: value,
+        tags: tags || [],
         resourceFilenames: resourceFilenames || [],
       })
       clearInputValue()
       clearResources()
+      appInputRef.current?.clearTags()
       await memoListRef.current?.refetch()
     } catch (error) {
       console.error('创建memo失败:', error)
@@ -83,6 +86,7 @@ export default function DeskTopHome() {
         }`}
       >
         <AppInput
+          ref={appInputRef}
           placeholder="输入内容..."
           onSubmit={handleSubmit}
           onFileUpload={handleFileUpload}

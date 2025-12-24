@@ -2,7 +2,9 @@ mod database;
 mod error;
 mod modules;
 
-use modules::asset::commands::{read_audio_file, read_image_file, save_temp_audio, save_temp_file, upload_files};
+use modules::asset::commands::{
+    read_audio_file, read_image_file, save_temp_audio, save_temp_file, upload_files,
+};
 use modules::diary::commands::{
     create_or_update_diary, get_diary_by_date, list_diaries, update_diary_mood,
     update_diary_summary,
@@ -16,6 +18,7 @@ use modules::settings::commands::{
     register_close_shortcut, register_show_shortcut, set_setting, test_ai_connection,
     unregister_shortcut,
 };
+use modules::stats::commands::{get_heatmap, get_summary, get_timeline, get_trends};
 use modules::user::commands::{get_or_create_default_user, get_user, update_user, upload_avatar};
 use tauri::Manager;
 
@@ -25,15 +28,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(
             #[cfg(target_os = "macos")]
-            tauri_plugin_autostart::init(
-                tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-                None,
-            ),
+            tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None),
             #[cfg(not(target_os = "macos"))]
-            tauri_plugin_autostart::init(
-                tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-                None,
-            ),
+            tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None),
         )
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
@@ -55,6 +52,10 @@ pub fn run() {
             list_diaries,
             update_diary_mood,
             update_diary_summary,
+            get_heatmap,
+            get_timeline,
+            get_trends,
+            get_summary,
             get_user,
             get_or_create_default_user,
             update_user,

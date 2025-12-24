@@ -9,7 +9,7 @@ pub(crate) fn parse_shortcut(shortcut: &str) -> Result<ParsedShortcut, String> {
     let parts: Vec<&str> = shortcut.split('+').map(|s| s.trim()).collect();
     let mut modifiers = Modifiers::empty();
     let mut code = None;
-    
+
     for part in parts {
         match part.to_lowercase().as_str() {
             "ctrl" | "control" => modifiers |= Modifiers::CONTROL,
@@ -64,8 +64,8 @@ pub(crate) fn parse_shortcut(shortcut: &str) -> Result<ParsedShortcut, String> {
             }
         }
     }
-    
+
     let code = code.ok_or_else(|| "No key code found in shortcut".to_string())?;
-    
+
     Ok(ParsedShortcut { modifiers, code })
 }
