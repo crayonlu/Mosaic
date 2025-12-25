@@ -48,6 +48,7 @@
     "highlight.js": "^11.11.1",
     "lowlight": "^3.3.0",
     "lucide-react": "^0.562.0",
+    "marked": "^17.0.1",
     "react": "^19.1.0",
     "react-day-picker": "^9.13.0",
     "react-dom": "^19.1.0",
