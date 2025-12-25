@@ -13,13 +13,13 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import { Underline } from '@tiptap/extension-underline'
 import { Highlight } from '@tiptap/extension-highlight'
 import { Markdown } from 'tiptap-markdown'
+import { marked } from 'marked'
 import { useEffect, useState } from 'react'
 import { createLowlight } from 'lowlight'
 import { cn } from '@/lib/utils'
 import { Toolbar } from './RichTextEditor/Toolbar'
 import { LinkDialog } from './RichTextEditor/LinkDialog'
 
-// 导入常用语言的语法高亮
 import javascript from 'highlight.js/lib/languages/javascript'
 import typescript from 'highlight.js/lib/languages/typescript'
 import css from 'highlight.js/lib/languages/css'
@@ -144,6 +144,23 @@ export function RichTextEditor({
           editable ? 'min-h-[120px] p-4' : 'p-4',
           className
         ),
+      },
+      handlePaste: (_view, event, _slice) => {
+        const pastedText = event.clipboardData?.getData('text/plain') || ''
+
+        const hasMarkdownSyntax = /(#+\s|^\s*[-*+]\s|\*\*.*\*\*|\*.*\*|`.*`|^\s*\d+\.\s|\[.*\]\(.*\)|^\s*>)/m.test(pastedText)
+
+        if (hasMarkdownSyntax) {
+          try {
+            const htmlContent = marked.parse(pastedText)
+            editor.commands.insertContent(htmlContent)
+            return true
+          } catch (error) {
+            console.warn('Failed to parse pasted Markdown:', error)
+          }
+        }
+
+        return false
       },
       handleKeyDown: (_view, event) => {
         // Ctrl/Cmd + Enter 保存
