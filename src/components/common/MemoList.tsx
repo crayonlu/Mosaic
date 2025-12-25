@@ -117,7 +117,7 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
                       )}
 
                       {memo.tags && memo.tags.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1.5">
                           {memo.tags.slice(0, 3).map((tag, index) => (
                             <span
                               key={index}

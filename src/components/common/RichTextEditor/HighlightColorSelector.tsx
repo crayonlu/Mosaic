@@ -2,6 +2,7 @@ import { Editor } from '@tiptap/react'
 import { useState, useRef, useEffect } from 'react'
 import { Highlighter, Palette } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 const highlightColors = [
@@ -71,49 +72,68 @@ export function HighlightColorSelector({ editor }: HighlightColorSelectorProps) 
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setIsOpen(!isOpen)}
-        className="h-8 gap-1 text-xs"
-      >
-        <div className="flex items-center gap-2">
-          <Highlighter className="h-3 w-3" />
-          <div
-            className={cn(
-              'w-3 h-3 rounded border',
-              currentColor ? 'border-border' : 'border-muted-foreground/30'
-            )}
-            style={{ backgroundColor: currentColor || 'transparent' }}
-          />
-        </div>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsOpen(!isOpen)}
+            className="h-8 gap-1 text-xs"
+          >
+            <div className="flex items-center gap-2">
+              <Highlighter className="h-3 w-3" />
+              <div
+                className={cn(
+                  'w-3 h-3 rounded border',
+                  currentColor ? 'border-border' : 'border-muted-foreground/30'
+                )}
+                style={{ backgroundColor: currentColor || 'transparent' }}
+              />
+            </div>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>高亮颜色</p>
+        </TooltipContent>
+      </Tooltip>
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 z-50 bg-popover border rounded-md shadow-lg p-2 min-w-[140px]">
           <div className="grid grid-cols-4 gap-1">
-            <button
-              type="button"
-              onClick={() => handleColorSelect('')}
-              className={cn(
-                'w-6 h-6 rounded border-2 flex items-center justify-center hover:scale-110 transition-transform',
-                !currentColor ? 'border-primary' : 'border-transparent'
-              )}
-              title="清除高亮"
-            >
-              <Palette className="h-3 w-3 text-muted-foreground" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => handleColorSelect('')}
+                  className={cn(
+                    'w-6 h-6 rounded border-2 flex items-center justify-center hover:scale-110 transition-transform',
+                    !currentColor ? 'border-primary' : 'border-transparent'
+                  )}
+                >
+                  <Palette className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>清除高亮</p>
+              </TooltipContent>
+            </Tooltip>
             {highlightColors.map(color => (
-              <button
-                key={color.value}
-                type="button"
-                onClick={() => handleColorSelect(color.value)}
-                className={cn(
-                  'w-6 h-6 rounded hover:scale-110 transition-transform border-2',
-                  currentColor === color.value ? 'border-primary' : 'border-transparent'
-                )}
-                style={{ backgroundColor: color.value }}
-                title={color.label}
-              />
+              <Tooltip key={color.value}>
+                <TooltipTrigger asChild>
+                  <button
+                    key={color.value}
+                    type="button"
+                    onClick={() => handleColorSelect(color.value)}
+                    className={cn(
+                      'w-6 h-6 rounded hover:scale-110 transition-transform border-2',
+                      currentColor === color.value ? 'border-primary' : 'border-transparent'
+                    )}
+                    style={{ backgroundColor: color.value }}
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{color.label}</p>
+                </TooltipContent>
+              </Tooltip>
             ))}
           </div>
         </div>

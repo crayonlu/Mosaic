@@ -260,7 +260,8 @@ pub async fn get_summary_data(pool: &DBPool, query: SummaryQuery) -> AppResult<S
     let last_day = if query.month == 12 {
         NaiveDate::from_ymd_opt(query.year + 1, 1, 1).unwrap() - Duration::days(1)
     } else {
-        NaiveDate::from_ymd_opt(query.year, (query.month + 1) as u32, 1).unwrap() - Duration::days(1)
+        NaiveDate::from_ymd_opt(query.year, (query.month + 1) as u32, 1).unwrap()
+            - Duration::days(1)
     };
     let total_days = (last_day - first_day).num_days() as i32 + 1;
 

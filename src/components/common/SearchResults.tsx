@@ -79,34 +79,60 @@ function SearchResultItem({
     const highlightText = (node: Node) => {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent || ''
-        let highlighted = false
+        if (!text.trim()) return
 
+        // Skip if already inside a mark element
+        if (node.parentElement?.closest('mark')) return
+
+        // Collect all match intervals
+        const intervals: Array<{ start: number; end: number }> = []
         for (const word of searchWords) {
-          if (text.toLowerCase().includes(word.toLowerCase())) {
-            highlighted = true
-            break
+          const regex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+          let match
+          while ((match = regex.exec(text)) !== null) {
+            intervals.push({ start: match.index, end: match.index + match[0].length })
           }
         }
 
-        if (highlighted) {
-          let newText = text
-          for (const word of searchWords) {
-            const regex = new RegExp(`(${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-            newText = newText.replace(
-              regex,
-              '<mark class="bg-yellow-200 dark:bg-yellow-900 rounded px-0.5">$1</mark>'
+        // Sort intervals by start position
+        intervals.sort((a, b) => a.start - b.start)
+
+        // Merge overlapping or adjacent intervals
+        const mergedIntervals: Array<{ start: number; end: number }> = []
+        for (const interval of intervals) {
+          if (
+            mergedIntervals.length === 0 ||
+            mergedIntervals[mergedIntervals.length - 1].end < interval.start
+          ) {
+            mergedIntervals.push(interval)
+          } else {
+            mergedIntervals[mergedIntervals.length - 1].end = Math.max(
+              mergedIntervals[mergedIntervals.length - 1].end,
+              interval.end
             )
           }
+        }
 
-          if (newText !== text) {
-            const wrapper = document.createElement('span')
-            wrapper.innerHTML = newText
-            const fragment = document.createDocumentFragment()
-            while (wrapper.firstChild) {
-              fragment.appendChild(wrapper.firstChild)
-            }
-            node.parentNode?.replaceChild(fragment, node)
+        if (mergedIntervals.length === 0) return
+
+        // Build new HTML with merged marks
+        let result = ''
+        let lastEnd = 0
+        for (const interval of mergedIntervals) {
+          result += text.slice(lastEnd, interval.start)
+          result += `<mark class="rounded px-0.5">${text.slice(interval.start, interval.end)}</mark>`
+          lastEnd = interval.end
+        }
+        result += text.slice(lastEnd)
+
+        if (result !== text) {
+          const wrapper = document.createElement('span')
+          wrapper.innerHTML = result
+          const fragment = document.createDocumentFragment()
+          while (wrapper.firstChild) {
+            fragment.appendChild(wrapper.firstChild)
           }
+          node.parentNode?.replaceChild(fragment, node)
         }
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const element = node as Element
@@ -194,7 +220,7 @@ function SearchResultItem({
       {(resourcePreviews.length > 0 || memo.tags.length > 0) && (
         <div className="p-4 border-t">
           {resourcePreviews.length > 0 && (
-            <div className="mt-3 flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
               {resourcePreviews.map((preview, index) => {
                 const Icon = preview.icon
                 return (
@@ -213,7 +239,7 @@ function SearchResultItem({
           )}
 
           {memo.tags && memo.tags.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5">
               {memo.tags.slice(0, 3).map((tag, index) => (
                 <span
                   key={index}

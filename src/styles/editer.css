@@ -299,8 +299,8 @@
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    oklch(0.35 0.2 90) 0%,
-    oklch(0.35 0.2 90) 100%,
+    oklch(59.669% 0.16137 261.644) 0%,
+    oklch(59.669% 0.16137 261.644) 100%,
     transparent 100%
   );
 }

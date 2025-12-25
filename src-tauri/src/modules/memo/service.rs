@@ -439,7 +439,7 @@ pub async fn search_memos(
 
     let mut search_conditions = Vec::new();
     let mut search_terms = Vec::new();
-    
+
     if let Some(ref query) = req.query {
         if !query.trim().is_empty() {
             let search_term = format!("%{}%", query.trim());
