@@ -11,7 +11,7 @@ use modules::diary::commands::{
 };
 use modules::memo::commands::{
     archive_memo, create_memo, delete_memo, get_memo, get_memos_by_date, list_memos,
-    unarchive_memo, update_memo,
+    search_memos, unarchive_memo, update_memo,
 };
 use modules::settings::commands::{
     delete_setting, enable_autostart, get_setting, get_settings, is_autostart_enabled,
@@ -47,6 +47,7 @@ pub fn run() {
             delete_memo,
             archive_memo,
             unarchive_memo,
+            search_memos,
             create_or_update_diary,
             get_diary_by_date,
             list_diaries,

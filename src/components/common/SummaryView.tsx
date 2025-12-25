@@ -39,7 +39,7 @@ export function SummaryView({ year, month }: SummaryViewProps) {
 
     let cumulativeAngle = 0
 
-    const paths = data.moodDistribution.map((mood) => {
+    const paths = data.moodDistribution.map(mood => {
       const angle = (mood.percentage / 100) * 360
       const startAngle = cumulativeAngle
       const endAngle = cumulativeAngle + angle

@@ -9,6 +9,7 @@ import DeskTopHome from './pages/desktop/DeskTopHome'
 import ArchivePage from './pages/desktop/ArchivePage'
 import SettingsPage from './pages/desktop/SettingsPage'
 import CalendarPage from './pages/desktop/CalendarPage'
+import SearchPage from './pages/desktop/SearchPage'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/" element={<DeskTopHome />} />
         <Route path="/archive" element={<ArchivePage />} />
         <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/search" element={<SearchPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </>

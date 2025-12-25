@@ -121,3 +121,15 @@ pub struct PaginatedResponse<T> {
     pub page_size: u32,
     pub total_pages: u32,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchMemosRequest {
+    pub query: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub is_archived: Option<bool>,
+    pub page: Option<u32>,
+    pub page_size: Option<u32>,
+}

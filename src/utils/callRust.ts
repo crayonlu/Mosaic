@@ -4,6 +4,7 @@ import type {
   MemoWithResources,
   CreateMemoRequest,
   ListMemosRequest,
+  SearchMemosRequest,
   UpdateMemoRequest,
 } from '@/types/memo'
 import type {
@@ -65,6 +66,9 @@ export const memoCommands = {
   archiveMemo: (memoId: string) => callRust<void>('archive_memo', { memoId }),
 
   unarchiveMemo: (memoId: string) => callRust<void>('unarchive_memo', { memoId }),
+
+  searchMemos: (req: SearchMemosRequest) =>
+    callRust<PaginatedResponse<MemoWithResources>>('search_memos', { req }),
 }
 
 export const diaryCommands = {

@@ -410,3 +410,159 @@ pub async fn unarchive_memo(pool: &DBPool, memo_id: &str) -> AppResult<()> {
 
     Ok(())
 }
+
+pub async fn search_memos(
+    pool: &DBPool,
+    req: super::models::SearchMemosRequest,
+) -> AppResult<super::models::PaginatedResponse<super::models::MemoWithResources>> {
+    let page = req.page.unwrap_or(1);
+    let page_size = req.page_size.unwrap_or(20);
+    let offset = (page - 1) * page_size;
+
+    let mut where_conditions = vec!["is_deleted = 0".to_string()];
+
+    if let Some(is_archived) = req.is_archived {
+        where_conditions.push(if is_archived {
+            "is_archived = 1".to_string()
+        } else {
+            "is_archived = 0".to_string()
+        });
+    }
+
+    if req.start_date.is_some() {
+        where_conditions.push("diary_date >= ?".to_string());
+    }
+
+    if req.end_date.is_some() {
+        where_conditions.push("diary_date <= ?".to_string());
+    }
+
+    let mut search_conditions = Vec::new();
+    let mut search_terms = Vec::new();
+    
+    if let Some(ref query) = req.query {
+        if !query.trim().is_empty() {
+            let search_term = format!("%{}%", query.trim());
+            search_conditions.push("(content LIKE ? OR tags LIKE ?)".to_string());
+            search_terms.push(search_term.clone());
+            search_terms.push(search_term);
+        }
+    }
+
+    let mut tag_searches = Vec::new();
+    if let Some(ref tags) = req.tags {
+        if !tags.is_empty() {
+            for tag in tags {
+                let tag_search = format!("%\"{}\"%", tag);
+                search_conditions.push("tags LIKE ?".to_string());
+                tag_searches.push(tag_search);
+            }
+        }
+    }
+
+    if !search_conditions.is_empty() {
+        where_conditions.push(format!("({})", search_conditions.join(" OR ")));
+    }
+
+    let where_clause = where_conditions.join(" AND ");
+
+    let count_query = format!("SELECT COUNT(*) FROM memos WHERE {}", where_clause);
+    let mut count_query_builder = sqlx::query_scalar::<_, i64>(&count_query);
+
+    if let Some(ref start_date) = req.start_date {
+        count_query_builder = count_query_builder.bind(start_date);
+    }
+    if let Some(ref end_date) = req.end_date {
+        count_query_builder = count_query_builder.bind(end_date);
+    }
+    for search_term in &search_terms {
+        count_query_builder = count_query_builder.bind(search_term);
+    }
+    for tag_search in &tag_searches {
+        count_query_builder = count_query_builder.bind(tag_search);
+    }
+
+    let total = count_query_builder.fetch_one(pool).await?;
+
+    let memos_query = format!(
+        "SELECT id, content, tags, is_archived, diary_date, created_at 
+         FROM memos 
+         WHERE {} 
+         ORDER BY created_at DESC 
+         LIMIT ? OFFSET ?",
+        where_clause
+    );
+
+    let mut memos_query_builder = sqlx::query_as::<_, super::models::MemoRow>(&memos_query);
+
+    if let Some(ref start_date) = req.start_date {
+        memos_query_builder = memos_query_builder.bind(start_date);
+    }
+    if let Some(ref end_date) = req.end_date {
+        memos_query_builder = memos_query_builder.bind(end_date);
+    }
+    for search_term in &search_terms {
+        memos_query_builder = memos_query_builder.bind(search_term);
+    }
+    for tag_search in &tag_searches {
+        memos_query_builder = memos_query_builder.bind(tag_search);
+    }
+
+    let memo_rows = memos_query_builder
+        .bind(page_size as i64)
+        .bind(offset as i64)
+        .fetch_all(pool)
+        .await?;
+
+    let memos: Vec<super::models::Memo> = memo_rows.into_iter().map(|row| row.into()).collect();
+    let memo_ids: Vec<String> = memos.iter().map(|m| m.id.clone()).collect();
+
+    let resources = if memo_ids.is_empty() {
+        vec![]
+    } else {
+        let placeholders = (0..memo_ids.len())
+            .map(|_| "?")
+            .collect::<Vec<_>>()
+            .join(",");
+        let resources_query = format!(
+            "SELECT id, memo_id, filename, resource_type, mime_type, size, created_at
+             FROM resources
+             WHERE memo_id IN ({})
+             ORDER BY memo_id, created_at ASC",
+            placeholders
+        );
+
+        let mut resources_query_builder =
+            sqlx::query_as::<_, super::models::Resource>(&resources_query);
+        for memo_id in memo_ids {
+            resources_query_builder = resources_query_builder.bind(memo_id);
+        }
+        resources_query_builder.fetch_all(pool).await?
+    };
+
+    use std::collections::HashMap;
+    let mut resource_map = HashMap::<String, Vec<super::models::Resource>>::new();
+    for resource in resources {
+        resource_map
+            .entry(resource.memo_id.clone())
+            .or_default()
+            .push(resource);
+    }
+
+    let items: Vec<super::models::MemoWithResources> = memos
+        .into_iter()
+        .map(|memo| {
+            let resources = resource_map.remove(&memo.id).unwrap_or_default();
+            super::models::MemoWithResources { memo, resources }
+        })
+        .collect();
+
+    let total_pages = (total as f64 / page_size as f64).ceil() as u32;
+    Ok(super::models::PaginatedResponse {
+        items,
+        total,
+        page,
+        page_size,
+        total_pages,
+    })
+}
