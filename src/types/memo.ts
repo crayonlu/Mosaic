@@ -51,3 +51,13 @@ export interface UpdateMemoRequest {
   tags?: string[]
   resourceFilenames?: string[]
 }
+
+export interface SearchMemosRequest {
+  query?: string
+  tags?: string[]
+  startDate?: string
+  endDate?: string
+  isArchived?: boolean
+  page?: number
+  pageSize?: number
+}

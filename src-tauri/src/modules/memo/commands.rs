@@ -1,7 +1,8 @@
 use crate::database::DBPool;
 use crate::error::AppResult;
 use crate::modules::memo::models::{
-    CreateMemoRequest, ListMemosRequest, MemoWithResources, PaginatedResponse, UpdateMemoRequest,
+    CreateMemoRequest, ListMemosRequest, MemoWithResources, PaginatedResponse, SearchMemosRequest,
+    UpdateMemoRequest,
 };
 use crate::modules::memo::service;
 use tauri::{AppHandle, State};
@@ -59,4 +60,12 @@ pub async fn archive_memo(pool: State<'_, DBPool>, memo_id: String) -> AppResult
 #[tauri::command]
 pub async fn unarchive_memo(pool: State<'_, DBPool>, memo_id: String) -> AppResult<()> {
     service::unarchive_memo(pool.inner(), &memo_id).await
+}
+
+#[tauri::command]
+pub async fn search_memos(
+    pool: State<'_, DBPool>,
+    req: SearchMemosRequest,
+) -> AppResult<PaginatedResponse<MemoWithResources>> {
+    service::search_memos(pool.inner(), req).await
 }

@@ -9,7 +9,12 @@ interface MoodHeatMapProps {
   onMonthClick?: (month: number) => void
 }
 
-export function MoodHeatMap({ data, onDateClick, selectedMonth: _selectedMonth, onMonthClick: _onMonthClick }: MoodHeatMapProps) {
+export function MoodHeatMap({
+  data,
+  onDateClick,
+  selectedMonth: _selectedMonth,
+  onMonthClick: _onMonthClick,
+}: MoodHeatMapProps) {
   const { weeks } = useMemo(() => {
     const cells = data.cells
     const weeks: HeatMapCell[][] = []
