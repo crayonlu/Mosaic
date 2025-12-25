@@ -164,13 +164,11 @@ export function SummaryView({ year, month }: SummaryViewProps) {
           </div>
           {data.topTags.length > 0 ? (
             <div className="flex flex-wrap gap-2">
-              {data.topTags.slice(0, 10).map((tag, index) => {
-                const sizes = ['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl']
-                const size = sizes[Math.min(index, sizes.length - 1)]
+              {data.topTags.slice(0, 10).map(tag => {
                 return (
                   <span
                     key={tag.tag}
-                    className={`inline-block px-3 py-1 bg-primary/10 text-primary rounded-full ${size} font-medium`}
+                    className={`inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium`}
                   >
                     {tag.tag}
                   </span>

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { HeatMapData, HeatMapCell } from '@/types/stats'
+import { useTheme } from '@/hooks/use-theme'
 
 interface MoodHeatMapProps {
   data: HeatMapData
@@ -61,7 +62,8 @@ export function MoodHeatMap({
 
     return { weeks }
   }, [data])
-
+  const { theme } = useTheme()
+  const dark = theme === 'dark'
   const formatTooltipContent = (cell: HeatMapCell) => {
     const date = new Date(cell.date)
     const weekday = date.toLocaleDateString('zh-CN', { weekday: 'long' })
@@ -101,7 +103,10 @@ export function MoodHeatMap({
                 <TooltipTrigger asChild>
                   <div
                     className="w-3 h-3 rounded-sm cursor-pointer transition-all hover:scale-110 hover:ring-1 hover:ring-primary/30"
-                    style={{ backgroundColor: cell.color }}
+                    style={{
+                      backgroundColor:
+                        cell.color === '#ebedf0' ? (dark ? '#161B2f' : '#ebedf0') : cell.color,
+                    }}
                     onClick={() => onDateClick?.(cell.date)}
                   />
                 </TooltipTrigger>

@@ -14,7 +14,13 @@ import {
   Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
 import { RichTextEditor } from '@/components/common/RichTextEditor'
 import type { MemoWithResources } from '@/types/memo'
 import { assetCommands, memoCommands } from '@/utils/callRust'
@@ -267,6 +273,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto p-0">
         <SheetHeader className="sticky top-0 z-10 bg-background border-b px-6 py-4">
+          <SheetTitle className="sr-only">备忘录详情</SheetTitle>
+          <SheetDescription className="sr-only">查看和编辑备忘录详情</SheetDescription>
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"

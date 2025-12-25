@@ -10,8 +10,8 @@ use modules::diary::commands::{
     update_diary_summary,
 };
 use modules::memo::commands::{
-    archive_memo, create_memo, delete_memo, get_memo, get_memos_by_date, list_memos,
-    search_memos, unarchive_memo, update_memo,
+    archive_memo, create_memo, delete_memo, get_memo, get_memos_by_date, list_memos, search_memos,
+    unarchive_memo, update_memo,
 };
 use modules::settings::commands::{
     delete_setting, enable_autostart, get_setting, get_settings, is_autostart_enabled,

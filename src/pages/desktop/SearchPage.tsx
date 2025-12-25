@@ -106,10 +106,6 @@ export default function SearchPage() {
       <div className="h-full flex flex-col">
         <div className="bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
           <div className="flex items-center gap-4 px-6 pt-2 pb-4 border-b">
-            <div className="flex items-center gap-2">
-              <SearchIcon className="h-5 w-5" />
-              <span className="text-lg font-semibold">搜索</span>
-            </div>
             <div className="flex-1 max-w-2xl">
               <SearchInput value={query} onChange={setQuery} placeholder="搜索内容或标签..." />
             </div>
