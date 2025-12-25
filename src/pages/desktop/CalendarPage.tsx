@@ -19,8 +19,8 @@ export default function CalendarPage() {
 
   const viewModes = [
     { id: 'heatmap' as ViewMode, label: '情绪热力图', icon: Calendar },
-    { id: 'timeline' as ViewMode, label: '时间线回顾', icon: List },
-    { id: 'summary' as ViewMode, label: '月份总结', icon: BarChart3 },
+    { id: 'timeline' as ViewMode, label: '心情时间线', icon: List },
+    { id: 'summary' as ViewMode, label: '月度分析', icon: BarChart3 },
   ]
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export default function CalendarPage() {
           <div className="space-y-6">
             <section>
               <div className="mb-4">
-                <h2 className="text-lg font-semibold">时间线回顾</h2>
+                <h2 className="text-lg font-semibold">心情时间线</h2>
                 <p className="text-sm text-muted-foreground">按时间顺序浏览你的心情记录</p>
               </div>
               <div className="bg-card p-6 rounded-xl border shadow-sm">
@@ -138,7 +138,7 @@ export default function CalendarPage() {
     <DeskTopLayout>
       <div className="flex flex-col gap-6 p-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">情绪回顾</h1>
+          <h1 className="text-2xl font-bold">情绪日历</h1>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>平静</span>
             <div className="flex gap-1">

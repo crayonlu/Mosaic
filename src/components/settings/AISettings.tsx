@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Label } from '@radix-ui/react-label'
 import {
   Select,
@@ -11,7 +10,8 @@ import {
 } from '@/components/ui/select'
 import { settingsCommands, loadAIConfig, saveAIConfig } from '@/utils/settings-helpers'
 import type { AIConfig } from '@/types/settings'
-import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { CheckCircle2, XCircle } from 'lucide-react'
+import { LoadingButton } from '@/components/ui/loading/loading-button'
 
 const DEFAULT_BASE_URLS = {
   openai: 'https://api.openai.com',
@@ -205,21 +205,25 @@ export function AISettings() {
       </div>
 
       <div className="flex items-center gap-4 justify-center">
-        <Button className="flex-1" onClick={handleSave} disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+        <LoadingButton
+          className="flex-1"
+          onClick={handleSave}
+          loading={loading}
+          loadingText="保存中..."
+        >
           保存
-        </Button>
-        <Button variant="outline" onClick={handleTest} disabled={testing || !config.apiKey}>
-          {testing ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <>
-              {testResult === true && <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />}
-              {testResult === false && <XCircle className="h-4 w-4 mr-2 text-red-500" />}
-            </>
-          )}
+        </LoadingButton>
+        <LoadingButton
+          variant="outline"
+          onClick={handleTest}
+          loading={testing}
+          loadingText="测试中..."
+          disabled={!config.apiKey}
+        >
+          {testResult === true && <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />}
+          {testResult === false && <XCircle className="h-4 w-4 mr-2 text-red-500" />}
           测试连接
-        </Button>
+        </LoadingButton>
         {saved && <span className="text-xs text-green-500">已保存</span>}
       </div>
     </div>

@@ -9,8 +9,8 @@ interface MoodHeatMapProps {
   onMonthClick?: (month: number) => void
 }
 
-export function MoodHeatMap({ data, onDateClick, selectedMonth, onMonthClick }: MoodHeatMapProps) {
-  const { weeks, monthLabels } = useMemo(() => {
+export function MoodHeatMap({ data, onDateClick, selectedMonth: _selectedMonth, onMonthClick: _onMonthClick }: MoodHeatMapProps) {
+  const { weeks } = useMemo(() => {
     const cells = data.cells
     const weeks: HeatMapCell[][] = []
     const monthLabels: Array<{ month: number; weekIndex: number }> = []
@@ -54,7 +54,7 @@ export function MoodHeatMap({ data, onDateClick, selectedMonth, onMonthClick }: 
       weekIndex++
     }
 
-    return { weeks, monthLabels }
+    return { weeks }
   }, [data])
 
   const formatTooltipContent = (cell: HeatMapCell) => {

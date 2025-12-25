@@ -39,7 +39,7 @@ export function SummaryView({ year, month }: SummaryViewProps) {
 
     let cumulativeAngle = 0
 
-    const paths = data.moodDistribution.map((mood, index) => {
+    const paths = data.moodDistribution.map((mood) => {
       const angle = (mood.percentage / 100) * 360
       const startAngle = cumulativeAngle
       const endAngle = cumulativeAngle + angle
@@ -103,7 +103,7 @@ export function SummaryView({ year, month }: SummaryViewProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
         <PieChart className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg">暂无总结数据</p>
+        <p className="text-lg">暂无数据</p>
         <p className="text-sm">这个月还没有足够的记录</p>
       </div>
     )
@@ -113,7 +113,7 @@ export function SummaryView({ year, month }: SummaryViewProps) {
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-xl font-semibold mb-2">
-          {year}年{month}月总结
+          {year}年{month}月
         </h2>
         <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
