@@ -251,11 +251,18 @@ pub async fn get_summary_data(pool: &DBPool, query: SummaryQuery) -> AppResult<S
     };
 
     let diaries = get_diaries_in_range(pool, &start_date, &end_date).await?;
-    let total_days = diaries.len() as i32;
     let recorded_days = diaries
         .iter()
         .filter(|d| !d.summary.is_empty() || d.mood_score != 50)
         .count() as i32;
+
+    let first_day = NaiveDate::from_ymd_opt(query.year, query.month as u32, 1).unwrap();
+    let last_day = if query.month == 12 {
+        NaiveDate::from_ymd_opt(query.year + 1, 1, 1).unwrap() - Duration::days(1)
+    } else {
+        NaiveDate::from_ymd_opt(query.year, (query.month + 1) as u32, 1).unwrap() - Duration::days(1)
+    };
+    let total_days = (last_day - first_day).num_days() as i32 + 1;
 
     let mut mood_counts = HashMap::new();
     let mut total_score = 0i32;

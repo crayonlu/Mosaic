@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Heart, FileText } from 'lucide-react'
+import { Calendar, FileText } from 'lucide-react'
 import { statsCommands } from '@/utils/callRust'
 import { getMoodEmoji } from '@/utils/moodEmoji'
-import type { TimelineData, TimelineQuery, TimelineEntry } from '@/types/stats'
+import type { TimelineData, TimelineQuery } from '@/types/stats'
 
 interface TimelineViewProps {
   startDate: string
