@@ -7,7 +7,6 @@ import { useSettingsStore } from '@/stores/settings-store'
 import { Keyboard, Settings as SettingsIcon } from 'lucide-react'
 import { useKeyCapture } from '@/hooks/use-key-capture'
 import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
-import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function SystemSettings() {

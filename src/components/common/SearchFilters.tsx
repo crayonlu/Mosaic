@@ -26,7 +26,6 @@ export function SearchFilters({
   onStartDateChange,
   onEndDateChange,
   selectedTags = [],
-  availableTags = [],
   onTagsChange,
   total,
 }: SearchFiltersProps) {

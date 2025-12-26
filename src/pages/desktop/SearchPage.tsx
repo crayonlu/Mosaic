@@ -1,5 +1,5 @@
 import { useState, useDeferredValue, useTransition, useEffect, useMemo } from 'react'
-import { Search as SearchIcon, Loader2 } from 'lucide-react'
+import { Search as SearchIcon } from 'lucide-react'
 import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { SearchInput } from '@/components/common/SearchInput'
 import { SearchResults } from '@/components/common/SearchResults'
