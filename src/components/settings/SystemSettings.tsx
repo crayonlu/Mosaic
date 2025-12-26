@@ -6,6 +6,7 @@ import { settingsCommands, loadShortcutConfig, saveShortcutConfig } from '@/util
 import { useSettingsStore } from '@/stores/settings-store'
 import { Loader2, Keyboard } from 'lucide-react'
 import { useKeyCapture } from '@/hooks/use-key-capture'
+import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
 
 export function SystemSettings() {
   const { autostartEnabled, setAutostartEnabled } = useSettingsStore()
@@ -75,7 +76,7 @@ export function SystemSettings() {
   }
 
   if (loading) {
-    return <div>加载中...</div>
+    return <LoadingSkeleton lines={3} />
   }
 
   return (

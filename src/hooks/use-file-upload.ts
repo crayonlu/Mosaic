@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { assetCommands } from '@/utils/callRust'
 import { useInputStore } from '@/stores/input-store'
+import { toast } from '@/hooks/use-toast'
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif']
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'm4a', 'aac', 'webm']
@@ -72,9 +73,14 @@ export function useFileUpload() {
           }
         } catch (error) {
           console.error(`上传文件 ${file.name} 失败:`, error)
+          toast.error(`上传文件 ${file.name} 失败`)
         } finally {
           removeUploadingFile(file.name)
         }
+      }
+
+      if (uploadedFiles.length > 0) {
+        toast.success(`成功上传 ${uploadedFiles.length} 个文件`)
       }
 
       return uploadedFiles

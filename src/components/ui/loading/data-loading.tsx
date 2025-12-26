@@ -1,9 +1,9 @@
-import { LoadingSkeleton, LoadingCard, LoadingList } from './loading-skeleton'
+import { LoadingSkeleton, LoadingCard, LoadingList, LoadingMemoList } from './loading-skeleton'
 import { LoadingOverlay } from './loading-overlay'
 
 interface DataLoadingProps {
   loading: boolean
-  type?: 'skeleton' | 'overlay' | 'card' | 'list'
+  type?: 'skeleton' | 'overlay' | 'card' | 'list' | 'memo-list'
   children: React.ReactNode
   message?: string
   skeletonLines?: number
@@ -31,6 +31,8 @@ export function DataLoading({
       return <LoadingCard />
     case 'list':
       return <LoadingList count={listCount} />
+    case 'memo-list':
+      return <LoadingMemoList count={listCount} />
     case 'skeleton':
     default:
       return <LoadingSkeleton lines={skeletonLines} />

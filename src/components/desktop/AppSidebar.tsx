@@ -1,13 +1,4 @@
-import {
-  Calendar,
-  PenBox,
-  Inbox,
-  Search,
-  Settings,
-  User as UserIcon,
-  Moon,
-  Sun,
-} from 'lucide-react'
+import { PenBox, Inbox, Search, Settings, User as UserIcon, Moon, Sun } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useTheme } from '@/hooks/use-theme'
@@ -27,12 +18,12 @@ import {
 } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAvatarUrl } from '@/utils/avatar-helpers'
+import { SidebarHeatMap } from '@/components/desktop/SidebarHeatMap'
 import Icon from '@/assets/icon.png'
 
 const items = [
   { title: '记录', url: '/', icon: PenBox },
   { title: '归档', url: '/archive', icon: Inbox },
-  { title: '日历', url: '/calendar', icon: Calendar },
   { title: '搜索', url: '/search', icon: Search },
 ]
 
@@ -75,7 +66,7 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="flex flex-col justify-between">
         <SidebarGroup>
           <SidebarGroupLabel>Welcome to Mosaic, {user?.username || 'new user'}</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -97,6 +88,10 @@ export function AppSidebar() {
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarHeatMap />
         </SidebarGroup>
       </SidebarContent>
 

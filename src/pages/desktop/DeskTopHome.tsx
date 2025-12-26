@@ -7,6 +7,7 @@ import { useInputStore } from '@/stores/input-store'
 import { useTime } from '@/hooks/use-time'
 import { memoCommands } from '@/utils/callRust'
 import { useFileUpload } from '@/hooks/use-file-upload'
+import { toast } from '@/hooks/use-toast'
 import type { MemoWithResources } from '@/types/memo'
 
 export default function DeskTopHome() {
@@ -30,8 +31,10 @@ export default function DeskTopHome() {
       clearResources()
       appInputRef.current?.clearTags()
       await memoListRef.current?.refetch()
+      toast.success('记录创建成功')
     } catch (error) {
       console.error('创建memo失败:', error)
+      toast.error('记录创建失败')
     }
   }
 
