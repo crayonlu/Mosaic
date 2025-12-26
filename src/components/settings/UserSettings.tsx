@@ -9,11 +9,11 @@ import { assetCommands } from '@/utils/callRust'
 import { useUserStore } from '@/stores/user-store'
 import { useAvatarUrl } from '@/utils/avatar-helpers'
 import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function UserSettings() {
   const { user, loadUser } = useUserStore()
   const [username, setUsername] = useState('')
-  const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const avatarUrl = useAvatarUrl(user?.avatarPath, user?.avatarUrl)
@@ -26,17 +26,21 @@ export function UserSettings() {
     }
   }, [user, loadUser])
 
-  async function handleSave() {
-    setSaving(true)
-    try {
-      const updated = await userCommands.updateUser({ username })
-      useUserStore.getState().updateUser(updated)
-    } catch (error) {
-      console.error('Failed to update user:', error)
-    } finally {
-      setSaving(false)
+  useEffect(() => {
+    if (user && username !== user.username && username.trim()) {
+      const saveUsername = async () => {
+        try {
+          const updated = await userCommands.updateUser({ username })
+          useUserStore.getState().updateUser(updated)
+        } catch (error) {
+          console.error('Failed to update user:', error)
+        }
+      }
+
+      const timeoutId = setTimeout(saveUsername, 1000)
+      return () => clearTimeout(timeoutId)
     }
-  }
+  }, [username, user])
 
   async function handleAvatarUpload() {
     fileInputRef.current?.click()
@@ -68,48 +72,50 @@ export function UserSettings() {
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-4">
-        <Avatar className="h-20 w-20">
-          <AvatarImage src={avatarUrl} alt={user?.username || 'User'} />
-          <AvatarFallback>
-            <UserIcon className="h-10 w-10" />
-          </AvatarFallback>
-        </Avatar>
-        <div className="space-y-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/jpg,image/webp"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          <Button variant="outline" onClick={handleAvatarUpload} disabled={uploading}>
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            更换头像
-          </Button>
-          <p className="text-xs text-muted-foreground">支持 PNG、JPG、JPEG、WebP 格式</p>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <UserIcon className="h-5 w-5" />
+          <CardTitle>用户信息</CardTitle>
         </div>
-      </div>
+        <CardDescription>管理您的个人资料和账户信息</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col items-center gap-4">
+          <Avatar className="h-20 w-20">
+            <AvatarImage src={avatarUrl} alt={user?.username || 'User'} />
+            <AvatarFallback>
+              <UserIcon className="h-10 w-10" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="text-center space-y-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <Button variant="outline" onClick={handleAvatarUpload} disabled={uploading}>
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              更换头像
+            </Button>
+            <p className="text-xs text-muted-foreground">支持 PNG、JPG、JPEG、WebP 格式</p>
+          </div>
+        </div>
 
-      <div className="flex flex-col gap-1">
-        <Label className="text-sm" htmlFor="username">
-          用户名
-        </Label>
-        <Input
-          id="username"
-          value={username}
-          onChange={e => setUsername(e.target.value)}
-          placeholder="输入用户名"
-        />
-      </div>
-
-      <div className="flex-1">
-        <Button className="w-full" onClick={handleSave} disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          保存
-        </Button>
-      </div>
-    </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium" htmlFor="username">
+            用户名
+          </Label>
+          <Input
+            id="username"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            placeholder="输入用户名"
+          />
+        </div>
+      </CardContent>
+    </Card>
   )
 }
