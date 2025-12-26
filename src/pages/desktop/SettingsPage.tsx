@@ -22,7 +22,6 @@ export default function SettingsPage() {
   return (
     <DeskTopLayout>
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">设置</h1>
         <div className="flex gap-6">
           <div className="w-48 shrink-0">
             <nav className="space-y-1">

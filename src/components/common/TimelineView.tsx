@@ -70,11 +70,6 @@ export function TimelineView({ startDate, endDate }: TimelineViewProps) {
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold mb-2">情绪时间线</h2>
-        <p className="text-sm text-muted-foreground">{data.entries.length} 天的记录</p>
-      </div>
-
       <div className="relative">
         <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/20 via-primary/40 to-primary/20"></div>
 
