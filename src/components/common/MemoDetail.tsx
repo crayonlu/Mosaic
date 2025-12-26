@@ -24,6 +24,7 @@ import {
 import { RichTextEditor } from '@/components/common/RichTextEditor'
 import type { MemoWithResources } from '@/types/memo'
 import { assetCommands, memoCommands } from '@/utils/callRust'
+import { toast } from '@/hooks/use-toast'
 import dayjs from 'dayjs'
 import {
   Dialog,
@@ -164,8 +165,10 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       })
       setIsEditing(false)
       onUpdate?.()
+      toast.success('记录保存成功')
     } catch (error) {
       console.error('保存失败:', error)
+      toast.error('记录保存失败')
     } finally {
       setIsSaving(false)
     }
@@ -198,8 +201,10 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       await memoCommands.deleteMemo(memo.id)
       onDelete?.()
       onClose()
+      toast.success('记录删除成功')
     } catch (error) {
       console.error('删除失败:', error)
+      toast.error('记录删除失败')
     } finally {
       setIsDeleting(false)
     }

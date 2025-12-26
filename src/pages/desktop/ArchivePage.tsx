@@ -11,7 +11,10 @@ import { Separator } from '@/components/ui/separator'
 import { MemoCard } from '@/components/archive/MemoCard'
 import { ArchiveDialog } from '@/components/archive/ArchiveDialog'
 import { MemoDetail } from '@/components/common/MemoDetail'
+import { LoadingMemoList } from '@/components/ui/loading/loading-skeleton'
+import { EmptyState } from '@/components/common/EmptyState'
 import { memoCommands, diaryCommands } from '@/utils/callRust'
+import { toast } from '@/hooks/use-toast'
 import type { MemoWithResources } from '@/types/memo'
 
 type Mode = 'view' | 'select'
@@ -116,8 +119,10 @@ export default function ArchivePage() {
       await fetchMemos()
       setSelectedMemos(new Set())
       setMode('view')
+      toast.success(`成功删除 ${selectedMemos.size} 条记录`)
     } catch (error) {
       console.error('批量删除失败:', error)
+      toast.error('批量删除失败')
     }
   }
 
@@ -146,8 +151,10 @@ export default function ArchivePage() {
       setSelectedMemos(new Set())
       setMode('view')
       setIsArchiveDialogOpen(false)
+      toast.success(`成功归档 ${selectedMemos.size} 条记录`)
     } catch (error) {
       console.error('归档失败:', error)
+      toast.error('归档失败')
     } finally {
       setIsArchiving(false)
     }
@@ -245,19 +252,17 @@ export default function ArchivePage() {
 
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
+            <LoadingMemoList count={2} />
           ) : memos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center h-full">
-              <Archive className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">暂无memo</h3>
-              <p className="text-sm text-muted-foreground">
-                {dayjs(selectedDate).isSame(dayjs(), 'day')
+            <EmptyState
+              icon={Archive}
+              title="暂无memo"
+              description={
+                dayjs(selectedDate).isSame(dayjs(), 'day')
                   ? '今天还没有创建memo'
-                  : `${dateDisplay}没有memo记录`}
-              </p>
-            </div>
+                  : `${dateDisplay}没有memo记录`
+              }
+            />
           ) : (
             <div className="p-6 space-y-8">
               {groupedMemos.map(([timeRange, timeMemos]) => (

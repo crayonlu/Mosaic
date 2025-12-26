@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useRef } from 'react'
-import { Image as ImageIcon, Video as VideoIcon, FileText, Volume2 } from 'lucide-react'
 import { RichTextEditor } from '@/components/common/RichTextEditor'
+import { ResourceThumbnails } from '@/components/common/ResourceThumbnails'
 import type { MemoWithResources } from '@/types/memo'
 import { cn } from '@/lib/utils'
 
@@ -20,57 +20,31 @@ export function SearchResults({ results, query, onMemoClick, className }: Search
       .filter(word => word.length > 0)
   }, [query])
 
-  const getResourcePreview = (memo: MemoWithResources) => {
-    const images = memo.resources.filter(r => r.resourceType === 'image')
-    const videos = memo.resources.filter(r => r.resourceType === 'video')
-    const audios = memo.resources.filter(r => r.resourceType === 'voice')
-    const files = memo.resources.filter(r => r.resourceType === 'file')
-
-    const previews = []
-    if (images.length > 0) previews.push({ icon: ImageIcon, count: images.length, label: '图片' })
-    if (videos.length > 0) previews.push({ icon: VideoIcon, count: videos.length, label: '视频' })
-    if (audios.length > 0) previews.push({ icon: Volume2, count: audios.length, label: '音频' })
-    if (files.length > 0) previews.push({ icon: FileText, count: files.length, label: '文件' })
-
-    return previews
-  }
-
   if (results.length === 0) {
     return null
   }
 
   return (
     <div className={cn('space-y-2', className)}>
-      {results.map(memo => {
-        const resourcePreviews = getResourcePreview(memo)
-
-        return (
-          <SearchResultItem
-            key={memo.id}
-            memo={memo}
-            resourcePreviews={resourcePreviews}
-            searchWords={searchWords}
-            onMemoClick={onMemoClick}
-          />
-        )
-      })}
+      {results.map(memo => (
+        <SearchResultItem
+          key={memo.id}
+          memo={memo}
+          searchWords={searchWords}
+          onMemoClick={onMemoClick}
+        />
+      ))}
     </div>
   )
 }
 
 interface SearchResultItemProps {
   memo: MemoWithResources
-  resourcePreviews: Array<{ icon: typeof ImageIcon; count: number; label: string }>
   searchWords: string[]
   onMemoClick?: (memo: MemoWithResources) => void
 }
 
-function SearchResultItem({
-  memo,
-  resourcePreviews,
-  searchWords,
-  onMemoClick,
-}: SearchResultItemProps) {
+function SearchResultItem({ memo, searchWords, onMemoClick }: SearchResultItemProps) {
   const editorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -217,26 +191,9 @@ function SearchResultItem({
         )}
       </div>
 
-      {(resourcePreviews.length > 0 || memo.tags.length > 0) && (
-        <div className="p-4 border-t">
-          {resourcePreviews.length > 0 && (
-            <div className="flex items-center gap-3 flex-wrap">
-              {resourcePreviews.map((preview, index) => {
-                const Icon = preview.icon
-                return (
-                  <div
-                    key={index}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground"
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    <span>
-                      {preview.count} {preview.label}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+      {(memo.resources.length > 0 || memo.tags.length > 0) && (
+        <div className="p-4 border-t space-y-3">
+          {memo.resources.length > 0 && <ResourceThumbnails resources={memo.resources} />}
 
           {memo.tags && memo.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">

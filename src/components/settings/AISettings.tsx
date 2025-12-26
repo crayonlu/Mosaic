@@ -12,6 +12,7 @@ import { settingsCommands, loadAIConfig, saveAIConfig } from '@/utils/settings-h
 import type { AIConfig } from '@/types/settings'
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { LoadingButton } from '@/components/ui/loading/loading-button'
+import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
 
 const DEFAULT_BASE_URLS = {
   openai: 'https://api.openai.com',
@@ -88,7 +89,7 @@ export function AISettings() {
   }
 
   if (loading && !config.apiKey) {
-    return <div>加载中...</div>
+    return <LoadingSkeleton lines={3} />
   }
 
   return (

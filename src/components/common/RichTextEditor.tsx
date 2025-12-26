@@ -148,7 +148,10 @@ export function RichTextEditor({
       handlePaste: (_view, event, _slice) => {
         const pastedText = event.clipboardData?.getData('text/plain') || ''
 
-        const hasMarkdownSyntax = /(#+\s|^\s*[-*+]\s|\*\*.*\*\*|\*.*\*|`.*`|^\s*\d+\.\s|\[.*\]\(.*\)|^\s*>)/m.test(pastedText)
+        const hasMarkdownSyntax =
+          /(#+\s|^\s*[-*+]\s|\*\*.*\*\*|\*.*\*|`.*`|^\s*\d+\.\s|\[.*\]\(.*\)|^\s*>)/m.test(
+            pastedText
+          )
 
         if (hasMarkdownSyntax) {
           try {

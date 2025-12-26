@@ -5,6 +5,8 @@ import { SearchInput } from '@/components/common/SearchInput'
 import { SearchResults } from '@/components/common/SearchResults'
 import { SearchFilters } from '@/components/common/SearchFilters'
 import { MemoDetail } from '@/components/common/MemoDetail'
+import { LoadingMemoList } from '@/components/ui/loading/loading-skeleton'
+import { EmptyState } from '@/components/common/EmptyState'
 import { memoCommands } from '@/utils/callRust'
 import type { MemoWithResources, SearchMemosRequest } from '@/types/memo'
 import dayjs from 'dayjs'
@@ -22,6 +24,16 @@ export default function SearchPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
 
   const deferredQuery = useDeferredValue(query)
+
+  const hasSearchCriteria = useMemo(() => {
+    return (
+      deferredQuery.trim() ||
+      selectedTags.length > 0 ||
+      startDate ||
+      endDate ||
+      isArchived !== undefined
+    )
+  }, [deferredQuery, selectedTags, startDate, endDate, isArchived])
 
   const searchRequest = useMemo<SearchMemosRequest>(() => {
     return {
@@ -127,23 +139,19 @@ export default function SearchPage() {
 
         <div className="flex-1 overflow-y-auto">
           {isPending ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <LoadingMemoList count={1} />
+          ) : !hasSearchCriteria ? (
+            <EmptyState
+              icon={SearchIcon}
+              title="开始搜索"
+              description="输入关键词或选择筛选条件开始搜索你的记录"
+            />
           ) : results.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center h-full">
-              <SearchIcon className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">暂无搜索结果</h3>
-              <p className="text-sm text-muted-foreground">
-                {query.trim() ||
-                selectedTags.length > 0 ||
-                startDate ||
-                endDate ||
-                isArchived !== undefined
-                  ? '尝试调整搜索条件'
-                  : '输入关键词开始搜索'}
-              </p>
-            </div>
+            <EmptyState
+              icon={SearchIcon}
+              title="暂无搜索结果"
+              description="尝试调整搜索条件或关键词"
+            />
           ) : (
             <div className="p-6">
               <SearchResults

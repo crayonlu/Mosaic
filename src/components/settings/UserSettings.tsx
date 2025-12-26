@@ -8,6 +8,7 @@ import { User as UserIcon, Loader2 } from 'lucide-react'
 import { assetCommands } from '@/utils/callRust'
 import { useUserStore } from '@/stores/user-store'
 import { useAvatarUrl } from '@/utils/avatar-helpers'
+import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
 
 export function UserSettings() {
   const { user, loadUser } = useUserStore()
@@ -63,7 +64,7 @@ export function UserSettings() {
   }
 
   if (!user) {
-    return <div>加载中...</div>
+    return <LoadingSkeleton lines={3} />
   }
 
   return (
