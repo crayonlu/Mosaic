@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import dayjs from 'dayjs'
-import { Calendar, Archive, Trash2, CheckSquare, Square, Loader2 } from 'lucide-react'
+import { Calendar, Archive, Trash2, CheckSquare, Square } from 'lucide-react'
 import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { Button } from '@/components/ui/button'
 import { Calendar as CalendarComponent } from '@/components/ui/calendar'
