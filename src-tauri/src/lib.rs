@@ -74,19 +74,25 @@ pub fn run() {
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
+            
             tauri::async_runtime::block_on(async {
                 match database::init_db(&app_handle).await {
                     Ok(pool) => {
                         app_handle.manage(pool);
                         tracing::info!("Database pool stored in app state");
+                        Ok(())
                     }
                     Err(e) => {
-                        tracing::error!("Failed to initialize database: {}", e);
-                        panic!("Failed to initialize database: {}", e);
+                        let error_msg = format!("Failed to initialize database: {}", e);
+                        tracing::error!("{}", error_msg);
+                        if let Ok(app_dir) = app_handle.path().app_data_dir() {
+                            tracing::error!("Database initialization failed. Please check the logs at: {:?}", 
+                                app_dir.join("logs"));
+                        }
+                        Err(error_msg.into())
                     }
                 }
-            });
-            Ok(())
+            })
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
