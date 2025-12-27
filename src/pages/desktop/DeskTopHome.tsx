@@ -31,10 +31,10 @@ export default function DeskTopHome() {
       clearResources()
       appInputRef.current?.clearTags()
       await memoListRef.current?.refetch()
-      toast.success('记录创建成功')
+      toast.success('Memo创建成功')
     } catch (error) {
       console.error('创建memo失败:', error)
-      toast.error('记录创建失败')
+      toast.error('Memo创建失败')
     }
   }
 
