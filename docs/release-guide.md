@@ -14,6 +14,7 @@ git checkout -b release/v1.0.0
 
 - `package.json`: `"version": "1.0.0"`
 - `src-tauri/tauri.conf.json`: `"version": "1.0.0"`
+- `src-tauri/Cargo.toml`: `version = "1.0.0"`
 
 ### 3. 提交并推送
 
