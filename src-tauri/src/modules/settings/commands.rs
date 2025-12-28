@@ -97,7 +97,7 @@ pub async fn register_close_shortcut(app: AppHandle, shortcut: String) -> Result
     app.global_shortcut()
         .on_shortcut(shortcut_obj, move |_app, _shortcut, _event| {
             if let Some(window) = app_handle.get_webview_window("main") {
-                let _ = window.close();
+                let _ = window.hide();
             }
         })
         .map_err(|e| format!("Failed to register shortcut: {}", e))?;
