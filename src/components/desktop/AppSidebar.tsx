@@ -19,7 +19,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAvatarUrl } from '@/utils/avatar-helpers'
 import { SidebarHeatMap } from '@/components/desktop/SidebarHeatMap'
-import Icon from '@/assets/icon.png'
+import LightMosaicIcon from '@/assets/mosaic-light.svg'
+import DarkMosaicIcon from '@/assets/mosaic-dark.svg'
 
 const items = [
   { title: '记录', url: '/', icon: PenBox },
@@ -45,11 +46,8 @@ export function AppSidebar() {
           <SidebarMenuItem className="group-data-[collapsible=icon]:hidden">
             <SidebarMenuButton asChild className="hover:bg-transparent hover:text-inherit">
               <Link to="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg text-sidebar-primary-foreground">
-                  <img src={Icon} alt="Mosaic" className="size-8" />
-                </div>
                 <div className="leading-none text-primary/80">
-                  <span className="font-bold">Mosaic</span>
+                  <img src={theme === 'dark' ? DarkMosaicIcon : LightMosaicIcon} alt="Mosaic" className="size-16" />
                 </div>
               </Link>
             </SidebarMenuButton>
