@@ -186,3 +186,31 @@
 .titlebar-no-drag {
   -webkit-app-region: no-drag;
 }
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: theme-transition-out 0.4s ease-in-out;
+}
+
+::view-transition-new(root) {
+  animation: theme-transition-in 0.4s ease-in-out;
+  clip-path: circle(0% at var(--x) var(--y));
+}
+
+@keyframes theme-transition-out {
+  to {
+    clip-path: circle(150% at var(--x) var(--y));
+  }
+}
+
+@keyframes theme-transition-in {
+  from {
+    clip-path: circle(0% at var(--x) var(--y));
+  }
+  to {
+    clip-path: circle(150% at var(--x) var(--y));
+  }
+}

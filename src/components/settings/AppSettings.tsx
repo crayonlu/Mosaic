@@ -16,7 +16,15 @@ export function AppSettings() {
   const { sidebarOpen, setSidebarOpen } = useAppStore()
 
   const handleThemeChange = (newTheme: 'light' | 'dark') => {
-    setTheme(newTheme)
+    const selectTrigger = document.querySelector('[data-radix-select-trigger]') as HTMLElement
+    if (selectTrigger) {
+      const rect = selectTrigger.getBoundingClientRect()
+      const x = rect.width / 2
+      const y = rect.height / 2
+      setTheme(newTheme, x, y)
+    } else {
+      setTheme(newTheme)
+    }
   }
 
   const handleSidebarChange = (value: string) => {
