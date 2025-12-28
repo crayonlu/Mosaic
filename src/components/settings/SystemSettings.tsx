@@ -152,10 +152,6 @@ export function SystemSettings() {
             <SettingsIcon className="h-5 w-5" />
             <CardTitle>系统设置</CardTitle>
           </div>
-          <div className="flex items-center gap-2 mt-2">
-            <Folder className="h-4 w-4" />
-            <CardDescription>数据存储位置</CardDescription>
-          </div>
           <CardDescription>配置应用的系统级行为和快捷键</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
