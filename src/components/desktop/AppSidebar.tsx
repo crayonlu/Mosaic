@@ -54,7 +54,7 @@ export function AppSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={toggleTheme}
+              onClick={(e) => toggleTheme(e)}
               tooltip={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
               className="hover:bg-primary/5 hover:text-primary transition-all"
             >

@@ -6,19 +6,31 @@ type Theme = 'light' | 'dark'
 interface AppState {
   theme: Theme
   sidebarOpen: boolean
-  setTheme: (theme: Theme) => void
-  toggleTheme: () => void
+  setTheme: (theme: Theme, x?: number, y?: number) => void
+  toggleTheme: (event?: React.MouseEvent) => void
   setSidebarOpen: (open: boolean) => void
   toggleSidebar: () => void
 }
 
-const applyTheme = (theme: Theme) => {
+const applyTheme = (theme: Theme, x?: number, y?: number) => {
   if (typeof window === 'undefined') return
+
   const root = document.documentElement
-  if (theme === 'dark') {
-    root.classList.add('dark')
+
+  const updateTheme = () => {
+    if (theme === 'dark') {
+      root.classList.add('dark')
+    } else {
+      root.classList.remove('dark')
+    }
+  }
+
+  if (x !== undefined && y !== undefined && 'startViewTransition' in document) {
+    root.style.setProperty('--x', `${x}px`)
+    root.style.setProperty('--y', `${y}px`)
+    document.startViewTransition(updateTheme)
   } else {
-    root.classList.remove('dark')
+    updateTheme()
   }
 }
 
@@ -27,14 +39,21 @@ export const useAppStore = create<AppState>()(
     set => ({
       theme: 'light',
       sidebarOpen: true,
-      setTheme: theme => {
+      setTheme: (theme, x?: number, y?: number) => {
         set({ theme })
-        applyTheme(theme)
+        applyTheme(theme, x, y)
       },
-      toggleTheme: () => {
+      toggleTheme: (event?: React.MouseEvent) => {
         set(state => {
           const newTheme = state.theme === 'dark' ? 'light' : 'dark'
-          applyTheme(newTheme)
+          if (event) {
+            const rect = (event.target as HTMLElement).getBoundingClientRect()
+            const x = event.clientX - rect.left
+            const y = event.clientY - rect.top
+            applyTheme(newTheme, x, y)
+          } else {
+            applyTheme(newTheme)
+          }
           return { theme: newTheme }
         })
       },
