@@ -116,3 +116,29 @@ export async function saveShortcutConfig(config: ShortcutConfig): Promise<void> 
     }),
   ])
 }
+
+export const storageCommands = {
+  getDataDirectory: () => callRust<string>('get_data_directory', {}),
+
+  getDefaultDataDirectory: () => callRust<string>('get_default_data_directory', {}),
+
+  setDataDirectory: (path: string) =>
+    callRust<void>('set_data_directory', { newDirectoryPath: path }),
+
+  needsDataMigration: () => callRust<boolean>('needs_data_migration', {}),
+}
+
+export async function selectDataDirectory(): Promise<string | null> {
+  try {
+    const { open } = await import('@tauri-apps/plugin-dialog')
+    const selected = await open({
+      title: '选择数据存储位置',
+      directory: true,
+      multiple: false,
+    })
+    return selected as string | null
+  } catch (error) {
+    console.error('Failed to open directory picker:', error)
+    return null
+  }
+}

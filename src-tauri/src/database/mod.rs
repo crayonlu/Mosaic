@@ -1,10 +1,9 @@
 use sqlx::{
-    migrate::MigrateDatabase,
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous},
     Pool, Sqlite,
 };
 use std::fs;
-use std::str::FromStr;
+use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 use tracing::{error, info};
 
@@ -12,45 +11,68 @@ pub mod schema;
 
 pub type DBPool = Pool<Sqlite>;
 
-pub async fn init_db(app_handle: &AppHandle) -> Result<DBPool, Box<dyn std::error::Error>> {
-    info!("Starting database initialization...");
-    
-    let app_dir = app_handle.path().app_data_dir()
-        .map_err(|e| {
-            let err_msg = format!("Failed to get app data directory: {}", e);
-            error!("{}", err_msg);
-            Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, err_msg)) as Box<dyn std::error::Error>
+fn get_data_directory_for_db(
+    app_handle: &AppHandle,
+) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let install_dir = get_install_directory_for_db(app_handle)?;
+    let data_dir = install_dir.join("data");
+
+    if !data_dir.exists() {
+        fs::create_dir_all(&data_dir).map_err(|e| {
+            Box::new(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                format!("Failed to create data directory: {}", e),
+            )) as Box<dyn std::error::Error>
         })?;
-    
-    info!("App data directory: {:?}", app_dir);
-    
-    if !app_dir.exists() {
-        info!("App data directory does not exist, creating...");
-        fs::create_dir_all(&app_dir).map_err(|e| {
-            let err_msg = format!("Failed to create app data directory at {:?}: {}", app_dir, e);
-            error!("{}", err_msg);
-            Box::new(std::io::Error::new(std::io::ErrorKind::PermissionDenied, err_msg)) as Box<dyn std::error::Error>
-        })?;
-        info!("App data directory created successfully");
-    } else {
-        info!("App data directory already exists");
     }
 
-    let db_path = app_dir.join("mosaic.db");
-    let db_url = format!("sqlite://{}", db_path.to_string_lossy());
+    Ok(data_dir)
+}
+
+fn get_install_directory_for_db(
+    app_handle: &AppHandle,
+) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    if let Ok(resource_dir) = app_handle.path().resource_dir() {
+        if resource_dir.exists() {
+            return Ok(resource_dir);
+        }
+    }
+
+    if let Ok(local_data_dir) = app_handle.path().app_local_data_dir() {
+        if local_data_dir.exists() {
+            return Ok(local_data_dir);
+        }
+    }
+
+    if let Ok(current_dir) = std::env::current_dir() {
+        return Ok(current_dir);
+    }
+
+    Err(Box::new(std::io::Error::new(
+        std::io::ErrorKind::NotFound,
+        "Could not determine install directory",
+    )))
+}
+
+pub async fn init_db(app_handle: &AppHandle) -> Result<DBPool, Box<dyn std::error::Error>> {
+    info!("Starting database initialization...");
+
+    let data_dir = get_data_directory_for_db(app_handle)?;
+    let db_path = data_dir.join("mosaic.db");
 
     info!("Database path: {:?}", db_path);
-    info!("Connecting to database at: {}", db_url);
 
-    let db_exists = Sqlite::database_exists(&db_url).await.unwrap_or(false);
+    let db_exists = db_path.exists();
     if !db_exists {
         info!("Database does not exist, creating new database...");
-        match Sqlite::create_database(&db_url).await {
-            Ok(_) => info!("Database created successfully"),
-            Err(e) => {
-                let err_msg = format!("Failed to create database at {}: {}", db_url, e);
-                error!("{}", err_msg);
-                return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, err_msg)));
+        if let Some(parent) = db_path.parent() {
+            if !parent.exists() {
+                fs::create_dir_all(parent).map_err(|e| {
+                    let err_msg = format!("Failed to create database directory: {}", e);
+                    error!("{}", err_msg);
+                    Box::new(std::io::Error::new(std::io::ErrorKind::Other, err_msg))
+                        as Box<dyn std::error::Error>
+                })?;
             }
         }
     } else {
@@ -58,12 +80,8 @@ pub async fn init_db(app_handle: &AppHandle) -> Result<DBPool, Box<dyn std::erro
     }
 
     info!("Configuring database connection options...");
-    let connect_options = SqliteConnectOptions::from_str(&db_url)
-        .map_err(|e| {
-            let err_msg = format!("Failed to parse database URL {}: {}", db_url, e);
-            error!("{}", err_msg);
-            Box::new(std::io::Error::new(std::io::ErrorKind::InvalidInput, err_msg)) as Box<dyn std::error::Error>
-        })?
+    let connect_options = SqliteConnectOptions::new()
+        .filename(&db_path)
         .create_if_missing(true)
         .journal_mode(SqliteJournalMode::Wal)
         .synchronous(SqliteSynchronous::Normal)
@@ -76,9 +94,12 @@ pub async fn init_db(app_handle: &AppHandle) -> Result<DBPool, Box<dyn std::erro
         .connect_with(connect_options)
         .await
         .map_err(|e| {
-            let err_msg = format!("Failed to connect to database at {}: {}", db_url, e);
+            let err_msg = format!("Failed to connect to database at {:?}: {}", db_path, e);
             error!("{}", err_msg);
-            Box::new(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, err_msg)) as Box<dyn std::error::Error>
+            Box::new(std::io::Error::new(
+                std::io::ErrorKind::ConnectionRefused,
+                err_msg,
+            )) as Box<dyn std::error::Error>
         })?;
 
     info!("Database connection pool created successfully");
@@ -90,7 +111,10 @@ pub async fn init_db(app_handle: &AppHandle) -> Result<DBPool, Box<dyn std::erro
             let err_msg = format!("Failed to apply database migrations: {}", e);
             error!("{}", err_msg);
             error!("Migration error details: {:?}", e);
-            return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, err_msg)));
+            return Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                err_msg,
+            )));
         }
     }
 

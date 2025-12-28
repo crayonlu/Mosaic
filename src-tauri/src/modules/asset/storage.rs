@@ -8,15 +8,11 @@ use tauri::{AppHandle, Manager};
 use uuid::Uuid;
 
 pub fn get_assets_dir(app_handle: &AppHandle) -> AppResult<PathBuf> {
-    let app_dir = app_handle.path().app_data_dir().map_err(AppError::Tauri)?;
-
-    let assets_dir = app_dir.join("assets");
-
-    if !assets_dir.exists() {
-        fs::create_dir_all(&assets_dir).map_err(AppError::Io)?;
-    }
-
-    Ok(assets_dir)
+    tokio::task::block_in_place(|| {
+        tokio::runtime::Handle::current().block_on(async {
+            crate::modules::storage::path::get_assets_directory(app_handle).await
+        })
+    })
 }
 
 pub async fn process_and_store_file(
