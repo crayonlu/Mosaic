@@ -2,6 +2,11 @@ mod database;
 mod error;
 mod modules;
 
+use std::path::PathBuf;
+use tauri::AppHandle;
+use tracing_appender::rolling::daily;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
 use modules::asset::commands::{
     read_audio_file, read_image_file, save_temp_audio, save_temp_file, upload_files,
 };
@@ -19,8 +24,47 @@ use modules::settings::commands::{
     unregister_shortcut,
 };
 use modules::stats::commands::{get_heatmap, get_summary, get_timeline, get_trends};
+use modules::storage::commands::{
+    get_data_directory, get_default_data_directory, needs_data_migration, select_data_directory,
+    set_data_directory,
+};
 use modules::user::commands::{get_or_create_default_user, get_user, update_user, upload_avatar};
 use tauri::Manager;
+
+async fn init_logging(app_handle: &AppHandle) {
+    let logs_dir = match modules::storage::path::get_logs_directory(app_handle).await {
+        Ok(dir) => Some(dir),
+        Err(e) => {
+            eprintln!("Failed to get logs directory: {}", e);
+            None
+        }
+    };
+
+    let env_filter = tracing_subscriber::EnvFilter::from_default_env();
+
+    let registry = tracing_subscriber::registry();
+
+    if let Some(logs_path) = logs_dir {
+        let file_appender = daily(&logs_path, "mosaic.log");
+        let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+        let file_layer = tracing_subscriber::fmt::layer()
+            .with_writer(non_blocking)
+            .with_ansi(false);
+
+        registry
+            .with(env_filter)
+            .with(tracing_subscriber::fmt::layer())
+            .with(file_layer)
+            .init();
+
+        std::mem::forget(_guard);
+    } else {
+        registry
+            .with(env_filter)
+            .with(tracing_subscriber::fmt::layer())
+            .init();
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -33,6 +77,7 @@ pub fn run() {
             tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None),
         )
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             upload_files,
             save_temp_audio,
@@ -71,11 +116,18 @@ pub fn run() {
             register_show_shortcut,
             register_close_shortcut,
             unregister_shortcut,
+            get_data_directory,
+            get_default_data_directory,
+            select_data_directory,
+            set_data_directory,
+            needs_data_migration,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
-            
+
             tauri::async_runtime::block_on(async {
+                init_logging(&app_handle).await;
+
                 match database::init_db(&app_handle).await {
                     Ok(pool) => {
                         app_handle.manage(pool);
@@ -85,9 +137,13 @@ pub fn run() {
                     Err(e) => {
                         let error_msg = format!("Failed to initialize database: {}", e);
                         tracing::error!("{}", error_msg);
-                        if let Ok(app_dir) = app_handle.path().app_data_dir() {
-                            tracing::error!("Database initialization failed. Please check the logs at: {:?}", 
-                                app_dir.join("logs"));
+                        if let Ok(logs_dir) =
+                            crate::modules::storage::path::get_logs_directory(&app_handle).await
+                        {
+                            tracing::error!(
+                                "Database initialization failed. Please check the logs at: {:?}",
+                                logs_dir
+                            );
                         }
                         Err(error_msg.into())
                     }
