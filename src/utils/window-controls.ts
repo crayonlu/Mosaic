@@ -15,6 +15,11 @@ export async function toggleMaximize() {
   await window.toggleMaximize()
 }
 
+export async function hideWindow() {
+  const window = getCurrentWindow()
+  await window.hide()
+}
+
 export async function closeWindow() {
   const window = getCurrentWindow()
   await window.close()

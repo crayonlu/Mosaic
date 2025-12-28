@@ -1,6 +1,6 @@
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useTime } from '@/hooks/use-time'
-import { minimizeWindow, toggleMaximize, closeWindow, isMaximized } from '@/utils/window-controls'
+import { minimizeWindow, toggleMaximize, hideWindow, isMaximized } from '@/utils/window-controls'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { Minimize, Maximize, Minimize2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -71,7 +71,7 @@ export function CustomTitleBar() {
           {maximized ? <Minimize2 className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
         </button>
         <button
-          onClick={closeWindow}
+          onClick={hideWindow}
           className="h-8 w-8 flex items-center justify-center hover:bg-muted rounded transition-colors"
           aria-label="关闭"
         >

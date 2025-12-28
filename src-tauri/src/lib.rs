@@ -2,10 +2,11 @@ mod database;
 mod error;
 mod modules;
 
-use std::path::PathBuf;
 use tauri::AppHandle;
 use tracing_appender::rolling::daily;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tauri::tray::{TrayIconBuilder, TrayIconEvent};
+use tauri::menu::{Menu, MenuItem};
 
 use modules::asset::commands::{
     read_audio_file, read_image_file, save_temp_audio, save_temp_file, upload_files,
@@ -132,7 +133,6 @@ pub fn run() {
                     Ok(pool) => {
                         app_handle.manage(pool);
                         tracing::info!("Database pool stored in app state");
-                        Ok(())
                     }
                     Err(e) => {
                         let error_msg = format!("Failed to initialize database: {}", e);
@@ -145,10 +145,50 @@ pub fn run() {
                                 logs_dir
                             );
                         }
-                        Err(error_msg.into())
+                        panic!("{}", error_msg);
                     }
                 }
-            })
+
+                Ok::<(), Box<dyn std::error::Error>>(())
+            })?;
+
+            let show_menu_item = MenuItem::with_id(&app_handle, "show", "显示窗口", true, None::<&str>)?;
+            let quit_menu_item = MenuItem::with_id(&app_handle, "quit", "退出", true, None::<&str>)?;
+            let menu = Menu::with_items(&app_handle, &[&show_menu_item, &quit_menu_item])?;
+
+            let _tray = TrayIconBuilder::new()
+                .icon(app_handle.default_window_icon().unwrap().clone())
+                .menu(&menu)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click { .. } = event {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
