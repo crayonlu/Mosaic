@@ -90,8 +90,10 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarHeatMap />
+        <SidebarGroup className='group-data-[collapsible=icon]:hidden'>
+          <SidebarGroupContent>
+            <SidebarHeatMap />
+          </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
