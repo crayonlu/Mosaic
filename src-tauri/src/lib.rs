@@ -2,12 +2,13 @@ mod database;
 mod error;
 mod modules;
 
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use tauri::AppHandle;
 use tracing_appender::rolling::daily;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use tauri::tray::{TrayIconBuilder, TrayIconEvent};
-use tauri::menu::{Menu, MenuItem};
 
+use modules::ai::commands::{complete_text, rewrite_text, suggest_tags, summarize_text};
 use modules::asset::commands::{
     read_audio_file, read_image_file, save_temp_audio, save_temp_file, upload_files,
 };
@@ -122,6 +123,10 @@ pub fn run() {
             select_data_directory,
             set_data_directory,
             needs_data_migration,
+            complete_text,
+            rewrite_text,
+            summarize_text,
+            suggest_tags,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
@@ -152,8 +157,10 @@ pub fn run() {
                 Ok::<(), Box<dyn std::error::Error>>(())
             })?;
 
-            let show_menu_item = MenuItem::with_id(&app_handle, "show", "显示窗口", true, None::<&str>)?;
-            let quit_menu_item = MenuItem::with_id(&app_handle, "quit", "退出", true, None::<&str>)?;
+            let show_menu_item =
+                MenuItem::with_id(&app_handle, "show", "显示窗口", true, None::<&str>)?;
+            let quit_menu_item =
+                MenuItem::with_id(&app_handle, "quit", "退出", true, None::<&str>)?;
             let menu = Menu::with_items(&app_handle, &[&show_menu_item, &quit_menu_item])?;
 
             let _tray = TrayIconBuilder::new()
