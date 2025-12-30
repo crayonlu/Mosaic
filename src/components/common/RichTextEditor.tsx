@@ -14,11 +14,12 @@ import { Underline } from '@tiptap/extension-underline'
 import { Highlight } from '@tiptap/extension-highlight'
 import { Markdown } from 'tiptap-markdown'
 import { marked } from 'marked'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createLowlight } from 'lowlight'
 import { cn } from '@/lib/utils'
 import { Toolbar } from './RichTextEditor/Toolbar'
 import { LinkDialog } from './RichTextEditor/LinkDialog'
+import { useAI } from '@/hooks/use-ai'
 
 import javascript from 'highlight.js/lib/languages/javascript'
 import typescript from 'highlight.js/lib/languages/typescript'
@@ -87,6 +88,8 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const [, setRenderCounter] = useState(0)
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
+  const [isCompleting, setIsCompleting] = useState(false)
+  const { completeText, loading: aiLoading } = useAI()
 
   const editor = useEditor({
     extensions: [
@@ -166,34 +169,56 @@ export function RichTextEditor({
         return false
       },
       handleKeyDown: (_view, event) => {
-        // Ctrl/Cmd + Enter 保存
         if (editable && onSave && (event.ctrlKey || event.metaKey) && event.key === 'Enter') {
           event.preventDefault()
           onSave()
           return true
         }
-        // Ctrl/Cmd + K 插入链接
         if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
           event.preventDefault()
           setIsLinkDialogOpen(true)
           return true
         }
-        // Ctrl/Cmd + \ 清除格式
         if ((event.ctrlKey || event.metaKey) && event.key === '\\') {
           event.preventDefault()
           editor.chain().focus().clearNodes().unsetAllMarks().run()
           return true
         }
-        // Ctrl/Cmd + Shift + ` 代码块
         if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === '`') {
           event.preventDefault()
           editor.chain().focus().toggleCodeBlock().run()
+          return true
+        }
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === '.') {
+          event.preventDefault()
+          handleCompleteText()
           return true
         }
         return false
       },
     },
   })
+
+  const handleCompleteText = useCallback(async () => {
+    if (!editor || !editable || isCompleting || aiLoading) return
+
+    const currentContent = editor.getText()
+    if (!currentContent.trim()) return
+
+    setIsCompleting(true)
+    try {
+      const result = await completeText({
+        content: currentContent,
+      })
+
+      if (result?.generatedText) {
+        const { to } = editor.state.selection
+        editor.chain().focus().insertContentAt(to, result.generatedText).run()
+      }
+    } finally {
+      setIsCompleting(false)
+    }
+  }, [editor, editable, isCompleting, aiLoading, completeText])
 
   useEffect(() => {
     if (!editor) return
@@ -218,7 +243,13 @@ export function RichTextEditor({
 
   return (
     <div className="w-full h-full border bg-background flex flex-col overflow-hidden">
-      {editable && editor && <Toolbar editor={editor} />}
+      {editable && editor && (
+        <Toolbar
+          editor={editor}
+          onCompleteText={handleCompleteText}
+          isCompleting={isCompleting || aiLoading}
+        />
+      )}
       <div
         className={cn(
           'flex-1 min-h-0 overflow-auto editor-scrollbar',

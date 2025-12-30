@@ -12,8 +12,11 @@ import {
   Save,
   X,
   Trash2,
+  Sparkles,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Sheet,
   SheetContent,
@@ -33,6 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useAI } from '@/hooks/use-ai'
 
 interface MemoDetailProps {
   memo: MemoWithResources | null
@@ -47,6 +51,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [editedContent, setEditedContent] = useState('')
   const [editedTags, setEditedTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -59,6 +65,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   const audioRefsRef = useRef<Map<string, HTMLAudioElement>>(new Map())
   const videoRefsRef = useRef<Map<string, HTMLVideoElement>>(new Map())
+  const { suggestTags, loading: aiLoading } = useAI()
 
   const imageResources = memo?.resources.filter(r => r.resourceType === 'image') || []
   const audioResources = memo?.resources.filter(r => r.resourceType === 'voice') || []
@@ -174,12 +181,58 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     }
   }
 
-  const handleAddTag = () => {
-    const trimmedTag = tagInput.trim()
+  const handleAddTag = (tag?: string) => {
+    const trimmedTag = tag ? tag.trim() : tagInput.trim()
     if (trimmedTag && !editedTags.includes(trimmedTag)) {
       setEditedTags([...editedTags, trimmedTag])
-      setTagInput('')
+      if (!tag) {
+        setTagInput('')
+      }
     }
+  }
+
+  const handleAddAllTags = (tagsToAdd: string[]) => {
+    setEditedTags(prevTags => {
+      const newTags = [...prevTags]
+      tagsToAdd.forEach(tag => {
+        const trimmedTag = tag.trim()
+        if (trimmedTag && !newTags.includes(trimmedTag)) {
+          newTags.push(trimmedTag)
+        }
+      })
+      return newTags
+    })
+  }
+
+  const handleAISuggest = async () => {
+    if (!editedContent.trim()) {
+      return
+    }
+
+    const result = await suggestTags({
+      content: editedContent.replace(/<[^>]*>/g, '').trim(),
+      existingTags: editedTags,
+    })
+
+    if (result) {
+      const filtered = result.tags.filter(tag => !editedTags.includes(tag))
+      setTagSuggestions(filtered)
+      setShowSuggestions(filtered.length > 0)
+    }
+  }
+
+  const handleAddSuggestedTag = (tag: string) => {
+    handleAddTag(tag)
+    setTagSuggestions(prev => prev.filter(t => t !== tag))
+    if (tagSuggestions.length <= 1) {
+      setShowSuggestions(false)
+    }
+  }
+
+  const handleAddAllSuggestedTags = () => {
+    handleAddAllTags(tagSuggestions)
+    setTagSuggestions([])
+    setShowSuggestions(false)
   }
 
   const handleRemoveTag = (tagToRemove: string) => {
@@ -365,22 +418,82 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                     ))}
                   </div>
                 )}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={e => setTagInput(e.target.value)}
-                    onKeyDown={handleTagKeyDown}
-                    placeholder="添加标签..."
-                    className="flex-1 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddTag}
-                    className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-                  >
-                    添加
-                  </button>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={e => setTagInput(e.target.value)}
+                      onKeyDown={handleTagKeyDown}
+                      placeholder="添加标签..."
+                      className="flex-1 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddTag()}
+                      className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                    >
+                      添加
+                    </button>
+                    {editedContent && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleAISuggest}
+                        disabled={aiLoading || !editedContent.trim()}
+                        className="gap-2"
+                      >
+                        {aiLoading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <>
+                            <Sparkles className="h-3.5 w-3.5" />
+                            AI建议
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                  {showSuggestions && tagSuggestions.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md bg-muted/30">
+                      <span className="text-xs text-muted-foreground">AI建议标签：</span>
+                      {tagSuggestions.map(tag => (
+                        <Badge
+                          key={tag}
+                          variant="outline"
+                          className="cursor-pointer hover:bg-primary/10 gap-1"
+                          onClick={() => handleAddSuggestedTag(tag)}
+                        >
+                          {tag}
+                          <span className="text-muted-foreground">×</span>
+                        </Badge>
+                      ))}
+                      {tagSuggestions.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleAddAllSuggestedTags}
+                          className="h-6 text-xs"
+                        >
+                          全部添加
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowSuggestions(false)
+                          setTagSuggestions([])
+                        }}
+                        className="h-6 text-xs ml-auto"
+                      >
+                        关闭
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

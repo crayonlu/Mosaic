@@ -18,6 +18,8 @@ import {
   Undo2,
   Redo2,
   RemoveFormatting,
+  Wand2,
+  Sparkles,
 } from 'lucide-react'
 import { ToolbarButton } from './ToolbarButton'
 import { InsertMenu } from './InsertMenu'
@@ -26,14 +28,18 @@ import { CodeBlockLanguageSelector } from './CodeBlockLanguageSelector'
 import { HighlightColorSelector } from './HighlightColorSelector'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
+import { AIRewriteDialog } from '../AIRewriteDialog'
 
 interface ToolbarProps {
   editor: Editor
   className?: string
+  onCompleteText?: () => void
+  isCompleting?: boolean
 }
 
-export function Toolbar({ editor, className }: ToolbarProps) {
+export function Toolbar({ editor, className, onCompleteText, isCompleting }: ToolbarProps) {
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
+  const [isRewriteDialogOpen, setIsRewriteDialogOpen] = useState(false)
 
   // 格式化组
   const formatButtons = [
@@ -158,7 +164,54 @@ export function Toolbar({ editor, className }: ToolbarProps) {
     },
   ]
 
-  // 其他组
+  const getSelectedText = () => {
+    const { from, to } = editor.state.selection
+    if (from !== to) {
+      return editor.state.doc.textBetween(from, to)
+    }
+    return editor.getText()
+  }
+
+  const handleReplace = (text: string) => {
+    const { from, to } = editor.state.selection
+    if (from !== to) {
+      editor.chain().focus().deleteSelection().insertContent(text).run()
+    } else {
+      editor.chain().focus().setContent(text).run()
+    }
+  }
+
+  const handleInsert = (text: string) => {
+    editor.chain().focus().insertContent(text).run()
+  }
+
+  const handleRewriteClick = () => {
+    const selectedText = getSelectedText()
+    if (selectedText.trim()) {
+      setIsRewriteDialogOpen(true)
+    }
+  }
+
+  const aiButtons = [
+    {
+      icon: Sparkles,
+      label: 'AI补全',
+      shortcut: 'Ctrl+Shift+.',
+      onClick: () => {
+        if (onCompleteText && editor.getText().trim() && !isCompleting) {
+          onCompleteText()
+        }
+      },
+      canExecute: () => !!onCompleteText && !!editor.getText().trim() && !isCompleting,
+    },
+    {
+      icon: Wand2,
+      label: 'AI重写',
+      shortcut: 'Ctrl+Shift+R',
+      onClick: handleRewriteClick,
+    },
+  ]
+
   const otherButtons = [
     {
       icon: RemoveFormatting,
@@ -212,12 +265,27 @@ export function Toolbar({ editor, className }: ToolbarProps) {
       <div className="w-px h-6 bg-border mx-1" />
 
       <div className="flex items-center gap-1">
+        {aiButtons.map(btn => (
+          <ToolbarButton key={btn.label} editor={editor} {...btn} />
+        ))}
+      </div>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      <div className="flex items-center gap-1">
         {otherButtons.map(btn => (
           <ToolbarButton key={btn.label} editor={editor} {...btn} />
         ))}
       </div>
 
       <LinkDialog editor={editor} open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen} />
+      <AIRewriteDialog
+        open={isRewriteDialogOpen}
+        onOpenChange={setIsRewriteDialogOpen}
+        originalText={getSelectedText()}
+        onReplace={handleReplace}
+        onInsert={handleInsert}
+      />
     </div>
   )
 }

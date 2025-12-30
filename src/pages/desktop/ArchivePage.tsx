@@ -126,6 +126,18 @@ export default function ArchivePage() {
     }
   }
 
+  const getSelectedMemosContent = () => {
+    const selectedMemosList = memos.filter(m => selectedMemos.has(m.id) && !m.isArchived)
+    if (selectedMemosList.length === 0) return ''
+
+    const contents = selectedMemosList.map(memo => {
+      const textContent = memo.content.replace(/<[^>]*>/g, '').trim()
+      return textContent
+    }).filter(text => text.length > 0)
+
+    return contents.join('\n\n')
+  }
+
   const handleArchiveSelected = () => {
     if (selectedMemos.size === 0) return
     setIsArchiveDialogOpen(true)
@@ -362,6 +374,7 @@ export default function ArchivePage() {
           existingDiary={existingDiary}
           onConfirm={handleArchiveConfirm}
           isLoading={isArchiving}
+          selectedMemosContent={getSelectedMemosContent()}
         />
 
         <MemoDetail
