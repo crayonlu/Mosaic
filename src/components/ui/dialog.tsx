@@ -127,6 +127,8 @@ function DialogDescription({
   )
 }
 
+export type DialogProps = React.ComponentProps<typeof Dialog>
+
 export {
   Dialog,
   DialogClose,

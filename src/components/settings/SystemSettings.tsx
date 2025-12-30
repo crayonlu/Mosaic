@@ -9,7 +9,7 @@ import {
   selectDataDirectory,
 } from '@/utils/settings-helpers'
 import { useSettingsStore } from '@/stores/settings-store'
-import { Keyboard, Settings as SettingsIcon, Folder } from 'lucide-react'
+import { Keyboard, Settings as SettingsIcon } from 'lucide-react'
 import { useKeyCapture } from '@/hooks/use-key-capture'
 import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
