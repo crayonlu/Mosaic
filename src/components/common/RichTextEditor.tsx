@@ -232,6 +232,12 @@ export function RichTextEditor({
   }, [editor])
 
   useEffect(() => {
+    if (editor && editor.isEditable !== editable) {
+      editor.setEditable(editable)
+    }
+  }, [editor, editable])
+
+  useEffect(() => {
     if (editor && editor.getHTML() !== content) {
       editor.commands.setContent(content)
     }

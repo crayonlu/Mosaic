@@ -108,6 +108,8 @@ export const assetCommands = {
   readAudioFile: (filename: string) => callRust<number[]>('read_audio_file', { filename }),
 
   readImageFile: (filename: string) => callRust<number[]>('read_image_file', { filename }),
+
+  deleteAsset: (id: string) => callRust<void>('delete_asset', { id }),
 }
 
 export const statsCommands = {

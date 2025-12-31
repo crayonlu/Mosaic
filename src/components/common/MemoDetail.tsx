@@ -14,6 +14,8 @@ import {
   Trash2,
   Sparkles,
   Loader2,
+  Plus,
+  Upload,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -37,6 +39,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useAI } from '@/hooks/use-ai'
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface MemoDetailProps {
   memo: MemoWithResources | null
@@ -55,7 +61,12 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleteResourceDialogOpen, setIsDeleteResourceDialogOpen] = useState(false)
+  const [resourceToDelete, setResourceToDelete] = useState<string | null>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [reorderedImageResources, setReorderedImageResources] = useState<any[]>([])
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null)
   const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
@@ -63,6 +74,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [videoUrls, setVideoUrls] = useState<Map<string, string>>(new Map())
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const audioRefsRef = useRef<Map<string, HTMLAudioElement>>(new Map())
   const videoRefsRef = useRef<Map<string, HTMLVideoElement>>(new Map())
   const { suggestTags, loading: aiLoading } = useAI()
@@ -82,6 +94,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     if (!isEditing) {
       setEditedContent(memo.content)
     }
+
+    setReorderedImageResources(imageResources)
 
     const loadResources = async () => {
       const newImageUrls = new Map<string, string>()
@@ -147,6 +161,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       setEditedContent(memo.content)
       setEditedTags([...memo.tags])
       setTagInput('')
+      setReorderedImageResources(imageResources)
       setIsEditing(true)
     }
   }
@@ -165,10 +180,12 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     try {
       setIsSaving(true)
+      const newFilenames = reorderedImageResources.map(r => r.filename)
       await memoCommands.updateMemo({
         id: memo.id,
         content: editedContent,
         tags: editedTags,
+        resourceFilenames: newFilenames,
       })
       setIsEditing(false)
       onUpdate?.()
@@ -263,6 +280,151 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     }
   }
 
+  const handleDeleteResource = async () => {
+    if (!resourceToDelete || !memo) return
+
+    try {
+      await assetCommands.deleteAsset(resourceToDelete)
+      onUpdate?.()
+      toast.success('资源删除成功')
+    } catch (error) {
+      console.error('删除资源失败:', error)
+      toast.error('资源删除失败')
+    } finally {
+      setIsDeleteResourceDialogOpen(false)
+      setResourceToDelete(null)
+    }
+  }
+
+  const handleUploadResources = async (files: FileList) => {
+    if (!memo || isUploading) return
+
+    setIsUploading(true)
+    try {
+      const uploadedFiles: string[] = []
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const arrayBuffer = await file.arrayBuffer()
+        const uint8Array = Array.from(new Uint8Array(arrayBuffer))
+
+        const tempFilePath = await assetCommands.saveTempFile(file.name, uint8Array)
+        const uploadedResources = await assetCommands.uploadFiles([tempFilePath])
+
+        if (uploadedResources.length > 0) {
+          uploadedFiles.push(uploadedResources[0].filename)
+        }
+      }
+
+      if (uploadedFiles.length > 0) {
+        const existingFilenames = memo.resources.map(r => r.filename)
+        await memoCommands.updateMemo({
+          id: memo.id,
+          resourceFilenames: [...existingFilenames, ...uploadedFiles],
+        })
+        onUpdate?.()
+        toast.success(`成功添加 ${uploadedFiles.length} 个资源`)
+      }
+    } catch (error) {
+      console.error('上传资源失败:', error)
+      toast.error('上传资源失败')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = reorderedImageResources.findIndex(r => r.id === active.id)
+    const newIndex = reorderedImageResources.findIndex(r => r.id === over.id)
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const reordered = arrayMove(reorderedImageResources, oldIndex, newIndex)
+      setReorderedImageResources(reordered)
+    }
+  }
+
+
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    const files = e.dataTransfer.files
+    if (files.length > 0) {
+      handleUploadResources(files)
+    }
+  }
+
+  const SortableImage = ({ resource, index }: { resource: any, index: number }) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: resource.id,
+    })
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    }
+
+    const url = imageUrls.get(resource.id)
+    if (!url) return null
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className={`group relative rounded-lg border bg-card overflow-hidden cursor-pointer ${
+          isDragging ? 'opacity-50' : ''
+        } ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''}`}
+        onClick={() => !isDragging && openImageModal(index)}
+      >
+        <img
+          src={url}
+          alt={resource.filename}
+          className="w-full aspect-square object-cover"
+        />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+        {isEditing && (
+          <Button
+            variant="destructive"
+            size="icon"
+            className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation()
+              setResourceToDelete(resource.id)
+              setIsDeleteResourceDialogOpen(true)
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="text-xs text-white">{resource.filename}</div>
+          <div className="text-[10px] text-white/80 mt-1">
+            {formatSize(resource.size)}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const handleFileSelect = () => {
+    fileInputRef.current?.click()
+  }
+
   const handleAudioPlay = async (resourceId: string) => {
     if (playingAudioId === resourceId) {
       const audio = audioRefsRef.current.get(resourceId)
@@ -317,6 +479,14 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
   const formatTime = (timestamp: number) => {
     return dayjs.utc(timestamp).local().format('YYYY年MM月DD日 HH:mm')
+  }
+
+  const getImageGridClass = (count: number) => {
+    if (count === 1) return 'grid-cols-1'
+    if (count === 2) return 'grid-cols-2'
+    if (count === 3) return 'grid-cols-3'
+    if (count === 4) return 'grid-cols-2'
+    return 'grid-cols-3'
   }
 
   const formatSize = (bytes: number) => {
@@ -374,7 +544,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 disabled={
                   isSaving ||
                   (editedContent === memo.content &&
-                    JSON.stringify(editedTags.sort()) === JSON.stringify(memo.tags.sort()))
+                    JSON.stringify(editedTags.sort()) === JSON.stringify(memo.tags.sort()) &&
+                    JSON.stringify(reorderedImageResources.map(r => r.id)) === JSON.stringify(imageResources.map(r => r.id)))
                 }
               >
                 <Save className="h-4 w-4 mr-1" />
@@ -518,32 +689,44 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 <ImageIcon className="h-4 w-4" />
                 <span>图片 ({imageResources.length})</span>
               </div>
-              <div className="grid grid-cols-1 gap-3">
-                {imageResources.map((resource, index) => {
-                  const url = imageUrls.get(resource.id)
-                  if (!url) return null
-                  return (
-                    <div
-                      key={resource.id}
-                      className="group relative rounded-lg border bg-card overflow-hidden cursor-pointer"
-                      onClick={() => openImageModal(index)}
-                    >
-                      <img
-                        src={url}
-                        alt={resource.filename}
-                        className="w-full h-auto object-contain max-h-96"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                      <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="text-xs text-white">{resource.filename}</div>
-                        <div className="text-[10px] text-white/80 mt-1">
-                          {formatSize(resource.size)}
+              {isEditing ? (
+                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={reorderedImageResources.map(r => r.id)} strategy={rectSortingStrategy}>
+                    <div className={`grid ${getImageGridClass(reorderedImageResources.length)} gap-3`}>
+                      {reorderedImageResources.map((resource, index) => (
+                        <SortableImage key={resource.id} resource={resource} index={index} />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              ) : (
+                <div className={`grid ${getImageGridClass(imageResources.length)} gap-3`}>
+                  {imageResources.map((resource, index) => {
+                    const url = imageUrls.get(resource.id)
+                    if (!url) return null
+                    return (
+                      <div
+                        key={resource.id}
+                        className="group relative rounded-lg border bg-card overflow-hidden cursor-pointer"
+                        onClick={() => openImageModal(index)}
+                      >
+                        <img
+                          src={url}
+                          alt={resource.filename}
+                          className="w-full aspect-square object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="text-xs text-white">{resource.filename}</div>
+                          <div className="text-[10px] text-white/80 mt-1">
+                            {formatSize(resource.size)}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -584,6 +767,19 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                           </Button>
                         )}
                       </div>
+                      {isEditing && (
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-8 w-8"
+                          onClick={() => {
+                            setResourceToDelete(resource.id)
+                            setIsDeleteResourceDialogOpen(true)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                       <div className="p-3 bg-card">
                         <div className="text-sm font-medium truncate">{resource.filename}</div>
                         <div className="text-xs text-muted-foreground mt-1">
@@ -628,6 +824,19 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                             {formatSize(resource.size)}
                           </div>
                         </div>
+                        {isEditing && (
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => {
+                              setResourceToDelete(resource.id)
+                              setIsDeleteResourceDialogOpen(true)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                       <audio
                         ref={el => {
@@ -669,6 +878,19 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                           {formatSize(resource.size)}
                         </div>
                       </div>
+                      {isEditing && (
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={() => {
+                            setResourceToDelete(resource.id)
+                            setIsDeleteResourceDialogOpen(true)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -676,7 +898,57 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
             </div>
           )}
 
-          {memo.tags && memo.tags.length > 0 && (
+          {isEditing && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Plus className="h-4 w-4" />
+                <span>添加资源</span>
+              </div>
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                  isDragOver
+                    ? 'border-primary bg-primary/5'
+                    : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <div className="space-y-2">
+                  <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                  <div className="text-sm text-muted-foreground">
+                    拖拽文件到此处或{' '}
+                    <button
+                      type="button"
+                      onClick={handleFileSelect}
+                      className="text-primary hover:underline"
+                      disabled={isUploading}
+                    >
+                      选择文件
+                    </button>
+                  </div>
+                  {isUploading && (
+                    <div className="text-xs text-muted-foreground">上传中...</div>
+                  )}
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+                onChange={(e) => {
+                  if (e.target.files) {
+                    handleUploadResources(e.target.files)
+                    e.target.value = ''
+                  }
+                }}
+                className="hidden"
+              />
+            </div>
+          )}
+
+          {memo.tags && memo.tags.length > 0 && !isEditing && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                 <Tag className="h-4 w-4" />
@@ -696,19 +968,19 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
           )}
         </div>
 
-        {isImageModalOpen && imageResources.length > 0 && (
+        {isImageModalOpen && reorderedImageResources.length > 0 && (
           <div
             className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
             onClick={() => setIsImageModalOpen(false)}
           >
             <div className="relative max-w-5xl max-h-[90vh]">
               <img
-                src={imageUrls.get(imageResources[currentImageIndex]?.id) || ''}
-                alt={imageResources[currentImageIndex]?.filename}
+                src={imageUrls.get(reorderedImageResources[currentImageIndex]?.id) || ''}
+                alt={reorderedImageResources[currentImageIndex]?.filename}
                 className="max-w-full max-h-[90vh] object-contain"
                 onClick={e => e.stopPropagation()}
               />
-              {imageResources.length > 1 && (
+              {reorderedImageResources.length > 1 && (
                 <>
                   <Button
                     variant="ghost"
@@ -717,7 +989,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                     onClick={e => {
                       e.stopPropagation()
                       setCurrentImageIndex(prev =>
-                        prev > 0 ? prev - 1 : imageResources.length - 1
+                        prev > 0 ? prev - 1 : reorderedImageResources.length - 1
                       )
                     }}
                   >
@@ -730,14 +1002,14 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                     onClick={e => {
                       e.stopPropagation()
                       setCurrentImageIndex(prev =>
-                        prev < imageResources.length - 1 ? prev + 1 : 0
+                        prev < reorderedImageResources.length - 1 ? prev + 1 : 0
                       )
                     }}
                   >
                     <ArrowLeft className="h-5 w-5 rotate-180" />
                   </Button>
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                    {currentImageIndex + 1} / {imageResources.length}
+                    {currentImageIndex + 1} / {reorderedImageResources.length}
                   </div>
                 </>
               )}
@@ -773,6 +1045,33 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
               disabled={isDeleting}
             >
               {isDeleting ? '删除中...' : '删除'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={isDeleteResourceDialogOpen}
+        onOpenChange={setIsDeleteResourceDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>删除资源</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">确定要删除这个资源吗？此操作不可撤销。</p>
+          <DialogFooter className="mt-4 flex justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsDeleteResourceDialogOpen(false)}
+            >
+              取消
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteResource}
+            >
+              删除
             </Button>
           </DialogFooter>
         </DialogContent>
