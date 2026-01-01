@@ -47,14 +47,18 @@ export function AppSidebar() {
             <SidebarMenuButton asChild className="hover:bg-transparent hover:text-inherit">
               <Link to="/">
                 <div className="leading-none text-primary/80">
-                  <img src={theme === 'dark' ? DarkMosaicIcon : LightMosaicIcon} alt="Mosaic" className="size-16" />
+                  <img
+                    src={theme === 'dark' ? DarkMosaicIcon : LightMosaicIcon}
+                    alt="Mosaic"
+                    className="size-16"
+                  />
                 </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={(e) => toggleTheme(e)}
+              onClick={e => toggleTheme(e)}
               tooltip={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
               className="hover:bg-primary/5 hover:text-primary transition-all"
             >
@@ -88,7 +92,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup className='group-data-[collapsible=icon]:hidden'>
+        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
           <SidebarGroupContent>
             <SidebarHeatMap />
           </SidebarGroupContent>

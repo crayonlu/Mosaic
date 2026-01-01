@@ -96,3 +96,8 @@ pub async fn read_image_file(app_handle: AppHandle, filename: String) -> AppResu
     let data = fs::read(&file_path).map_err(|e| crate::error::AppError::Io(e))?;
     Ok(data)
 }
+
+#[tauri::command]
+pub async fn delete_asset_file(app_handle: AppHandle, filename: String) -> AppResult<()> {
+    storage::delete_asset_file(&app_handle, &filename).await
+}

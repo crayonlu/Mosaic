@@ -120,6 +120,19 @@
   --sidebar-accent-foreground: oklch(0.25 0.03 240);
   --sidebar-border: oklch(0.88 0.01 85);
   --sidebar-ring: oklch(0.55 0.15 25);
+  /* Toast colors */
+  --toast-success-bg: var(--sidebar);
+  --toast-success-border: var(--sidebar-primary);
+  --toast-success-text: var(--sidebar-foreground);
+  --toast-error-bg: oklch(0.92 0.1 25);
+  --toast-error-border: oklch(0.58 0.2 25);
+  --toast-error-text: oklch(0.22 0.04 25);
+  --toast-warning-bg: oklch(0.92 0.1 65);
+  --toast-warning-border: oklch(0.52 0.15 65);
+  --toast-warning-text: oklch(0.22 0.04 65);
+  --toast-info-bg: var(--background);
+  --toast-info-border: var(--border);
+  --toast-info-text: var(--foreground);
 }
 
 .dark {
@@ -154,6 +167,19 @@
   --sidebar-accent-foreground: oklch(76.518% 0.10343 249.337);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.6 0.2 250);
+  /* Toast colors for dark theme */
+  --toast-success-bg: var(--sidebar);
+  --toast-success-border: var(--sidebar-primary);
+  --toast-success-text: var(--sidebar-foreground);
+  --toast-error-bg: oklch(0.22 0.12 25);
+  --toast-error-border: oklch(0.65 0.18 22);
+  --toast-error-text: oklch(0.92 0.04 25);
+  --toast-warning-bg: oklch(0.22 0.12 65);
+  --toast-warning-border: oklch(0.68 0.16 70);
+  --toast-warning-text: oklch(0.92 0.04 65);
+  --toast-info-bg: var(--background);
+  --toast-info-border: var(--border);
+  --toast-info-text: var(--foreground);
 }
 
 @layer base {
@@ -213,4 +239,29 @@
   to {
     clip-path: circle(150% at var(--x) var(--y));
   }
+}
+
+/* Toast custom colors */
+.toast-success {
+  background-color: var(--toast-success-bg) !important;
+  border-color: var(--toast-success-border) !important;
+  color: var(--toast-success-text) !important;
+}
+
+.toast-error {
+  background-color: var(--toast-error-bg) !important;
+  border-color: var(--toast-error-border) !important;
+  color: var(--toast-error-text) !important;
+}
+
+.toast-warning {
+  background-color: var(--toast-warning-bg) !important;
+  border-color: var(--toast-warning-border) !important;
+  color: var(--toast-warning-text) !important;
+}
+
+.toast-info {
+  background-color: var(--toast-info-bg) !important;
+  border-color: var(--toast-info-border) !important;
+  color: var(--toast-info-text) !important;
 }
