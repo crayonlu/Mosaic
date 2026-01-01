@@ -26,6 +26,16 @@ import type {
   SummaryData,
   SummaryQuery,
 } from '@/types/stats'
+import type {
+  CompleteTextRequest,
+  CompleteTextResponse,
+  RewriteTextRequest,
+  RewriteTextResponse,
+  SummarizeTextRequest,
+  SummarizeTextResponse,
+  SuggestTagsRequest,
+  SuggestTagsResponse,
+} from '@/types/ai'
 
 export async function callRust<T = unknown>(
   cmd: string,
@@ -98,6 +108,8 @@ export const assetCommands = {
   readAudioFile: (filename: string) => callRust<number[]>('read_audio_file', { filename }),
 
   readImageFile: (filename: string) => callRust<number[]>('read_image_file', { filename }),
+
+  deleteAssetFile: (filename: string) => callRust<void>('delete_asset_file', { filename }),
 }
 
 export const statsCommands = {
@@ -105,6 +117,18 @@ export const statsCommands = {
   getTimeline: (query: TimelineQuery) => callRust<TimelineData>('get_timeline', { query }),
   getTrends: (query: TrendsQuery) => callRust<TrendsData>('get_trends', { query }),
   getSummary: (query: SummaryQuery) => callRust<SummaryData>('get_summary', { query }),
+}
+
+export const aiCommands = {
+  completeText: (req: CompleteTextRequest) =>
+    callRust<CompleteTextResponse>('complete_text', { req }),
+
+  rewriteText: (req: RewriteTextRequest) => callRust<RewriteTextResponse>('rewrite_text', { req }),
+
+  summarizeText: (req: SummarizeTextRequest) =>
+    callRust<SummarizeTextResponse>('summarize_text', { req }),
+
+  suggestTags: (req: SuggestTagsRequest) => callRust<SuggestTagsResponse>('suggest_tags', { req }),
 }
 
 export default {
