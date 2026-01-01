@@ -26,6 +26,7 @@ dist-ssr
 # Editor
 .vscode/
 .cursor/
+.claude/
 
 # Environment Variables
 .env
