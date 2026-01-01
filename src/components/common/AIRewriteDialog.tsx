@@ -82,66 +82,61 @@ export function AIRewriteDialog({
       </DialogHeader>
 
       <div className="space-y-4 ">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">重写风格</label>
-            <Select value={style} onValueChange={setStyle} disabled={loading}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {rewriteStyles.map(s => (
-                  <SelectItem key={s.value} value={s.value}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {!rewrittenText && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">原文</label>
-              <Textarea
-                value={originalText}
-                readOnly
-                rows={6}
-                className="resize-none"
-              />
-            </div>
-          )}
-
-          {rewrittenText && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">重写结果</label>
-              <Textarea
-                value={rewrittenText}
-                onChange={e => setRewrittenText(e.target.value)}
-                rows={6}
-                className="resize-none"
-              />
-            </div>
-          )}
-
-          {!rewrittenText && (
-            <Button
-              onClick={handleRewrite}
-              disabled={loading || !originalText.trim()}
-              className="w-full gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  重写中...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="h-4 w-4" />
-                  开始重写
-                </>
-              )}
-            </Button>
-          )}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">重写风格</label>
+          <Select value={style} onValueChange={setStyle} disabled={loading}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {rewriteStyles.map(s => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+
+        {!rewrittenText && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">原文</label>
+            <Textarea value={originalText} readOnly rows={6} className="resize-none" />
+          </div>
+        )}
+
+        {rewrittenText && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">重写结果</label>
+            <Textarea
+              value={rewrittenText}
+              onChange={e => setRewrittenText(e.target.value)}
+              rows={6}
+              className="resize-none"
+            />
+          </div>
+        )}
+
+        {!rewrittenText && (
+          <Button
+            onClick={handleRewrite}
+            disabled={loading || !originalText.trim()}
+            className="w-full gap-2"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                重写中...
+              </>
+            ) : (
+              <>
+                <Wand2 className="h-4 w-4" />
+                开始重写
+              </>
+            )}
+          </Button>
+        )}
+      </div>
 
       {rewrittenText && (
         <DialogFooter className="flex gap-2">

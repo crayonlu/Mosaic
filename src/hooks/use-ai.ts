@@ -27,7 +27,6 @@ export function useAI() {
 
     try {
       const config = await loadAIConfig()
-      console.log(config)
       aiConfigCache = { config, timestamp: now }
       return !!config
     } catch (error) {

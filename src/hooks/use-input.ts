@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react'
 import { useInputStore } from '@/stores/input-store'
+import { htmlToText } from '@/utils/domParser'
 
 interface UseInputOptions {
   onSubmit?: (value: string, resourceFilenames?: string[]) => void
@@ -27,7 +28,7 @@ export function useInput(options?: UseInputOptions) {
   )
 
   const handleSubmit = useCallback(() => {
-    const textContent = inputValue ? inputValue.replace(/<[^>]*>/g, '').trim() : ''
+    const textContent = htmlToText(inputValue)
     if (textContent || resourceFilenames.length > 0) {
       options?.onSubmit?.(inputValue || '', resourceFilenames)
       clearInputValue()

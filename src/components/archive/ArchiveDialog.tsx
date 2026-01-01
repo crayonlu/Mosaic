@@ -113,84 +113,82 @@ export function ArchiveDialog({
         </DialogTitle>
       </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          <div className="text-sm text-muted-foreground">
-            {isUpdate
-              ? `将选中的 ${selectedCount} 条memo添加到 ${dateDisplay} 的日记中`
-              : `将选中的 ${selectedCount} 条memo归档为 ${dateDisplay} 的日记`}
-          </div>
+      <div className="space-y-6 py-4">
+        <div className="text-sm text-muted-foreground">
+          {isUpdate
+            ? `将选中的 ${selectedCount} 条memo添加到 ${dateDisplay} 的日记中`
+            : `将选中的 ${selectedCount} 条memo归档为 ${dateDisplay} 的日记`}
+        </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="summary">日记总结 (可选)</Label>
-                {selectedMemosContent && selectedMemosContent.trim() && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleGenerateSummary}
-                    disabled={isLoading || isGeneratingSummary || aiLoading}
-                    className="gap-2 h-7"
-                  >
-                    {isGeneratingSummary || aiLoading ? (
-                      <AILoadingIndicator size="sm" inline />
-                    ) : (
-                      <>
-                        <Sparkles className="h-3.5 w-3.5" />
-                        AI生成
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-              <Textarea
-                id="summary"
-                placeholder="写下今天的心情或总结..."
-                value={summary}
-                onChange={e => setSummary(e.target.value)}
-                rows={3}
-                disabled={isLoading || isGeneratingSummary}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <Label>心情</Label>
-              <Select value={moodKey} onValueChange={setMoodKey} disabled={isLoading}>
-                <SelectTrigger>
-                  <SelectValue placeholder="选择今天的心情" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MOOD_OPTIONS.map(mood => (
-                    <SelectItem key={mood.key} value={mood.key}>
-                      <div className="flex items-center gap-2">
-                        <span>{mood.emoji}</span>
-                        <span>{mood.label}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {moodKey && (
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">
-                    心情强度: {moodScore[0]}/10
-                  </Label>
-                  <Slider
-                    value={moodScore}
-                    onValueChange={setMoodScore}
-                    max={10}
-                    min={1}
-                    step={1}
-                    className="w-full"
-                    disabled={isLoading}
-                  />
-                </div>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="summary">日记总结 (可选)</Label>
+              {selectedMemosContent && selectedMemosContent.trim() && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleGenerateSummary}
+                  disabled={isLoading || isGeneratingSummary || aiLoading}
+                  className="gap-2 h-7"
+                >
+                  {isGeneratingSummary || aiLoading ? (
+                    <AILoadingIndicator size="sm" inline />
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      AI生成
+                    </>
+                  )}
+                </Button>
               )}
             </div>
+            <Textarea
+              id="summary"
+              placeholder="写下今天的心情或总结..."
+              value={summary}
+              onChange={e => setSummary(e.target.value)}
+              rows={3}
+              disabled={isLoading || isGeneratingSummary}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <Label>心情</Label>
+            <Select value={moodKey} onValueChange={setMoodKey} disabled={isLoading}>
+              <SelectTrigger>
+                <SelectValue placeholder="选择今天的心情" />
+              </SelectTrigger>
+              <SelectContent>
+                {MOOD_OPTIONS.map(mood => (
+                  <SelectItem key={mood.key} value={mood.key}>
+                    <div className="flex items-center gap-2">
+                      <span>{mood.emoji}</span>
+                      <span>{mood.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {moodKey && (
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">心情强度: {moodScore[0]}/10</Label>
+                <Slider
+                  value={moodScore}
+                  onValueChange={setMoodScore}
+                  max={10}
+                  min={1}
+                  step={1}
+                  className="w-full"
+                  disabled={isLoading}
+                />
+              </div>
+            )}
           </div>
         </div>
+      </div>
 
       <DialogFooter className="flex gap-2">
         <Button variant="outline" onClick={handleClose} disabled={isLoading}>

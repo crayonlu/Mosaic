@@ -1,37 +1,37 @@
 // AI-related type definitions
 
 export interface CompleteTextRequest {
-  content: string;
-  context?: string;
+  content: string
+  context?: string
 }
 
 export interface RewriteTextRequest {
-  text: string;
-  style?: string;
+  text: string
+  style?: string
 }
 
 export interface SummarizeTextRequest {
-  text: string;
-  maxLength?: number;
+  text: string
+  maxLength?: number
 }
 
 export interface SuggestTagsRequest {
-  content: string;
-  existingTags?: string[];
+  content: string
+  existingTags?: string[]
 }
 
 export interface CompleteTextResponse {
-  generatedText: string;
+  generatedText: string
 }
 
 export interface RewriteTextResponse {
-  rewrittenText: string;
+  rewrittenText: string
 }
 
 export interface SummarizeTextResponse {
-  summary: string;
+  summary: string
 }
 
 export interface SuggestTagsResponse {
-  tags: string[];
+  tags: string[]
 }

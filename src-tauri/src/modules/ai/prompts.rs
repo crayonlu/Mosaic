@@ -78,7 +78,7 @@ impl PromptBuilder {
             You need to suggest 3 to 5 tags for the content based on the existing tags.
             only output the suggested tags and do not repeat the existing tags.
             use the language of the content.
-            use a space to devide every two tags.
+            use a space to divide every two tags.
             --- here is the content and existing tags starting ---
             Content: {}
             Existing Tags: {}

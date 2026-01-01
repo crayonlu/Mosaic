@@ -109,7 +109,7 @@ export const assetCommands = {
 
   readImageFile: (filename: string) => callRust<number[]>('read_image_file', { filename }),
 
-  deleteAsset: (id: string) => callRust<void>('delete_asset', { id }),
+  deleteAssetFile: (filename: string) => callRust<void>('delete_asset_file', { filename }),
 }
 
 export const statsCommands = {
@@ -123,8 +123,7 @@ export const aiCommands = {
   completeText: (req: CompleteTextRequest) =>
     callRust<CompleteTextResponse>('complete_text', { req }),
 
-  rewriteText: (req: RewriteTextRequest) =>
-    callRust<RewriteTextResponse>('rewrite_text', { req }),
+  rewriteText: (req: RewriteTextRequest) => callRust<RewriteTextResponse>('rewrite_text', { req }),
 
   summarizeText: (req: SummarizeTextRequest) =>
     callRust<SummarizeTextResponse>('summarize_text', { req }),
