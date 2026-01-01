@@ -30,26 +30,26 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: './desktop/src-tauri -> target'
 
       - name: Install dependencies
         run: pnpm install
 
       - name: Build
-        run: pnpm tauri build
+        run: pnpm desktop:tauri build
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: mosaic-windows
-          path: src-tauri/target/release/bundle/**
+          path: desktop/src-tauri/target/release/bundle/**
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            src-tauri/target/release/bundle/**/*.exe
-            src-tauri/target/release/bundle/**/*.msi
+            desktop/src-tauri/target/release/bundle/**/*.exe
+            desktop/src-tauri/target/release/bundle/**/*.msi
           draft: false
           prerelease: false
         env:
