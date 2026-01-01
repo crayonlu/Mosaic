@@ -1,0 +1,239 @@
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Image as ImageIcon, Pause, Play, Video as VideoIcon, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+
+interface ResourcePreviewProps {
+  filename: string
+  previewUrl: string
+  type: 'image' | 'audio' | 'video'
+  size?: number
+  onRemove: () => void
+}
+
+export function ResourcePreview({
+  filename,
+  previewUrl,
+  type,
+  size,
+  onRemove,
+}: ResourcePreviewProps) {
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const progressRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+      if (videoRef.current) {
+        videoRef.current.pause()
+        videoRef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (type !== 'audio') return
+
+    const audio = audioRef.current
+    if (!audio) return
+
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime)
+
+    audio.addEventListener('timeupdate', handleTimeUpdate)
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate)
+    }
+  }, [type])
+
+  const handlePlayPause = () => {
+    if (type === 'audio' && audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+      } else {
+        audioRef.current.play()
+      }
+      setIsPlaying(!isPlaying)
+    } else if (type === 'video' && videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause()
+      } else {
+        videoRef.current.play()
+      }
+      setIsPlaying(!isPlaying)
+    }
+  }
+
+  const formatSize = (bytes?: number) => {
+    if (!bytes) return ''
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  if (type === 'image') {
+    return (
+      <>
+        <div className="group relative rounded-lg border bg-card overflow-hidden">
+          <img
+            src={previewUrl}
+            alt={filename}
+            className="w-full h-18 object-cover cursor-pointer transition-opacity hover:opacity-90"
+            onClick={() => setIsImageModalOpen(true)}
+          />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+            <ImageIcon className="h-6 w-6 text-white" />
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-1 right-1 h-4 w-4 bg-black/50 hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={e => {
+              e.stopPropagation()
+              onRemove()
+            }}
+          >
+            <X className="h-1 w-1 text-white" />
+          </Button>
+          <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-2">
+            {size && <div className="text-[8px] text-white/80">{formatSize(size)}</div>}
+          </div>
+        </div>
+        <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+          <DialogContent className="max-w-4xl p-0">
+            <img
+              src={previewUrl}
+              alt={filename}
+              className="w-full h-auto max-h-[80vh] object-contain"
+            />
+          </DialogContent>
+        </Dialog>
+      </>
+    )
+  }
+
+  if (type === 'video') {
+    return (
+      <div className="group relative rounded-lg border bg-card overflow-hidden">
+        <video
+          ref={videoRef}
+          src={previewUrl}
+          className="w-full h-20 object-cover"
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => setIsPlaying(false)}
+        />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 bg-black/50 hover:bg-black/70 text-white rounded-full"
+            onClick={handlePlayPause}
+          >
+            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+          </Button>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-1 right-1 h-6 w-6 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={onRemove}
+        >
+          <X className="h-3 w-3" />
+        </Button>
+        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-2">
+          <div className="flex items-center gap-1 text-xs text-white">
+            <VideoIcon className="h-3 w-3" />
+            <span className="truncate">{filename}</span>
+          </div>
+          {size && <div className="text-[10px] text-white/80">{formatSize(size)}</div>}
+        </div>
+      </div>
+    )
+  }
+
+  if (type === 'audio') {
+    const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      const audio = audioRef.current
+      if (!audio || !progressRef.current) return
+
+      const audioDuration = audio.duration
+      if (!audioDuration || audioDuration <= 0) return
+
+      const rect = progressRef.current.getBoundingClientRect()
+      const clickX = e.clientX - rect.left
+      const percentage = clickX / rect.width
+      const newTime = percentage * audioDuration
+      audio.currentTime = newTime
+      setCurrentTime(newTime)
+    }
+
+    const audioDuration = audioRef.current?.duration || 0
+    const progressPercentage = audioDuration > 0 ? (currentTime / audioDuration) * 100 : 0
+
+    return (
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="px-3 py-2.5 bg-background">
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full shrink-0 hover:bg-primary/10"
+              onClick={handlePlayPause}
+            >
+              {isPlaying ? (
+                <Pause className="h-3.5 w-3.5" />
+              ) : (
+                <Play className="h-3.5 w-3.5 ml-0.5" />
+              )}
+            </Button>
+            <div
+              ref={progressRef}
+              className="relative h-1.5 flex-1 bg-muted/60 rounded-full cursor-pointer group overflow-hidden"
+              onClick={handleProgressClick}
+            >
+              <div
+                className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all"
+                style={{ width: `${Math.max(progressPercentage, 0)}%` }}
+              />
+              {progressPercentage > 0 && (
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 h-2.5 w-2.5 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm border border-background"
+                  style={{ left: `calc(${progressPercentage}% - 5px)` }}
+                />
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+              onClick={onRemove}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+        <audio
+          ref={audioRef}
+          src={previewUrl}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => {
+            setIsPlaying(false)
+            setCurrentTime(0)
+          }}
+          className="hidden"
+        />
+      </div>
+    )
+  }
+
+  return null
+}

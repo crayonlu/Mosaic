@@ -1,14 +1,42 @@
+# Dependencies
 node_modules
+**/node_modules
+
+# Build outputs
 dist
 build
+**/dist
+**/build
+
+# Lock files
 *.lock
 pnpm-lock.yaml
 package-lock.json
 yarn.lock
+
+# OS
 .DS_Store
+
+# Logs
 *.log
+
+# Tauri
+**/src-tauri/target
+**/src-tauri/gen
 src-tauri
 target
 gen
+
+# Generated
 vite-env.d.ts
-src/components/ui/
+*.d.ts
+
+# UI component library (shadcn)
+**/src/components/ui/
+**/components/ui/
+
+# Mobile specific
+**/.expo
+**/android
+**/ios
+mobile/app.json

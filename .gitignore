@@ -1,3 +1,8 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
 # Logs
 logs
 *.log
@@ -7,29 +12,57 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Testing
+coverage/
+
+# Production
+dist/
+dist-ssr/
+build/
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 *.local
 
 # Editor directories and files
-.vscode/*
+.vscode/
 !.vscode/extensions.json
-.idea
+!.vscode/settings.json
+.idea/
+.cursor/
+.claude/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*.swo
+*~
 
-# Editor
-.vscode/
-.cursor/
-.claude/
+# OS
+Thumbs.db
 
-# Environment Variables
-.env
-
-# android
+# Tauri
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+src-tauri/target/
 gen/
+
+# Expo / React Native
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+.expo/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+unused
