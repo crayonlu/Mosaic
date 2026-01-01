@@ -1,0 +1,43 @@
+{
+  "folders": [
+    {
+      "name": "🖥️ Desktop (Tauri)",
+      "path": "./desktop"
+    },
+    {
+      "name": "📱 Mobile (React Native)",
+      "path": "./mobile"
+    },
+    {
+      "name": "📚 Docs",
+      "path": "./docs"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.expo": true,
+      "**/build": true,
+      "desktop/src-tauri/target": true,
+      "desktop/src-tauri/gen": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.expo": true,
+      "**/build": true,
+      "desktop/src-tauri/target": true,
+      "desktop/src-tauri/gen": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "tauri-apps.tauri-vscode",
+      "rust-lang.rust-analyzer",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "bradlc.vscode-tailwindcss"
+    ]
+  }
+}
