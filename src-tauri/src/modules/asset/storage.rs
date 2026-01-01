@@ -4,7 +4,7 @@ use crate::database::schema::ResourceType;
 use crate::error::{AppError, AppResult};
 use std::fs;
 use std::path::{Path, PathBuf};
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use uuid::Uuid;
 
 pub fn get_assets_dir(app_handle: &AppHandle) -> AppResult<PathBuf> {
@@ -35,6 +35,17 @@ pub async fn process_and_store_file(
     } else {
         process_other_file(app_handle, source_path, &ext).await
     }
+}
+
+pub async fn delete_asset_file(app_handle: &AppHandle, filename: &str) -> AppResult<()> {
+    let assets_dir = get_assets_dir(app_handle)?;
+    let file_path = assets_dir.join(filename);
+
+    if file_path.exists() {
+        fs::remove_file(file_path).map_err(AppError::Io)?;
+    }
+
+    Ok(())
 }
 
 async fn process_image(app_handle: &AppHandle, source_path: &str) -> AppResult<UploadedResource> {

@@ -284,7 +284,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     if (!resourceToDelete || !memo) return
 
     try {
-      await assetCommands.deleteAsset(resourceToDelete)
+      await assetCommands.deleteAssetFile(resourceToDelete)
       onUpdate?.()
       toast.success('资源删除成功')
     } catch (error) {
@@ -346,8 +346,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     }
   }
 
-
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragOver(true)
@@ -367,7 +365,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     }
   }
 
-  const SortableImage = ({ resource, index }: { resource: any, index: number }) => {
+  const SortableImage = ({ resource, index }: { resource: any; index: number }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
       id: resource.id,
     })
@@ -391,18 +389,14 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
         } ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''}`}
         onClick={() => !isDragging && openImageModal(index)}
       >
-        <img
-          src={url}
-          alt={resource.filename}
-          className="w-full aspect-square object-cover"
-        />
+        <img src={url} alt={resource.filename} className="w-full aspect-square object-cover" />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
         {isEditing && (
           <Button
             variant="destructive"
             size="icon"
             className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation()
               setResourceToDelete(resource.id)
               setIsDeleteResourceDialogOpen(true)
@@ -413,9 +407,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
         )}
         <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="text-xs text-white">{resource.filename}</div>
-          <div className="text-[10px] text-white/80 mt-1">
-            {formatSize(resource.size)}
-          </div>
+          <div className="text-[10px] text-white/80 mt-1">{formatSize(resource.size)}</div>
         </div>
       </div>
     )
@@ -545,7 +537,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                   isSaving ||
                   (editedContent === memo.content &&
                     JSON.stringify(editedTags.sort()) === JSON.stringify(memo.tags.sort()) &&
-                    JSON.stringify(reorderedImageResources.map(r => r.id)) === JSON.stringify(imageResources.map(r => r.id)))
+                    JSON.stringify(reorderedImageResources.map(r => r.id)) ===
+                      JSON.stringify(imageResources.map(r => r.id)))
                 }
               >
                 <Save className="h-4 w-4 mr-1" />
@@ -691,8 +684,13 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
               </div>
               {isEditing ? (
                 <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <SortableContext items={reorderedImageResources.map(r => r.id)} strategy={rectSortingStrategy}>
-                    <div className={`grid ${getImageGridClass(reorderedImageResources.length)} gap-3`}>
+                  <SortableContext
+                    items={reorderedImageResources.map(r => r.id)}
+                    strategy={rectSortingStrategy}
+                  >
+                    <div
+                      className={`grid ${getImageGridClass(reorderedImageResources.length)} gap-3`}
+                    >
                       {reorderedImageResources.map((resource, index) => (
                         <SortableImage key={resource.id} resource={resource} index={index} />
                       ))}
@@ -927,9 +925,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                       选择文件
                     </button>
                   </div>
-                  {isUploading && (
-                    <div className="text-xs text-muted-foreground">上传中...</div>
-                  )}
+                  {isUploading && <div className="text-xs text-muted-foreground">上传中...</div>}
                 </div>
               </div>
               <input
@@ -937,7 +933,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 type="file"
                 multiple
                 accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
-                onChange={(e) => {
+                onChange={e => {
                   if (e.target.files) {
                     handleUploadResources(e.target.files)
                     e.target.value = ''
@@ -1049,10 +1045,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog
-        open={isDeleteResourceDialogOpen}
-        onOpenChange={setIsDeleteResourceDialogOpen}
-      >
+      <Dialog open={isDeleteResourceDialogOpen} onOpenChange={setIsDeleteResourceDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>删除资源</DialogTitle>
@@ -1066,11 +1059,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
             >
               取消
             </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDeleteResource}
-            >
+            <Button variant="destructive" size="sm" onClick={handleDeleteResource}>
               删除
             </Button>
           </DialogFooter>

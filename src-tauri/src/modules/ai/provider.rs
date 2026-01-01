@@ -252,7 +252,9 @@ impl AnthropicProvider {
             .map_err(|e| crate::error::AppError::Unknown(format!("Json parsing error: {}", e)))?;
 
         let generated_text = json["content"][0]["text"].as_str().ok_or_else(|| {
-            crate::error::AppError::Unknown("Json parsing error: cannot find content[0].text".to_string())
+            crate::error::AppError::Unknown(
+                "Json parsing error: cannot find content[0].text".to_string(),
+            )
         })?;
 
         Ok(generated_text.to_string())

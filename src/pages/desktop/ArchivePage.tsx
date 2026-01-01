@@ -15,6 +15,7 @@ import { LoadingMemoList } from '@/components/ui/loading/loading-skeleton'
 import { EmptyState } from '@/components/common/EmptyState'
 import { memoCommands, diaryCommands } from '@/utils/callRust'
 import { toast } from '@/hooks/use-toast'
+import { htmlToText } from '@/utils/domParser'
 import type { MemoWithResources } from '@/types/memo'
 
 type Mode = 'view' | 'select'
@@ -130,10 +131,9 @@ export default function ArchivePage() {
     const selectedMemosList = memos.filter(m => selectedMemos.has(m.id) && !m.isArchived)
     if (selectedMemosList.length === 0) return ''
 
-    const contents = selectedMemosList.map(memo => {
-      const textContent = memo.content.replace(/<[^>]*>/g, '').trim()
-      return textContent
-    }).filter(text => text.length > 0)
+    const contents = selectedMemosList
+      .map(memo => htmlToText(memo.content))
+      .filter(text => text.length > 0)
 
     return contents.join('\n\n')
   }
@@ -208,7 +208,7 @@ export default function ArchivePage() {
   return (
     <DeskTopLayout className="relative">
       <div className="h-full flex flex-col">
-        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
+        <div className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
           <div className="flex items-center justify-between px-6 pb-4 pt-2">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -311,7 +311,7 @@ export default function ArchivePage() {
         </div>
 
         {mode === 'select' && memos.length > 0 && (
-          <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky bottom-0 z-10">
+          <div className="border-t bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky bottom-0 z-10">
             <div className="flex items-center justify-between px-6 pt-4 pb-2">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
