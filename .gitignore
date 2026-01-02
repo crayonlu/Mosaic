@@ -9,7 +9,7 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
+bun-debug.log*
 lerna-debug.log*
 
 # Testing
@@ -66,3 +66,5 @@ mobile/web-build/
 .cache/
 
 unused
+.shared/
+.github/prompts/

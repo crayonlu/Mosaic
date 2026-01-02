@@ -3,30 +3,33 @@
   "version": "1.2.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "desktop",
+    "mobile"
+  ],
   "description": "Mosaic - Desktop (Tauri) and Mobile (React Native) workspace",
   "scripts": {
-    "desktop:dev": "pnpm --filter desktop dev",
-    "desktop:build": "pnpm --filter desktop build",
-    "desktop:tauri": "pnpm --filter desktop tauri",
-    "mobile:start": "pnpm --filter mobile start",
-    "mobile:android": "pnpm --filter mobile android",
-    "mobile:ios": "pnpm --filter mobile ios",
-    "mobile:web": "pnpm --filter mobile web",
-    "lint": "pnpm --filter desktop lint && pnpm --filter mobile lint",
-    "lint:desktop": "pnpm --filter desktop lint",
-    "lint:desktop:fix": "pnpm --filter desktop lint:fix",
-    "lint:mobile": "pnpm --filter mobile lint",
-    "lint:mobile:fix": "pnpm --filter mobile lint:fix",
-    "format": "pnpm --filter desktop format && pnpm --filter mobile format",
-    "format:desktop": "pnpm --filter desktop format",
-    "format:desktop:check": "pnpm --filter desktop format:check",
-    "format:mobile": "pnpm --filter mobile format",
-    "format:mobile:check": "pnpm --filter mobile format:check",
-    "check": "pnpm lint && pnpm format:desktop:check && pnpm format:mobile:check"
+    "desktop:dev": "bun --filter @mosaic/desktop dev",
+    "desktop:build": "bun --filter @mosaic/desktop build",
+    "desktop:tauri": "bun --filter @mosaic/desktop tauri",
+    "mobile:start": "bun --filter @mosaic/mobile start",
+    "mobile:android": "bun --filter @mosaic/mobile android",
+    "mobile:ios": "bun --filter @mosaic/mobile ios",
+    "mobile:web": "bun --filter @mosaic/mobile web",
+    "lint": "bun --filter @mosaic/desktop lint && bun --filter @mosaic/mobile lint",
+    "lint:desktop": "bun --filter @mosaic/desktop lint",
+    "lint:desktop:fix": "bun --filter @mosaic/desktop lint:fix",
+    "lint:mobile": "bun --filter @mosaic/mobile lint",
+    "lint:mobile:fix": "bun --filter @mosaic/mobile lint:fix",
+    "format": "bun --filter @mosaic/desktop format && bun --filter @mosaic/mobile format",
+    "format:desktop": "bun --filter @mosaic/desktop format",
+    "format:desktop:check": "bun --filter @mosaic/desktop format:check",
+    "format:mobile": "bun --filter @mosaic/mobile format",
+    "format:mobile:check": "bun --filter @mosaic/mobile format:check",
+    "check": "bun lint && bun format:desktop:check && bun format:mobile:check"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",

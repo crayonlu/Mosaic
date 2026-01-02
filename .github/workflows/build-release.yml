@@ -14,18 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
+          bun-version: latest
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -33,10 +28,10 @@ jobs:
           workspaces: './desktop/src-tauri -> target'
 
       - name: Install dependencies
-        run: pnpm install
+        run: bun install
 
       - name: Build
-        run: pnpm desktop:tauri build
+        run: bun desktop:tauri build
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
