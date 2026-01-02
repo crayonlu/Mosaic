@@ -1,0 +1,36 @@
+export const Colors = {
+  primary: {
+    DEFAULT: '#FFB5A7',
+    light: '#FFD4CC',
+    dark: '#FF8F7D',
+    gradient: ['#FFB5A7', '#FFD4CC'],
+  },
+  secondary: {
+    DEFAULT: '#A8E6CF',
+    light: '#C8F5E0',
+    dark: '#88D4B0',
+    gradient: ['#A8E6CF', '#C8F5E0'],
+  },
+  accent: {
+    DEFAULT: '#D4A5FF',
+    light: '#E8C8FF',
+    dark: '#B885E8',
+    gradient: ['#D4A5FF', '#E8C8FF'],
+  },
+  success: '#6BCB77',
+  warning: '#FFD93D',
+  error: '#FF6B6B',
+  neutral: {
+    0: '#FFFFFF',
+    50: '#FAFAFA',
+    100: '#F5F5F5',
+    200: '#EEEEEE',
+    300: '#E0E0E0',
+    400: '#BDBDBD',
+    500: '#9E9E9E',
+    600: '#757575',
+    700: '#616161',
+    800: '#424242',
+    900: '#212121',
+  },
+}

@@ -2,8 +2,8 @@
  * Settings Tab - App Settings and Preferences
  */
 
-import { View, StyleSheet } from 'react-native'
 import { useThemeStore } from '@/stores/theme-store'
+import { StyleSheet, View } from 'react-native'
 
 export default function SettingsScreen() {
   const { theme } = useThemeStore()

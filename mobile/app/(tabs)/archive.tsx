@@ -2,8 +2,8 @@
  * Archive Tab - History & Timeline View
  */
 
-import { View, StyleSheet } from 'react-native'
 import { useThemeStore } from '@/stores/theme-store'
+import { StyleSheet, View } from 'react-native'
 
 export default function ArchiveScreen() {
   const { theme } = useThemeStore()
