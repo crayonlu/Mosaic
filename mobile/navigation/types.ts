@@ -6,19 +6,12 @@
 export type RootParamList = {
   '(tabs)': undefined
   'memo/[id]': { id: string }
-  modal: undefined
 }
 
 export type TabParamList = {
   index: undefined
   archive: undefined
-  search: undefined
   settings: undefined
-}
-
-export type ModalParamList = {
-  'input-editor': { memoId?: string }
-  'voice': undefined
 }
 
 // Navigation type definitions for stack screen options
@@ -48,8 +41,6 @@ export const ModalNavigatorConfig = {
     headerShown: true,
     headerStyle: {
       backgroundColor: 'transparent',
-      elevation: 0,
-      shadowOpacity: 0,
     },
     contentStyle: {
       backgroundColor: 'transparent',
@@ -61,7 +52,6 @@ export const ModalNavigatorConfig = {
 export const DeepLinks = {
   memo: (id: string) => `mosaic://memo/${id}`,
   archive: () => `mosaic://archive`,
-  search: (query?: string) => `mosaic://search${query ? `?q=${encodeURIComponent(query)}` : ''}`,
 } as const
 
 // Animation presets for Reanimated

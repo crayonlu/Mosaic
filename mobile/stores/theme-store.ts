@@ -1,16 +1,11 @@
-/**
- * Theme Provider using Zustand
- * Manages theme state across the app
- */
-
+import { DarkTheme, LightTheme, ThemeMode, type Theme } from '@/constants/theme'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { ThemeMode, LightTheme, DarkTheme, ThemeColorsType } from '@/constants/theme'
 
 interface ThemeState {
   themeMode: ThemeMode
-  theme: ThemeColorsType
+  theme: Theme
   isDark: boolean
   setThemeMode: (mode: ThemeMode) => void
   toggleTheme: () => void
@@ -20,13 +15,13 @@ export const useThemeStore = create<ThemeState>()(
   persist(
     set => ({
       themeMode: 'light',
-      theme: LightTheme as ThemeColorsType,
+      theme: LightTheme,
       isDark: false,
       setThemeMode: (mode: ThemeMode) => {
-        const isDark = mode === 'dark' || (mode === 'auto' && false) // TODO: check system theme
+        const isDark = mode === 'dark'
         set({
           themeMode: mode,
-          theme: (isDark ? DarkTheme : LightTheme) as ThemeColorsType,
+          theme: isDark ? DarkTheme : LightTheme,
           isDark,
         })
       },
@@ -36,7 +31,7 @@ export const useThemeStore = create<ThemeState>()(
           const isDark = newMode === 'dark'
           return {
             themeMode: newMode,
-            theme: (isDark ? DarkTheme : LightTheme) as ThemeColorsType,
+            theme: isDark ? DarkTheme : LightTheme,
             isDark,
           }
         })

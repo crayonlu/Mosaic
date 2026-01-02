@@ -1,13 +1,12 @@
 /**
  * Bottom Tab Navigation
- * Main app navigation with glassmorphism style
+ * Main app navigation with clean glassmorphism style
  */
 
-import { Tabs } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import { Colors, Tabs as TabItems } from '@/constants/common'
 import { useThemeStore } from '@/stores/theme-store'
-import { Tabs as TabItems } from '@/constants/common'
-import { Shadows, layout } from '@/constants/theme'
+import { Tabs } from 'expo-router'
+import { Book, Files, Settings } from 'lucide-react-native'
 import { Platform } from 'react-native'
 
 export default function TabLayout() {
@@ -17,18 +16,15 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.primaryDark,
-        tabBarInactiveTintColor: theme.textSecondary,
+        tabBarActiveTintColor: Colors.primary.dark,
+        tabBarInactiveTintColor: isDark ? Colors.neutral[500] : Colors.neutral[400],
         tabBarStyle: {
-          backgroundColor: isDark
-            ? theme.backgroundGlass
-            : 'rgba(255, 255, 255, 0.9)',
+          backgroundColor: isDark ? 'rgba(26, 26, 46, 0.95)' : 'rgba(255, 255, 255, 0.95)',
           borderTopColor: theme.border,
           borderTopWidth: Platform.select({ ios: 0.5, android: 1 }),
-          height: layout.tabBarHeight,
+          height: 60,
           paddingBottom: Platform.OS === 'ios' ? 8 : 0,
           paddingTop: 8,
-          ...Shadows.lg,
           ...(Platform.OS === 'ios' && {
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
@@ -36,10 +32,13 @@ export default function TabLayout() {
         },
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '500' as const,
+          fontWeight: '600',
         },
         tabBarIconStyle: {
           marginTop: 0,
+        },
+        sceneStyle: {
+          backgroundColor: theme.background,
         },
       }}
     >
@@ -47,34 +46,23 @@ export default function TabLayout() {
         name="index"
         options={{
           title: TabItems.items[0].label,
-          tabBarIcon: ({ focused, color }) => <TabBarIcon name="book" focused={focused} color={color} />,
+          tabBarIcon: ({ focused, color }) => <Book size={24} color={color} strokeWidth={focused ? 2.5 : 2} />,
         }}
       />
       <Tabs.Screen
         name="archive"
         options={{
           title: TabItems.items[1].label,
-          tabBarIcon: ({ focused, color }) => <TabBarIcon name="folder-open" focused={focused} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: TabItems.items[2].label,
-          tabBarIcon: ({ focused, color }) => <TabBarIcon name="search" focused={focused} color={color} />,
+          tabBarIcon: ({ focused, color }) => <Files size={24} color={color} strokeWidth={focused ? 2.5 : 2} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: TabItems.items[3].label,
-          tabBarIcon: ({ focused, color }) => <TabBarIcon name="settings" focused={focused} color={color} />,
+          title: TabItems.items[2].label,
+          tabBarIcon: ({ focused, color }) => <Settings size={24} color={color} strokeWidth={focused ? 2.5 : 2} />,
         }}
       />
     </Tabs>
   )
-}
-
-function TabBarIcon({ name, focused, color }: { name: string; focused: boolean; color: string }) {
-  return <Ionicons size={28} name={name as any} color={color} />
 }

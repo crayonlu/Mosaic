@@ -3,10 +3,10 @@
  * Main entry point for the app
  */
 
-import { Stack } from 'expo-router'
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
-import { StatusBar } from 'expo-status-bar'
 import { useThemeStore } from '@/stores/theme-store'
+import { Stack } from 'expo-router'
+import { StatusBar } from 'expo-status-bar'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 
 export default function RootLayout() {
   const { theme } = useThemeStore()

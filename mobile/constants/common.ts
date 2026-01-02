@@ -1,8 +1,5 @@
-/**
- * App Constants
- * Application-wide constant values
- */
-
+export { Colors } from './colors'
+export { DarkTheme, LightTheme, type Theme, type ThemeMode } from './theme'
 // App metadata
 export const APP = {
   NAME: 'Mosaic',
@@ -15,15 +12,10 @@ export const Screens = {
   // Tab screens
   HOME: 'index', // Home/Memos tab
   ARCHIVE: 'archive', // Archive/History tab
-  SEARCH: 'search', // Search tab
   SETTINGS: 'settings', // Settings tab
 
   // Stack screens
   MEMO_DETAIL: 'memo/[id]',
-
-  // Modal screens
-  INPUT_EDITOR: 'modal/input-editor',
-  VOICE_RECORD: 'modal/voice',
 } as const
 
 // Tab bar configuration
@@ -42,13 +34,6 @@ export const Tabs = {
       screen: Screens.ARCHIVE,
       icon: { focused: 'folder-open-filled', unfocused: 'folder-open' },
       label: '归档',
-    },
-    {
-      name: 'Search',
-      key: 'search',
-      screen: Screens.SEARCH,
-      icon: { focused: 'magnifyingglass-filled', unfocused: 'magnifyingglass' },
-      label: '搜索',
     },
     {
       name: 'Settings',
@@ -137,7 +122,15 @@ export const Moods = [
   { value: 'neutral', emoji: '😐', label: '平淡' },
 ] as const
 
-export type MoodKey = 'happy' | 'sad' | 'angry' | 'anxious' | 'calm' | 'excited' | 'tired' | 'neutral'
+export type MoodKey =
+  | 'happy'
+  | 'sad'
+  | 'angry'
+  | 'anxious'
+  | 'calm'
+  | 'excited'
+  | 'tired'
+  | 'neutral'
 
 // Editor formatting options
 export const EditorFormats = {

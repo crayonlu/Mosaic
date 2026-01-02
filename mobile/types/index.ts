@@ -1,237 +1,80 @@
 /**
  * Shared Types for Mosaic Mobile App
+ *
+ * This file re-exports all types from their respective modules for easy importing.
+ *
+ * Usage:
+ *   import { Memo, CreateMemoInput } from '@/types'
+ *   import type { Memo, Resource } from '@/types'
  */
 
 // ============================================================================
 // Memo Types
 // ============================================================================
-export interface Memo {
-  id: string
-  content: string
-  tags: string[]
-  mood?: string
-  createdAt: string // ISO datetime string
-  updatedAt: string // ISO datetime string
-  isArchived?: boolean
-  isFavorite?: boolean
-}
-
-export interface MemoWithResources extends Memo {
-  resources: Resource[]
-}
-
-export interface CreateMemoInput {
-  content: string
-  tags?: string[]
-  mood?: string
-  resourceFilenames?: string[]
-}
-
-export interface UpdateMemoInput {
-  id: string
-  content?: string
-  tags?: string[]
-  mood?: string
-  isArchived?: boolean
-  isFavorite?: boolean
-}
+export type {
+  CreateMemoInput, Memo,
+  MemoWithResources, UpdateMemoInput
+} from './memo'
 
 // ============================================================================
 // Resource Types
 // ============================================================================
-export type ResourceType = 'image' | 'video' | 'audio' | 'file' | 'link'
-
-export interface Resource {
-  id: string
-  memoId: string
-  filename: string
-  type: ResourceType
-  size?: number
-  url?: string
-  localPath?: string
-  createdAt: string
-}
-
-export interface ResourcePreview {
-  filename: string
-  previewUrl: string
-  type: ResourceType
-  size: number
-}
+export type { Resource, ResourcePreview, ResourceType } from './resource'
 
 // ============================================================================
 // Input/Editor Types
 // ============================================================================
-export interface InputState {
-  value: string
-  tags: string[]
-  resources: ResourcePreview[]
-  isExpanded: boolean
-}
-
-export interface EditorToolbarItem {
-  key: string
-  icon: string
-  label: string
-  action: () => void
-}
+export type { EditorToolbarItem, InputState } from './editor'
 
 // ============================================================================
 // Search Types
 // ============================================================================
-export interface SearchFilters {
-  query: string
-  dateRange?: {
-    start: string
-    end: string
-  }
-  tags?: string[]
-  mood?: string
-  hasResources?: boolean
-}
-
-export interface SearchResult {
-  memos: MemoWithResources[]
-  total: number
-}
+export type { SearchFilters, SearchResult } from './search'
 
 // ============================================================================
 // View Types
 // ============================================================================
-export type ViewMode = 'timeline' | 'grid' | 'list'
-
-export type SortOrder = 'asc' | 'desc' // ascending or descending by date
-
-export interface ViewState {
-  mode: ViewMode
-  sortOrder: SortOrder
-  showDateHeaders: boolean
-}
+export type { SortOrder, ViewMode, ViewState } from './view'
 
 // ============================================================================
 // Settings Types
 // ============================================================================
-export interface AppSettings {
-  theme: 'light' | 'dark' | 'auto'
-  language: string
-  notifications: boolean
-  backupEnabled: boolean
-  autoSaveDelay: number // milliseconds
-  editorDefaultHeight: number
-}
+export type { AppSettings } from './settings'
 
 // ============================================================================
 // Voice Recording Types
 // ============================================================================
-export interface VoiceRecording {
-  id: string
-  duration: number // seconds
-  size: number // bytes
-  localPath: string
-  createdAt: string
-}
-
-export interface TranscriptionResult {
-  text: string
-  confidence: number
-  timestamp: string
-}
+export type { TranscriptionResult, VoiceRecording } from './voice'
 
 // ============================================================================
 // AI Types
 // ============================================================================
-export interface AITagSuggestion {
-  tags: string[]
-  confidence: number
-}
-
-export interface AIRequest {
-  content: string
-  existingTags: string[]
-}
-
-export interface AIRewriteRequest {
-  content: string
-  tone?: 'professional' | 'casual' | 'concise' | 'detailed' | 'friendly'
-}
+export type { AIRequest, AIRewriteRequest, AITagSuggestion } from './ai'
 
 // ============================================================================
 // Notification Types
 // ============================================================================
-export type NotificationType = 'success' | 'error' | 'warning' | 'info'
-
-export interface Notification {
-  id: string
-  type: NotificationType
-  title: string
-  message?: string
-  duration?: number
-}
+export type { Notification, NotificationType } from './notification'
 
 // ============================================================================
-// Date Types
+// Chart Types
 // ============================================================================
-export interface DateGroup {
-  date: string
-  memos: MemoWithResources[]
-}
-
-export interface MonthlyData {
-  month: string
-  memos: MemoWithResources[]
-  stats: {
-    totalCount: number
-    wordCount: number
-    resourceCount: number
-    moods: Record<string, number>
-  }
-}
+export type {
+  DateGroup, HeatmapData, HeatmapDay, MonthlyData
+} from './chart'
 
 // ============================================================================
-// Heatmap Types
+// Navigation Types
 // ============================================================================
-export interface HeatmapDay {
-  date: string
-  count: number
-  level: 0 | 1 | 2 | 3 | 4 // Activity level for visualization
-}
-
-export interface HeatmapData {
-  days: HeatmapDay[]
-  maxCount: number
-  totalMemos: number
-  streak: number
-}
+export type {
+  RootParamList,
+  TabParamList
+} from './navigation'
 
 // ============================================================================
-// Animation Types
+// UI Component Types
 // ============================================================================
-export type AnimationType = 'spring' | 'timing' | 'decay'
+export type {
+  AnimationConfig, AnimationType, TabItem
+} from './ui'
 
-export interface AnimationConfig {
-  type: AnimationType
-  duration?: number
-  delay?: number
-  dampingRatio?: number
-  stiffness?: number
-}
-
-// ============================================================================
-// Tab Bar Types
-// ============================================================================
-export interface TabItem {
-  name: string
-  key: string
-  screen: string
-  icon: {
-    focused: string
-    unfocused: string
-  }
-  label: string
-  badge?: number
-}
-
-// ============================================================================
-// Navigation Types (re-export from navigation/types)
-// ============================================================================
-export type { RootParamList, TabParamList, ModalParamList } from '@/navigation/types'
