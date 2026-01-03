@@ -293,7 +293,8 @@ export function EditorToolbar({ editor, onSave }: EditorToolbarProps) {
           styles.toolbar,
           {
             backgroundColor: theme.background,
-            borderTopColor: theme.border,
+            borderColor: theme.border,
+            borderBottomWidth: 1,
             borderTopWidth: 1,
           },
         ]}

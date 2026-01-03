@@ -7,6 +7,7 @@ import { useThemeStore } from '@/stores/theme-store'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { ToastContainer } from '@/components/ui/Toast'
 
 export default function RootLayout() {
   const { theme } = useThemeStore()
@@ -31,6 +32,7 @@ export default function RootLayout() {
             }}
           />
         </Stack>
+        <ToastContainer />
       </SafeAreaView>
     </SafeAreaProvider>
   )

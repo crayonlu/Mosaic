@@ -1,13 +1,12 @@
 import * as SQLite from 'expo-sqlite'
-import { Platform } from 'react-native'
-import { MIGRATION_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4 } from './migrations'
+import { MIGRATION_V1, MIGRATION_V2, MIGRATION_V3 } from './migrations'
 
 // ============================================================================
 // Configuration
 // ============================================================================
 
 const DATABASE_NAME = 'mosaic.db'
-const DATABASE_VERSION = 4 // Match the number of migration files
+const DATABASE_VERSION = 3 // Match the number of migration files
 
 // ============================================================================
 // Migration files
@@ -17,7 +16,6 @@ const MIGRATIONS: Record<number, string> = {
   1: MIGRATION_V1,
   2: MIGRATION_V2,
   3: MIGRATION_V3,
-  4: MIGRATION_V4,
 }
 
 // ============================================================================
@@ -186,9 +184,10 @@ export async function executeTransaction(
 
 /**
  * Get database file path (useful for debugging)
+ * Note: expo-sqlite handles the path automatically on different platforms
  */
 export function getDatabasePath(): string {
-  return `${Platform.OS === 'android' ? '/data/data/' : ''}${DATABASE_NAME}`
+  return DATABASE_NAME
 }
 
 /**

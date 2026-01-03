@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Button } from './Button'
+import { Button } from '@/components/ui/Button'
 import { RichTextEditor } from './RichTextEditor'
 
 interface FullScreenEditorProps {
@@ -129,7 +129,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderBottomWidth: 1,
   },
   closeButton: {
     width: 40,

@@ -47,6 +47,8 @@ export function MemoInput({
           styles.container,
           {
             backgroundColor: theme.background,
+            borderColor: theme.border,
+            borderWidth: 1,
           },
         ]}
       >

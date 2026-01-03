@@ -97,18 +97,3 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE INDEX idx_settings_category ON settings(category);
 CREATE INDEX idx_settings_key ON settings(key);
 `
-
-export const MIGRATION_V4 = `
--- Add contentFormat field to memos table for rich text support
--- 'plain' for plain text, 'html' for rich text (HTML format)
-ALTER TABLE memos ADD COLUMN contentFormat TEXT DEFAULT 'plain';
-
--- Update existing memos: if content contains HTML tags, mark as 'html', otherwise 'plain'
--- This is a simple heuristic - content with <p>, <strong>, <em>, etc. is likely HTML
-UPDATE memos 
-SET contentFormat = CASE 
-  WHEN content LIKE '%<%>%' THEN 'html'
-  ELSE 'plain'
-END
-WHERE contentFormat IS NULL;
-`

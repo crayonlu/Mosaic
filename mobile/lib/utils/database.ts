@@ -161,3 +161,23 @@ export function buildResourceRow(resource: Partial<Resource> & { id?: string }):
     createdAt: resource.createdAt || now,
   }
 }
+
+// ============================================================================
+// Export databaseUtils object for compatibility
+// ============================================================================
+
+export const databaseUtils = {
+  generateId,
+  getCurrentTimestamp,
+  formatTimestamp,
+  parseTimestamp,
+  formatDate,
+  serializeArray,
+  deserializeArray,
+  memoRowToMemo,
+  memoWithResourcesFromRows,
+  buildInClause,
+  isValidDateString,
+  buildMemoRow,
+  buildResourceRow,
+}
