@@ -1,14 +1,61 @@
-import { MemoInput } from '@/components/MemoInput'
+import { MemoInput } from '@/components/editor/MemoInput'
+import { MemoList } from '@/components/memo/MemoList'
+import { toast } from '@/components/ui/Toast'
+import { memoService } from '@/lib/services/memo-service'
 import { useThemeStore } from '@/stores/theme-store'
+import { type MemoWithResources } from '@/types/memo'
+import { router } from 'expo-router'
+import { useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 
 export default function HomeScreen() {
   const { theme } = useThemeStore()
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  const handleSubmit = (content: string) => {
-    // TODO: Implement memo creation
-    console.log('Creating memo:', content)
+  const handleMemoPress = (memo: MemoWithResources) => {
+    router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
+  }
+
+  const handleArchive = async (id: string) => {
+    try {
+      await memoService.archiveMemo(id)
+      setRefreshTrigger(prev => prev + 1)
+      toast.success('成功', '备忘录已归档')
+    } catch (error) {
+      toast.error('错误', '归档失败')
+      console.error('Archive error:', error)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    // Direct deletion without confirmation for now
+    try {
+      await memoService.deleteMemo(id)
+      setRefreshTrigger(prev => prev + 1)
+      toast.success('成功', '备忘录已删除')
+    } catch (error) {
+      toast.error('错误', '删除失败')
+      console.error('Delete error:', error)
+    }
+  }
+
+  const handleSubmit = async (content: string) => {
+    if (!content || content.trim().length === 0) {
+      return
+    }
+
+    try {
+      await memoService.createMemo({
+        content: content.trim(),
+        tags: [],
+      })
+      setRefreshTrigger(prev => prev + 1)
+      toast.success('成功', '备忘录已创建')
+    } catch (error) {
+      toast.error('错误', '创建备忘录失败')
+      console.error('Create memo error:', error)
+    }
   }
 
   return (
@@ -21,7 +68,12 @@ export default function HomeScreen() {
       >
         {/* Memo List */}
         <View style={styles.listContainer}>
-          {/* TODO: Add MemoList component */}
+          <MemoList
+            onMemoPress={handleMemoPress}
+            onMemoArchive={handleArchive}
+            onMemoDelete={handleDelete}
+            refreshTrigger={refreshTrigger}
+          />
         </View>
       </KeyboardAwareScrollView>
 

@@ -7,7 +7,6 @@ import { Colors, Tabs as TabItems } from '@/constants/common'
 import { useThemeStore } from '@/stores/theme-store'
 import { Tabs } from 'expo-router'
 import { Book, Files, Settings } from 'lucide-react-native'
-import { Platform } from 'react-native'
 
 export default function TabLayout() {
   const { theme, isDark } = useThemeStore()
@@ -19,16 +18,10 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors.primary.dark,
         tabBarInactiveTintColor: isDark ? Colors.neutral[500] : Colors.neutral[400],
         tabBarStyle: {
-          backgroundColor: isDark ? 'rgba(26, 26, 46, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-          borderTopColor: theme.border,
-          borderTopWidth: Platform.select({ ios: 0.5, android: 1 }),
+          backgroundColor: theme.background,
           height: 54,
           paddingBottom: 2,
           paddingTop: 2,
-          ...(Platform.OS === 'ios' && {
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-          }),
         },
         tabBarLabelStyle: {
           fontSize: 12,
