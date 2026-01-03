@@ -1,4 +1,4 @@
-import { parse } from 'htmlparser2'
+import { Parser } from 'htmlparser2'
 
 export const stringUtils = {
   generateId: (): string => {
@@ -21,33 +21,31 @@ export const stringUtils = {
     }
 
     try {
-      const dom = parse(html)
       let text = ''
+      let skipTag = false
 
-      const extractText = (node: any): void => {
-        if (node.type === 'text') {
-          text += node.data || ''
-        } else if (node.type === 'tag') {
-          const tagName = node.name?.toLowerCase()
-          if (tagName && ['script', 'style', 'noscript'].includes(tagName)) {
-            return
+      const parser = new Parser({
+        ontext: (data) => {
+          if (!skipTag) {
+            text += data
           }
-
-          if (node.children) {
-            for (const child of node.children) {
-              extractText(child)
-            }
+        },
+        onopentag: (name) => {
+          const tagName = name.toLowerCase()
+          if (['script', 'style', 'noscript'].includes(tagName)) {
+            skipTag = true
           }
-        }
-      }
+        },
+        onclosetag: (name) => {
+          const tagName = name.toLowerCase()
+          if (['script', 'style', 'noscript'].includes(tagName)) {
+            skipTag = false
+          }
+        },
+      })
 
-      if (dom && Array.isArray(dom)) {
-        for (const child of dom) {
-          extractText(child)
-        }
-      } else if (dom) {
-        extractText(dom)
-      }
+      parser.write(html)
+      parser.end()
 
       return text.trim()
     } catch (error) {
