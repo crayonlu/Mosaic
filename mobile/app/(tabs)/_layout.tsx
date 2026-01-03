@@ -22,9 +22,9 @@ export default function TabLayout() {
           backgroundColor: isDark ? 'rgba(26, 26, 46, 0.95)' : 'rgba(255, 255, 255, 0.95)',
           borderTopColor: theme.border,
           borderTopWidth: Platform.select({ ios: 0.5, android: 1 }),
-          height: 60,
-          paddingBottom: Platform.OS === 'ios' ? 8 : 0,
-          paddingTop: 8,
+          height: 54,
+          paddingBottom: 2,
+          paddingTop: 2,
           ...(Platform.OS === 'ios' && {
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
@@ -46,21 +46,27 @@ export default function TabLayout() {
         name="index"
         options={{
           title: TabItems.items[0].label,
-          tabBarIcon: ({ focused, color }) => <Book size={24} color={color} strokeWidth={focused ? 2.5 : 2} />,
+          tabBarIcon: ({ focused, color }) => (
+            <Book size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
         }}
       />
       <Tabs.Screen
         name="archive"
         options={{
           title: TabItems.items[1].label,
-          tabBarIcon: ({ focused, color }) => <Files size={24} color={color} strokeWidth={focused ? 2.5 : 2} />,
+          tabBarIcon: ({ focused, color }) => (
+            <Files size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: TabItems.items[2].label,
-          tabBarIcon: ({ focused, color }) => <Settings size={24} color={color} strokeWidth={focused ? 2.5 : 2} />,
+          tabBarIcon: ({ focused, color }) => (
+            <Settings size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
         }}
       />
     </Tabs>
