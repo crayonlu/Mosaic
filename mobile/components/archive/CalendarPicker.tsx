@@ -1,11 +1,6 @@
 import { useThemeStore } from '@/stores/theme-store'
 import { useMemo, useState } from 'react'
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
-} from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface CalendarPickerProps {
   selectedDate?: string
@@ -13,11 +8,7 @@ interface CalendarPickerProps {
   onMonthChange?: (year: number, month: number) => void
 }
 
-export function CalendarPicker({
-  selectedDate,
-  onDateSelect,
-  onMonthChange,
-}: CalendarPickerProps) {
+export function CalendarPicker({ selectedDate, onDateSelect, onMonthChange }: CalendarPickerProps) {
   const { theme } = useThemeStore()
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
@@ -115,9 +106,7 @@ export function CalendarPicker({
         >
           <Text style={[styles.monthButtonText, { color: theme.primary }]}>◀</Text>
         </TouchableOpacity>
-        <Text style={[styles.headerText, { color: theme.text }]}>
-          {monthLabel}
-        </Text>
+        <Text style={[styles.headerText, { color: theme.text }]}>{monthLabel}</Text>
         <TouchableOpacity
           onPress={handleNextMonth}
           style={styles.monthButton}
@@ -131,23 +120,17 @@ export function CalendarPicker({
       <View style={[styles.weekDays, { borderBottomColor: theme.border }]}>
         {['日', '一', '二', '三', '四', '五', '六'].map((day, index) => (
           <View key={index} style={styles.weekDay}>
-            <Text style={[styles.weekDayText, { color: theme.textSecondary }]}>
-              {day}
-            </Text>
+            <Text style={[styles.weekDayText, { color: theme.textSecondary }]}>{day}</Text>
           </View>
         ))}
       </View>
 
       {/* Calendar grid */}
-      <View
-        style={styles.scrollContent}
-      >
+      <View style={styles.scrollContent}>
         <View style={styles.calendarGrid}>
           {calendarDays.map((day, index) => {
             if (day === null) {
-              return (
-                <View key={index} style={styles.dayCell} />
-              )
+              return <View key={index} style={styles.dayCell} />
             }
 
             const selected = isDateSelected(day)
@@ -164,10 +147,11 @@ export function CalendarPicker({
                     backgroundColor: theme.primary,
                     borderColor: theme.primary,
                   },
-                  today && !selected && {
-                    borderColor: theme.primary,
-                    borderWidth: 2,
-                  },
+                  today &&
+                    !selected && {
+                      borderColor: theme.primary,
+                      borderWidth: 2,
+                    },
                 ]}
                 hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
               >

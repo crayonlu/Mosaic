@@ -1,27 +1,34 @@
 import { useThemeStore } from '@/stores/theme-store'
 import { EditorBridge } from '@10play/tentap-editor'
 import {
-    Bold,
-    CheckSquare,
-    Code,
-    Code2,
-    Heading1,
-    Heading2,
-    Heading3,
-    Highlighter,
-    Italic,
-    Link,
-    List,
-    ListOrdered,
-    Quote,
-    Redo2,
-    RemoveFormatting,
-    Strikethrough,
-    Underline,
-    Undo2,
+  Bold,
+  CheckSquare,
+  Code,
+  Code2,
+  Heading1,
+  Heading2,
+  Heading3,
+  Highlighter,
+  Italic,
+  Link,
+  List,
+  ListOrdered,
+  Quote,
+  Redo2,
+  RemoveFormatting,
+  Strikethrough,
+  Underline,
+  Undo2,
 } from 'lucide-react-native'
 import { useState } from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 
 interface EditorToolbarProps {
   editor: EditorBridge

@@ -93,9 +93,7 @@ export function RichTextEditor({
 
     // Check for Markdown syntax
     const hasMarkdownSyntax =
-      /(#+\s|^\s*[-*+]\s|\*\*.*\*\*|\*.*\*|`.*`|^\s*\d+\.\s|\[.*\]\(.*\)|^\s*>)/m.test(
-        pastedText
-      )
+      /(#+\s|^\s*[-*+]\s|\*\*.*\*\*|\*.*\*|`.*`|^\s*\d+\.\s|\[.*\]\(.*\)|^\s*>)/m.test(pastedText)
 
     if (hasMarkdownSyntax) {
       try {
@@ -123,11 +121,7 @@ export function RichTextEditor({
 
   return (
     <>
-      <View
-        style={[
-          styles.container,
-        ]}
-      >
+      <View style={[styles.container]}>
         {editable && (
           <EditorToolbar
             editor={editor}

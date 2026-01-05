@@ -1,4 +1,11 @@
-import { ActivityIndicator, StyleProp, StyleSheet, Text, TouchableOpacity, ViewStyle } from 'react-native'
+import {
+  ActivityIndicator,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  ViewStyle,
+} from 'react-native'
 
 export interface ButtonProps {
   title: string

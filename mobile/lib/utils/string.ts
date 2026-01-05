@@ -26,18 +26,18 @@ export const stringUtils = {
       let skipTag = false
 
       const parser = new Parser({
-        ontext: (data) => {
+        ontext: data => {
           if (!skipTag) {
             text += data
           }
         },
-        onopentag: (name) => {
+        onopentag: name => {
           const tagName = name.toLowerCase()
           if (['script', 'style', 'noscript'].includes(tagName)) {
             skipTag = true
           }
         },
-        onclosetag: (name) => {
+        onclosetag: name => {
           const tagName = name.toLowerCase()
           if (['script', 'style', 'noscript'].includes(tagName)) {
             skipTag = false
@@ -65,22 +65,21 @@ export const stringUtils = {
     return text.match(urlRegex) || []
   },
   formatRelativeTime: (date: string | Date | number): string => {
-    const d = typeof date === 'string' ? new Date(date) : typeof date === 'number' ? new Date(date) : date
-    const now = new Date()
-    const diff = now.getTime() - d.getTime()
-    const seconds = Math.floor(diff / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
+    const d = dayjs(date)
+    if (!d.isValid()) {
+      console.error('Invalid date provided to formatRelativeTime:', date)
+      return '未知时间'
+    }
 
-    if (seconds < 60) return '刚刚'
-    if (minutes < 60) return `${minutes}分钟前`
-    if (hours < 24) return `${hours}小时前`
-    if (days < 7) return `${days}天前`
-    const year = d.getFullYear()
-    const month = d.getMonth() + 1
-    const day = d.getDate()
-    return `${year}年${month}月${day}日`
+    const now = dayjs()
+    const diff = now.diff(d, 'second')
+
+    if (diff < 60) return '刚刚'
+    if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`
+    if (diff < 604800) return `${Math.floor(diff / 86400)}天前`
+
+    return d.format('YYYY年MM月DD日')
   },
   formatDate: (date: string | Date | number): string => {
     return dayjs(date).format('YYYY年MM月DD日')

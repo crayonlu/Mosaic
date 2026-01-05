@@ -11,9 +11,7 @@ interface MoodHeatMapProps {
   onDateClick?: (date: string) => void
 }
 
-export function MoodHeatMap({
-  onDateClick,
-}: MoodHeatMapProps) {
+export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
   const { theme } = useThemeStore()
   const { isReady: dbReady, isInitializing: dbInitializing, error: dbError } = useDatabaseStore()
   const [data, setData] = useState<HeatMapData | null>(null)
@@ -21,16 +19,19 @@ export function MoodHeatMap({
   const [timeRange, setTimeRange] = useState<TimeRangeValue>('quarter')
 
   // Mood legend with all 8 emotions
-  const moodLegend = useMemo(() => [
-    { key: 'joy', label: '愉悦', color: '#FFD93D' },
-    { key: 'anger', label: '愤怒', color: '#FF6B6B' },
-    { key: 'sadness', label: '悲伤', color: '#4ECDC4' },
-    { key: 'calm', label: '平静', color: '#95E1D3' },
-    { key: 'anxiety', label: '焦虑', color: '#FFA07A' },
-    { key: 'focus', label: '专注', color: '#6C5CE7' },
-    { key: 'tired', label: '疲惫', color: '#A8A8A8' },
-    { key: 'neutral', label: '中性', color: theme.border },
-  ], [theme.border])
+  const moodLegend = useMemo(
+    () => [
+      { key: 'joy', label: '愉悦', color: '#FFD93D' },
+      { key: 'anger', label: '愤怒', color: '#FF6B6B' },
+      { key: 'sadness', label: '悲伤', color: '#4ECDC4' },
+      { key: 'calm', label: '平静', color: '#95E1D3' },
+      { key: 'anxiety', label: '焦虑', color: '#FFA07A' },
+      { key: 'focus', label: '专注', color: '#6C5CE7' },
+      { key: 'tired', label: '疲惫', color: '#A8A8A8' },
+      { key: 'neutral', label: '中性', color: theme.border },
+    ],
+    [theme.border]
+  )
 
   // Load heat map data
   const loadHeatMapData = useCallback(async () => {
@@ -62,7 +63,14 @@ export function MoodHeatMap({
       const startDateStr = startDate.toISOString().split('T')[0]
       const endDateStr = endDate.toISOString().split('T')[0]
 
-      console.log('[MoodHeatMap] Loading data for range:', startDateStr, 'to', endDateStr, 'months:', months)
+      console.log(
+        '[MoodHeatMap] Loading data for range:',
+        startDateStr,
+        'to',
+        endDateStr,
+        'months:',
+        months
+      )
 
       const heatMapData = await statsService.getHeatMapData({
         startDate: startDateStr,
@@ -153,9 +161,7 @@ export function MoodHeatMap({
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.header}>
-          <Text style={[styles.headerText, { color: theme.text }]}>
-            数据库错误
-          </Text>
+          <Text style={[styles.headerText, { color: theme.text }]}>数据库错误</Text>
         </View>
       </View>
     )
@@ -165,7 +171,7 @@ export function MoodHeatMap({
     <View style={[styles.container, { backgroundColor: theme.surface }]}>
       {/* Time range selector */}
       <View style={[styles.timeRangeSelector, { borderBottomColor: theme.border }]}>
-        {(Object.values(TimeRanges) as any[]).map((range) => (
+        {(Object.values(TimeRanges) as any[]).map(range => (
           <TouchableOpacity
             key={range.value}
             style={[
@@ -205,9 +211,7 @@ export function MoodHeatMap({
                   style={[
                     styles.cell,
                     {
-                      backgroundColor: cell.color === 'transparent'
-                        ? 'transparent'
-                        : cell.color,
+                      backgroundColor: cell.color === 'transparent' ? 'transparent' : cell.color,
                     },
                   ]}
                   onPress={() => handleDateClick(cell)}
@@ -221,23 +225,16 @@ export function MoodHeatMap({
 
       {/* Legend */}
       <View style={[styles.legend, { borderTopColor: theme.border }]}>
-        <Text style={[styles.legendText, { color: theme.textSecondary }]}>
-          情绪热力图
-        </Text>
+        <Text style={[styles.legendText, { color: theme.textSecondary }]}>情绪热力图</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.legendScrollContent}
         >
           <View style={styles.legendItems}>
-            {moodLegend.map((item) => (
+            {moodLegend.map(item => (
               <View key={item.key} style={styles.legendItem}>
-                <View
-                  style={[
-                    styles.legendColor,
-                    { backgroundColor: item.color },
-                  ]}
-                />
+                <View style={[styles.legendColor, { backgroundColor: item.color }]} />
                 <Text style={[styles.legendItemText, { color: theme.textSecondary }]}>
                   {item.label}
                 </Text>

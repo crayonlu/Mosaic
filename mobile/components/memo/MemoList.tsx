@@ -5,14 +5,7 @@ import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@/types/memo'
 import { FileX } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  ActivityIndicator,
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { MemoCard } from './MemoCard'
 
 interface MemoListProps {
@@ -39,46 +32,49 @@ export function MemoList({
   const flatListRef = useRef<FlatList>(null)
 
   // Load memos
-  const loadMemos = useCallback(async (loadMore = false) => {
-    try {
-      if (!loadMore) {
-        setLoading(true)
-      }
-
-      let loadedMemos: MemoWithResources[]
-
-      if (date) {
-        // Load by date
-        loadedMemos = await memoService.getMemosByDate(date)
-      } else {
-        // Load paginated
-        const currentPage = loadMore ? page : 1
-        const newMemos = await memoService.listMemos({
-          page: currentPage,
-          pageSize: 20,
-          isArchived: false,
-          isDeleted: false,
-        })
-
-        if (loadMore) {
-          loadedMemos = [...memos, ...newMemos]
-        } else {
-          loadedMemos = newMemos
-          setPage(1)
+  const loadMemos = useCallback(
+    async (loadMore = false) => {
+      try {
+        if (!loadMore) {
+          setLoading(true)
         }
 
-        // Check if there are more items
-        setHasMore(newMemos.length === 20)
-      }
+        let loadedMemos: MemoWithResources[]
 
-      setMemos(loadedMemos)
-    } catch (error) {
-      console.error('Failed to load memos:', error)
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }, [date, page, memos])
+        if (date) {
+          // Load by date
+          loadedMemos = await memoService.getMemosByDate(date)
+        } else {
+          // Load paginated
+          const currentPage = loadMore ? page : 1
+          const newMemos = await memoService.listMemos({
+            page: currentPage,
+            pageSize: 20,
+            isArchived: false,
+            isDeleted: false,
+          })
+
+          if (loadMore) {
+            loadedMemos = [...memos, ...newMemos]
+          } else {
+            loadedMemos = newMemos
+            setPage(1)
+          }
+
+          // Check if there are more items
+          setHasMore(newMemos.length === 20)
+        }
+
+        setMemos(loadedMemos)
+      } catch (error) {
+        console.error('Failed to load memos:', error)
+      } finally {
+        setLoading(false)
+        setRefreshing(false)
+      }
+    },
+    [date, page, memos]
+  )
 
   // Initial load
   useEffect(() => {
@@ -184,13 +180,9 @@ export function MemoList({
   // Render date header
   const renderDateHeader = (displayDate: string, count: number) => (
     <View style={[styles.dateHeader, { borderTopColor: theme.border }]}>
-      <Text style={[styles.dateHeaderText, { color: theme.text }]}>
-        {displayDate}
-      </Text>
+      <Text style={[styles.dateHeaderText, { color: theme.text }]}>{displayDate}</Text>
       {count > 0 && (
-        <Text style={[styles.dateHeaderCount, { color: theme.textSecondary }]}>
-          {count} 条Memo
-        </Text>
+        <Text style={[styles.dateHeaderCount, { color: theme.textSecondary }]}>{count} 条Memo</Text>
       )}
     </View>
   )
@@ -198,27 +190,24 @@ export function MemoList({
   // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <View
-        style={[
-          styles.emptyIcon,
-          { backgroundColor: `${theme.primary}10` },
-        ]}
-      >
+      <View style={[styles.emptyIcon, { backgroundColor: `${theme.primary}10` }]}>
         <FileX size={48} color={theme.primary} strokeWidth={1.5} />
       </View>
       <Text style={[styles.emptyTitle, { color: theme.text }]}>
         {date ? '今天还没有记录' : '暂无Memo'}
       </Text>
       <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-        {date
-          ? '点击下方按钮创建你的第一条Memo'
-          : '开始记录你的想法和灵感'}
+        {date ? '点击下方按钮创建你的第一条Memo' : '开始记录你的想法和灵感'}
       </Text>
     </View>
   )
 
   // Render a single date group
-  const renderGroup = ({ item: group }: { item: { date: string; displayDate: string; memos: MemoWithResources[] } }) => (
+  const renderGroup = ({
+    item: group,
+  }: {
+    item: { date: string; displayDate: string; memos: MemoWithResources[] }
+  }) => (
     <View key={group.date}>
       {renderDateHeader(group.displayDate, group.memos.length)}
       {group.memos.map(memo => (
@@ -238,9 +227,7 @@ export function MemoList({
     if (!hasMore) {
       return (
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-            没有更多了
-          </Text>
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>没有更多了</Text>
         </View>
       )
     }

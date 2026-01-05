@@ -1,4 +1,4 @@
-import { execute, queryAll, queryFirst, getDatabaseWithCheck } from '@/lib/database'
+import { useDatabaseStore } from '@/stores/database-store'
 import {
   type CreateMemoRequest,
   type ListMemosRequest,
@@ -8,7 +8,6 @@ import {
   type SearchMemosRequest,
   type UpdateMemoRequest,
 } from '@/types/memo'
-
 
 /**
  * Memo Service
@@ -58,16 +57,18 @@ class MemoService {
   /**
    * Create a new memo
    */
-  async createMemo(params: Omit<CreateMemoRequest, 'resourceFilenames'> & {
-    resourceFilenames?: string[]
-  }): Promise<Memo> {
+  async createMemo(
+    params: Omit<CreateMemoRequest, 'resourceFilenames'> & {
+      resourceFilenames?: string[]
+    }
+  ): Promise<Memo> {
     const id = this.generateId()
     const now = this.getCurrentTimestamp()
 
     const contentFormat = this.detectContentFormat(params.content)
     const tagsJson = JSON.stringify(params.tags || [])
 
-    await execute(
+    await useDatabaseStore.getState().execute(
       `INSERT INTO memos (id, content, contentFormat, tags, is_archived, is_deleted, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, params.content, contentFormat, tagsJson, 0, 0, now, now]
@@ -76,10 +77,12 @@ class MemoService {
     // Link resources if provided
     if (params.resourceFilenames && params.resourceFilenames.length > 0) {
       for (const filename of params.resourceFilenames) {
-        await execute(
-          `UPDATE resources SET memo_id = ? WHERE filename = ? AND memo_id IS NULL`,
-          [id, filename]
-        )
+        await useDatabaseStore
+          .getState()
+          .execute(`UPDATE resources SET memo_id = ? WHERE filename = ? AND memo_id IS NULL`, [
+            id,
+            filename,
+          ])
       }
     }
 
@@ -94,10 +97,9 @@ class MemoService {
    * Get memo by id with resources
    */
   async getMemo(id: string): Promise<MemoWithResources | null> {
-    const row = await queryFirst<MemoRow>(
-      `SELECT * FROM memos WHERE id = ?`,
-      [id]
-    )
+    const row = await useDatabaseStore
+      .getState()
+      .queryFirst<MemoRow>(`SELECT * FROM memos WHERE id = ?`, [id])
 
     if (!row) {
       return null
@@ -116,8 +118,8 @@ class MemoService {
    * Get memos by date
    */
   async getMemosByDate(date: string): Promise<MemoWithResources[]> {
-    const rows = await queryAll<MemoRow>(
-      `SELECT * FROM memos 
+    const rows = await useDatabaseStore.getState().queryAll<MemoRow>(
+      `SELECT * FROM memos
        WHERE date(created_at / 1000, 'unixepoch', 'localtime') = ?
        AND is_archived = 0 AND is_deleted = 0
        ORDER BY created_at DESC`,
@@ -141,13 +143,7 @@ class MemoService {
    * Get list of memos with filtering
    */
   async listMemos(params: ListMemosRequest = {}): Promise<MemoWithResources[]> {
-    const {
-      page = 1,
-      pageSize = 20,
-      isArchived = false,
-      isDeleted = false,
-      diaryDate,
-    } = params
+    const { page = 1, pageSize = 20, isArchived = false, isDeleted = false, diaryDate } = params
 
     const offset = (page - 1) * pageSize
 
@@ -172,7 +168,7 @@ class MemoService {
     query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
     queryParams.push(pageSize, offset)
 
-    const rows = await queryAll<MemoRow>(query, queryParams)
+    const rows = await useDatabaseStore.getState().queryAll<MemoRow>(query, queryParams)
     const memos = rows.map(this.rowToMemo)
 
     // Fetch resources for all memos
@@ -218,25 +214,25 @@ class MemoService {
 
     queryParams.push(id)
 
-    await execute(
-      `UPDATE memos SET ${updates.join(', ')} WHERE id = ?`,
-      queryParams
-    )
+    await useDatabaseStore
+      .getState()
+      .execute(`UPDATE memos SET ${updates.join(', ')} WHERE id = ?`, queryParams)
 
     // Update resources if provided
     if (resourceFilenames !== undefined) {
       // Unlink old resources
-      await execute(
-        `UPDATE resources SET memo_id = NULL WHERE memo_id = ?`,
-        [id]
-      )
+      await useDatabaseStore
+        .getState()
+        .execute(`UPDATE resources SET memo_id = NULL WHERE memo_id = ?`, [id])
 
       // Link new resources
       for (const filename of resourceFilenames) {
-        await execute(
-          `UPDATE resources SET memo_id = ? WHERE filename = ? AND memo_id IS NULL`,
-          [id, filename]
-        )
+        await useDatabaseStore
+          .getState()
+          .execute(`UPDATE resources SET memo_id = ? WHERE filename = ? AND memo_id IS NULL`, [
+            id,
+            filename,
+          ])
       }
     }
 
@@ -248,10 +244,9 @@ class MemoService {
    */
   async deleteMemo(id: string): Promise<void> {
     const now = this.getCurrentTimestamp()
-    await execute(
-      `UPDATE memos SET is_deleted = 1, updated_at = ? WHERE id = ?`,
-      [now, id]
-    )
+    await useDatabaseStore
+      .getState()
+      .execute(`UPDATE memos SET is_deleted = 1, updated_at = ? WHERE id = ?`, [now, id])
   }
 
   /**
@@ -259,10 +254,13 @@ class MemoService {
    */
   async archiveMemo(id: string, archived = true): Promise<void> {
     const now = this.getCurrentTimestamp()
-    await execute(
-      `UPDATE memos SET is_archived = ?, updated_at = ? WHERE id = ?`,
-      [archived ? 1 : 0, now, id]
-    )
+    await useDatabaseStore
+      .getState()
+      .execute(`UPDATE memos SET is_archived = ?, updated_at = ? WHERE id = ?`, [
+        archived ? 1 : 0,
+        now,
+        id,
+      ])
   }
 
   /**
@@ -318,7 +316,7 @@ class MemoService {
     sql += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
     queryParams.push(pageSize, offset)
 
-    const rows = await queryAll<MemoRow>(sql, queryParams)
+    const rows = await useDatabaseStore.getState().queryAll<MemoRow>(sql, queryParams)
     const memos = rows.map(this.rowToMemo)
 
     // Fetch resources for all memos
@@ -336,9 +334,9 @@ class MemoService {
    * Get all unique tags
    */
   async getAllTags(): Promise<string[]> {
-    const rows = await queryAll<{ tags: string }>(
-      `SELECT DISTINCT tags FROM memos WHERE is_deleted = 0 AND tags != '[]'`
-    )
+    const rows = await useDatabaseStore.getState().queryAll<{
+      tags: string
+    }>(`SELECT DISTINCT tags FROM memos WHERE is_deleted = 0 AND tags != '[]'`)
 
     const allTags = rows
       .map(row => (row.tags ? JSON.parse(row.tags) : []))
@@ -356,10 +354,9 @@ class MemoService {
    * Get resources for a specific memo
    */
   async getMemoResources(memoId: string): Promise<any[]> {
-    const resources = await queryAll<any>(
-      `SELECT * FROM resources WHERE memo_id = ? ORDER BY created_at DESC`,
-      [memoId]
-    )
+    const resources = await useDatabaseStore
+      .getState()
+      .queryAll<any>(`SELECT * FROM resources WHERE memo_id = ? ORDER BY created_at DESC`, [memoId])
 
     return resources.map(resource => ({
       id: resource.id,
@@ -392,11 +389,13 @@ class MemoService {
   /**
    * Get memos count
    */
-  async getMemosCount(params: {
-    isArchived?: boolean
-    isDeleted?: boolean
-    diaryDate?: string
-  } = {}): Promise<number> {
+  async getMemosCount(
+    params: {
+      isArchived?: boolean
+      isDeleted?: boolean
+      diaryDate?: string
+    } = {}
+  ): Promise<number> {
     const { isArchived = false, isDeleted = false, diaryDate } = params
 
     let query = `SELECT COUNT(*) as count FROM memos WHERE 1=1`
@@ -417,7 +416,9 @@ class MemoService {
       queryParams.push(diaryDate)
     }
 
-    const result = await queryFirst<{ count: number }>(query, queryParams)
+    const result = await useDatabaseStore
+      .getState()
+      .queryFirst<{ count: number }>(query, queryParams)
     return result?.count || 0
   }
 }

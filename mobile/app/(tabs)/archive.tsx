@@ -10,13 +10,7 @@ import type { MemoWithResources } from '@/types/memo'
 import { router } from 'expo-router'
 import { ChevronDown, ChevronUp } from 'lucide-react-native'
 import { useRef, useState } from 'react'
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function ArchiveScreen() {
   const { theme } = useThemeStore()
@@ -61,10 +55,7 @@ export default function ArchiveScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Heat Map Section */}
         <View
           style={[
@@ -84,9 +75,7 @@ export default function ArchiveScreen() {
               },
             ]}
           >
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              情绪热力图
-            </Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>情绪热力图</Text>
             {isHeatMapExpanded ? (
               <ChevronUp size={20} color={theme.textSecondary} strokeWidth={2} />
             ) : (
@@ -96,9 +85,7 @@ export default function ArchiveScreen() {
 
           {isHeatMapExpanded && (
             <View style={styles.sectionContent}>
-              <MoodHeatMap
-                onDateClick={handleDateClick}
-              />
+              <MoodHeatMap onDateClick={handleDateClick} />
             </View>
           )}
         </View>
@@ -121,9 +108,7 @@ export default function ArchiveScreen() {
               },
             ]}
           >
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              日历选择
-            </Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>日历选择</Text>
           </View>
           <View style={styles.sectionContent}>
             <CalendarPicker

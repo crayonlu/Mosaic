@@ -19,7 +19,7 @@ export default function RootLayout() {
   // Initialize database on app start
   useEffect(() => {
     initializeDatabase()
-  }, [initializeDatabase])
+  }, [])
 
   // Show loading screen while database is initializing
   if (dbInitializing) {

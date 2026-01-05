@@ -10,7 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -145,13 +145,8 @@ export function LinkDialog({
                   },
                 ]}
               >
-                <Text style={[styles.previewLabel, { color: theme.textSecondary }]}>
-                  预览
-                </Text>
-                <Text
-                  style={[styles.previewText, { color: theme.primary }]}
-                  numberOfLines={2}
-                >
+                <Text style={[styles.previewLabel, { color: theme.textSecondary }]}>预览</Text>
+                <Text style={[styles.previewText, { color: theme.primary }]} numberOfLines={2}>
                   {text.trim() || url}
                 </Text>
               </View>

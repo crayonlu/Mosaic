@@ -31,13 +31,7 @@ interface MemoDetailProps {
   onDelete?: (id: string) => void
 }
 
-export function MemoDetail({
-  visible,
-  memo,
-  onMemoUpdate,
-  onClose,
-  onDelete,
-}: MemoDetailProps) {
+export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: MemoDetailProps) {
   const { theme } = useThemeStore()
   const [content, setContent] = useState('')
   const [tags, setTags] = useState<string[]>([])
@@ -62,8 +56,7 @@ export function MemoDetail({
       const contentChanged = content !== memo.content
       const tagsChanged = JSON.stringify(tags) !== JSON.stringify(memo.tags)
       const dateChanged =
-        (diaryDate?.toISOString().split('T')[0] || null) !==
-        (memo.diaryDate || null)
+        (diaryDate?.toISOString().split('T')[0] || null) !== (memo.diaryDate || null)
       setHasChanges(contentChanged || tagsChanged || dateChanged)
     }
   }, [content, tags, diaryDate, memo])
@@ -111,27 +104,23 @@ export function MemoDetail({
   const handleDelete = useCallback(() => {
     if (!memo) return
 
-    Alert.alert(
-      '删除Memo',
-      '确定要删除这条Memo吗？删除后可以在归档中恢复。',
-      [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '删除',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await memoService.deleteMemo(memo.id)
-              onDelete?.(memo.id)
-              onClose()
-            } catch (error) {
-              console.error('Failed to delete memo:', error)
-              Alert.alert('错误', '删除失败')
-            }
-          },
+    Alert.alert('删除Memo', '确定要删除这条Memo吗？删除后可以在归档中恢复。', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '删除',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await memoService.deleteMemo(memo.id)
+            onDelete?.(memo.id)
+            onClose()
+          } catch (error) {
+            console.error('Failed to delete memo:', error)
+            Alert.alert('错误', '删除失败')
+          }
         },
-      ]
-    )
+      },
+    ])
   }, [memo, onDelete, onClose])
 
   // Handle add tag
@@ -144,36 +133,32 @@ export function MemoDetail({
   }, [tagInput, tags])
 
   // Handle remove tag
-  const handleRemoveTag = useCallback((tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove))
-  }, [tags])
+  const handleRemoveTag = useCallback(
+    (tagToRemove: string) => {
+      setTags(tags.filter(tag => tag !== tagToRemove))
+    },
+    [tags]
+  )
 
   // Handle date change
-  const handleDateChange = useCallback(
-    (event: any, selectedDate?: Date) => {
-      setShowDatePicker(false)
-      if (selectedDate) {
-        setDiaryDate(selectedDate)
-      }
-    },
-    []
-  )
+  const handleDateChange = useCallback((event: any, selectedDate?: Date) => {
+    setShowDatePicker(false)
+    if (selectedDate) {
+      setDiaryDate(selectedDate)
+    }
+  }, [])
 
   // Handle close with unsaved changes confirmation
   const handleClose = useCallback(() => {
     if (hasChanges) {
-      Alert.alert(
-        '未保存的更改',
-        '您有未保存的更改，确定要关闭吗？',
-        [
-          { text: '继续编辑', style: 'cancel' },
-          {
-            text: '放弃更改',
-            style: 'destructive',
-            onPress: onClose,
-          },
-        ]
-      )
+      Alert.alert('未保存的更改', '您有未保存的更改，确定要关闭吗？', [
+        { text: '继续编辑', style: 'cancel' },
+        {
+          text: '放弃更改',
+          style: 'destructive',
+          onPress: onClose,
+        },
+      ])
     } else {
       onClose()
     }
@@ -203,12 +188,7 @@ export function MemoDetail({
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
           {/* Header */}
-          <View
-            style={[
-              styles.header,
-              { borderBottomColor: theme.border },
-            ]}
-          >
+          <View style={[styles.header, { borderBottomColor: theme.border }]}>
             <TouchableOpacity
               onPress={handleClose}
               style={styles.headerButton}
@@ -223,14 +203,15 @@ export function MemoDetail({
 
             <TouchableOpacity
               onPress={handleSave}
-              style={[
-                styles.headerButton,
-                !hasChanges && styles.headerButtonDisabled,
-              ]}
+              style={[styles.headerButton, !hasChanges && styles.headerButtonDisabled]}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               disabled={!hasChanges}
             >
-              <Check size={24} color={hasChanges ? theme.primary : theme.textSecondary} strokeWidth={2} />
+              <Check
+                size={24}
+                color={hasChanges ? theme.primary : theme.textSecondary}
+                strokeWidth={2}
+              />
             </TouchableOpacity>
           </View>
 

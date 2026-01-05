@@ -59,10 +59,7 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
       {images.length > 0 && layout && (
         <View style={styles.section}>
           {layout === 'single' && (
-            <TouchableOpacity
-              onPress={() => handleImagePress(0)}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity onPress={() => handleImagePress(0)} activeOpacity={0.8}>
               <Image
                 source={{ uri: `file://${images[0].filename}` }}
                 style={styles.singleImage}
@@ -108,9 +105,7 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
               ))}
               {images.length > 9 && (
                 <View style={[styles.gridItem, styles.moreIndicator]}>
-                  <Text style={[styles.moreText, { color: theme.text }]}>
-                    +{images.length - 9}
-                  </Text>
+                  <Text style={[styles.moreText, { color: theme.text }]}>+{images.length - 9}</Text>
                 </View>
               )}
             </View>
@@ -147,9 +142,7 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
               ]}
             >
               <View style={styles.audioIcon}>
-                <Text style={[styles.audioIconText, { color: theme.primary }]}>
-                  🎤
-                </Text>
+                <Text style={[styles.audioIconText, { color: theme.primary }]}>🎤</Text>
               </View>
               <View style={styles.audioInfo}>
                 <Text style={[styles.audioName, { color: theme.text }]}>
@@ -163,9 +156,7 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
                 style={styles.audioPlayButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={[styles.audioPlayText, { color: theme.primary }]}>
-                  ▶
-                </Text>
+                <Text style={[styles.audioPlayText, { color: theme.primary }]}>▶</Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -205,18 +196,9 @@ function ImagePreview({ visible, images, initialIndex, onClose }: ImagePreviewPr
   }
 
   return (
-    <Modal
-      visible={visible}
-      animationType="fade"
-      transparent={true}
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
       <View style={styles.previewContainer}>
-        <TouchableOpacity
-          style={styles.previewBackground}
-          activeOpacity={1}
-          onPress={onClose}
-        >
+        <TouchableOpacity style={styles.previewBackground} activeOpacity={1} onPress={onClose}>
           {/* Previous button */}
           {images.length > 1 && (
             <TouchableOpacity
@@ -236,10 +218,7 @@ function ImagePreview({ visible, images, initialIndex, onClose }: ImagePreviewPr
           >
             <Image
               source={{ uri: images[currentIndex] }}
-              style={[
-                styles.previewImage,
-                { width: screenWidth - 40 },
-              ]}
+              style={[styles.previewImage, { width: screenWidth - 40 }]}
               resizeMode="contain"
             />
           </ScrollView>

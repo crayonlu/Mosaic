@@ -1,4 +1,4 @@
-import { queryAll, queryFirst, getDatabaseWithCheck } from '@/lib/database'
+import { useDatabaseStore } from '@/stores/database-store'
 import type { HeatMapData, HeatMapCell, HeatMapQuery, MoodStats, TagStats } from '@/types/stats'
 
 /**
@@ -16,14 +16,14 @@ class StatsService {
    */
   private getMoodColor(moodKey?: string): string {
     const moodColors: Record<string, string> = {
-      joy: '#FFD93D',      // 愉悦 - 黄色
-      anger: '#FF6B6B',    // 愤怒 - 红色
-      sadness: '#4ECDC4',   // 悲伤 - 青色
-      calm: '#95E1D3',     // 平静 - 绿色
-      anxiety: '#FFA07A',   // 焦虑 - 橙色
-      focus: '#6C5CE7',    // 专注 - 紫色
-      tired: '#A8A8A8',    // 疲惫 - 灰色
-      neutral: '#E0E0E0',   // 中性 - 浅灰
+      joy: '#FFD93D', // 愉悦 - 黄色
+      anger: '#FF6B6B', // 愤怒 - 红色
+      sadness: '#4ECDC4', // 悲伤 - 青色
+      calm: '#95E1D3', // 平静 - 绿色
+      anxiety: '#FFA07A', // 焦虑 - 橙色
+      focus: '#6C5CE7', // 专注 - 紫色
+      tired: '#A8A8A8', // 疲惫 - 灰色
+      neutral: '#E0E0E0', // 中性 - 浅灰
     }
     return moodColors[moodKey || '#E0E0E0']
   }
@@ -49,7 +49,7 @@ class StatsService {
     const { startDate, endDate } = query
 
     // Get all diaries in the date range
-    const diaries = await queryAll<any>(
+    const diaries = await useDatabaseStore.getState().queryAll<any>(
       `SELECT date, mood_key, mood_score
        FROM diaries
        WHERE date >= ? AND date <= ?
@@ -98,9 +98,9 @@ class StatsService {
    * Get all tags with their usage count
    */
   async getAllTags(): Promise<TagStats[]> {
-    const rows = await queryAll<{ tags: string }>(
-      `SELECT tags FROM memos WHERE is_deleted = 0 AND tags != '[]'`
-    )
+    const rows = await useDatabaseStore
+      .getState()
+      .queryAll<{ tags: string }>(`SELECT tags FROM memos WHERE is_deleted = 0 AND tags != '[]'`)
 
     const tagCountMap = new Map<string, number>()
 
@@ -130,7 +130,7 @@ class StatsService {
    * Get mood distribution for a date range
    */
   async getMoodDistribution(startDate: string, endDate: string): Promise<MoodStats[]> {
-    const diaries = await queryAll<any>(
+    const diaries = await useDatabaseStore.getState().queryAll<any>(
       `SELECT mood_key, COUNT(*) as count
        FROM diaries
        WHERE date >= ? AND date <= ? AND mood_key IS NOT NULL
@@ -153,7 +153,7 @@ class StatsService {
    * Get top tags for a date range
    */
   async getTopTags(startDate: string, endDate: string, limit: number = 10): Promise<TagStats[]> {
-    const rows = await queryAll<{ tags: string }>(
+    const rows = await useDatabaseStore.getState().queryAll<{ tags: string }>(
       `SELECT tags
        FROM memos
        WHERE date(created_at / 1000, 'unixepoch', 'localtime') >= ?
