@@ -18,11 +18,7 @@ export function Loading({ size = 'large', text, fullScreen = false }: LoadingPro
   return (
     <View style={[styles.container, fullScreen && styles.fullScreen]}>
       <ActivityIndicator size={size} color={theme.primary} />
-      {text && (
-        <Text style={[styles.text, { color: theme.textSecondary }]}>
-          {text}
-        </Text>
-      )}
+      {text && <Text style={[styles.text, { color: theme.textSecondary }]}>{text}</Text>}
     </View>
   )
 }

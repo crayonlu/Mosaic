@@ -37,7 +37,7 @@ export const useToastStore = create<ToastState>()(
   persist(
     set => ({
       toasts: [],
-      showToast: (message) => {
+      showToast: message => {
         const id = Date.now().toString()
         const toastMessage: ToastMessage = {
           id,
@@ -50,10 +50,7 @@ export const useToastStore = create<ToastState>()(
         }
 
         set(state => ({
-          toasts: [
-            toastMessage,
-            ...state.toasts,
-          ],
+          toasts: [toastMessage, ...state.toasts],
         }))
 
         // Auto hide after duration
@@ -91,15 +88,7 @@ export function ToastContainer() {
   )
 }
 
-function Toast({
-  toast,
-  onHide,
-  theme,
-}: {
-  toast: ToastMessage
-  onHide: () => void
-  theme: any
-}) {
+function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => void; theme: any }) {
   const fadeAnim = useRef(new Animated.Value(0)).current
 
   useEffect(() => {

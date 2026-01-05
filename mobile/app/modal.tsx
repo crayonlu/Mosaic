@@ -24,9 +24,7 @@ export default function ModalScreen() {
           </TouchableOpacity>
         </View>
         <View style={styles.body}>
-          <Text style={[styles.text, { color: theme.text }]}>
-            This is a modal screen.
-          </Text>
+          <Text style={[styles.text, { color: theme.text }]}>This is a modal screen.</Text>
         </View>
       </View>
     </View>

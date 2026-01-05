@@ -6,14 +6,7 @@ import { type MemoWithResources } from '@/types/memo'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Archive, ArrowLeft, Save, Trash2 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -74,10 +67,7 @@ export default function MemoDetailScreen() {
       const updated = await memoService.getMemo(memo.id)
       if (updated) {
         setMemo(updated)
-        toast.success(
-          '成功',
-          memo.isArchived ? '备忘录已取消归档' : '备忘录已归档'
-        )
+        toast.success('成功', memo.isArchived ? '备忘录已取消归档' : '备忘录已归档')
       }
     } catch (error) {
       toast.error('错误', '操作失败')
@@ -118,7 +108,7 @@ export default function MemoDetailScreen() {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.emptyContainer}>
-        <Text style={[styles.emptyText, { color: theme.text }]}>备忘录不存在</Text>
+          <Text style={[styles.emptyText, { color: theme.text }]}>备忘录不存在</Text>
         </View>
       </View>
     )
@@ -161,9 +151,7 @@ export default function MemoDetailScreen() {
             placeholderTextColor={theme.textSecondary}
           />
         ) : (
-          <Text style={[styles.content, { color: theme.text }]}>
-            {memo.content || '无内容'}
-          </Text>
+          <Text style={[styles.content, { color: theme.text }]}>{memo.content || '无内容'}</Text>
         )}
 
         {/* Tags */}

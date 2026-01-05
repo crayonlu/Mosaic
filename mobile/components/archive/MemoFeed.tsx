@@ -25,12 +25,7 @@ interface MemoFeedProps {
   onMemoDelete?: (id: string) => void
 }
 
-export function MemoFeed({
-  targetDate,
-  onMemoPress,
-  onMemoArchive,
-  onMemoDelete,
-}: MemoFeedProps) {
+export function MemoFeed({ targetDate, onMemoPress, onMemoArchive, onMemoDelete }: MemoFeedProps) {
   const { theme } = useThemeStore()
   const { isReady: dbReady, isInitializing: dbInitializing, error: dbError } = useDatabaseStore()
   const [memos, setMemos] = useState<MemoWithResources[]>([])
@@ -42,51 +37,54 @@ export function MemoFeed({
   const flatListRef = useRef<FlatList>(null)
 
   // Load memos
-  const loadMemos = useCallback(async (loadMore = false) => {
-    if (!dbReady) return
+  const loadMemos = useCallback(
+    async (loadMore = false) => {
+      if (!dbReady) return
 
-    try {
-      if (!loadMore) {
-        setLoading(true)
-      } else {
-        setLoadingMore(true)
-      }
-
-      let loadedMemos: MemoWithResources[]
-
-      if (targetDate) {
-        // Load by date
-        loadedMemos = await memoService.getMemosByDate(targetDate)
-      } else {
-        // Load paginated
-        const currentPage = loadMore ? page : 1
-        const newMemos = await memoService.listMemos({
-          page: currentPage,
-          pageSize: 20,
-          isArchived: false,
-          isDeleted: false,
-        })
-
-        if (loadMore) {
-          loadedMemos = [...memos, ...newMemos]
+      try {
+        if (!loadMore) {
+          setLoading(true)
         } else {
-          loadedMemos = newMemos
-          setPage(1)
+          setLoadingMore(true)
         }
 
-        // Check if there are more items
-        setHasMore(newMemos.length === 20)
-      }
+        let loadedMemos: MemoWithResources[]
 
-      setMemos(loadedMemos)
-    } catch (error) {
-      console.error('Failed to load memos:', error)
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-      setLoadingMore(false)
-    }
-  }, [targetDate, page, memos, dbReady])
+        if (targetDate) {
+          // Load by date
+          loadedMemos = await memoService.getMemosByDate(targetDate)
+        } else {
+          // Load paginated
+          const currentPage = loadMore ? page : 1
+          const newMemos = await memoService.listMemos({
+            page: currentPage,
+            pageSize: 20,
+            isArchived: false,
+            isDeleted: false,
+          })
+
+          if (loadMore) {
+            loadedMemos = [...memos, ...newMemos]
+          } else {
+            loadedMemos = newMemos
+            setPage(1)
+          }
+
+          // Check if there are more items
+          setHasMore(newMemos.length === 20)
+        }
+
+        setMemos(loadedMemos)
+      } catch (error) {
+        console.error('Failed to load memos:', error)
+      } finally {
+        setLoading(false)
+        setRefreshing(false)
+        setLoadingMore(false)
+      }
+    },
+    [targetDate, page, memos, dbReady]
+  )
 
   // Initial load
   useEffect(() => {
@@ -168,18 +166,11 @@ export function MemoFeed({
         {/* Header */}
         <View style={styles.memoHeader}>
           <View style={styles.userInfo}>
-            <View
-              style={[
-                styles.avatar,
-                { backgroundColor: theme.primary },
-              ]}
-            >
+            <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
               <Text style={styles.avatarText}>M</Text>
             </View>
             <View style={styles.userMeta}>
-              <Text style={[styles.userName, { color: theme.text }]}>
-                Mosaic
-              </Text>
+              <Text style={[styles.userName, { color: theme.text }]}>Mosaic</Text>
               <Text style={[styles.timestamp, { color: theme.textSecondary }]}>
                 {formatTimestamp(item.createdAt)}
               </Text>
@@ -195,9 +186,7 @@ export function MemoFeed({
 
         {/* Content */}
         {previewText && (
-          <Text style={[styles.memoContent, { color: theme.text }]}>
-            {previewText}
-          </Text>
+          <Text style={[styles.memoContent, { color: theme.text }]}>{previewText}</Text>
         )}
 
         {/* Resources */}
@@ -215,12 +204,7 @@ export function MemoFeed({
         {item.tags && item.tags.length > 0 && (
           <View style={styles.tagsContainer}>
             {item.tags.slice(0, 3).map(tag => (
-              <Badge
-                key={tag}
-                text={tag}
-                variant="outline"
-                size="small"
-              />
+              <Badge key={tag} text={tag} variant="outline" size="small" />
             ))}
             {item.tags.length > 3 && (
               <Text style={[styles.moreTags, { color: theme.textSecondary }]}>
@@ -231,12 +215,7 @@ export function MemoFeed({
         )}
 
         {/* Actions */}
-        <View
-          style={[
-            styles.actionsContainer,
-            { borderTopColor: theme.border },
-          ]}
-        >
+        <View style={[styles.actionsContainer, { borderTopColor: theme.border }]}>
           <TouchableOpacity
             onPress={() => handleArchive(item.id)}
             style={styles.actionButton}
@@ -263,9 +242,7 @@ export function MemoFeed({
         {targetDate ? '今天还没有记录' : '暂无Memo'}
       </Text>
       <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-        {targetDate
-          ? '点击下方按钮创建你的第一条Memo'
-          : '开始记录你的想法和灵感'}
+        {targetDate ? '点击下方按钮创建你的第一条Memo' : '开始记录你的想法和灵感'}
       </Text>
     </View>
   )
@@ -283,9 +260,7 @@ export function MemoFeed({
     if (!hasMore) {
       return (
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-            没有更多了
-          </Text>
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>没有更多了</Text>
         </View>
       )
     }
@@ -300,12 +275,8 @@ export function MemoFeed({
   if (dbError) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={[styles.emptyTitle, { color: theme.text }]}>
-          数据库错误
-        </Text>
-        <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-          {dbError}
-        </Text>
+        <Text style={[styles.emptyTitle, { color: theme.text }]}>数据库错误</Text>
+        <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>{dbError}</Text>
       </View>
     )
   }

@@ -1,3 +1,5 @@
+import dayjs from 'dayjs'
+
 export const arrayUtils = {
   unique: <T>(arr: T[]): T[] => [...new Set(arr)],
   groupBy: <T>(arr: T[], key: keyof T): Record<string, T[]> => {
@@ -11,13 +13,13 @@ export const arrayUtils = {
       {} as Record<string, T[]>
     )
   },
-  sortByDate: <T extends { createdAt: string | Date }>(
+  sortByDate: <T extends { createdAt: string | Date | number }>(
     arr: T[],
     order: 'asc' | 'desc' = 'desc'
   ): T[] => {
     return [...arr].sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime()
-      const dateB = new Date(b.createdAt).getTime()
+      const dateA = dayjs(a.createdAt).valueOf()
+      const dateB = dayjs(b.createdAt).valueOf()
       return order === 'asc' ? dateA - dateB : dateB - dateA
     })
   },

@@ -4,7 +4,7 @@
     "slug": "mosaic",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/unused/icon.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "mosaic",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -39,7 +39,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      ["./plugins/withNinjaLongPaths.js"]
     ],
     "experiments": {
       "typedRoutes": true,

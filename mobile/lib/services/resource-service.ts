@@ -1,4 +1,4 @@
-import { execute, queryAll, queryFirst } from '@/lib/database'
+import { useDatabaseStore } from '@/stores/database-store'
 import type { Resource, ResourceType } from '@/types/resource'
 import * as DocumentPicker from 'expo-document-picker'
 import * as FileSystem from 'expo-file-system'
@@ -123,7 +123,7 @@ class ResourceService {
 
       // Create database record
       const now = this.getCurrentTimestamp()
-      await execute(
+      await useDatabaseStore.getState().execute(
         `INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, size, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -203,10 +203,9 @@ class ResourceService {
    * Get resource by id
    */
   async getResource(id: string): Promise<Resource | null> {
-    const row = await queryFirst<any>(
-      `SELECT * FROM resources WHERE id = ?`,
-      [id]
-    )
+    const row = await useDatabaseStore
+      .getState()
+      .queryFirst<any>(`SELECT * FROM resources WHERE id = ?`, [id])
 
     if (!row) {
       return null
@@ -227,10 +226,9 @@ class ResourceService {
    * Get resources for a memo
    */
   async getMemoResources(memoId: string): Promise<Resource[]> {
-    const rows = await queryAll<any>(
-      `SELECT * FROM resources WHERE memo_id = ? ORDER BY created_at DESC`,
-      [memoId]
-    )
+    const rows = await useDatabaseStore
+      .getState()
+      .queryAll<any>(`SELECT * FROM resources WHERE memo_id = ? ORDER BY created_at DESC`, [memoId])
 
     return rows.map(row => ({
       id: row.id,
@@ -248,10 +246,12 @@ class ResourceService {
    */
   async linkResourcesToMemo(resourceIds: string[], memoId: string): Promise<void> {
     for (const resourceId of resourceIds) {
-      await execute(
-        `UPDATE resources SET memo_id = ? WHERE id = ? AND memo_id IS NULL`,
-        [memoId, resourceId]
-      )
+      await useDatabaseStore
+        .getState()
+        .execute(`UPDATE resources SET memo_id = ? WHERE id = ? AND memo_id IS NULL`, [
+          memoId,
+          resourceId,
+        ])
     }
   }
 
@@ -260,10 +260,9 @@ class ResourceService {
    */
   async unlinkResourcesFromMemo(resourceIds: string[]): Promise<void> {
     for (const resourceId of resourceIds) {
-      await execute(
-        `UPDATE resources SET memo_id = NULL WHERE id = ?`,
-        [resourceId]
-      )
+      await useDatabaseStore
+        .getState()
+        .execute(`UPDATE resources SET memo_id = NULL WHERE id = ?`, [resourceId])
     }
   }
 
@@ -271,9 +270,9 @@ class ResourceService {
    * Get orphaned resources (not linked to any memo)
    */
   async getOrphanedResources(): Promise<Resource[]> {
-    const rows = await queryAll<any>(
-      `SELECT * FROM resources WHERE memo_id IS NULL ORDER BY created_at DESC`
-    )
+    const rows = await useDatabaseStore
+      .getState()
+      .queryAll<any>(`SELECT * FROM resources WHERE memo_id IS NULL ORDER BY created_at DESC`)
 
     return rows.map(row => ({
       id: row.id,
@@ -295,7 +294,7 @@ class ResourceService {
       // Delete from disk
       await this.deleteResourceFile(resource.filename)
       // Delete from database
-      await execute(`DELETE FROM resources WHERE id = ?`, [id])
+      await useDatabaseStore.getState().execute(`DELETE FROM resources WHERE id = ?`, [id])
     }
   }
 
@@ -315,8 +314,8 @@ class ResourceService {
     const now = this.getCurrentTimestamp()
     const oneDayAgo = now - 24 * 60 * 60 * 1000
 
-    const rows = await queryAll<{ id: string; filename: string }>(
-      `SELECT id, filename FROM resources 
+    const rows = await useDatabaseStore.getState().queryAll<{ id: string; filename: string }>(
+      `SELECT id, filename FROM resources
        WHERE memo_id IS NULL AND created_at < ?`,
       [oneDayAgo]
     )
@@ -342,7 +341,7 @@ class ResourceService {
 
     query += ` ORDER BY created_at DESC`
 
-    const rows = await queryAll<any>(query, params)
+    const rows = await useDatabaseStore.getState().queryAll<any>(query, params)
 
     return rows.map(row => ({
       id: row.id,
@@ -359,9 +358,9 @@ class ResourceService {
    * Get total storage used by resources
    */
   async getTotalStorageSize(): Promise<number> {
-    const result = await queryFirst<{ total: number }>(
-      `SELECT COALESCE(SUM(size), 0) as total FROM resources`
-    )
+    const result = await useDatabaseStore
+      .getState()
+      .queryFirst<{ total: number }>(`SELECT COALESCE(SUM(size), 0) as total FROM resources`)
     return result?.total || 0
   }
 
@@ -369,11 +368,13 @@ class ResourceService {
    * Get storage size by type
    */
   async getStorageSizeByType(): Promise<Record<ResourceType, number>> {
-    const result = await queryAll<{ resource_type: ResourceType; total: number }>(
-      `SELECT resource_type, COALESCE(SUM(size), 0) as total 
-       FROM resources 
+    const result = await useDatabaseStore
+      .getState()
+      .queryAll<{ resource_type: ResourceType; total: number }>(
+        `SELECT resource_type, COALESCE(SUM(size), 0) as total
+       FROM resources
        GROUP BY resource_type`
-    )
+      )
 
     const sizes: Record<ResourceType, number> = {
       image: 0,

@@ -42,14 +42,7 @@ const TYPE_STYLES = {
   },
 }
 
-export function Dialog({
-  visible,
-  type = 'info',
-  title,
-  message,
-  buttons,
-  onClose,
-}: DialogProps) {
+export function Dialog({ visible, type = 'info', title, message, buttons, onClose }: DialogProps) {
   const theme = useThemeStore().theme
   const fadeAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.9)).current

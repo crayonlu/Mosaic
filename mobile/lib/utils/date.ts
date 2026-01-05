@@ -1,54 +1,48 @@
-export const dateUtils = {
-  format: (date: string | Date, format: 'full' | 'short' = 'short'): string => {
-    const d = typeof date === 'string' ? new Date(date) : date
-    const options: Intl.DateTimeFormatOptions =
-      format === 'full'
-        ? { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }
-        : { year: 'numeric', month: 'short', day: 'numeric' }
-    return d.toLocaleDateString('zh-CN', options)
-  },
-  relativeTime: (date: string | Date): string => {
-    const d = typeof date === 'string' ? new Date(date) : date
-    const now = new Date()
-    const diff = now.getTime() - d.getTime()
-    const seconds = Math.floor(diff / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
+import dayjs from 'dayjs'
+import weekOfYear from 'dayjs/plugin/weekOfYear'
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
 
-    if (seconds < 60) return '刚刚'
-    if (minutes < 60) return `${minutes}分钟前`
-    if (hours < 24) return `${hours}小时前`
-    if (days < 7) return `${days}天前`
-    const year = d.getFullYear()
-    const month = d.getMonth() + 1
-    const day = d.getDate()
-    return `${year}年${month}月${day}日`
+dayjs.extend(weekOfYear)
+dayjs.extend(isSameOrBefore)
+dayjs.extend(isSameOrAfter)
+
+export const dateUtils = {
+  format: (date: string | Date | number, format: 'full' | 'short' = 'short'): string => {
+    const d = dayjs(date)
+    if (!d.isValid()) return '未知时间'
+
+    return format === 'full' ? d.format('YYYY年MM月DD日 HH:mm') : d.format('YYYY年MM月DD日')
+  },
+  relativeTime: (date: string | Date | number): string => {
+    const d = dayjs(date)
+    if (!d.isValid()) return '未知时间'
+
+    const now = dayjs()
+    const diff = now.diff(d, 'second')
+
+    if (diff < 60) return '刚刚'
+    if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`
+    if (diff < 604800) return `${Math.floor(diff / 86400)}天前`
+
+    return d.format('YYYY年MM月DD日')
   },
   today: (): string => {
-    const now = new Date()
-    return now.toISOString().split('T')[0]
+    return dayjs().format('YYYY-MM-DD')
   },
-  isToday: (date: string | Date): boolean => {
-    const d = typeof date === 'string' ? new Date(date) : date
-    const today = new Date()
-    return d.toDateString() === today.toDateString()
+  isToday: (date: string | Date | number): boolean => {
+    const d = dayjs(date)
+    const today = dayjs()
+    return d.format('YYYY-MM-DD') === today.format('YYYY-MM-DD')
   },
-  startOfDay: (date: string | Date): Date => {
-    const d = typeof date === 'string' ? new Date(date) : date
-    d.setHours(0, 0, 0, 0)
-    return d
+  startOfDay: (date: string | Date | number): Date => {
+    return dayjs(date).startOf('day').toDate()
   },
-  endOfDay: (date: string | Date): Date => {
-    const d = typeof date === 'string' ? new Date(date) : date
-    d.setHours(23, 59, 59, 999)
-    return d
+  endOfDay: (date: string | Date | number): Date => {
+    return dayjs(date).endOf('day').toDate()
   },
-  getWeekNumber: (date: string | Date): number => {
-    const d = typeof date === 'string' ? new Date(date) : date
-    d.setHours(0, 0, 0, 0)
-    d.setDate(d.getDate() + 4 - (d.getDay() || 7))
-    const yearStart = new Date(d.getFullYear(), 0, 1)
-    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+  getWeekNumber: (date: string | Date | number): number => {
+    return dayjs(date).week()
   },
 }

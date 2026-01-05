@@ -26,8 +26,7 @@ export function MemoCard({
 
   // Extract plain text from HTML for preview
   const plainText = stringUtils.extractTextFromHtml(memo.content)
-  const previewText =
-    plainText.length > 200 ? plainText.substring(0, 200) + '...' : plainText
+  const previewText = plainText.length > 200 ? plainText.substring(0, 200) + '...' : plainText
 
   // Format timestamp
   const formattedTime = stringUtils.formatRelativeTime(memo.createdAt)
@@ -35,9 +34,7 @@ export function MemoCard({
   // Check if memo has resources
   const hasResources = memo.resources.length > 0
   const hasImages = memo.resources.some(r => r.resourceType === 'image')
-  const hasOtherResources = memo.resources.some(
-    r => r.resourceType !== 'image'
-  )
+  const hasOtherResources = memo.resources.some(r => r.resourceType !== 'image')
 
   // Get image preview
   const imageResource = memo.resources.find(r => r.resourceType === 'image')
@@ -77,11 +74,7 @@ export function MemoCard({
 
         {/* Text content */}
         <View style={[styles.textContent, !imageResource && styles.textContentFull]}>
-          <Text
-            style={[styles.text, { color: theme.text }]}
-            numberOfLines={4}
-            ellipsizeMode="tail"
-          >
+          <Text style={[styles.text, { color: theme.text }]} numberOfLines={4} ellipsizeMode="tail">
             {plainText || '无文字内容'}
           </Text>
         </View>
@@ -89,22 +82,12 @@ export function MemoCard({
 
       {/* Tags and metadata */}
       {(memo.tags.length > 0 || hasResources || showActions) && (
-        <View
-          style={[
-            styles.metadataContainer,
-            { borderTopColor: theme.border },
-          ]}
-        >
+        <View style={[styles.metadataContainer, { borderTopColor: theme.border }]}>
           {/* Tags */}
           {memo.tags.length > 0 && (
             <View style={styles.tagsRow}>
               {memo.tags.slice(0, 3).map(tag => (
-                <Badge
-                  key={tag}
-                  text={tag}
-                  variant="outline"
-                  size="small"
-                />
+                <Badge key={tag} text={tag} variant="outline" size="small" />
               ))}
               {memo.tags.length > 3 && (
                 <Text style={[styles.moreTags, { color: theme.textSecondary }]}>
@@ -155,9 +138,7 @@ export function MemoCard({
           )}
 
           {/* Timestamp */}
-          <Text style={[styles.timestamp, { color: theme.textSecondary }]}>
-            {formattedTime}
-          </Text>
+          <Text style={[styles.timestamp, { color: theme.textSecondary }]}>{formattedTime}</Text>
         </View>
       )}
     </Pressable>
