@@ -6,7 +6,7 @@
 import { Colors, Tabs as TabItems } from '@/constants/common'
 import { useThemeStore } from '@/stores/theme-store'
 import { Tabs } from 'expo-router'
-import { Book, Files, Settings } from 'lucide-react-native'
+import { Book, Files, Settings, TestTubes } from 'lucide-react-native'
 
 export default function TabLayout() {
   const { theme, isDark } = useThemeStore()
@@ -62,6 +62,13 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Protected guard={__DEV__}>
+        <Tabs.Screen
+          name="dev"
+          options={{ title: '开发工具', tabBarIcon: ({ focused, color }) => (
+            <TestTubes size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ) }}/>
+      </Tabs.Protected>
     </Tabs>
   )
 }

@@ -170,3 +170,12 @@ export const SearchFilters = {
   RESOURCES: 'resources',
   MOOD: 'mood',
 } as const
+
+// Time range options for heat map
+export const TimeRanges = {
+  YEAR: { value: 'year', label: '年', months: 12 },
+  HALF_YEAR: { value: 'half', label: '半年', months: 6 },
+  QUARTER: { value: 'quarter', label: '三个月', months: 3 },
+} as const
+
+export type TimeRangeValue = 'year' | 'half' | 'quarter'

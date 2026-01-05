@@ -14,14 +14,14 @@ export interface Theme {
 
 export const LightTheme: Theme = {
   background: '#FFF9F5',
-  surface: '#FFFFFF',
+  surface: '#FFF5EB',
   text: '#2D2D2D',
   textSecondary: '#757575',
   border: 'rgba(0, 0, 0, 0.08)',
   borderRadius: 20,
   spacing: 16,
-  primary: '#007AFF',
-  card: '#FFFFFF',
+  primary: '#FFB5A7',
+  card: '#FFF5EB',
 }
 
 export const DarkTheme: Theme = {
@@ -32,6 +32,6 @@ export const DarkTheme: Theme = {
   border: 'rgba(255, 255, 255, 0.1)',
   borderRadius: 20,
   spacing: 16,
-  primary: '#0A84FF',
+  primary: '#FFB5A7',
   card: '#1F2937',
 }

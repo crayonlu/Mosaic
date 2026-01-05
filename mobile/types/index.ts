@@ -52,7 +52,7 @@ export type { PaginatedResponse } from './common'
 // ============================================================================
 // Stats Types
 // ============================================================================
-export type { DashboardData, MoodTrend } from './stats'
+export type { HeatMapQuery, HeatMapCell, HeatMapData, MoodStats, TagStats } from './stats'
 
 // ============================================================================
 // Input/Editor Types

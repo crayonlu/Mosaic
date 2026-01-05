@@ -1,4 +1,4 @@
-import { execute, queryAll, queryFirst } from '@/lib/database'
+import { execute, queryAll, queryFirst, getDatabaseWithCheck } from '@/lib/database'
 import {
   type CreateMemoRequest,
   type ListMemosRequest,

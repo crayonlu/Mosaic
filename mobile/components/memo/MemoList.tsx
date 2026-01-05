@@ -1,5 +1,9 @@
+import { Loading } from '@/components/ui/Loading'
+import { memoService } from '@/lib/services/memo-service'
+import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
-import { RefreshCw, FileX } from 'lucide-react-native'
+import { type MemoWithResources } from '@/types/memo'
+import { FileX } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
@@ -7,14 +11,9 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native'
-import { type MemoWithResources } from '@/types/memo'
-import { memoService } from '@/lib/services/memo-service'
-import { dateUtils } from '@/lib/utils/date'
 import { MemoCard } from './MemoCard'
-import { stringUtils } from '@/lib/utils/string'
 
 interface MemoListProps {
   date?: string
@@ -196,34 +195,6 @@ export function MemoList({
     </View>
   )
 
-  // Render loading skeleton
-  const renderSkeleton = () => (
-    <View style={styles.skeletonContainer}>
-      {[...Array(3)].map((_, i) => (
-        <View
-          key={i}
-          style={[
-            styles.skeletonCard,
-            { backgroundColor: theme.card, borderColor: theme.border },
-          ]}
-        >
-          <View style={styles.skeletonImage} />
-          <View style={styles.skeletonContent}>
-            <View
-              style={[styles.skeletonLine, { backgroundColor: theme.border }]}
-            />
-            <View
-              style={[styles.skeletonLine, { backgroundColor: theme.border }]}
-            />
-            <View
-              style={[styles.skeletonLine, { backgroundColor: theme.border }]}
-            />
-          </View>
-        </View>
-      ))}
-    </View>
-  )
-
   // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
@@ -282,7 +253,7 @@ export function MemoList({
   }
 
   if (loading) {
-    return renderSkeleton()
+    return <Loading text="加载中..." fullScreen />
   }
 
   if (memos.length === 0) {
@@ -331,32 +302,6 @@ const styles = StyleSheet.create({
   dateHeaderCount: {
     fontSize: 12,
     opacity: 0.7,
-  },
-  skeletonContainer: {
-    padding: 16,
-  },
-  skeletonCard: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
-    minHeight: 80,
-    overflow: 'hidden',
-  },
-  skeletonImage: {
-    width: 100,
-    height: 100,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-  },
-  skeletonContent: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'space-around',
-  },
-  skeletonLine: {
-    height: 12,
-    borderRadius: 6,
-    width: '80%',
   },
   emptyContainer: {
     flex: 1,
