@@ -1,14 +1,29 @@
-import { Memo } from './memo'
-
-export interface DashboardData {
-  todayMemoCount: number
-  totalMemoCount: number
-  recentMemos: Memo[]
-  moodTrend: MoodTrend[]
+export interface HeatMapQuery {
+  startDate: string
+  endDate: string
 }
 
-export interface MoodTrend {
+export interface HeatMapCell {
   date: string
-  moodScore: number
-  memoCount: number
+  moodKey?: string
+  moodScore?: number
+  color: string
+}
+
+export interface HeatMapData {
+  startDate: string
+  endDate: string
+  cells: HeatMapCell[]
+}
+
+export interface MoodStats {
+  moodKey: string
+  count: number
+  percentage: number
+  color: string
+}
+
+export interface TagStats {
+  tag: string
+  count: number
 }

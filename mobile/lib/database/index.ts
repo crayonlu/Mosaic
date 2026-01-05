@@ -1,3 +1,4 @@
+import { useDatabaseStore } from '@/stores/database-store'
 import * as SQLite from 'expo-sqlite'
 import { MIGRATION_V1, MIGRATION_V2, MIGRATION_V3 } from './migrations'
 
@@ -36,13 +37,56 @@ let dbInstance: SQLite.SQLiteDatabase | null = null
  * Get or create the database instance (singleton pattern)
  */
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
-  if (dbInstance) return dbInstance
+  console.log('[Database] getDatabase() called, dbInstance exists:', !!dbInstance)
 
+  if (dbInstance) {
+    console.log('[Database] Returning existing dbInstance')
+    return dbInstance
+  }
+
+  console.log('[Database] Opening new database:', DATABASE_NAME)
   const database = await SQLite.openDatabaseAsync(DATABASE_NAME)
   dbInstance = database
+  console.log('[Database] Database opened, ensuring schema...')
+
   await ensureDatabaseSchema(database)
+  console.log('[Database] Schema ensured, returning database')
 
   return database
+}
+
+/**
+ * Get or create the database instance with readiness check
+ */
+export async function getDatabaseWithCheck(): Promise<SQLite.SQLiteDatabase> {
+  const { isReady } = useDatabaseStore.getState()
+
+  if (!isReady) {
+    // Wait for database to be ready
+    await new Promise<void>((resolve) => {
+      const checkInterval = setInterval(() => {
+        const { isReady: ready } = useDatabaseStore.getState()
+        if (ready) {
+          clearInterval(checkInterval)
+          resolve()
+        }
+      }, 50)
+    })
+  }
+
+  // If dbInstance exists, return it
+  if (dbInstance) return dbInstance
+
+  // Otherwise, initialize the database
+  try {
+    const database = await SQLite.openDatabaseAsync(DATABASE_NAME)
+    dbInstance = database
+    await ensureDatabaseSchema(database)
+    return database
+  } catch (error) {
+    console.error('Failed to initialize database in getDatabaseWithCheck:', error)
+    throw new Error('Database initialization failed')
+  }
 }
 
 /**
@@ -66,7 +110,6 @@ export async function resetDatabase(): Promise<void> {
 
   const database = await SQLite.openDatabaseAsync(DATABASE_NAME)
   dbInstance = database
-
   // Drop all tables
   await database.execAsync(`
     DROP TABLE IF EXISTS resources;
@@ -75,7 +118,6 @@ export async function resetDatabase(): Promise<void> {
     DROP TABLE IF EXISTS users;
     DROP TABLE IF EXISTS settings;
   `)
-
   // Reinitialize schema
   await ensureDatabaseSchema(database)
 }
@@ -90,20 +132,15 @@ export async function resetDatabase(): Promise<void> {
 async function ensureDatabaseSchema(database: SQLite.SQLiteDatabase): Promise<void> {
   // Get current version
   const result = await database.getFirstAsync<{ version: string }>('PRAGMA user_version')
-  const currentVersion = result ? parseInt(result.version) : 0
-
+  const currentVersion = result ? parseInt(result.version ?? 0) : 0
   // Run migrations
   for (let version = currentVersion + 1; version <= DATABASE_VERSION; version++) {
     if (MIGRATIONS[version]) {
-      console.log(`Running migration v${version}...`)
       await database.execAsync(MIGRATIONS[version])
     }
   }
-
   // Update version
   await database.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`)
-
-  console.log(`Database schema updated to version ${DATABASE_VERSION}`)
 }
 
 /**
@@ -131,7 +168,7 @@ export async function needsMigration(): Promise<boolean> {
  * Execute a raw SQL query and return all results
  */
 export async function queryAll<T = any>(sql: string, params: any[] = []): Promise<T[]> {
-  const database = await getDatabase()
+  const database = await getDatabaseWithCheck()
   return database.getAllAsync<T>(sql, params)
 }
 
@@ -139,7 +176,7 @@ export async function queryAll<T = any>(sql: string, params: any[] = []): Promis
  * Execute a raw SQL query and return the first result
  */
 export async function queryFirst<T = any>(sql: string, params: any[] = []): Promise<T | null> {
-  const database = await getDatabase()
+  const database = await getDatabaseWithCheck()
   return database.getFirstAsync<T>(sql, params)
 }
 
@@ -147,7 +184,7 @@ export async function queryFirst<T = any>(sql: string, params: any[] = []): Prom
  * Execute a raw SQL query and return the first column of the first result
  */
 export async function queryScalar<T = any>(sql: string, params: any[] = []): Promise<T | null> {
-  const database = await getDatabase()
+  const database = await getDatabaseWithCheck()
   const result = await database.getFirstAsync<{ value: T }>(sql, params)
   return result ? result.value : null
 }
@@ -156,7 +193,7 @@ export async function queryScalar<T = any>(sql: string, params: any[] = []): Pro
  * Execute a SQL statement (INSERT, UPDATE, DELETE, etc.)
  */
 export async function execute(sql: string, params: any[] = []): Promise<SQLite.SQLiteRunResult> {
-  const database = await getDatabase()
+  const database = await getDatabaseWithCheck()
   return database.runAsync(sql, params)
 }
 
@@ -166,7 +203,7 @@ export async function execute(sql: string, params: any[] = []): Promise<SQLite.S
 export async function executeTransaction(
   callback: (db: SQLite.SQLiteDatabase) => Promise<void>
 ): Promise<void> {
-  const database = await getDatabase()
+  const database = await getDatabaseWithCheck()
   await database.execAsync('BEGIN TRANSACTION')
 
   try {

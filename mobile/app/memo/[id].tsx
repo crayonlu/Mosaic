@@ -1,18 +1,19 @@
+import { Loading } from '@/components/ui/Loading'
+import { toast } from '@/components/ui/Toast'
+import { memoService } from '@/lib/services/memo-service'
 import { useThemeStore } from '@/stores/theme-store'
-import { ArrowLeft, Archive, Trash2, Save } from 'lucide-react-native'
-import { useState, useEffect } from 'react'
+import { type MemoWithResources } from '@/types/memo'
+import { router, useLocalSearchParams } from 'expo-router'
+import { Archive, ArrowLeft, Save, Trash2 } from 'lucide-react-native'
+import { useEffect, useState } from 'react'
 import {
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
-  ScrollView,
-  TextInput,
 } from 'react-native'
-import { router, useLocalSearchParams } from 'expo-router'
-import { memoService } from '@/lib/services/memo-service'
-import { type MemoWithResources } from '@/types/memo'
-import { toast } from '@/components/ui/Toast'
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -108,9 +109,7 @@ export default function MemoDetailScreen() {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, { color: theme.text }]}>加载中...</Text>
-        </View>
+        <Loading text="加载中..." fullScreen />
       </View>
     )
   }
@@ -225,14 +224,6 @@ export default function MemoDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
   },
   emptyContainer: {
     flex: 1,

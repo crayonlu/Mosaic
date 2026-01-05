@@ -65,8 +65,8 @@ CREATE TABLE IF NOT EXISTS resources (
   FOREIGN KEY (memo_id) REFERENCES memos(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_memos_inbox ON memos(is_archived, is_deleted, created_at DESC);
-CREATE INDEX idx_resources_memo ON resources(memo_id);
+CREATE INDEX IF NOT EXISTS idx_memos_inbox ON memos(is_archived, is_deleted, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_resources_memo ON resources(memo_id);
 `
 
 export const MIGRATION_V2 = `
@@ -94,6 +94,6 @@ CREATE TABLE IF NOT EXISTS settings (
   updated_at INTEGER NOT NULL
 );
 
-CREATE INDEX idx_settings_category ON settings(category);
-CREATE INDEX idx_settings_key ON settings(key);
+CREATE INDEX IF NOT EXISTS idx_settings_category ON settings(category);
+CREATE INDEX IF NOT EXISTS idx_settings_key ON settings(key);
 `

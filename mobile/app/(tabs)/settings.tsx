@@ -4,6 +4,7 @@
 
 import { useThemeStore } from '@/stores/theme-store'
 import { StyleSheet, View } from 'react-native'
+
 export default function SettingsScreen() {
   const { theme } = useThemeStore()
 

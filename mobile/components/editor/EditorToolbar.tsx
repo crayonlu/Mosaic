@@ -26,13 +26,24 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacit
 interface EditorToolbarProps {
   editor: EditorBridge
   onSave?: () => void
+  onInsertLink?: () => void
 }
 
-export function EditorToolbar({ editor, onSave }: EditorToolbarProps) {
+export function EditorToolbar({ editor, onSave, onInsertLink }: EditorToolbarProps) {
   const { theme } = useThemeStore()
-  // Note: Active states would be managed via editor state polling or events
-  // For now, we'll use a simple approach without real-time state tracking
-  const [activeStates] = useState<Record<string, boolean>>({})
+
+  // Simple state tracking without useEditorState
+  const [activeStates, setActiveStates] = useState<Record<string, boolean>>({})
+
+  // Helper to check if a mark is active
+  const isMarkActive = (markName: string): boolean => {
+    return activeStates[markName] || false
+  }
+
+  // Helper to check if a node is active
+  const isNodeActive = (nodeName: string): boolean => {
+    return activeStates[nodeName] || false
+  }
 
   // Format buttons
   const formatButtons = [
@@ -40,20 +51,19 @@ export function EditorToolbar({ editor, onSave }: EditorToolbarProps) {
       icon: Bold,
       label: '粗体',
       onPress: () => editor.toggleBold(),
-      isActive: activeStates.bold,
+      isActive: isMarkActive('bold'),
     },
     {
       icon: Italic,
       label: '斜体',
       onPress: () => editor.toggleItalic(),
-      isActive: activeStates.italic,
+      isActive: isMarkActive('italic'),
     },
     {
       icon: Strikethrough,
       label: '删除线',
       onPress: () => {
         try {
-          // toggleStrike may require a parameter or may not be available
           if ('toggleStrike' in editor && typeof editor.toggleStrike === 'function') {
             editor.toggleStrike()
           }
@@ -61,14 +71,13 @@ export function EditorToolbar({ editor, onSave }: EditorToolbarProps) {
           console.warn('Strike not supported:', error)
         }
       },
-      isActive: activeStates.strike,
+      isActive: isMarkActive('strike'),
     },
     {
       icon: Underline,
       label: '下划线',
       onPress: () => {
         try {
-          // toggleUnderline may require a parameter or may not be available
           if ('toggleUnderline' in editor && typeof editor.toggleUnderline === 'function') {
             editor.toggleUnderline()
           }
@@ -76,34 +85,32 @@ export function EditorToolbar({ editor, onSave }: EditorToolbarProps) {
           console.warn('Underline not supported:', error)
         }
       },
-      isActive: activeStates.underline,
+      isActive: isMarkActive('underline'),
     },
     {
       icon: Code,
       label: '行内代码',
       onPress: () => editor.toggleCode(),
-      isActive: activeStates.code,
+      isActive: isMarkActive('code'),
     },
     {
       icon: Highlighter,
       label: '高亮',
       onPress: () => {
-        // Note: toggleHighlight may require a color parameter or may not be available
         try {
           if ('toggleHighlight' in editor && typeof editor.toggleHighlight === 'function') {
-            // Try with default color or no parameter
             const highlightMethod = editor.toggleHighlight as any
             if (highlightMethod.length === 0) {
               highlightMethod()
             } else {
-              highlightMethod({ color: '#FFD93D' }) // Default highlight color
+              highlightMethod({ color: '#FFD93D' })
             }
           }
         } catch (error) {
           console.warn('Highlight not supported:', error)
         }
       },
-      isActive: activeStates.highlight,
+      isActive: isMarkActive('highlight'),
     },
   ]
 
@@ -113,43 +120,43 @@ export function EditorToolbar({ editor, onSave }: EditorToolbarProps) {
       icon: Heading1,
       label: '标题 1',
       onPress: () => editor.toggleHeading(1),
-      isActive: activeStates.heading1,
+      isActive: isNodeActive('heading1'),
     },
     {
       icon: Heading2,
       label: '标题 2',
       onPress: () => editor.toggleHeading(2),
-      isActive: activeStates.heading2,
+      isActive: isNodeActive('heading2'),
     },
     {
       icon: Heading3,
       label: '标题 3',
       onPress: () => editor.toggleHeading(3),
-      isActive: activeStates.heading3,
+      isActive: isNodeActive('heading3'),
     },
     {
       icon: List,
       label: '无序列表',
       onPress: () => editor.toggleBulletList(),
-      isActive: activeStates.bulletList,
+      isActive: isNodeActive('bulletList'),
     },
     {
       icon: ListOrdered,
       label: '有序列表',
       onPress: () => editor.toggleOrderedList(),
-      isActive: activeStates.orderedList,
+      isActive: isNodeActive('orderedList'),
     },
     {
       icon: CheckSquare,
       label: '任务列表',
       onPress: () => editor.toggleTaskList(),
-      isActive: activeStates.taskList,
+      isActive: isNodeActive('taskList'),
     },
     {
       icon: Quote,
       label: '引用',
       onPress: () => editor.toggleBlockquote(),
-      isActive: activeStates.blockquote,
+      isActive: isNodeActive('blockquote'),
     },
   ]
 
@@ -159,18 +166,15 @@ export function EditorToolbar({ editor, onSave }: EditorToolbarProps) {
       icon: Link,
       label: '链接',
       onPress: () => {
-        // TODO: Implement link dialog
-        console.log('Insert link')
+        onInsertLink?.()
       },
-      isActive: activeStates.link,
+      isActive: isMarkActive('link'),
     },
     {
       icon: Code2,
       label: '代码块',
       onPress: () => {
-        // Note: Code block may need special handling
         try {
-          // Try toggleCodeBlock if available, otherwise use toggleCode
           if ('toggleCodeBlock' in editor && typeof editor.toggleCodeBlock === 'function') {
             editor.toggleCodeBlock()
           } else {
@@ -180,7 +184,7 @@ export function EditorToolbar({ editor, onSave }: EditorToolbarProps) {
           console.warn('Code block not supported:', error)
         }
       },
-      isActive: activeStates.codeBlock,
+      isActive: isNodeActive('codeBlock'),
     },
   ]
 
@@ -190,17 +194,24 @@ export function EditorToolbar({ editor, onSave }: EditorToolbarProps) {
       icon: RemoveFormatting,
       label: '清除格式',
       onPress: () => {
-        // Note: clearNodes and unsetAllMarks may not be available
-        // This is a placeholder for future implementation
         try {
-          if ('clearNodes' in editor && typeof editor.clearNodes === 'function') {
-            editor.clearNodes()
+          // Remove all marks - use unsetMark if available
+          if ('unsetMark' in editor && typeof editor.unsetMark === 'function') {
+            editor.unsetMark('bold')
+            editor.unsetMark('italic')
+            editor.unsetMark('strike')
+            editor.unsetMark('underline')
+            editor.unsetMark('code')
+            editor.unsetMark('highlight')
+            editor.unsetMark('link')
           }
-          if ('unsetAllMarks' in editor && typeof editor.unsetAllMarks === 'function') {
-            editor.unsetAllMarks()
+
+          // Reset to paragraph
+          if ('setParagraph' in editor && typeof editor.setParagraph === 'function') {
+            editor.setParagraph()
           }
         } catch (error) {
-          console.warn('Clear formatting not fully supported:', error)
+          console.warn('Clear formatting error:', error)
         }
       },
       isActive: false,
@@ -216,7 +227,7 @@ export function EditorToolbar({ editor, onSave }: EditorToolbarProps) {
         }
       },
       isActive: false,
-      canExecute: true, // TODO: Check if undo is available
+      canExecute: true,
     },
     {
       icon: Redo2,
@@ -229,7 +240,7 @@ export function EditorToolbar({ editor, onSave }: EditorToolbarProps) {
         }
       },
       isActive: false,
-      canExecute: true, // TODO: Check if redo is available
+      canExecute: true,
     },
   ]
 
