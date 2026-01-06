@@ -1,94 +1,108 @@
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
-import { useState } from 'react'
-import { StyleSheet, TextInput, TouchableOpacity } from 'react-native'
+import { useState, useEffect } from 'react'
+import { StyleSheet, TextInput, View, TouchableOpacity } from 'react-native'
 import { FullScreenEditor } from './FullScreenEditor'
+import { Maximize2 } from 'lucide-react-native'
+import { Button } from '@/components/ui/Button'
 
 interface MemoInputProps {
   onSubmit?: (content: string) => void
   placeholder?: string
-  editable?: boolean
 }
 
-export function MemoInput({
-  onSubmit,
-  placeholder = '记录你的想法...',
-  editable = true,
-}: MemoInputProps) {
+export function MemoInput({ onSubmit, placeholder = '记录你的想法...' }: MemoInputProps) {
   const { theme } = useThemeStore()
   const [isFullScreenVisible, setIsFullScreenVisible] = useState(false)
-  const [previewText, setPreviewText] = useState('')
+  const [text, setText] = useState('')
+  const [textContent, setTextContent] = useState('')
 
-  const handlePress = () => {
-    if (editable) {
-      setIsFullScreenVisible(true)
+  useEffect(()=>{
+    if (text)
+      setTextContent(stringUtils.extractTextFromHtml(text))
+  }, [text])
+
+  const handleSubmit = () => {
+    if (!text.trim()) return
+    if (textContent) {
+      onSubmit?.(textContent)
+      setText('')
     }
   }
 
-  const handleSubmit = (content: string) => {
-    const textContent = stringUtils.extractTextFromHtml(content)
-    setPreviewText(textContent)
+  const handleFullScreenSubmit = (content: string) => {
     onSubmit?.(content)
-  }
-
-  const handleClose = () => {
     setIsFullScreenVisible(false)
   }
 
-  const displayText = previewText || ''
-
   return (
     <>
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={handlePress}
-        disabled={!editable}
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.background,
-            borderColor: theme.border,
-            borderWidth: 1,
-          },
-        ]}
-      >
-        <TextInput
+      <View style={styles.CT}>
+        <View
           style={[
-            styles.input,
+            styles.container,
             {
-              color: displayText ? theme.text : theme.textSecondary,
+              backgroundColor: theme.background,
+              borderColor: theme.border,
+              borderWidth: 1,
             },
           ]}
-          placeholder={placeholder}
-          placeholderTextColor={theme.textSecondary}
-          value={displayText}
-          editable={false}
-          multiline={false}
-          numberOfLines={1}
-        />
-      </TouchableOpacity>
+        >
+          <TextInput
+            style={[styles.input, { color: theme.text }]}
+            placeholder={placeholder}
+            placeholderTextColor={theme.textSecondary}
+            value={text}
+            onChangeText={setText}
+            editable={true}
+            multiline={false}
+            numberOfLines={1}
+          />
 
+          <TouchableOpacity
+            onPress={() => setIsFullScreenVisible(true)}
+            style={styles.expandButton}
+          >
+            <Maximize2 size={18} color={theme.textSecondary} />
+          </TouchableOpacity>
+        </View>
+        <Button title="创建" variant={textContent ? 'primary' : 'secondary'} onPress={handleSubmit} />
+      </View>
       <FullScreenEditor
         visible={isFullScreenVisible}
-        initialContent=""
+        initialContent={text}
         placeholder={placeholder}
-        onClose={handleClose}
-        onSubmit={handleSubmit}
+        onClose={() => setIsFullScreenVisible(false)}
+        onSubmit={handleFullScreenSubmit}
       />
     </>
   )
 }
 
 const styles = StyleSheet.create({
+  CT: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   container: {
-    paddingHorizontal: 16,
+    flex: 1,
+    paddingHorizontal: 12,
     borderRadius: 12,
-    minHeight: 48,
-    justifyContent: 'center',
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   input: {
+    flex: 1,
     fontSize: 16,
-    lineHeight: 20,
-    padding: 0,
+    height: '100%',
+    paddingVertical: 0,
+  },
+  expandButton: {
+    padding: 8,
+    marginLeft: 4,
   },
 })

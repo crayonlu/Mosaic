@@ -1,9 +1,9 @@
-import { create } from 'zustand'
-import { createJSONStorage, persist } from 'zustand/middleware'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useThemeStore } from '@/stores/theme-store'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -81,30 +81,51 @@ export function ToastContainer() {
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {toasts.map(toast => (
-        <Toast key={toast.id} toast={toast} onHide={() => hideToast(toast.id)} theme={theme} />
-      ))}
+      <View style={styles.centerContainer}>
+        {toasts.map(toast => (
+          <Toast key={toast.id} toast={toast} onHide={() => hideToast(toast.id)} theme={theme} />
+        ))}
+      </View>
     </View>
   )
 }
 
 function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => void; theme: any }) {
   const fadeAnim = useRef(new Animated.Value(0)).current
+  const scaleAnim = useRef(new Animated.Value(0.8)).current
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start()
-
-    return () => {
+    // Parallel animations: fade in and scale up
+    Animated.parallel([
       Animated.timing(fadeAnim, {
-        toValue: 0,
+        toValue: 1,
         duration: 300,
         useNativeDriver: true,
-      }).start()
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start()
+
+    return () => {
+      // Fade out and scale down
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.8,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast.id])
 
   const getBackgroundColor = () => {
@@ -144,22 +165,23 @@ function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => vo
         {
           backgroundColor: getBackgroundColor(),
           opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }],
         },
       ]}
     >
+      <TouchableOpacity onPress={onHide} style={styles.closeButton}>
+        <Text style={styles.closeText}>✕</Text>
+      </TouchableOpacity>
       <View style={styles.content}>
         <Text style={styles.icon}>{getIcon()}</Text>
         <View style={styles.textContainer}>
           <Text style={[styles.title, { color: '#FFFFFF' }]}>{toast.title}</Text>
           {toast.message && (
-            <Text style={[styles.message, { color: 'rgba(255, 255, 255, 0.9)' }]}>
+            <Text style={[styles.message, { color: 'rgba(255,255,255,0.9)' }]}>
               {toast.message}
             </Text>
           )}
         </View>
-        <TouchableOpacity onPress={onHide} style={styles.closeButton}>
-          <Text style={styles.closeText}>✕</Text>
-        </TouchableOpacity>
       </View>
       {toast.actionLabel && toast.onAction && (
         <TouchableOpacity
@@ -206,69 +228,77 @@ export const toast = {
 }
 
 const styles = StyleSheet.create({
-  toastContainer: {
+  centerContainer: {
     position: 'absolute',
-    top: 60,
-    left: 16,
-    right: 16,
-    padding: 16,
-    borderRadius: 16,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toastContainer: {
+    padding: 12,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 4,
     marginVertical: 8,
+    maxWidth: 320,
   },
   content: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
   },
   icon: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    minWidth: 24,
+    minWidth: 20,
     textAlign: 'center',
   },
   textContainer: {
-    flex: 1,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 2,
+    textAlign: 'center',
   },
   message: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
   },
   closeButton: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 20,
-    height: 20,
+    top: 8,
+    right: 8,
+    width: 16,
+    height: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'rgba(255, 255, 255, 0.7)',
     fontWeight: 'bold',
   },
   actionButton: {
-    marginTop: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
     borderWidth: 1,
     alignItems: 'center',
   },
   actionText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
 })

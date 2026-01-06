@@ -1,4 +1,6 @@
-import { useDatabaseStore } from '@/stores/database-store'
+import { QueryError } from '@/lib/database/errors'
+import { useDatabaseStore } from '@/lib/database/state-manager'
+import { generateTimestampId, getCurrentTimestamp } from '@/lib/utils/time'
 import {
   type CreateMemoRequest,
   type ListMemosRequest,
@@ -40,14 +42,14 @@ class MemoService {
    * Generate unique ID for memo
    */
   private generateId(): string {
-    return `memo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    return generateTimestampId('memo_')
   }
 
   /**
    * Get current timestamp in milliseconds
    */
   private getCurrentTimestamp(): number {
-    return Date.now()
+    return getCurrentTimestamp()
   }
 
   // ============================================================================
@@ -68,49 +70,67 @@ class MemoService {
     const contentFormat = this.detectContentFormat(params.content)
     const tagsJson = JSON.stringify(params.tags || [])
 
-    await useDatabaseStore.getState().execute(
-      `INSERT INTO memos (id, content, contentFormat, tags, is_archived, is_deleted, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, params.content, contentFormat, tagsJson, 0, 0, now, now]
-    )
+    try {
+      await useDatabaseStore.getState().execute(
+        `INSERT INTO memos (id, content, contentFormat, tags, is_archived, is_deleted, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, params.content, contentFormat, tagsJson, 0, 0, now, now]
+      )
 
-    // Link resources if provided
-    if (params.resourceFilenames && params.resourceFilenames.length > 0) {
-      for (const filename of params.resourceFilenames) {
-        await useDatabaseStore
-          .getState()
-          .execute(`UPDATE resources SET memo_id = ? WHERE filename = ? AND memo_id IS NULL`, [
-            id,
-            filename,
-          ])
+      // Link resources if provided
+      if (params.resourceFilenames && params.resourceFilenames.length > 0) {
+        for (const filename of params.resourceFilenames) {
+          await useDatabaseStore
+            .getState()
+            .execute(`UPDATE resources SET memo_id = ? WHERE filename = ? AND memo_id IS NULL`, [
+              id,
+              filename,
+            ])
+        }
       }
-    }
 
-    const memo = await this.getMemo(id)
-    if (!memo) {
-      throw new Error('Failed to create memo')
+      const memo = await this.getMemo(id)
+      if (!memo) {
+        throw new QueryError('Failed to create memo', 'INSERT INTO memos', [id])
+      }
+      return memo
+    } catch (error) {
+      throw new QueryError(
+        `Failed to create memo: ${error instanceof Error ? error.message : String(error)}`,
+        'INSERT INTO memos',
+        [id],
+        error instanceof Error ? error : undefined
+      )
     }
-    return memo
   }
 
   /**
    * Get memo by id with resources
    */
   async getMemo(id: string): Promise<MemoWithResources | null> {
-    const row = await useDatabaseStore
-      .getState()
-      .queryFirst<MemoRow>(`SELECT * FROM memos WHERE id = ?`, [id])
+    try {
+      const row = await useDatabaseStore
+        .getState()
+        .queryFirst<MemoRow>(`SELECT * FROM memos WHERE id = ?`, [id])
 
-    if (!row) {
-      return null
-    }
+      if (!row) {
+        return null
+      }
 
-    const memo = this.rowToMemo(row)
-    const resources = await this.getMemoResources(id)
+      const memo = this.rowToMemo(row)
+      const resources = await this.getMemoResources(id)
 
-    return {
-      ...memo,
-      resources,
+      return {
+        ...memo,
+        resources: resources as any[],
+      }
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get memo: ${error instanceof Error ? error.message : String(error)}`,
+        'SELECT * FROM memos WHERE id = ?',
+        [id],
+        error instanceof Error ? error : undefined
+      )
     }
   }
 
@@ -118,25 +138,34 @@ class MemoService {
    * Get memos by date
    */
   async getMemosByDate(date: string): Promise<MemoWithResources[]> {
-    const rows = await useDatabaseStore.getState().queryAll<MemoRow>(
-      `SELECT * FROM memos
-       WHERE date(created_at / 1000, 'unixepoch', 'localtime') = ?
-       AND is_archived = 0 AND is_deleted = 0
-       ORDER BY created_at DESC`,
-      [date]
-    )
+    try {
+      const rows = await useDatabaseStore.getState().queryAll<MemoRow>(
+        `SELECT * FROM memos
+         WHERE date(created_at / 1000, 'unixepoch', 'localtime') = ?
+         AND is_archived = 0 AND is_deleted = 0
+         ORDER BY created_at DESC`,
+        [date]
+      )
 
-    const memos = rows.map(this.rowToMemo)
+      const memos = rows.map(this.rowToMemo)
 
-    // Fetch resources for all memos
-    const memosWithResources = await Promise.all(
-      memos.map(async memo => ({
-        ...memo,
-        resources: await this.getMemoResources(memo.id),
-      }))
-    )
+      // Fetch resources for all memos
+      const memosWithResources = await Promise.all(
+        memos.map(async (memo: Memo) => ({
+          ...memo,
+          resources: await this.getMemoResources(memo.id),
+        }))
+      )
 
-    return memosWithResources
+      return memosWithResources as MemoWithResources[]
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get memos by date: ${error instanceof Error ? error.message : String(error)}`,
+        "SELECT * FROM memos WHERE date(created_at / 1000, 'unixepoch', 'localtime') = ?",
+        [date],
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   /**
@@ -148,7 +177,7 @@ class MemoService {
     const offset = (page - 1) * pageSize
 
     let query = `SELECT * FROM memos WHERE 1=1`
-    const queryParams: any[] = []
+    const queryParams: unknown[] = []
 
     if (isArchived !== undefined) {
       query += ` AND is_archived = ?`
@@ -168,18 +197,27 @@ class MemoService {
     query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
     queryParams.push(pageSize, offset)
 
-    const rows = await useDatabaseStore.getState().queryAll<MemoRow>(query, queryParams)
-    const memos = rows.map(this.rowToMemo)
+    try {
+      const rows = await useDatabaseStore.getState().queryAll<MemoRow>(query, queryParams)
+      const memos = rows.map(this.rowToMemo)
 
-    // Fetch resources for all memos
-    const memosWithResources = await Promise.all(
-      memos.map(async memo => ({
-        ...memo,
-        resources: await this.getMemoResources(memo.id),
-      }))
-    )
+      // Fetch resources for all memos
+      const memosWithResources = await Promise.all(
+        memos.map(async (memo: Memo) => ({
+          ...memo,
+          resources: await this.getMemoResources(memo.id),
+        }))
+      )
 
-    return memosWithResources
+      return memosWithResources as MemoWithResources[]
+    } catch (error) {
+      throw new QueryError(
+        `Failed to list memos: ${error instanceof Error ? error.message : String(error)}`,
+        query,
+        queryParams,
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   /**
@@ -191,7 +229,7 @@ class MemoService {
 
     // Build update query dynamically
     const updates: string[] = []
-    const queryParams: any[] = []
+    const queryParams: unknown[] = []
 
     if (content !== undefined) {
       const contentFormat = this.detectContentFormat(content)
@@ -214,29 +252,38 @@ class MemoService {
 
     queryParams.push(id)
 
-    await useDatabaseStore
-      .getState()
-      .execute(`UPDATE memos SET ${updates.join(', ')} WHERE id = ?`, queryParams)
+    const query = `UPDATE memos SET ${updates.join(', ')} WHERE id = ?`
 
-    // Update resources if provided
-    if (resourceFilenames !== undefined) {
-      // Unlink old resources
-      await useDatabaseStore
-        .getState()
-        .execute(`UPDATE resources SET memo_id = NULL WHERE memo_id = ?`, [id])
+    try {
+      await useDatabaseStore.getState().execute(query, queryParams)
 
-      // Link new resources
-      for (const filename of resourceFilenames) {
+      // Update resources if provided
+      if (resourceFilenames !== undefined) {
+        // Unlink old resources
         await useDatabaseStore
           .getState()
-          .execute(`UPDATE resources SET memo_id = ? WHERE filename = ? AND memo_id IS NULL`, [
-            id,
-            filename,
-          ])
-      }
-    }
+          .execute(`UPDATE resources SET memo_id = NULL WHERE memo_id = ?`, [id])
 
-    return await this.getMemo(id)
+        // Link new resources
+        for (const filename of resourceFilenames) {
+          await useDatabaseStore
+            .getState()
+            .execute(`UPDATE resources SET memo_id = ? WHERE filename = ? AND memo_id IS NULL`, [
+              id,
+              filename,
+            ])
+        }
+      }
+
+      return await this.getMemo(id)
+    } catch (error) {
+      throw new QueryError(
+        `Failed to update memo: ${error instanceof Error ? error.message : String(error)}`,
+        query,
+        queryParams,
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   /**
@@ -244,9 +291,19 @@ class MemoService {
    */
   async deleteMemo(id: string): Promise<void> {
     const now = this.getCurrentTimestamp()
-    await useDatabaseStore
-      .getState()
-      .execute(`UPDATE memos SET is_deleted = 1, updated_at = ? WHERE id = ?`, [now, id])
+
+    try {
+      await useDatabaseStore
+        .getState()
+        .execute(`UPDATE memos SET is_deleted = 1, updated_at = ? WHERE id = ?`, [now, id])
+    } catch (error) {
+      throw new QueryError(
+        `Failed to delete memo: ${error instanceof Error ? error.message : String(error)}`,
+        'UPDATE memos SET is_deleted = 1, updated_at = ? WHERE id = ?',
+        [now, id],
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   /**
@@ -254,13 +311,23 @@ class MemoService {
    */
   async archiveMemo(id: string, archived = true): Promise<void> {
     const now = this.getCurrentTimestamp()
-    await useDatabaseStore
-      .getState()
-      .execute(`UPDATE memos SET is_archived = ?, updated_at = ? WHERE id = ?`, [
-        archived ? 1 : 0,
-        now,
-        id,
-      ])
+
+    try {
+      await useDatabaseStore
+        .getState()
+        .execute(`UPDATE memos SET is_archived = ?, updated_at = ? WHERE id = ?`, [
+          archived ? 1 : 0,
+          now,
+          id,
+        ])
+    } catch (error) {
+      throw new QueryError(
+        `Failed to archive memo: ${error instanceof Error ? error.message : String(error)}`,
+        'UPDATE memos SET is_archived = ?, updated_at = ? WHERE id = ?',
+        [archived ? 1 : 0, now, id],
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   /**
@@ -280,7 +347,7 @@ class MemoService {
     const offset = (page - 1) * pageSize
 
     let sql = `SELECT * FROM memos WHERE is_deleted = 0`
-    const queryParams: any[] = []
+    const queryParams: unknown[] = []
 
     // Search in content and tags
     if (searchText) {
@@ -316,34 +383,52 @@ class MemoService {
     sql += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
     queryParams.push(pageSize, offset)
 
-    const rows = await useDatabaseStore.getState().queryAll<MemoRow>(sql, queryParams)
-    const memos = rows.map(this.rowToMemo)
+    try {
+      const rows = await useDatabaseStore.getState().queryAll<MemoRow>(sql, queryParams)
+      const memos = rows.map(this.rowToMemo)
 
-    // Fetch resources for all memos
-    const memosWithResources = await Promise.all(
-      memos.map(async memo => ({
-        ...memo,
-        resources: await this.getMemoResources(memo.id),
-      }))
-    )
+      // Fetch resources for all memos
+      const memosWithResources = await Promise.all(
+        memos.map(async (memo: Memo) => ({
+          ...memo,
+          resources: await this.getMemoResources(memo.id),
+        }))
+      )
 
-    return memosWithResources
+      return memosWithResources as MemoWithResources[]
+    } catch (error) {
+      throw new QueryError(
+        `Failed to search memos: ${error instanceof Error ? error.message : String(error)}`,
+        sql,
+        queryParams,
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   /**
    * Get all unique tags
    */
   async getAllTags(): Promise<string[]> {
-    const rows = await useDatabaseStore.getState().queryAll<{
-      tags: string
-    }>(`SELECT DISTINCT tags FROM memos WHERE is_deleted = 0 AND tags != '[]'`)
+    try {
+      const rows = await useDatabaseStore.getState().queryAll<{
+        tags: string
+      }>(`SELECT DISTINCT tags FROM memos WHERE is_deleted = 0 AND tags != '[]'`)
 
-    const allTags = rows
-      .map(row => (row.tags ? JSON.parse(row.tags) : []))
-      .flat()
-      .filter((tag, index, self) => self.indexOf(tag) === index)
+      const allTags = rows
+        .map((row: { tags: string }) => (row.tags ? JSON.parse(row.tags) : []))
+        .flat()
+        .filter((tag: string, index: number, self: string[]) => self.indexOf(tag) === index)
 
-    return allTags
+      return allTags
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get all tags: ${error instanceof Error ? error.message : String(error)}`,
+        "SELECT DISTINCT tags FROM memos WHERE is_deleted = 0 AND tags != '[]'",
+        [],
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   // ============================================================================
@@ -353,20 +438,31 @@ class MemoService {
   /**
    * Get resources for a specific memo
    */
-  async getMemoResources(memoId: string): Promise<any[]> {
-    const resources = await useDatabaseStore
-      .getState()
-      .queryAll<any>(`SELECT * FROM resources WHERE memo_id = ? ORDER BY created_at DESC`, [memoId])
+  async getMemoResources(memoId: string): Promise<unknown[]> {
+    try {
+      const resources = await useDatabaseStore
+        .getState()
+        .queryAll<unknown>(`SELECT * FROM resources WHERE memo_id = ? ORDER BY created_at DESC`, [
+          memoId,
+        ])
 
-    return resources.map(resource => ({
-      id: resource.id,
-      memoId: resource.memoId,
-      filename: resource.filename,
-      resourceType: resource.resourceType,
-      mimeType: resource.mimeType,
-      size: resource.size,
-      createdAt: resource.createdAt,
-    }))
+      return resources.map((resource: any) => ({
+        id: resource.id,
+        memoId: resource.memoId,
+        filename: resource.filename,
+        resourceType: resource.resourceType,
+        mimeType: resource.mimeType,
+        size: resource.size,
+        createdAt: resource.createdAt,
+      }))
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get memo resources: ${error instanceof Error ? error.message : String(error)}`,
+        'SELECT * FROM resources WHERE memo_id = ? ORDER BY created_at DESC',
+        [memoId],
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   // ============================================================================
@@ -399,7 +495,7 @@ class MemoService {
     const { isArchived = false, isDeleted = false, diaryDate } = params
 
     let query = `SELECT COUNT(*) as count FROM memos WHERE 1=1`
-    const queryParams: any[] = []
+    const queryParams: unknown[] = []
 
     if (isArchived !== undefined) {
       query += ` AND is_archived = ?`
@@ -416,10 +512,19 @@ class MemoService {
       queryParams.push(diaryDate)
     }
 
-    const result = await useDatabaseStore
-      .getState()
-      .queryFirst<{ count: number }>(query, queryParams)
-    return result?.count || 0
+    try {
+      const result = await useDatabaseStore
+        .getState()
+        .queryFirst<{ count: number }>(query, queryParams)
+      return result?.count || 0
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get memos count: ${error instanceof Error ? error.message : String(error)}`,
+        query,
+        queryParams,
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 }
 

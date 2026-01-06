@@ -271,9 +271,7 @@ export function MemoList({
 }
 
 const styles = StyleSheet.create({
-  listContent: {
-    padding: 16,
-  },
+  listContent: {},
   dateHeader: {
     flexDirection: 'row',
     alignItems: 'center',

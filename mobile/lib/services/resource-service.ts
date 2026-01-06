@@ -1,4 +1,6 @@
-import { useDatabaseStore } from '@/stores/database-store'
+import { QueryError } from '@/lib/database/errors'
+import { useDatabaseStore } from '@/lib/database/state-manager'
+import { generateTimestampId, getCurrentTimestamp } from '@/lib/utils/time'
 import type { Resource, ResourceType } from '@/types/resource'
 import * as DocumentPicker from 'expo-document-picker'
 import * as FileSystem from 'expo-file-system'
@@ -29,14 +31,14 @@ class ResourceService {
    * Generate unique ID for resource
    */
   private generateId(): string {
-    return `resource_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    return generateTimestampId('resource_')
   }
 
   /**
    * Get current timestamp in milliseconds
    */
   private getCurrentTimestamp(): number {
-    return Date.now()
+    return getCurrentTimestamp()
   }
 
   /**
@@ -69,11 +71,11 @@ class ResourceService {
    */
   private formatFileSize(bytes: number): string {
     if (bytes < 1024) {
-      return bytes + ' B'
+      return `${bytes} B`
     } else if (bytes < 1024 * 1024) {
-      return (bytes / 1024).toFixed(1) + ' KB'
+      return `${(bytes / 1024).toFixed(1)} KB`
     } else {
-      return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
     }
   }
 
@@ -119,13 +121,13 @@ class ResourceService {
 
       // Get file info
       const fileInfo = await FileSystem.getInfoAsync(localPath)
-      const fileSize = (fileInfo as any).size || 0
+      const fileSize = (fileInfo as { size: number }).size || 0
 
       // Create database record
       const now = this.getCurrentTimestamp()
       await useDatabaseStore.getState().execute(
         `INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, size, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?)`,
         [
           resourceId,
           memoId || null,
@@ -148,8 +150,12 @@ class ResourceService {
         createdAt: now,
       }
     } catch (error) {
-      console.error('Upload resource failed:', error)
-      throw error
+      throw new QueryError(
+        `Failed to upload resource: ${error instanceof Error ? error.message : String(error)}`,
+        'INSERT INTO resources',
+        [file.uri],
+        error instanceof Error ? error : undefined
+      )
     }
   }
 
@@ -203,22 +209,31 @@ class ResourceService {
    * Get resource by id
    */
   async getResource(id: string): Promise<Resource | null> {
-    const row = await useDatabaseStore
-      .getState()
-      .queryFirst<any>(`SELECT * FROM resources WHERE id = ?`, [id])
+    try {
+      const row = await useDatabaseStore
+        .getState()
+        .queryFirst<unknown>(`SELECT * FROM resources WHERE id = ?`, [id])
 
-    if (!row) {
-      return null
-    }
+      if (!row) {
+        return null
+      }
 
-    return {
-      id: row.id,
-      memoId: row.memoId,
-      filename: row.filename,
-      resourceType: row.resourceType,
-      mimeType: row.mimeType,
-      size: row.size,
-      createdAt: row.createdAt,
+      return {
+        id: (row as any).id,
+        memoId: (row as any).memoId,
+        filename: (row as any).filename,
+        resourceType: (row as any).resourceType,
+        mimeType: (row as any).mimeType,
+        size: (row as any).size,
+        createdAt: (row as any).createdAt,
+      }
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get resource: ${error instanceof Error ? error.message : String(error)}`,
+        'SELECT * FROM resources WHERE id = ?',
+        [id],
+        error instanceof Error ? error : undefined
+      )
     }
   }
 
@@ -226,32 +241,54 @@ class ResourceService {
    * Get resources for a memo
    */
   async getMemoResources(memoId: string): Promise<Resource[]> {
-    const rows = await useDatabaseStore
-      .getState()
-      .queryAll<any>(`SELECT * FROM resources WHERE memo_id = ? ORDER BY created_at DESC`, [memoId])
+    try {
+      const rows = await useDatabaseStore
+        .getState()
+        .queryAll<unknown>(`SELECT * FROM resources WHERE memo_id = ? ORDER BY created_at DESC`, [
+          memoId,
+        ])
 
-    return rows.map(row => ({
-      id: row.id,
-      memoId: row.memoId,
-      filename: row.filename,
-      resourceType: row.resourceType,
-      mimeType: row.mimeType,
-      size: row.size,
-      createdAt: row.createdAt,
-    }))
+      return rows.map(
+        (row: any): Resource => ({
+          id: row.id,
+          memoId: row.memoId,
+          filename: row.filename,
+          resourceType: row.resourceType,
+          mimeType: row.mimeType,
+          size: row.size,
+          createdAt: row.createdAt,
+        })
+      )
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get memo resources: ${error instanceof Error ? error.message : String(error)}`,
+        'SELECT * FROM resources WHERE memo_id = ? ORDER BY created_at DESC',
+        [memoId],
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   /**
    * Link resources to a memo
    */
   async linkResourcesToMemo(resourceIds: string[], memoId: string): Promise<void> {
-    for (const resourceId of resourceIds) {
-      await useDatabaseStore
-        .getState()
-        .execute(`UPDATE resources SET memo_id = ? WHERE id = ? AND memo_id IS NULL`, [
-          memoId,
-          resourceId,
-        ])
+    try {
+      for (const resourceId of resourceIds) {
+        await useDatabaseStore
+          .getState()
+          .execute(`UPDATE resources SET memo_id = ? WHERE id = ? AND memo_id IS NULL`, [
+            memoId,
+            resourceId,
+          ])
+      }
+    } catch (error) {
+      throw new QueryError(
+        `Failed to link resources to memo: ${error instanceof Error ? error.message : String(error)}`,
+        'UPDATE resources SET memo_id = ? WHERE id = ? AND memo_id IS NULL',
+        [memoId, ...resourceIds],
+        error instanceof Error ? error : undefined
+      )
     }
   }
 
@@ -259,10 +296,19 @@ class ResourceService {
    * Unlink resources from a memo (set memo_id to NULL)
    */
   async unlinkResourcesFromMemo(resourceIds: string[]): Promise<void> {
-    for (const resourceId of resourceIds) {
-      await useDatabaseStore
-        .getState()
-        .execute(`UPDATE resources SET memo_id = NULL WHERE id = ?`, [resourceId])
+    try {
+      for (const resourceId of resourceIds) {
+        await useDatabaseStore
+          .getState()
+          .execute(`UPDATE resources SET memo_id = NULL WHERE id = ?`, [resourceId])
+      }
+    } catch (error) {
+      throw new QueryError(
+        `Failed to unlink resources from memo: ${error instanceof Error ? error.message : String(error)}`,
+        'UPDATE resources SET memo_id = NULL WHERE id = ?',
+        resourceIds,
+        error instanceof Error ? error : undefined
+      )
     }
   }
 
@@ -270,31 +316,51 @@ class ResourceService {
    * Get orphaned resources (not linked to any memo)
    */
   async getOrphanedResources(): Promise<Resource[]> {
-    const rows = await useDatabaseStore
-      .getState()
-      .queryAll<any>(`SELECT * FROM resources WHERE memo_id IS NULL ORDER BY created_at DESC`)
+    try {
+      const rows = await useDatabaseStore
+        .getState()
+        .queryAll<unknown>(`SELECT * FROM resources WHERE memo_id IS NULL ORDER BY created_at DESC`)
 
-    return rows.map(row => ({
-      id: row.id,
-      memoId: '',
-      filename: row.filename,
-      resourceType: row.resourceType,
-      mimeType: row.mimeType,
-      size: row.size,
-      createdAt: row.createdAt,
-    }))
+      return rows.map(
+        (row: any): Resource => ({
+          id: row.id,
+          memoId: '',
+          filename: row.filename,
+          resourceType: row.resourceType,
+          mimeType: row.mimeType,
+          size: row.size,
+          createdAt: row.createdAt,
+        })
+      )
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get orphaned resources: ${error instanceof Error ? error.message : String(error)}`,
+        'SELECT * FROM resources WHERE memo_id IS NULL ORDER BY created_at DESC',
+        [],
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   /**
    * Delete resource from database and disk
    */
   async deleteResource(id: string): Promise<void> {
-    const resource = await this.getResource(id)
-    if (resource) {
-      // Delete from disk
-      await this.deleteResourceFile(resource.filename)
-      // Delete from database
-      await useDatabaseStore.getState().execute(`DELETE FROM resources WHERE id = ?`, [id])
+    try {
+      const resource = await this.getResource(id)
+      if (resource) {
+        // Delete from disk
+        await this.deleteResourceFile(resource.filename)
+        // Delete from database
+        await useDatabaseStore.getState().execute(`DELETE FROM resources WHERE id = ?`, [id])
+      }
+    } catch (error) {
+      throw new QueryError(
+        `Failed to delete resource: ${error instanceof Error ? error.message : String(error)}`,
+        'DELETE FROM resources WHERE id = ?',
+        [id],
+        error instanceof Error ? error : undefined
+      )
     }
   }
 
@@ -314,17 +380,26 @@ class ResourceService {
     const now = this.getCurrentTimestamp()
     const oneDayAgo = now - 24 * 60 * 60 * 1000
 
-    const rows = await useDatabaseStore.getState().queryAll<{ id: string; filename: string }>(
-      `SELECT id, filename FROM resources
-       WHERE memo_id IS NULL AND created_at < ?`,
-      [oneDayAgo]
-    )
+    try {
+      const rows = await useDatabaseStore.getState().queryAll<{ id: string; filename: string }>(
+        `SELECT id, filename FROM resources
+         WHERE memo_id IS NULL AND created_at < ?`,
+        [oneDayAgo]
+      )
 
-    for (const row of rows) {
-      await this.deleteResource(row.id)
+      for (const row of rows) {
+        await this.deleteResource(row.id)
+      }
+
+      return rows.length
+    } catch (error) {
+      throw new QueryError(
+        `Failed to cleanup orphaned resources: ${error instanceof Error ? error.message : String(error)}`,
+        'SELECT id, filename FROM resources WHERE memo_id IS NULL AND created_at < ?',
+        [oneDayAgo],
+        error instanceof Error ? error : undefined
+      )
     }
-
-    return rows.length
   }
 
   /**
@@ -332,7 +407,7 @@ class ResourceService {
    */
   async getResourcesByType(type: ResourceType, memoId?: string): Promise<Resource[]> {
     let query = `SELECT * FROM resources WHERE resource_type = ?`
-    const params: any[] = [type]
+    const params: unknown[] = [type]
 
     if (memoId) {
       query += ` AND memo_id = ?`
@@ -341,53 +416,82 @@ class ResourceService {
 
     query += ` ORDER BY created_at DESC`
 
-    const rows = await useDatabaseStore.getState().queryAll<any>(query, params)
+    try {
+      const rows = await useDatabaseStore.getState().queryAll<unknown>(query, params)
 
-    return rows.map(row => ({
-      id: row.id,
-      memoId: row.memoId,
-      filename: row.filename,
-      resourceType: row.resourceType,
-      mimeType: row.mimeType,
-      size: row.size,
-      createdAt: row.createdAt,
-    }))
+      return rows.map(
+        (row: any): Resource => ({
+          id: row.id,
+          memoId: row.memoId,
+          filename: row.filename,
+          resourceType: row.resourceType,
+          mimeType: row.mimeType,
+          size: row.size,
+          createdAt: row.createdAt,
+        })
+      )
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get resources by type: ${error instanceof Error ? error.message : String(error)}`,
+        query,
+        params,
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   /**
    * Get total storage used by resources
    */
   async getTotalStorageSize(): Promise<number> {
-    const result = await useDatabaseStore
-      .getState()
-      .queryFirst<{ total: number }>(`SELECT COALESCE(SUM(size), 0) as total FROM resources`)
-    return result?.total || 0
+    try {
+      const result = await useDatabaseStore
+        .getState()
+        .queryFirst<{ total: number }>(`SELECT COALESCE(SUM(size), 0) as total FROM resources`)
+      return result?.total || 0
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get total storage size: ${error instanceof Error ? error.message : String(error)}`,
+        'SELECT COALESCE(SUM(size), 0) as total FROM resources',
+        [],
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   /**
    * Get storage size by type
    */
   async getStorageSizeByType(): Promise<Record<ResourceType, number>> {
-    const result = await useDatabaseStore
-      .getState()
-      .queryAll<{ resource_type: ResourceType; total: number }>(
-        `SELECT resource_type, COALESCE(SUM(size), 0) as total
-       FROM resources
-       GROUP BY resource_type`
+    try {
+      const result = await useDatabaseStore
+        .getState()
+        .queryAll<{ resource_type: ResourceType; total: number }>(
+          `SELECT resource_type, COALESCE(SUM(size), 0) as total
+         FROM resources
+         GROUP BY resource_type`
+        )
+
+      const sizes: Record<ResourceType, number> = {
+        image: 0,
+        audio: 0,
+        video: 0,
+        file: 0,
+      }
+
+      for (const row of result) {
+        sizes[row.resource_type] = row.total
+      }
+
+      return sizes
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get storage size by type: ${error instanceof Error ? error.message : String(error)}`,
+        'SELECT resource_type, COALESCE(SUM(size), 0) as total FROM resources GROUP BY resource_type',
+        [],
+        error instanceof Error ? error : undefined
       )
-
-    const sizes: Record<ResourceType, number> = {
-      image: 0,
-      audio: 0,
-      video: 0,
-      file: 0,
     }
-
-    for (const row of result) {
-      sizes[row.resource_type] = row.total
-    }
-
-    return sizes
   }
 }
 
