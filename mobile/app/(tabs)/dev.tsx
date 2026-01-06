@@ -5,7 +5,7 @@
 
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
-import { useDatabaseStore } from '@/stores/database-store'
+import { useDatabaseStore } from '@/lib/database/state-manager'
 import { useThemeStore } from '@/stores/theme-store'
 import { useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'

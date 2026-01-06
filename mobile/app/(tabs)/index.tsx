@@ -6,13 +6,12 @@ import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@/types/memo'
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 
 export default function HomeScreen() {
   const { theme } = useThemeStore()
   const [refreshTrigger, setRefreshTrigger] = useState(0)
-
   const handleMemoPress = (memo: MemoWithResources) => {
     router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
   }
@@ -59,7 +58,13 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+      // android keyboard offset is 44px, but why???
+      // it works in my xiaomi 14
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 44}
+    >
       <KeyboardAwareScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
@@ -81,7 +86,7 @@ export default function HomeScreen() {
       <View style={[styles.inputContainer, { backgroundColor: theme.background }]}>
         <MemoInput onSubmit={handleSubmit} />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -101,7 +106,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     padding: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
   },
 })

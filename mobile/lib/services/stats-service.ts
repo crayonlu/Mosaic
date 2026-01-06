@@ -1,5 +1,7 @@
-import { useDatabaseStore } from '@/stores/database-store'
-import type { HeatMapData, HeatMapCell, HeatMapQuery, MoodStats, TagStats } from '@/types/stats'
+import { QueryError } from '@/lib/database/errors'
+import { useDatabaseStore } from '@/lib/database/state-manager'
+import { generateDateRange } from '@/lib/utils/time'
+import type { HeatMapCell, HeatMapData, HeatMapQuery, MoodStats, TagStats } from '@/types/stats'
 
 /**
  * Stats Service
@@ -28,16 +30,6 @@ class StatsService {
     return moodColors[moodKey || '#E0E0E0']
   }
 
-  /**
-   * Get date range for a month
-   */
-  private getMonthDateRange(year: number, month: number): { startDate: string; endDate: string } {
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-    const lastDay = new Date(year, month, 0).getDate()
-    const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`
-    return { startDate, endDate }
-  }
-
   // ============================================================================
   // HeatMap Operations
   // ============================================================================
@@ -49,17 +41,19 @@ class StatsService {
     const { startDate, endDate } = query
 
     // Get all diaries in the date range
-    const diaries = await useDatabaseStore.getState().queryAll<any>(
-      `SELECT date, mood_key, mood_score
+    const rows = await useDatabaseStore
+      .getState()
+      .queryAll<{ mood_key: string; mood_score: number }>(
+        `SELECT date, mood_key, mood_score
        FROM diaries
        WHERE date >= ? AND date <= ?
        ORDER BY date ASC`,
-      [startDate, endDate]
-    )
+        [startDate, endDate]
+      )
 
     // Create a map of date to mood data
     const dateMoodMap = new Map<string, { moodKey?: string; moodScore?: number }>()
-    diaries.forEach(diary => {
+    rows.forEach((diary: any) => {
       dateMoodMap.set(diary.date, {
         moodKey: diary.mood_key,
         moodScore: diary.mood_score,
@@ -67,12 +61,11 @@ class StatsService {
     })
 
     // Generate all dates in the range
-    const cells: HeatMapCell[] = []
-    const start = new Date(startDate)
-    const end = new Date(endDate)
+    const dates = generateDateRange(startDate, endDate)
 
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0]
+    // Create heat map cells
+    const cells: HeatMapCell[] = []
+    for (const dateStr of dates) {
       const moodData = dateMoodMap.get(dateStr)
 
       cells.push({
@@ -95,97 +88,125 @@ class StatsService {
   // ============================================================================
 
   /**
-   * Get all tags with their usage count
+   * Get all unique tags with their usage count
    */
   async getAllTags(): Promise<TagStats[]> {
-    const rows = await useDatabaseStore
-      .getState()
-      .queryAll<{ tags: string }>(`SELECT tags FROM memos WHERE is_deleted = 0 AND tags != '[]'`)
+    try {
+      const rows = await useDatabaseStore.getState().queryAll<{
+        tags: string
+      }>(`SELECT DISTINCT tags FROM memos WHERE is_deleted = 0 AND tags != '[]'`)
 
-    const tagCountMap = new Map<string, number>()
+      const tagCountMap = new Map<string, number>()
 
-    rows.forEach(row => {
-      if (row.tags) {
-        try {
-          const tags = JSON.parse(row.tags)
-          tags.forEach((tag: string) => {
-            const count = tagCountMap.get(tag) || 0
-            tagCountMap.set(tag, count + 1)
-          })
-        } catch (error) {
-          console.warn('Failed to parse tags:', error)
+      rows.forEach((row: any) => {
+        if (row.tags) {
+          try {
+            const tags = JSON.parse(row.tags)
+            tags.forEach((tag: string) => {
+              const count = tagCountMap.get(tag) || 0
+              tagCountMap.set(tag, count + 1)
+            })
+          } catch (error) {
+            console.warn('Failed to parse tags:', error)
+          }
         }
-      }
-    })
+      })
 
-    // Convert to array and sort by count
-    const tagStats: TagStats[] = Array.from(tagCountMap.entries())
-      .map(([tag, count]) => ({ tag, count }))
-      .sort((a, b) => b.count - a.count)
+      // Convert to array and sort by count
+      const tagStats: TagStats[] = Array.from(tagCountMap.entries())
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count)
 
-    return tagStats
+      return tagStats
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get all tags: ${error instanceof Error ? error.message : String(error)}`,
+        "SELECT DISTINCT tags FROM memos WHERE is_deleted = 0 AND tags != '[]'",
+        [],
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   /**
    * Get mood distribution for a date range
    */
   async getMoodDistribution(startDate: string, endDate: string): Promise<MoodStats[]> {
-    const diaries = await useDatabaseStore.getState().queryAll<any>(
-      `SELECT mood_key, COUNT(*) as count
-       FROM diaries
-       WHERE date >= ? AND date <= ? AND mood_key IS NOT NULL
-       GROUP BY mood_key
-       ORDER BY count DESC`,
-      [startDate, endDate]
-    )
+    try {
+      const diaries = await useDatabaseStore.getState().queryAll<{ mood_key: string }>(
+        `SELECT mood_key, COUNT(*) as count
+         FROM diaries
+         WHERE date >= ? AND date <= ? AND mood_key IS NOT NULL
+         GROUP BY mood_key
+         ORDER BY count DESC`,
+        [startDate, endDate]
+      )
 
-    const totalCount = diaries.reduce((sum, d) => sum + d.count, 0)
+      const totalCount = diaries.reduce((sum: number, d: any) => sum + d.count, 0)
 
-    return diaries.map(d => ({
-      moodKey: d.mood_key,
-      count: d.count,
-      percentage: totalCount > 0 ? (d.count / totalCount) * 100 : 0,
-      color: this.getMoodColor(d.mood_key),
-    }))
+      return diaries.map((d: any) => ({
+        moodKey: d.mood_key,
+        count: d.count,
+        percentage: totalCount > 0 ? (d.count / totalCount) * 100 : 0,
+        color: this.getMoodColor(d.mood_key),
+      }))
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get mood distribution: ${error instanceof Error ? error.message : String(error)}`,
+        'SELECT mood_key, COUNT(*) as count FROM diaries WHERE date >= ? AND date <= ? AND mood_key IS NOT NULL GROUP BY mood_key ORDER BY count DESC',
+        [startDate, endDate],
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 
   /**
    * Get top tags for a date range
    */
   async getTopTags(startDate: string, endDate: string, limit: number = 10): Promise<TagStats[]> {
-    const rows = await useDatabaseStore.getState().queryAll<{ tags: string }>(
-      `SELECT tags
-       FROM memos
-       WHERE date(created_at / 1000, 'unixepoch', 'localtime') >= ?
-         AND date(created_at / 1000, 'unixepoch', 'localtime') <= ?
-         AND is_deleted = 0
-         AND tags != '[]'`,
-      [startDate, endDate]
-    )
+    try {
+      const rows = await useDatabaseStore.getState().queryAll<{ tags: string; created_at: number }>(
+        `SELECT tags, created_at
+         FROM memos
+         WHERE date(created_at / 1000, 'unixepoch', 'localtime') >= ?
+           AND date(created_at / 1000, 'unixepoch', 'localtime') <= ?
+           AND is_deleted = 0
+           AND tags != '[]'
+         ORDER BY created_at DESC`,
+        [startDate, endDate]
+      )
 
-    const tagCountMap = new Map<string, number>()
+      const tagCountMap = new Map<string, number>()
 
-    rows.forEach(row => {
-      if (row.tags) {
-        try {
-          const tags = JSON.parse(row.tags)
-          tags.forEach((tag: string) => {
-            const count = tagCountMap.get(tag) || 0
-            tagCountMap.set(tag, count + 1)
-          })
-        } catch (error) {
-          console.warn('Failed to parse tags:', error)
+      rows.forEach((row: any) => {
+        if (row.tags) {
+          try {
+            const tags = JSON.parse(row.tags)
+            tags.forEach((tag: string) => {
+              const count = tagCountMap.get(tag) || 0
+              tagCountMap.set(tag, count + 1)
+            })
+          } catch (error) {
+            console.warn('Failed to parse tags:', error)
+          }
         }
-      }
-    })
+      })
 
-    // Convert to array, sort by count, and limit
-    const tagStats: TagStats[] = Array.from(tagCountMap.entries())
-      .map(([tag, count]) => ({ tag, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, limit)
+      // Convert to array, sort by count, and limit
+      const tagStats: TagStats[] = Array.from(tagCountMap.entries())
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, limit)
 
-    return tagStats
+      return tagStats
+    } catch (error) {
+      throw new QueryError(
+        `Failed to get top tags: ${error instanceof Error ? error.message : String(error)}`,
+        "SELECT tags, created_at FROM memos WHERE date(created_at / 1000, 'unixepoch', 'localtime') >= ? AND date(created_at / 1000, 'unixepoch', 'localtime') <= ? AND is_deleted = 0 AND tags != '[]' ORDER BY created_at DESC",
+        [startDate, endDate],
+        error instanceof Error ? error : undefined
+      )
+    }
   }
 }
 

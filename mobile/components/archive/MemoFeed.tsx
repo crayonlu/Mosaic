@@ -1,5 +1,5 @@
 import { useThemeStore } from '@/stores/theme-store'
-import { useDatabaseStore } from '@/stores/database-store'
+import { useDatabaseStore } from '@/lib/database/state-manager'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   FlatList,

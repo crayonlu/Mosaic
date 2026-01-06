@@ -1,7 +1,7 @@
 import { Loading } from '@/components/ui/Loading'
 import { TimeRanges, type TimeRangeValue } from '@/constants/common'
 import { statsService } from '@/lib/services/stats-service'
-import { useDatabaseStore } from '@/stores/database-store'
+import { useDatabaseStore } from '@/lib/database/state-manager'
 import { useThemeStore } from '@/stores/theme-store'
 import type { HeatMapCell, HeatMapData } from '@/types/stats'
 import { useCallback, useEffect, useMemo, useState } from 'react'

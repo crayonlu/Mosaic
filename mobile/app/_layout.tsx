@@ -5,7 +5,7 @@
 
 import { Loading } from '@/components/ui/Loading'
 import { ToastContainer } from '@/components/ui/Toast'
-import { useDatabaseStore } from '@/stores/database-store'
+import { useDatabaseStore } from '@/lib/database/state-manager'
 import { useThemeStore } from '@/stores/theme-store'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
