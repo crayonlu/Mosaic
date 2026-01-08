@@ -5,6 +5,8 @@
 import { CalendarPicker } from '@/components/archive/CalendarPicker'
 import { MemoFeed } from '@/components/archive/MemoFeed'
 import { MoodHeatMap } from '@/components/archive/MoodHeatMap'
+import { Select } from '@/components/ui/Select'
+import { TimeRanges, type TimeRangeValue } from '@/constants/common'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import { router } from 'expo-router'
@@ -16,6 +18,7 @@ export default function ArchiveScreen() {
   const { theme } = useThemeStore()
   const [isHeatMapExpanded, setIsHeatMapExpanded] = useState(true)
   const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
+  const [timeRange, setTimeRange] = useState<TimeRangeValue>('quarter')
 
   // Handle date selection from calendar
   const handleDateSelect = (date: string) => {
@@ -52,6 +55,11 @@ export default function ArchiveScreen() {
     setIsHeatMapExpanded(!isHeatMapExpanded)
   }
 
+  // Handle time range change
+  const handleTimeRangeChange = (range: string) => {
+    setTimeRange(range as TimeRangeValue)
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <MemoFeed
@@ -80,7 +88,18 @@ export default function ArchiveScreen() {
                   },
                 ]}
               >
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>情绪热力图</Text>
+                <View style={styles.headerLeft}>
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>情绪热力图</Text>
+                  <Select
+                    options={Object.values(TimeRanges).map(range => ({
+                      label: range.label,
+                      value: range.value,
+                    }))}
+                    value={timeRange}
+                    onValueChange={handleTimeRangeChange}
+                    size="small"
+                  />
+                </View>
                 {isHeatMapExpanded ? (
                   <ChevronUp size={20} color={theme.textSecondary} strokeWidth={2} />
                 ) : (
@@ -90,7 +109,11 @@ export default function ArchiveScreen() {
 
               {isHeatMapExpanded && (
                 <View style={styles.sectionContent}>
-                  <MoodHeatMap onDateClick={handleDateClick} />
+                  <MoodHeatMap
+                    onDateClick={handleDateClick}
+                    timeRange={timeRange}
+                    onTimeRangeChange={handleTimeRangeChange}
+                  />
                 </View>
               )}
             </View>
@@ -150,6 +173,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
   },
   sectionTitle: {
     fontSize: 16,

@@ -16,7 +16,15 @@ export function Loading({ size = 'large', text, fullScreen = false }: LoadingPro
   const { theme } = useThemeStore()
 
   return (
-    <View style={[styles.container, fullScreen && styles.fullScreen]}>
+    <View
+      style={[
+        styles.container,
+        fullScreen && styles.fullScreen,
+        {
+          backgroundColor: 'transparent',
+        },
+      ]}
+    >
       <ActivityIndicator size={size} color={theme.primary} />
       {text && <Text style={[styles.text, { color: theme.textSecondary }]}>{text}</Text>}
     </View>
