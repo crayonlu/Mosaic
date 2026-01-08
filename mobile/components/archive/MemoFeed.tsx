@@ -1,30 +1,37 @@
-import { useThemeStore } from '@/stores/theme-store'
+import { Badge, Loading } from '@/components/ui'
 import { useDatabaseStore } from '@/lib/database/state-manager'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { memoService } from '@/lib/services/memo-service'
+import { stringUtils } from '@/lib/utils/string'
+import { useThemeStore } from '@/stores/theme-store'
+import type { MemoWithResources } from '@/types/memo'
+import { MoreVertical, Trash2 } from 'lucide-react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  ActivityIndicator,
   FlatList,
   RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from 'react-native'
-import { memoService } from '@/lib/services/memo-service'
-import { stringUtils } from '@/lib/utils/string'
 import { ResourceGallery } from './ResourceGallery'
-import { Badge, Loading } from '@/components/ui'
-import { Archive, Trash2, MoreVertical } from 'lucide-react-native'
-import type { MemoWithResources } from '@/types/memo'
 
 interface MemoFeedProps {
   targetDate?: string
   onMemoPress?: (memo: MemoWithResources) => void
   onMemoArchive?: (id: string) => void
   onMemoDelete?: (id: string) => void
+  headerComponent?: React.ReactNode
 }
 
-export function MemoFeed({ targetDate, onMemoPress, onMemoArchive, onMemoDelete }: MemoFeedProps) {
+export function MemoFeed({
+  targetDate,
+  onMemoPress,
+  onMemoArchive,
+  onMemoDelete,
+  headerComponent,
+}: MemoFeedProps) {
   const { theme } = useThemeStore()
   const { isReady: dbReady, isInitializing: dbInitializing, error: dbError } = useDatabaseStore()
   const [memos, setMemos] = useState<MemoWithResources[]>([])
@@ -33,6 +40,7 @@ export function MemoFeed({ targetDate, onMemoPress, onMemoArchive, onMemoDelete 
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [page, setPage] = useState(1)
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
   const flatListRef = useRef<FlatList>(null)
 
   // Load memos
@@ -90,7 +98,7 @@ export function MemoFeed({ targetDate, onMemoPress, onMemoArchive, onMemoDelete 
     if (dbReady) {
       loadMemos()
     }
-  }, [dbReady])
+  }, [dbReady, loadMemos])
 
   // Pull to refresh
   const handleRefresh = useCallback(() => {
@@ -106,20 +114,6 @@ export function MemoFeed({ targetDate, onMemoPress, onMemoArchive, onMemoDelete 
       loadMemos(true)
     }
   }, [loading, refreshing, loadingMore, hasMore, targetDate, loadMemos])
-
-  // Handle memo actions
-  const handleArchive = useCallback(
-    async (id: string) => {
-      try {
-        await memoService.archiveMemo(id, true)
-        await loadMemos()
-        onMemoArchive?.(id)
-      } catch (error) {
-        console.error('Failed to archive memo:', error)
-      }
-    },
-    [loadMemos, onMemoArchive]
-  )
 
   const handleDelete = useCallback(
     async (id: string) => {
@@ -177,10 +171,35 @@ export function MemoFeed({ targetDate, onMemoPress, onMemoArchive, onMemoDelete 
           </View>
           <TouchableOpacity
             style={styles.moreButton}
+            onPress={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <MoreVertical size={20} color={theme.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
+
+          {activeMenuId === item.id && (
+            <View
+              style={[
+                styles.menuBubble,
+                {
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                  shadowColor: '#000',
+                },
+              ]}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  handleDelete(item.id)
+                  setActiveMenuId(null)
+                }}
+                style={styles.menuItem}
+              >
+                <Trash2 size={16} color="#EF4444" />
+                <Text style={[styles.menuText, { color: '#EF4444' }]}>删除</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Content */}
@@ -212,24 +231,6 @@ export function MemoFeed({ targetDate, onMemoPress, onMemoArchive, onMemoDelete 
             )}
           </View>
         )}
-
-        {/* Actions */}
-        <View style={[styles.actionsContainer, { borderTopColor: theme.border }]}>
-          <TouchableOpacity
-            onPress={() => handleArchive(item.id)}
-            style={styles.actionButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Archive size={18} color={theme.textSecondary} strokeWidth={2} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handleDelete(item.id)}
-            style={styles.actionButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Trash2 size={18} color={theme.textSecondary} strokeWidth={2} />
-          </TouchableOpacity>
-        </View>
       </TouchableOpacity>
     )
   }
@@ -291,6 +292,7 @@ export function MemoFeed({ targetDate, onMemoPress, onMemoArchive, onMemoDelete 
       renderItem={renderMemoCard}
       keyExtractor={item => item.id}
       contentContainerStyle={styles.listContent}
+      ListHeaderComponent={headerComponent ? () => headerComponent : undefined}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -313,7 +315,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 16,
-    overflow: 'hidden',
   },
   memoHeader: {
     flexDirection: 'row',
@@ -353,6 +354,31 @@ const styles = StyleSheet.create({
   moreButton: {
     padding: 8,
   },
+  menuBubble: {
+    position: 'absolute',
+    top: 10,
+    right: 48,
+    width: 120,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingVertical: 4,
+    zIndex: 100,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  menuDivider: {
+    height: 1,
+    marginHorizontal: 8,
+  },
+  menuText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
   memoContent: {
     paddingHorizontal: 12,
     paddingBottom: 12,
@@ -369,18 +395,6 @@ const styles = StyleSheet.create({
   },
   moreTags: {
     fontSize: 12,
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    gap: 16,
-  },
-  actionButton: {
-    padding: 8,
   },
   emptyContainer: {
     flex: 1,

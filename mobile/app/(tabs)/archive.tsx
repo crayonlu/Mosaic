@@ -10,7 +10,7 @@ import type { MemoWithResources } from '@/types/memo'
 import { router } from 'expo-router'
 import { ChevronDown, ChevronUp } from 'lucide-react-native'
 import { useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function ArchiveScreen() {
   const { theme } = useThemeStore()
@@ -54,82 +54,80 @@ export default function ArchiveScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Heat Map Section */}
-        <View
-          style={[
-            styles.section,
-            {
-              backgroundColor: theme.card,
-              borderColor: theme.border,
-            },
-          ]}
-        >
-          <TouchableOpacity
-            onPress={toggleHeatMap}
-            style={[
-              styles.sectionHeader,
-              {
-                borderBottomColor: theme.border,
-              },
-            ]}
-          >
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>情绪热力图</Text>
-            {isHeatMapExpanded ? (
-              <ChevronUp size={20} color={theme.textSecondary} strokeWidth={2} />
-            ) : (
-              <ChevronDown size={20} color={theme.textSecondary} strokeWidth={2} />
-            )}
-          </TouchableOpacity>
+      <MemoFeed
+        targetDate={selectedDate}
+        onMemoPress={handleMemoPress}
+        onMemoArchive={handleMemoArchive}
+        onMemoDelete={handleMemoDelete}
+        headerComponent={
+          <>
+            {/* Heat Map Section */}
+            <View
+              style={[
+                styles.section,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.border,
+                },
+              ]}
+            >
+              <TouchableOpacity
+                onPress={toggleHeatMap}
+                style={[
+                  styles.sectionHeader,
+                  {
+                    borderBottomColor: theme.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>情绪热力图</Text>
+                {isHeatMapExpanded ? (
+                  <ChevronUp size={20} color={theme.textSecondary} strokeWidth={2} />
+                ) : (
+                  <ChevronDown size={20} color={theme.textSecondary} strokeWidth={2} />
+                )}
+              </TouchableOpacity>
 
-          {isHeatMapExpanded && (
-            <View style={styles.sectionContent}>
-              <MoodHeatMap onDateClick={handleDateClick} />
+              {isHeatMapExpanded && (
+                <View style={styles.sectionContent}>
+                  <MoodHeatMap onDateClick={handleDateClick} />
+                </View>
+              )}
             </View>
-          )}
-        </View>
 
-        {/* Calendar Picker Section */}
-        <View
-          style={[
-            styles.section,
-            {
-              backgroundColor: theme.card,
-              borderColor: theme.border,
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.sectionHeader,
-              {
-                borderBottomColor: theme.border,
-              },
-            ]}
-          >
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>日历选择</Text>
-          </View>
-          <View style={styles.sectionContent}>
-            <CalendarPicker
-              selectedDate={selectedDate}
-              onDateSelect={handleDateSelect}
-              onMonthChange={(year, month) => {
-                console.log('Month changed:', year, month)
-              }}
-            />
-          </View>
-        </View>
-
-        {/* Memo Feed Section */}
-        <View style={styles.feedSection}>
-          <MemoFeed
-            targetDate={selectedDate}
-            onMemoPress={handleMemoPress}
-            onMemoArchive={handleMemoArchive}
-            onMemoDelete={handleMemoDelete}
-          />
-        </View>
-      </ScrollView>
+            {/* Calendar Picker Section */}
+            <View
+              style={[
+                styles.section,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.border,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.sectionHeader,
+                  {
+                    borderBottomColor: theme.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>日历选择</Text>
+              </View>
+              <View style={styles.sectionContent}>
+                <CalendarPicker
+                  selectedDate={selectedDate}
+                  onDateSelect={handleDateSelect}
+                  onMonthChange={(year, month) => {
+                    console.log('Month changed:', year, month)
+                  }}
+                />
+              </View>
+            </View>
+          </>
+        }
+      />
     </View>
   )
 }
@@ -137,9 +135,7 @@ export default function ArchiveScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
+    paddingHorizontal: 16,
   },
   section: {
     borderRadius: 12,
@@ -161,8 +157,5 @@ const styles = StyleSheet.create({
   },
   sectionContent: {
     padding: 16,
-  },
-  feedSection: {
-    flex: 1,
   },
 })
