@@ -1,4 +1,4 @@
-import { Loading } from '@/components/ui/Loading'
+import { Loading } from '@/components/ui'
 import { TimeRanges, type TimeRangeValue } from '@/constants/common'
 import { statsService } from '@/lib/services/stats-service'
 import { useDatabaseStore } from '@/lib/database/state-manager'

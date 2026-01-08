@@ -240,10 +240,6 @@ const styles = StyleSheet.create({
   toastContainer: {
     padding: 12,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
     elevation: 4,
     marginVertical: 8,
     maxWidth: 320,

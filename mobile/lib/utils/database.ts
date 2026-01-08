@@ -84,13 +84,12 @@ export function memoRowToMemo(row: MemoRow): Memo {
   return {
     id: row.id,
     content: row.content,
-    contentFormat: (row.contentFormat as 'plain' | 'html') || 'plain',
     tags: deserializeArray<string>(row.tags),
-    isArchived: row.isArchived === 1,
-    isDeleted: row.isDeleted === 1,
-    diaryDate: row.diaryDate || undefined,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
+    isArchived: row.is_archived === 1,
+    isDeleted: row.is_deleted === 1,
+    diaryDate: row.diary_date || undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
 }
 
@@ -136,13 +135,12 @@ export function buildMemoRow(memo: Partial<Memo> & { id?: string }): Partial<Mem
   return {
     id: memo.id || generateId(),
     content: memo.content || '',
-    contentFormat: memo.contentFormat || 'html', // Default to 'html' for new memos with rich text editor
     tags: serializeArray(memo.tags || []),
-    isArchived: memo.isArchived !== undefined ? (memo.isArchived ? 1 : 0) : 0,
-    isDeleted: memo.isDeleted !== undefined ? (memo.isDeleted ? 1 : 0) : 0,
-    diaryDate: memo.diaryDate || null,
-    createdAt: memo.createdAt || now,
-    updatedAt: memo.updatedAt || now,
+    is_archived: memo.isArchived !== undefined ? (memo.isArchived ? 1 : 0) : 0,
+    is_deleted: memo.isDeleted !== undefined ? (memo.isDeleted ? 1 : 0) : 0,
+    diary_date: memo.diaryDate || null,
+    created_at: memo.createdAt || now,
+    updated_at: memo.updatedAt || now,
   }
 }
 

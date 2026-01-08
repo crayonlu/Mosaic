@@ -1,12 +1,13 @@
-import { Loading } from '@/components/ui/Loading'
-import { toast } from '@/components/ui/Toast'
+import { RichTextEditor } from '@/components/editor/RichTextEditor'
+import { Loading, toast } from '@/components/ui'
 import { memoService } from '@/lib/services/memo-service'
 import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@/types/memo'
 import { router, useLocalSearchParams } from 'expo-router'
-import { Archive, ArrowLeft, Save, Trash2 } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Archive, ArrowLeft, Trash2 } from 'lucide-react-native'
+import { useCallback, useEffect, useState } from 'react'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { stringUtils } from '@/lib/utils'
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -16,16 +17,11 @@ export default function MemoDetailScreen() {
   const [editing, setEditing] = useState(false)
   const [content, setContent] = useState('')
 
-  useEffect(() => {
-    if (id) {
-      loadMemo()
-    }
-  }, [id])
-
-  const loadMemo = async () => {
+  const loadMemo = useCallback(async () => {
     try {
       const data = await memoService.getMemo(id)
       if (data) {
+        console.log('Loaded memo:', data)
         setMemo(data)
         setContent(data.content)
       }
@@ -36,7 +32,13 @@ export default function MemoDetailScreen() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
+
+  useEffect(() => {
+    if (id) {
+      loadMemo()
+    }
+  }, [id, loadMemo])
 
   const handleSave = async () => {
     if (!memo) return
@@ -132,7 +134,7 @@ export default function MemoDetailScreen() {
               <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>取消</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
-              <Save size={20} color={theme.primary} />
+              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>保存</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -141,17 +143,16 @@ export default function MemoDetailScreen() {
       {/* Content */}
       <ScrollView style={styles.content}>
         {editing ? (
-          <TextInput
-            style={[styles.input, { color: theme.text, borderColor: theme.border }]}
-            value={content}
-            onChangeText={setContent}
-            multiline
-            autoFocus
-            placeholder="输入备忘录内容..."
-            placeholderTextColor={theme.textSecondary}
+          <RichTextEditor
+            content={content}
+            onChange={setContent}
+            editable={true}
+            placeholder="编辑你的备忘录内容..."
+            isExpanded={true}
+            onSave={handleSave}
           />
         ) : (
-          <Text style={[styles.content, { color: theme.text }]}>{memo.content || '无内容'}</Text>
+          <RichTextEditor content={memo.content} editable={false} onChange={() => {}} />
         )}
 
         {/* Tags */}
@@ -177,11 +178,11 @@ export default function MemoDetailScreen() {
         {/* Metadata */}
         <View style={styles.metadata}>
           <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
-            创建于 {new Date(memo.createdAt).toLocaleString('zh-CN')}
+            创建于 {stringUtils.formatDateTime(memo.createdAt)}
           </Text>
           {memo.updatedAt > memo.createdAt && (
             <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
-              更新于 {new Date(memo.updatedAt).toLocaleString('zh-CN')}
+              更新于 {stringUtils.formatDateTime(memo.updatedAt)}
             </Text>
           )}
         </View>
@@ -229,7 +230,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
   },
   headerButton: {
     padding: 8,
@@ -252,9 +252,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   content: {
-    padding: 16,
-    lineHeight: 24,
-    fontSize: 16,
+    flex: 1,
   },
   input: {
     margin: 16,

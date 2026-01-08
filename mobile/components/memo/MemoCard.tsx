@@ -1,10 +1,10 @@
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
-import { Archive, Trash2, MoreVertical } from 'lucide-react-native'
-import { useMemo, useState } from 'react'
+import { Archive, Trash2 } from 'lucide-react-native'
+import { useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import type { MemoWithResources } from '@/types/memo'
-import { Badge } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui'
 
 interface MemoCardProps {
   memo: MemoWithResources

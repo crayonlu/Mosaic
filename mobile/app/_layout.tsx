@@ -3,8 +3,7 @@
  * Main entry point for the app
  */
 
-import { Loading } from '@/components/ui/Loading'
-import { ToastContainer } from '@/components/ui/Toast'
+import { Loading, ToastContainer } from '@/components/ui'
 import { useDatabaseStore } from '@/lib/database/state-manager'
 import { useThemeStore } from '@/stores/theme-store'
 import { Stack } from 'expo-router'

@@ -8,7 +8,6 @@ import type { Resource } from './resource'
 export interface Memo {
   id: string
   content: string
-  contentFormat?: 'plain' | 'html' // Format of content: 'plain' for plain text, 'html' for rich text
   tags: string[]
   isArchived: boolean
   isDeleted: boolean
@@ -55,11 +54,10 @@ export interface SearchMemosRequest {
 export interface MemoRow {
   id: string
   content: string
-  contentFormat: string | null // 'plain' or 'html'
   tags: string
-  isArchived: number // 0 or 1
-  isDeleted: number // 0 or 1
-  diaryDate: string | null
-  createdAt: number
-  updatedAt: number
+  is_archived: number // 0 or 1
+  is_deleted: number // 0 or 1
+  diary_date: string | null
+  created_at: number
+  updated_at: number
 }
