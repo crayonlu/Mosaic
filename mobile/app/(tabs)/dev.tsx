@@ -3,8 +3,7 @@
  * Only visible in development mode
  */
 
-import { Button } from '@/components/ui/Button'
-import { toast } from '@/components/ui/Toast'
+import { Button, toast } from '@/components/ui'
 import { useDatabaseStore } from '@/lib/database/state-manager'
 import { useThemeStore } from '@/stores/theme-store'
 import { useState } from 'react'

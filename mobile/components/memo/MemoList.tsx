@@ -1,4 +1,4 @@
-import { Loading } from '@/components/ui/Loading'
+import { Loading } from '@/components/ui'
 import { memoService } from '@/lib/services/memo-service'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'

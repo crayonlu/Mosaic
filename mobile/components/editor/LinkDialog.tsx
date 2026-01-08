@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui'
 import { useThemeStore } from '@/stores/theme-store'
 import { Link as LinkIcon, X } from 'lucide-react-native'
 import { useState } from 'react'

@@ -1,6 +1,6 @@
 import { Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useThemeStore } from '@/stores/theme-store'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
 export type DialogType = 'alert' | 'confirm' | 'info' | 'warning' | 'danger'
 
@@ -207,10 +207,6 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     borderRadius: 20,
     padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
     elevation: 8,
   },
   iconContainer: {

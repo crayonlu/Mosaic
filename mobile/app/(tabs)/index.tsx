@@ -1,6 +1,6 @@
 import { MemoInput } from '@/components/editor/MemoInput'
 import { MemoList } from '@/components/memo/MemoList'
-import { toast } from '@/components/ui/Toast'
+import { toast } from '@/components/ui'
 import { memoService } from '@/lib/services/memo-service'
 import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@/types/memo'

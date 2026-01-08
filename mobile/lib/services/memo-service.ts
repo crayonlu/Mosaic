@@ -28,13 +28,12 @@ class MemoService {
     return {
       id: row.id,
       content: row.content,
-      contentFormat: (row.contentFormat as 'plain' | 'html') || 'plain',
       tags: row.tags ? JSON.parse(row.tags) : [],
-      isArchived: row.isArchived === 1,
-      isDeleted: row.isDeleted === 1,
-      diaryDate: row.diaryDate || undefined,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
+      isArchived: row.is_archived === 1,
+      isDeleted: row.is_deleted === 1,
+      diaryDate: row.diary_date || undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     }
   }
 
@@ -67,14 +66,13 @@ class MemoService {
     const id = this.generateId()
     const now = this.getCurrentTimestamp()
 
-    const contentFormat = this.detectContentFormat(params.content)
     const tagsJson = JSON.stringify(params.tags || [])
 
     try {
       await useDatabaseStore.getState().execute(
-        `INSERT INTO memos (id, content, contentFormat, tags, is_archived, is_deleted, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, params.content, contentFormat, tagsJson, 0, 0, now, now]
+        `INSERT INTO memos (id, content, tags, is_archived, is_deleted, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, params.content, tagsJson, 0, 0, now, now]
       )
 
       // Link resources if provided
@@ -232,9 +230,8 @@ class MemoService {
     const queryParams: unknown[] = []
 
     if (content !== undefined) {
-      const contentFormat = this.detectContentFormat(content)
-      updates.push('content = ?, contentFormat = ?')
-      queryParams.push(content, contentFormat)
+      updates.push('content = ?')
+      queryParams.push(content)
     }
 
     if (tags !== undefined) {
@@ -448,12 +445,12 @@ class MemoService {
 
       return resources.map((resource: any) => ({
         id: resource.id,
-        memoId: resource.memoId,
+        memoId: resource.memo_id,
         filename: resource.filename,
-        resourceType: resource.resourceType,
-        mimeType: resource.mimeType,
+        resourceType: resource.resource_type,
+        mimeType: resource.mime_type,
         size: resource.size,
-        createdAt: resource.createdAt,
+        createdAt: resource.created_at,
       }))
     } catch (error) {
       throw new QueryError(
@@ -468,19 +465,6 @@ class MemoService {
   // ============================================================================
   // Utilities
   // ============================================================================
-
-  /**
-   * Detect content format (plain text or HTML)
-   */
-  private detectContentFormat(content: string): 'plain' | 'html' {
-    if (!content || content.trim() === '') {
-      return 'plain'
-    }
-
-    // Check for HTML tags
-    const htmlTagPattern = /<[a-z][\s\S]*>/i
-    return htmlTagPattern.test(content) ? 'html' : 'plain'
-  }
 
   /**
    * Get memos count

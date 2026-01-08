@@ -13,10 +13,9 @@ import {
 import { memoService } from '@/lib/services/memo-service'
 import { stringUtils } from '@/lib/utils/string'
 import { ResourceGallery } from './ResourceGallery'
-import { Badge } from '@/components/ui/Badge'
+import { Badge, Loading } from '@/components/ui'
 import { Archive, Trash2, MoreVertical } from 'lucide-react-native'
 import type { MemoWithResources } from '@/types/memo'
-import { Loading } from '@/components/ui/Loading'
 
 interface MemoFeedProps {
   targetDate?: string
@@ -91,7 +90,7 @@ export function MemoFeed({ targetDate, onMemoPress, onMemoArchive, onMemoDelete 
     if (dbReady) {
       loadMemos()
     }
-  }, [targetDate, dbReady])
+  }, [dbReady])
 
   // Pull to refresh
   const handleRefresh = useCallback(() => {
@@ -309,9 +308,7 @@ export function MemoFeed({ targetDate, onMemoPress, onMemoArchive, onMemoDelete 
 }
 
 const styles = StyleSheet.create({
-  listContent: {
-    padding: 16,
-  },
+  listContent: {},
   memoCard: {
     borderRadius: 12,
     borderWidth: 1,

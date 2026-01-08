@@ -9,14 +9,13 @@ import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import { router } from 'expo-router'
 import { ChevronDown, ChevronUp } from 'lucide-react-native'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function ArchiveScreen() {
   const { theme } = useThemeStore()
   const [isHeatMapExpanded, setIsHeatMapExpanded] = useState(true)
   const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
-  const memoFeedRef = useRef<any>(null)
 
   // Handle date selection from calendar
   const handleDateSelect = (date: string) => {

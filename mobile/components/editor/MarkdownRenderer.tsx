@@ -1,23 +1,18 @@
 import { Colors } from '@/constants/colors'
 import { useThemeStore } from '@/stores/theme-store'
-import { StyleSheet, View, Text } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { WebView } from 'react-native-webview'
 
 interface MarkdownRendererProps {
   content: string
-  contentFormat?: 'plain' | 'html'
   style?: any
 }
 
 /**
  * MarkdownRenderer component
- * Renders memo content as HTML (from rich text editor) or plain text
+ * Renders memo content as HTML (from rich text editor)
  */
-export function MarkdownRenderer({
-  content,
-  contentFormat = 'plain',
-  style,
-}: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, style }: MarkdownRendererProps) {
   const { theme } = useThemeStore()
 
   // If content is empty, show nothing
@@ -25,16 +20,7 @@ export function MarkdownRenderer({
     return null
   }
 
-  // For plain text, render as simple text
-  if (contentFormat === 'plain') {
-    return (
-      <View style={[styles.container, style]}>
-        <Text style={[styles.text, { color: theme.text }]}>{content}</Text>
-      </View>
-    )
-  }
-
-  // For HTML content, render using WebView with styled HTML
+  // Render HTML content using WebView with styled HTML
   const htmlContent = `
     <!DOCTYPE html>
     <html>

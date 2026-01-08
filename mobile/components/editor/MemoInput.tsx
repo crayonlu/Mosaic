@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { StyleSheet, TextInput, View, TouchableOpacity } from 'react-native'
 import { FullScreenEditor } from './FullScreenEditor'
 import { Maximize2 } from 'lucide-react-native'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui'
 
 interface MemoInputProps {
   onSubmit?: (content: string) => void
@@ -17,9 +17,8 @@ export function MemoInput({ onSubmit, placeholder = '记录你的想法...' }: M
   const [text, setText] = useState('')
   const [textContent, setTextContent] = useState('')
 
-  useEffect(()=>{
-    if (text)
-      setTextContent(stringUtils.extractTextFromHtml(text))
+  useEffect(() => {
+    if (text) setTextContent(stringUtils.extractTextFromHtml(text))
   }, [text])
 
   const handleSubmit = () => {
@@ -66,7 +65,11 @@ export function MemoInput({ onSubmit, placeholder = '记录你的想法...' }: M
             <Maximize2 size={18} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
-        <Button title="创建" variant={textContent ? 'primary' : 'secondary'} onPress={handleSubmit} />
+        <Button
+          title="创建"
+          variant={textContent ? 'primary' : 'secondary'}
+          onPress={handleSubmit}
+        />
       </View>
       <FullScreenEditor
         visible={isFullScreenVisible}

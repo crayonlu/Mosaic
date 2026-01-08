@@ -1,6 +1,6 @@
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
-import { Archive, Trash2, ArrowLeft, Check } from 'lucide-react-native'
+import { ArrowLeft, Check } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import {
   Alert,
@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,8 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import type { MemoWithResources } from '@/types/memo'
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
+import { Badge, Button } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
 import { memoService } from '@/lib/services/memo-service'
 

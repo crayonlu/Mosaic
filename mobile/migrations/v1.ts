@@ -31,8 +31,6 @@ CREATE TABLE IF NOT EXISTS memos (
 
   -- content of memo
   content TEXT NOT NULL DEFAULT '',
-  -- content format: 'plain' or 'html'
-  contentFormat TEXT NOT NULL DEFAULT 'plain',
   -- tags
   tags TEXT NOT NULL DEFAULT '[]',
 
