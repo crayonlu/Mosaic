@@ -91,7 +91,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
     if (dbReady) {
       loadHeatMapData()
     }
-  }, [dbReady, loadHeatMapData])
+  }, [dbReady])
 
   // Group cells by weeks
   const weeks = useMemo(() => {

@@ -98,7 +98,7 @@ export function MemoFeed({
     if (dbReady) {
       loadMemos()
     }
-  }, [dbReady, loadMemos])
+  }, [dbReady])
 
   // Pull to refresh
   const handleRefresh = useCallback(() => {

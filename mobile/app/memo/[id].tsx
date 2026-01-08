@@ -38,7 +38,7 @@ export default function MemoDetailScreen() {
     if (id) {
       loadMemo()
     }
-  }, [id, loadMemo])
+  }, [id])
 
   const handleSave = async () => {
     if (!memo) return
