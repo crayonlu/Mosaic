@@ -9,14 +9,19 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 
 interface MoodHeatMapProps {
   onDateClick?: (date: string) => void
+  timeRange?: TimeRangeValue
+  onTimeRangeChange?: (range: TimeRangeValue) => void
 }
 
-export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
+export function MoodHeatMap({
+  onDateClick,
+  timeRange = 'quarter',
+  onTimeRangeChange,
+}: MoodHeatMapProps) {
   const { theme } = useThemeStore()
   const { isReady: dbReady, isInitializing: dbInitializing, error: dbError } = useDatabaseStore()
   const [data, setData] = useState<HeatMapData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [timeRange, setTimeRange] = useState<TimeRangeValue>('quarter')
 
   // Mood legend with all 8 emotions
   const moodLegend = useMemo(
@@ -144,14 +149,9 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
     }
   }
 
-  // Handle time range change
-  const handleTimeRangeChange = (range: TimeRangeValue) => {
-    setTimeRange(range)
-  }
-
   if (dbInitializing || loading) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.container, { backgroundColor: 'transparent' }]}>
         <Loading text="加载中..." />
       </View>
     )
@@ -169,33 +169,6 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.surface }]}>
-      {/* Time range selector */}
-      <View style={[styles.timeRangeSelector, { borderBottomColor: theme.border }]}>
-        {(Object.values(TimeRanges) as any[]).map(range => (
-          <TouchableOpacity
-            key={range.value}
-            style={[
-              styles.timeRangeButton,
-              timeRange === range.value && {
-                backgroundColor: theme.primary,
-              },
-            ]}
-            onPress={() => handleTimeRangeChange(range.value)}
-          >
-            <Text
-              style={[
-                styles.timeRangeButtonText,
-                {
-                  color: timeRange === range.value ? '#FFFFFF' : theme.textSecondary,
-                },
-              ]}
-            >
-              {range.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
       {/* Heat map grid */}
       <ScrollView
         horizontal
@@ -261,23 +234,6 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 16,
     fontWeight: '600',
-  },
-  timeRangeSelector: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    gap: 8,
-  },
-  timeRangeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  timeRangeButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
   },
   scrollContent: {
     paddingVertical: 10,

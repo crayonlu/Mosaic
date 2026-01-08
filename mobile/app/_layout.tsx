@@ -25,7 +25,7 @@ export default function RootLayout() {
     return (
       <SafeAreaProvider>
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-          <Loading text="初始化数据库..." fullScreen />
+          <Loading text="初始化数据库中..." fullScreen />
         </SafeAreaView>
       </SafeAreaProvider>
     )
