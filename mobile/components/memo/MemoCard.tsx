@@ -1,6 +1,6 @@
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
-import { Archive, Trash2 } from 'lucide-react-native'
+import { Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import type { MemoWithResources } from '@/types/memo'
@@ -113,18 +113,11 @@ export function MemoCard({
             </View>
           )}
 
+          {/* Timestamp */}
+          <Text style={[styles.timestamp, { color: theme.textSecondary }]}>{formattedTime}</Text>
           {/* Actions */}
           {showActions && (
             <View style={styles.actionsContainer}>
-              {showActions && (
-                <Pressable
-                  onPress={handleArchive}
-                  style={styles.actionButton}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Archive size={16} color={theme.textSecondary} strokeWidth={2} />
-                </Pressable>
-              )}
               {showActions && (
                 <Pressable
                   onPress={handleDelete}
@@ -136,9 +129,6 @@ export function MemoCard({
               )}
             </View>
           )}
-
-          {/* Timestamp */}
-          <Text style={[styles.timestamp, { color: theme.textSecondary }]}>{formattedTime}</Text>
         </View>
       )}
     </Pressable>

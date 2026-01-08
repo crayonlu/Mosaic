@@ -6,8 +6,7 @@ import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@/types/memo'
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native'
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 
 export default function HomeScreen() {
   const { theme } = useThemeStore()
@@ -65,22 +64,15 @@ export default function HomeScreen() {
       // it works in my xiaomi 14
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 44}
     >
-      <KeyboardAwareScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
-        keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
-      >
-        {/* Memo List */}
-        <View style={styles.listContainer}>
-          <MemoList
-            onMemoPress={handleMemoPress}
-            onMemoArchive={handleArchive}
-            onMemoDelete={handleDelete}
-            refreshTrigger={refreshTrigger}
-          />
-        </View>
-      </KeyboardAwareScrollView>
+      {/* Memo List */}
+      <View style={styles.listContainer}>
+        <MemoList
+          onMemoPress={handleMemoPress}
+          onMemoArchive={handleArchive}
+          onMemoDelete={handleDelete}
+          refreshTrigger={refreshTrigger}
+        />
+      </View>
 
       {/* Input at bottom */}
       <View style={[styles.inputContainer, { backgroundColor: theme.background }]}>
@@ -94,15 +86,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexGrow: 1,
-    padding: 16,
-  },
   listContainer: {
     flex: 1,
+    paddingHorizontal: 16,
   },
   inputContainer: {
     padding: 8,

@@ -178,8 +178,14 @@ export function MemoList({
   }, [memos, date])
 
   // Render date header
-  const renderDateHeader = (displayDate: string, count: number) => (
-    <View style={[styles.dateHeader, { borderTopColor: theme.border }]}>
+  const renderDateHeader = (displayDate: string, count: number, isFirst: boolean) => (
+    <View
+      style={[
+        styles.dateHeader,
+        { borderTopColor: theme.border },
+        isFirst && { borderTopWidth: 0, marginTop: 0 },
+      ]}
+    >
       <Text style={[styles.dateHeaderText, { color: theme.text }]}>{displayDate}</Text>
       {count > 0 && (
         <Text style={[styles.dateHeaderCount, { color: theme.textSecondary }]}>{count} 条Memo</Text>
@@ -205,11 +211,13 @@ export function MemoList({
   // Render a single date group
   const renderGroup = ({
     item: group,
+    index,
   }: {
     item: { date: string; displayDate: string; memos: MemoWithResources[] }
+    index: number
   }) => (
     <View key={group.date}>
-      {renderDateHeader(group.displayDate, group.memos.length)}
+      {renderDateHeader(group.displayDate, group.memos.length, index === 0)}
       {group.memos.map(memo => (
         <MemoCard
           key={memo.id}
