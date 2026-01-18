@@ -77,7 +77,6 @@
   --sidebar-accent-foreground: oklch(0.25 0.03 240);
   --sidebar-border: oklch(0.88 0.01 85);
   --sidebar-ring: oklch(0.55 0.15 25);
-  /* Toast colors */
   --toast-success-bg: var(--sidebar);
   --toast-success-border: var(--sidebar-primary);
   --toast-success-text: var(--sidebar-foreground);
@@ -124,7 +123,6 @@
   --sidebar-accent-foreground: oklch(76.518% 0.10343 249.337);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.6 0.2 250);
-  /* Toast colors for dark theme */
   --toast-success-bg: var(--sidebar);
   --toast-success-border: var(--sidebar-primary);
   --toast-success-text: var(--sidebar-foreground);
@@ -146,4 +144,28 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.toast-success {
+  background-color: var(--toast-success-bg) !important;
+  border-color: var(--toast-success-border) !important;
+  color: var(--toast-success-text) !important;
+}
+
+.toast-error {
+  background-color: var(--toast-error-bg) !important;
+  border-color: var(--toast-error-border) !important;
+  color: var(--toast-error-text) !important;
+}
+
+.toast-warning {
+  background-color: var(--toast-warning-bg) !important;
+  border-color: var(--toast-warning-border) !important;
+  color: var(--toast-warning-text) !important;
+}
+
+.toast-info {
+  background-color: var(--toast-info-bg) !important;
+  border-color: var(--toast-info-border) !important;
+  color: var(--toast-info-text) !important;
 }
