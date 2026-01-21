@@ -36,6 +36,7 @@ import type {
   SuggestTagsRequest,
   SuggestTagsResponse,
 } from '@/types/ai'
+import type { SyncStatus, SyncStatusInfo } from '@/types/sync'
 
 export async function callRust<T = unknown>(
   cmd: string,
@@ -93,19 +94,15 @@ export const diaryCommands = {
   updateDiarySummary: (req: UpdateDiarySummaryRequest) =>
     callRust<void>('update_diary_summary', { req }),
 
-  updateDiaryMood: (req: UpdateDiaryMoodRequest) => callRust<void>('update_diary_mood', { req }),
+  updateDiaryMood: (req: UpdateDiaryMoodRequest) =>
+    callRust<void>('update_diary_mood', { req }),
 }
 
 export const assetCommands = {
   uploadFiles: (filePaths: string[]) => callRust<UploadedResource[]>('upload_files', { filePaths }),
 
-  saveTempAudio: (filename: string, data: number[]) =>
-    callRust<string>('save_temp_audio', { filename, data }),
-
   saveTempFile: (filename: string, data: number[]) =>
     callRust<string>('save_temp_file', { filename, data }),
-
-  readAudioFile: (filename: string) => callRust<number[]>('read_audio_file', { filename }),
 
   readImageFile: (filename: string) => callRust<number[]>('read_image_file', { filename }),
 
@@ -113,22 +110,33 @@ export const assetCommands = {
 }
 
 export const statsCommands = {
-  getHeatmap: (query: HeatMapQuery) => callRust<HeatMapData>('get_heatmap', { query }),
-  getTimeline: (query: TimelineQuery) => callRust<TimelineData>('get_timeline', { query }),
-  getTrends: (query: TrendsQuery) => callRust<TrendsData>('get_trends', { query }),
-  getSummary: (query: SummaryQuery) => callRust<SummaryData>('get_summary', { query }),
+  getHeatmap: (query: HeatMapQuery) => callRust<HeatMapData>('get_heatmap', { startDate: query.startDate, endDate: query.endDate }),
+
+  getTimeline: (query: TimelineQuery) => callRust<TimelineData>('get_timeline', { startDate: query.startDate, endDate: query.endDate }),
+
+  getTrends: (query: TrendsQuery) => callRust<TrendsData>('get_trends', { startDate: query.startDate, endDate: query.endDate }),
+
+  getSummary: (query: SummaryQuery) => callRust<SummaryData>('get_summary', { year: query.year, month: query.month }),
 }
 
 export const aiCommands = {
   completeText: (req: CompleteTextRequest) =>
     callRust<CompleteTextResponse>('complete_text', { req }),
 
-  rewriteText: (req: RewriteTextRequest) => callRust<RewriteTextResponse>('rewrite_text', { req }),
+  rewriteText: (req: RewriteTextRequest) =>
+    callRust<RewriteTextResponse>('rewrite_text', { req }),
 
   summarizeText: (req: SummarizeTextRequest) =>
     callRust<SummarizeTextResponse>('summarize_text', { req }),
 
-  suggestTags: (req: SuggestTagsRequest) => callRust<SuggestTagsResponse>('suggest_tags', { req }),
+  suggestTags: (req: SuggestTagsRequest) =>
+    callRust<SuggestTagsResponse>('suggest_tags', { req }),
+}
+
+export const syncCommands = {
+  triggerSync: () => callRust<SyncStatusInfo>('trigger_sync'),
+
+  getSyncStatus: () => callRust<SyncStatus>('get_sync_status'),
 }
 
 export default {
@@ -137,4 +145,6 @@ export default {
   diary: diaryCommands,
   asset: assetCommands,
   stats: statsCommands,
+  ai: aiCommands,
+  sync: syncCommands,
 }

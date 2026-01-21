@@ -1,103 +1,97 @@
-use crate::error::AppResult;
-use crate::modules::asset::{models, storage};
-use std::fs;
-use std::io::Write;
-use tauri::{AppHandle, Manager};
+use crate::api::ResourceApi;
+use crate::error::{AppError, AppResult};
+use crate::models::ResourceType;
+use serde::Serialize;
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadedResource {
+    pub filename: String,
+    pub size: i64,
+    pub mime_type: String,
+    pub resource_type: ResourceType,
+}
 
 #[tauri::command]
 pub async fn upload_files(
-    app_handle: AppHandle,
+    api_client: tauri::State<'_, crate::api::ApiClient>,
     file_paths: Vec<String>,
-) -> AppResult<Vec<models::UploadedResource>> {
+) -> Result<Vec<UploadedResource>, String> {
+    let resource_api = ResourceApi::new(api_client.inner().clone());
     let mut results = Vec::new();
+
     for path in file_paths {
-        let result = storage::process_and_store_file(&app_handle, &path).await?;
-        results.push(result);
+        let data = tokio::fs::read(&path).await
+            .map_err(|e| e.to_string())?;
+
+        let filename = std::path::Path::new(&path)
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
+
+        let mime_type = infer::get(&path).map(|m| m.mime_type().to_string())
+            .unwrap_or_else(|| "application/octet-stream".to_string());
+
+        if !mime_type.starts_with("image/") {
+            return Err(AppError::UploadError(
+                "Only image files are supported".to_string()
+            ).to_string());
+        }
+
+        let response = resource_api.upload(filename.clone(), data, mime_type).await
+            .map_err(|e| e.to_string())?;
+
+        results.push(UploadedResource {
+            filename: response["filename"].as_str().unwrap().to_string(),
+            size: response["size"].as_i64().unwrap_or(0),
+            mime_type: response["mime_type"].as_str().unwrap().to_string(),
+            resource_type: ResourceType::Image,
+        });
     }
+
     Ok(results)
 }
 
 #[tauri::command]
-pub async fn save_temp_audio(
-    app_handle: AppHandle,
-    filename: String,
-    data: Vec<u8>,
-) -> AppResult<String> {
-    let temp_dir = app_handle
-        .path()
-        .temp_dir()
-        .map_err(crate::error::AppError::from)?;
-
-    if !temp_dir.exists() {
-        fs::create_dir_all(&temp_dir).map_err(|e| crate::error::AppError::Io(e))?;
-    }
-
-    let file_path = temp_dir.join(&filename);
-    let mut file = fs::File::create(&file_path).map_err(|e| crate::error::AppError::Io(e))?;
-
-    file.write_all(&data)
-        .map_err(|e| crate::error::AppError::Io(e))?;
-
-    Ok(file_path.to_string_lossy().to_string())
-}
-
-#[tauri::command]
 pub async fn save_temp_file(
-    app_handle: AppHandle,
+    app_handle: tauri::AppHandle,
     filename: String,
     data: Vec<u8>,
-) -> AppResult<String> {
+) -> Result<String, String> {
     let temp_dir = app_handle
         .path()
         .temp_dir()
-        .map_err(crate::error::AppError::from)?;
+        .map_err(|e| e.to_string())?;
 
     if !temp_dir.exists() {
-        fs::create_dir_all(&temp_dir).map_err(|e| crate::error::AppError::Io(e))?;
+        std::fs::create_dir_all(&temp_dir)
+            .map_err(|e| e.to_string())?;
     }
 
     let file_path = temp_dir.join(&filename);
-    let mut file = fs::File::create(&file_path).map_err(|e| crate::error::AppError::Io(e))?;
-
-    file.write_all(&data)
-        .map_err(|e| crate::error::AppError::Io(e))?;
+    tokio::fs::write(&file_path, data).await
+        .map_err(|e| e.to_string())?;
 
     Ok(file_path.to_string_lossy().to_string())
 }
 
 #[tauri::command]
-pub async fn read_audio_file(app_handle: AppHandle, filename: String) -> AppResult<Vec<u8>> {
-    let assets_dir = storage::get_assets_dir(&app_handle)?;
-    let file_path = assets_dir.join(&filename);
-
-    if !file_path.exists() {
-        return Err(crate::error::AppError::NotFound(format!(
-            "Audio file not found: {}",
-            filename
-        )));
-    }
-
-    let data = fs::read(&file_path).map_err(|e| crate::error::AppError::Io(e))?;
-    Ok(data)
+pub async fn read_image_file(
+    api_client: tauri::State<'_, crate::api::ApiClient>,
+    filename: String,
+) -> Result<Vec<u8>, String> {
+    let resource_api = ResourceApi::new(api_client.inner().clone());
+    resource_api.download(filename).await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn read_image_file(app_handle: AppHandle, filename: String) -> AppResult<Vec<u8>> {
-    let assets_dir = storage::get_assets_dir(&app_handle)?;
-    let file_path = assets_dir.join(&filename);
-
-    if !file_path.exists() {
-        return Err(crate::error::AppError::NotFound(format!(
-            "Image file not found: {}",
-            filename
-        )));
-    }
-
-    let data = fs::read(&file_path).map_err(|e| crate::error::AppError::Io(e))?;
-    Ok(data)
-}
-
-#[tauri::command]
-pub async fn delete_asset_file(app_handle: AppHandle, filename: String) -> AppResult<()> {
-    storage::delete_asset_file(&app_handle, &filename).await
+pub async fn delete_asset_file(
+    api_client: tauri::State<'_, crate::api::ApiClient>,
+    filename: String,
+) -> Result<(), String> {
+    let resource_api = ResourceApi::new(api_client.inner().clone());
+    resource_api.delete(filename).await
+        .map_err(|e| e.to_string())
 }

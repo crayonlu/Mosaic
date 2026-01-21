@@ -1,23 +1,21 @@
-import { useState, forwardRef, useImperativeHandle } from 'react'
-import { Upload, Mic, Maximize2, Minimize2, CornerDownLeft, Loader2, Sparkles } from 'lucide-react'
+import { CornerDownLeft, Loader2, Maximize2, Minimize2, Sparkles, Upload } from 'lucide-react'
+import { forwardRef, useImperativeHandle, useState } from 'react'
 
+import { InputResources } from '@/components/common/InputResources'
+import { RichTextEditor } from '@/components/common/RichTextEditor'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupText,
 } from '@/components/ui/input-group'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { useInput } from '@/hooks/use-input'
-import { VoiceRecordingDialog } from '@/components/common/VoiceRecordingDialog'
-import { InputResources } from '@/components/common/InputResources'
-import { RichTextEditor } from '@/components/common/RichTextEditor'
-import { useInputStore } from '@/stores/input-store'
-import { useVoiceRecorder } from '@/hooks/use-voice-recorder'
-import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAI } from '@/hooks/use-ai'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { useInput } from '@/hooks/use-input'
+import { cn } from '@/lib/utils'
+import { useInputStore } from '@/stores/input-store'
 
 export interface AppInputRef {
   clearTags: () => void
@@ -27,25 +25,21 @@ interface AppInputProps {
   placeholder?: string
   onSubmit?: (value: string, resourceFilenames?: string[], tags?: string[]) => void
   onFileUpload?: (files: FileList) => void
-  onVoiceInput?: () => void
   className?: string
 }
 
 export const AppInput = forwardRef<AppInputRef, AppInputProps>(
-  ({ placeholder = '输入内容...', onSubmit, onFileUpload, onVoiceInput, className }, ref) => {
+  ({ placeholder = '输入内容...', onSubmit, onFileUpload, className }, ref) => {
     const [isRecordingDialogOpen, setIsRecordingDialogOpen] = useState(false)
     const [tags, setTags] = useState<string[]>([])
     const [tagInput, setTagInput] = useState('')
     const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
     const [showSuggestions, setShowSuggestions] = useState(false)
     const {
-      voiceRecordingState,
-      resetVoiceRecording,
       addResource,
       resourceFilenames,
       uploadingFiles,
     } = useInputStore()
-    const { startRecording, stopRecording, cancelRecording, isProcessing } = useVoiceRecorder()
     const { suggestTags, loading: aiLoading } = useAI()
 
     const {
@@ -60,7 +54,6 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
     } = useInput({
       onSubmit: (value, resourceFilenames) => onSubmit?.(value, resourceFilenames, tags),
       onFileUpload,
-      onVoiceInput,
     })
 
     const handleAddTag = (tag?: string) => {
@@ -136,32 +129,6 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
     useImperativeHandle(ref, () => ({
       clearTags,
     }))
-
-    const handleStartRecording = async () => {
-      try {
-        setIsRecordingDialogOpen(true)
-        await startRecording()
-        onVoiceInput?.()
-      } catch (error) {
-        console.error('启动录音失败:', error)
-        setIsRecordingDialogOpen(false)
-      }
-    }
-
-    const handleStopRecording = async () => {
-      const result = await stopRecording()
-      setIsRecordingDialogOpen(false)
-      if (result) {
-        addResource(result.filename, result.previewUrl, 'audio')
-      }
-      resetVoiceRecording()
-    }
-
-    const handleCancelRecording = () => {
-      cancelRecording()
-      setIsRecordingDialogOpen(false)
-      resetVoiceRecording()
-    }
 
     return (
       <div className={`${className} h-full flex flex-col relative`}>
@@ -312,24 +279,6 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <InputGroupButton
-                    size="icon-xs"
-                    variant="ghost"
-                    onClick={handleStartRecording}
-                    className={cn(
-                      voiceRecordingState === 'recording' &&
-                        'bg-destructive/10 text-destructive hover:bg-destructive/20'
-                    )}
-                  >
-                    <Mic className={cn(voiceRecordingState === 'recording' && 'animate-pulse')} />
-                  </InputGroupButton>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {voiceRecordingState === 'recording' ? '正在录音...' : '语音输入'}
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
                   <InputGroupButton size="icon-xs" variant="ghost" onClick={handleToggleExpand}>
                     {isExpanded ? <Minimize2 /> : <Maximize2 />}
                   </InputGroupButton>
@@ -369,13 +318,6 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
           </InputGroupAddon>
           <InputResources />
         </InputGroup>
-        <VoiceRecordingDialog
-          open={isRecordingDialogOpen}
-          onOpenChange={setIsRecordingDialogOpen}
-          onStop={handleStopRecording}
-          onCancel={handleCancelRecording}
-          isProcessing={isProcessing}
-        />
       </div>
     )
   }

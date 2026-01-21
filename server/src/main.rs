@@ -11,7 +11,7 @@ use actix_web::{web, App, HttpResponse, HttpServer};
 use config::Config;
 use database::{create_pool, run_migrations};
 use middleware::{configure_cors, AuthMiddleware};
-use services::{AuthService, DiaryService, MemoService, ResourceService};
+use services::{AuthService, DiaryService, MemoService, ResourceService, StatsService};
 use storage::create_storage;
 
 #[actix_web::main]
@@ -35,6 +35,8 @@ async fn main() -> anyhow::Result<()> {
     let memo_service = MemoService::new(pool.clone());
     let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone());
     let diary_service = DiaryService::new(pool.clone());
+    let stats_service = StatsService::new(pool.clone());
+    log::info!("Services initialized");
 
     let auth_middleware = AuthMiddleware::new(config.jwt_secret.clone());
     let bind_address = format!("0.0.0.0:{}", config.port);
@@ -46,6 +48,7 @@ async fn main() -> anyhow::Result<()> {
             .app_data(web::Data::new(memo_service.clone()))
             .app_data(web::Data::new(resource_service.clone()))
             .app_data(web::Data::new(diary_service.clone()))
+            .app_data(web::Data::new(stats_service.clone()))
             .route("/health", web::get().to(health_check))
             .service(web::scope("/api/auth").configure(routes::configure_auth_routes))
             .service(
@@ -53,7 +56,7 @@ async fn main() -> anyhow::Result<()> {
                     .wrap(auth_middleware.clone())
                     .configure(routes::configure_memo_routes)
                     .configure(routes::configure_resource_routes)
-                    .configure(routes::configure_diary_routes),
+                    .configure(routes::configure_stats_routes),
             )
     })
     .bind(&bind_address)?

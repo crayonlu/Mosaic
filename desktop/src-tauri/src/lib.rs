@@ -1,50 +1,45 @@
-mod database;
+use config;
+mod api;
+mod cache;
+mod sync;
 mod error;
 mod modules;
+
+use config::*;
+use api::*;
+use cache::*;
+use sync::*;
+use modules::memo::commands::AppState;
+use modules::diary::commands::AppState as DiaryAppState;
+use sync::types::SyncStatus;
 
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use tauri::AppHandle;
+use tauri::Manager;
 use tracing_appender::rolling::daily;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use modules::ai::commands::{complete_text, rewrite_text, suggest_tags, summarize_text};
-use modules::asset::commands::{
-    delete_asset_file, read_audio_file, read_image_file, save_temp_audio, save_temp_file,
-    upload_files,
-};
-use modules::diary::commands::{
-    create_or_update_diary, get_diary_by_date, list_diaries, update_diary_mood,
-    update_diary_summary,
-};
-use modules::memo::commands::{
-    archive_memo, create_memo, delete_memo, get_memo, get_memos_by_date, list_memos, search_memos,
-    unarchive_memo, update_memo,
-};
-use modules::settings::commands::{
-    delete_setting, enable_autostart, get_setting, get_settings, is_autostart_enabled,
-    register_close_shortcut, register_show_shortcut, set_setting, test_ai_connection,
-    unregister_shortcut,
-};
+use modules::settings::commands::{delete_setting, enable_autostart, get_setting, get_settings, is_autostart_enabled, register_close_shortcut, register_show_shortcut, set_setting, test_ai_connection, unregister_shortcut};
+use modules::user::commands::{get_user, get_or_create_default_user, update_user, upload_avatar};
 use modules::stats::commands::{get_heatmap, get_summary, get_timeline, get_trends};
-use modules::storage::commands::{
-    get_data_directory, get_default_data_directory, needs_data_migration, select_data_directory,
-    set_data_directory,
-};
-use modules::user::commands::{get_or_create_default_user, get_user, update_user, upload_avatar};
-use tauri::Manager;
+use api::{AuthApi, LoginRequest};
+
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 async fn init_logging(app_handle: &AppHandle) {
-    let logs_dir = match modules::storage::path::get_logs_directory(app_handle).await {
-        Ok(dir) => Some(dir),
-        Err(e) => {
-            eprintln!("Failed to get logs directory: {}", e);
-            None
+    let logs_dir = dirs::config_local_dir()
+        .map(|dir| Some(dir.join("mosaic").join("logs")));
+
+    if let Some(logs_path) = logs_dir {
+        if !logs_path.exists() {
+            let _ = std::fs::create_dir_all(&logs_path);
         }
-    };
+    }
 
     let env_filter = tracing_subscriber::EnvFilter::from_default_env();
-
     let registry = tracing_subscriber::registry();
 
     if let Some(logs_path) = logs_dir {
@@ -70,7 +65,7 @@ async fn init_logging(app_handle: &AppHandle) {
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
+pub fn run() -> ! {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(
@@ -82,12 +77,13 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
-            upload_files,
-            save_temp_audio,
-            save_temp_file,
-            read_audio_file,
-            read_image_file,
-            delete_asset_file,
+            get_server_config,
+            set_server_config,
+            test_server_connection,
+            login,
+            logout,
+            get_sync_settings,
+            set_sync_settings,
             create_memo,
             get_memo,
             list_memos,
@@ -97,11 +93,11 @@ pub fn run() {
             archive_memo,
             unarchive_memo,
             search_memos,
-            create_or_update_diary,
             get_diary_by_date,
             list_diaries,
-            update_diary_mood,
+            create_or_update_diary,
             update_diary_summary,
+            update_diary_mood,
             get_heatmap,
             get_timeline,
             get_trends,
@@ -110,6 +106,10 @@ pub fn run() {
             get_or_create_default_user,
             update_user,
             upload_avatar,
+            upload_files,
+            save_temp_file,
+            read_image_file,
+            delete_asset_file,
             get_setting,
             get_settings,
             set_setting,
@@ -120,44 +120,111 @@ pub fn run() {
             register_show_shortcut,
             register_close_shortcut,
             unregister_shortcut,
-            get_data_directory,
-            get_default_data_directory,
-            select_data_directory,
-            set_data_directory,
-            needs_data_migration,
             complete_text,
             rewrite_text,
             summarize_text,
             suggest_tags,
+            trigger_sync,
+            get_sync_status,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
 
-            tauri::async_runtime::block_on(async {
+            tauri::async_runtime::block_on(async move {
                 init_logging(&app_handle).await;
 
-                match database::init_db(&app_handle).await {
-                    Ok(pool) => {
-                        app_handle.manage(pool);
-                        tracing::info!("Database pool stored in app state");
-                    }
+                let config = match AppConfig::load() {
+                    Ok(c) => c,
                     Err(e) => {
-                        let error_msg = format!("Failed to initialize database: {}", e);
-                        tracing::error!("{}", error_msg);
-                        if let Ok(logs_dir) =
-                            crate::modules::storage::path::get_logs_directory(&app_handle).await
-                        {
-                            tracing::error!(
-                                "Database initialization failed. Please check the logs at: {:?}",
-                                logs_dir
-                            );
-                        }
-                        panic!("{}", error_msg);
+                        eprintln!("Failed to load config: {}", e);
+                        AppConfig::default()
                     }
+                };
+
+                if !config.server.is_configured() {
+                    eprintln!("No server configuration found");
+                    let config = config;
+                    let _: Result<(), Box<dyn std::error::Error>> = (|| {
+                        app.manage(config);
+                        Ok(())
+                    })();
+                    return Err("Server not configured".into());
+                }
+
+                let client = ApiClient::new(config.server.url.clone())
+                    .with_token(config.server.api_token.clone().unwrap_or_default());
+
+                let cache_dir = dirs::config_local_dir()
+                    .map(|dir| dir.join("mosaic").join("cache"));
+
+                let cache = match cache_dir {
+                    Some(path) => match CacheStore::new(path).await {
+                        Ok(c) => c,
+                        Err(e) => {
+                            eprintln!("Failed to create cache: {}", e);
+                            return Err(Box::new(e) as Box<dyn std::error::Error>);
+                        }
+                    },
+                    None => {
+                        eprintln!("Failed to get cache dir");
+                        return Err("Failed to get cache dir".into() as Box<dyn std::error::Error>);
+                    }
+                };
+
+                let sync_manager = SyncManager::new(config.clone(), client.clone(), cache.clone());
+
+                let memo_api = Arc::new(MemoApi::new(client.clone()));
+                let diary_api = Arc::new(DiaryApi::new(client.clone()));
+                let resource_api = Arc::new(ResourceApi::new(client.clone()));
+                let user_api = Arc::new(UserApi::new(client.clone()));
+                let stats_api = Arc::new(StatsApi::new(client.clone()));
+
+                let user_api = Arc::new(UserApi::new(client.clone()));
+
+                let memo_app_state = AppState {
+                    config: Arc::new(config.clone()),
+                    memo_api: memo_api.clone(),
+                    cache: Arc::new(cache.clone()),
+                    sync_manager: Arc::new(sync_manager.clone()),
+                    online: Arc::new(AtomicBool::new(true)),
+                };
+
+                let diary_app_state = DiaryAppState {
+                    config: Arc::new(config.clone()),
+                    diary_api: diary_api.clone(),
+                    sync_manager: Arc::new(sync_manager.clone()),
+                    online: Arc::new(AtomicBool::new(true)),
+                };
+
+                let stats_app_state = StatsAppState {
+                    config: Arc::new(config.clone()),
+                    stats_api: stats_api.clone(),
+                    cache: Arc::new(cache.clone()),
+                    sync_manager: Arc::new(sync_manager.clone()),
+                    online: Arc::new(AtomicBool::new(true)),
+                };
+
+                let user_app_state = crate::modules::user::commands::UserAppState {
+                    config: Arc::new(config.clone()),
+                    user_api: user_api.clone(),
+                    online: Arc::new(AtomicBool::new(true)),
+                };
+
+                app.manage(memo_app_state);
+                app.manage(diary_app_state);
+                app.manage(stats_app_state);
+                app.manage(user_app_state);
+                app.manage(config);
+                app.manage(cache);
+                app.manage(client);
+
+                if config.auto_sync {
+                    sync_manager.start_auto_sync().await;
                 }
 
                 Ok::<(), Box<dyn std::error::Error>>(())
-            })?;
+            })
+        })
 
             let show_menu_item =
                 MenuItem::with_id(&app_handle, "show", "显示窗口", true, None::<&str>)?;
@@ -191,8 +258,8 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            Ok(())
-        })
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })?;
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
@@ -201,4 +268,30 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[tauri::command]
+pub async fn trigger_sync(state: tauri::State<'_, AppState>) -> Result<SyncStatusInfo, String> {
+    state.sync_manager.sync_all().await
+        .map_err(|e| e.to_string())?;
+
+    Ok(SyncStatusInfo {
+        status: "completed".to_string(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+        error: None,
+    })
+}
+
+#[tauri::command]
+pub async fn get_sync_status(state: tauri::State<'_, AppState>) -> Result<SyncStatus, String> {
+    let online = state.sync_manager.is_online();
+    let is_syncing = state.sync_manager.is_syncing().await;
+
+    Ok(if !online {
+        SyncStatus::Offline
+    } else if is_syncing {
+        SyncStatus::Syncing
+    } else {
+        SyncStatus::Idle
+    })
 }

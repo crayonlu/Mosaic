@@ -2,6 +2,12 @@ use crate::middleware::get_user_id;
 use crate::models::{ChangePasswordRequest, LoginRequest};
 use crate::services::AuthService;
 use actix_web::{web, HttpRequest, HttpResponse};
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateAvatarRequest {
+    pub avatar_url: String,
+}
 
 pub async fn login(
     req: web::Json<LoginRequest>,
@@ -32,6 +38,25 @@ pub async fn change_password(
     }
 }
 
+pub async fn update_avatar(
+    req: HttpRequest,
+    payload: web::Json<UpdateAvatarRequest>,
+    auth_service: web::Data<AuthService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match auth_service
+        .update_avatar(&user_id, payload.into_inner().avatar_url)
+        .await
+    {
+        Ok(user) => HttpResponse::Ok().json(user),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
 pub async fn get_me(req: HttpRequest, auth_service: web::Data<AuthService>) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
@@ -47,5 +72,6 @@ pub async fn get_me(req: HttpRequest, auth_service: web::Data<AuthService>) -> H
 pub fn configure_auth_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/login").route(web::post().to(login)))
         .service(web::resource("/change-password").route(web::post().to(change_password)))
+        .service(web::resource("/update-avatar").route(web::post().to(update_avatar)))
         .service(web::resource("/me").route(web::get().to(get_me)));
 }
