@@ -114,6 +114,31 @@ impl AuthService {
         Ok(UserResponse::from(user))
     }
 
+    pub async fn update_avatar(
+        &self,
+        user_id: &str,
+        avatar_url: String,
+    ) -> Result<UserResponse, AppError> {
+        let user = self
+            .find_user_by_id(user_id)
+            .await?
+            .ok_or(AppError::UserNotFound)?;
+
+        let now = Utc::now().timestamp();
+
+        let updated_user = sqlx::query_as::<_, User>(
+            "UPDATE users SET avatar_url = $1, updated_at = $2 WHERE id = $3
+             RETURNING id, username, password_hash, avatar_url, created_at, updated_at",
+        )
+        .bind(avatar_url)
+        .bind(now)
+        .bind(user.id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(UserResponse::from(updated_user))
+    }
+
     pub fn verify_token(&self, token: &str) -> Result<String, AppError> {
         let token_data = decode::<Claims>(
             token,

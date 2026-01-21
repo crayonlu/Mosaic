@@ -67,22 +67,13 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [resourceToDelete, setResourceToDelete] = useState<string | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [reorderedImageResources, setReorderedImageResources] = useState<any[]>([])
-  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
-  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null)
   const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
-  const [audioUrls, setAudioUrls] = useState<Map<string, string>>(new Map())
-  const [videoUrls, setVideoUrls] = useState<Map<string, string>>(new Map())
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const audioRefsRef = useRef<Map<string, HTMLAudioElement>>(new Map())
-  const videoRefsRef = useRef<Map<string, HTMLVideoElement>>(new Map())
   const { suggestTags, loading: aiLoading } = useAI()
 
   const imageResources = memo?.resources.filter(r => r.resourceType === 'image') || []
-  const audioResources = memo?.resources.filter(r => r.resourceType === 'voice') || []
-  const videoResources = memo?.resources.filter(r => r.resourceType === 'video') || []
-  const fileResources = memo?.resources.filter(r => r.resourceType === 'file') || []
 
   useEffect(() => {
     if (!memo) {
@@ -99,8 +90,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     const loadResources = async () => {
       const newImageUrls = new Map<string, string>()
-      const newAudioUrls = new Map<string, string>()
-      const newVideoUrls = new Map<string, string>()
 
       for (const resource of memo.resources) {
         try {
@@ -111,8 +100,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
           if (resource.resourceType === 'image') {
             newImageUrls.set(resource.id, url)
-          } else if (resource.resourceType === 'voice') {
-            newAudioUrls.set(resource.id, url)
           } else if (resource.resourceType === 'video') {
             newVideoUrls.set(resource.id, url)
           }
@@ -122,8 +109,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       }
 
       setImageUrls(newImageUrls)
-      setAudioUrls(newAudioUrls)
-      setVideoUrls(newVideoUrls)
     }
 
     loadResources()
@@ -133,26 +118,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
         prev.forEach(url => URL.revokeObjectURL(url))
         return new Map()
       })
-      setAudioUrls(prev => {
-        prev.forEach(url => URL.revokeObjectURL(url))
-        return new Map()
-      })
-      setVideoUrls(prev => {
-        prev.forEach(url => URL.revokeObjectURL(url))
-        return new Map()
-      })
-      audioRefsRef.current.forEach(audio => {
-        audio.pause()
-        audio.src = ''
-      })
-      audioRefsRef.current.clear()
-      videoRefsRef.current.forEach(video => {
-        video.pause()
-        video.src = ''
-      })
-      videoRefsRef.current.clear()
-      setPlayingAudioId(null)
-      setPlayingVideoId(null)
+
+
     }
   }, [memo, isEditing])
 
@@ -417,33 +384,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     fileInputRef.current?.click()
   }
 
-  const handleAudioPlay = async (resourceId: string) => {
-    if (playingAudioId === resourceId) {
-      const audio = audioRefsRef.current.get(resourceId)
-      if (audio) {
-        audio.pause()
-        setPlayingAudioId(null)
-      }
-      return
-    }
-
-    audioRefsRef.current.forEach(audio => {
-      audio.pause()
-      audio.currentTime = 0
-    })
-    setPlayingAudioId(null)
-
-    const audio = audioRefsRef.current.get(resourceId)
-    if (audio) {
-      try {
-        await audio.play()
-        setPlayingAudioId(resourceId)
-      } catch (error) {
-        console.error('播放音频失败:', error)
-      }
-    }
-  }
-
   const handleVideoPlay = (resourceId: string) => {
     if (playingVideoId === resourceId) {
       const video = videoRefsRef.current.get(resourceId)
@@ -493,7 +433,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto p-0">
         <SheetHeader className="sticky top-0 z-10 bg-background border-b px-6 py-4">
-          <SheetTitle className="sr-only">备忘录详情</SheetTitle>
+          <SheetTitle className="sr-only">备忘录详�?/SheetTitle>
           <SheetDescription className="sr-only">查看和编辑备忘录详情</SheetDescription>
           <div className="flex items-center gap-3">
             <Button
@@ -932,7 +872,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+                accept="image/*,video/*,.pdf,.doc,.docx,.txt"
                 onChange={e => {
                   if (e.target.files) {
                     handleUploadResources(e.target.files)
@@ -1021,7 +961,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
           <DialogHeader>
             <DialogTitle>删除 memo</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">确定要删除这条 memo 吗？此操作不可撤销。</p>
+          <p className="text-sm text-muted-foreground">确定要删除这条 memo 吗？此操作不可撤销</p>
           <DialogFooter className="mt-4 flex justify-end gap-2">
             <Button
               variant="outline"
@@ -1050,7 +990,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
           <DialogHeader>
             <DialogTitle>删除资源</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">确定要删除这个资源吗？此操作不可撤销。</p>
+          <p className="text-sm text-muted-foreground">确定要删除这个资源吗？此操作不可撤销</p>
           <DialogFooter className="mt-4 flex justify-end gap-2">
             <Button
               variant="outline"

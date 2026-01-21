@@ -16,7 +16,6 @@ export interface Diary {
   moodKey?: MoodKey
   moodScore?: number
   coverImageId?: string
-  memoCount: number
   createdAt: number
   updatedAt: number
 }

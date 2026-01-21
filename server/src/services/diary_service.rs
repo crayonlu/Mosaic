@@ -137,4 +137,56 @@ impl DiaryService {
 
         Ok(DiaryResponse::from(diary))
     }
+
+    pub async fn update_diary_summary(
+        &self,
+        user_id: &str,
+        date: NaiveDate,
+        summary: String,
+    ) -> Result<DiaryResponse, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+        let now = Utc::now().timestamp();
+
+        let diary = sqlx::query_as::<_, Diary>(
+            "UPDATE diaries SET summary = $1, updated_at = $2
+             WHERE date = $3 AND user_id = $4
+             RETURNING *",
+        )
+        .bind(&summary)
+        .bind(now)
+        .bind(&date)
+        .bind(user_uuid)
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or(AppError::DiaryNotFound)?;
+
+        Ok(DiaryResponse::from(diary))
+    }
+
+    pub async fn update_diary_mood(
+        &self,
+        user_id: &str,
+        date: NaiveDate,
+        mood_key: String,
+        mood_score: i32,
+    ) -> Result<DiaryResponse, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+        let now = Utc::now().timestamp();
+
+        let diary = sqlx::query_as::<_, Diary>(
+            "UPDATE diaries SET mood_key = $1, mood_score = $2, updated_at = $3
+             WHERE date = $4 AND user_id = $5
+             RETURNING *",
+        )
+        .bind(&mood_key)
+        .bind(mood_score)
+        .bind(now)
+        .bind(&date)
+        .bind(user_uuid)
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or(AppError::DiaryNotFound)?;
+
+        Ok(DiaryResponse::from(diary))
+    }
 }

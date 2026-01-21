@@ -1,39 +1,42 @@
-use crate::database::DBPool;
 use crate::error::AppResult;
 use crate::modules::ai::models::{
     CompleteTextRequest, RewriteTextRequest, SuggestTagsRequest, SummarizeTextRequest,
 };
 use crate::modules::ai::prompts::PromptBuilder;
 use crate::modules::settings::models::AIConfig;
-use crate::modules::settings::service;
+use crate::config::AppConfig;
 
-pub async fn load_ai_config(pool: &DBPool) -> AppResult<Option<AIConfig>> {
-    let provider = service::get_setting(pool, "ai.provider").await?;
-    let base_url = service::get_setting(pool, "ai.baseUrl").await?;
-    let api_key = service::get_setting(pool, "ai.apiKey").await?;
+pub async fn load_ai_config() -> AppResult<Option<AIConfig>> {
+    let config = AppConfig::load().map_err(|e| {
+        crate::error::AppError::Unknown(format!("Failed to load config: {}", e))
+    })?;
 
-    if provider.is_none() || base_url.is_none() || api_key.is_none() {
+    let provider = config.server.ai_provider;
+    let base_url = config.server.ai_base_url;
+    let api_key = config.server.ai_api_key;
+
+    if provider.is_empty() || base_url.is_empty() || api_key.is_empty() {
         return Ok(None);
     }
 
-    let model = service::get_setting(pool, "ai.model").await?;
-    let temperature = service::get_setting(pool, "ai.temperature").await?;
-    let max_tokens = service::get_setting(pool, "ai.maxTokens").await?;
-    let timeout = service::get_setting(pool, "ai.timeout").await?;
+    let model = config.server.ai_model;
+    let temperature = config.server.ai_temperature;
+    let max_tokens = config.server.ai_max_tokens;
+    let timeout = config.server.ai_timeout;
 
     Ok(Some(AIConfig {
-        provider: provider.unwrap().value,
-        base_url: base_url.unwrap().value,
-        api_key: api_key.unwrap().value,
-        model: model.map(|s| s.value),
-        temperature: temperature.and_then(|s| s.value.parse().ok()),
-        max_tokens: max_tokens.and_then(|s| s.value.parse().ok()),
-        timeout: timeout.and_then(|s| s.value.parse().ok()),
+        provider,
+        base_url,
+        api_key,
+        model,
+        temperature,
+        max_tokens,
+        timeout,
     }))
 }
 
-pub async fn create_provider(pool: &DBPool) -> AppResult<Provider> {
-    let config = load_ai_config(pool)
+pub async fn create_provider() -> AppResult<Provider> {
+    let config = load_ai_config()
         .await?
         .ok_or_else(|| crate::error::AppError::NotFound("AI config not found".to_string()))?;
 
