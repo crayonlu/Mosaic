@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use dirs::config_local_dir;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

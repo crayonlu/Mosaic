@@ -1,3 +1,4 @@
+use crate::modules::memo::models::MemoWithResources;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -18,5 +19,5 @@ pub struct Diary {
 pub struct DiaryWithMemos {
     #[serde(flatten)]
     pub diary: Diary,
-    pub memos: Vec<crate::models::MemoWithResources>,
+    pub memos: Vec<MemoWithResources>,
 }

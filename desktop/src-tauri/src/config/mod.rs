@@ -1,5 +1,4 @@
-pub mod types;
 pub mod commands;
+pub mod types;
 
 pub use types::{AppConfig, ServerConfig};
-pub use commands::*;

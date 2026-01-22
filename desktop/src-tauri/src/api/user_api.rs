@@ -1,13 +1,18 @@
 use super::client::ApiClient;
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
 use serde::Serialize;
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUserRequest {
     pub username: Option<String>,
     pub avatar_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateAvatarRequest {
+    pub avatar_url: String,
 }
 
 pub struct UserApi {
@@ -21,11 +26,7 @@ impl UserApi {
 
     pub async fn get(&self) -> AppResult<crate::models::User> {
         self.client
-            .request::<crate::models::User>(
-                reqwest::Method::GET,
-                "/api/auth/me",
-                None,
-            )
+            .request::<crate::models::User>(reqwest::Method::GET, "/api/auth/me", None)
             .await
     }
 
@@ -51,18 +52,19 @@ impl UserApi {
 
     pub async fn upload_avatar(
         &self,
-        source_path: String,
+        _source_path: String,
         data: Vec<u8>,
         filename: String,
         mime_type: String,
     ) -> AppResult<crate::models::User> {
         let url = format!("{}/api/resources/upload-avatar", self.client.base_url());
 
-        let form = reqwest::multipart::Form::new()
-            .part("file", reqwest::multipart::Part::bytes(data)
+        let form = reqwest::multipart::Form::new().part(
+            "file",
+            reqwest::multipart::Part::bytes(data)
                 .file_name(filename)
                 .mime_str(&mime_type)?,
-            );
+        );
 
         let mut request = self.client.inner().post(&url);
 
@@ -70,15 +72,13 @@ impl UserApi {
             request = request.header("Authorization", format!("Bearer {}", token));
         }
 
-        let response = request
-            .multipart(form)
-            .send()
-            .await?;
+        let response = request.multipart(form).send().await?;
 
         if !response.status().is_success() {
+            let status = response.status();
             let error_text = response.text().await.unwrap_or_default();
             return Err(crate::error::AppError::ApiError {
-                status: response.status().as_u16(),
+                status: status.as_u16(),
                 message: error_text,
             });
         }

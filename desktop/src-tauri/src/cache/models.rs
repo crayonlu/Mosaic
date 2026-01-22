@@ -70,18 +70,3 @@ pub struct OfflineOperation {
     pub created_at: i64,
     pub retried_count: i32,
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct CachedResource {
-    pub id: String,
-    pub memo_id: String,
-    pub filename: String,
-    pub resource_type: String,
-    pub mime_type: String,
-    pub file_size: i64,
-    pub storage_type: String,
-    pub storage_path: String,
-    pub local_path: Option<String>,
-    pub created_at: i64,
-    pub synced_at: i64,
-}

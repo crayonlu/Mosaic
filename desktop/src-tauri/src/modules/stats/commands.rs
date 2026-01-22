@@ -1,14 +1,17 @@
 use crate::api::StatsApi;
 use crate::cache::CacheStore;
-use crate::config::AppConfig;
 use crate::models::*;
-use crate::sync::SyncManager;
-use tauri::State;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use chrono::{Datelike, TimeZone};
 use std::collections::HashMap;
-use chrono::Datelike;
-use chrono::TimeZone;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use tauri::State;
+
+pub struct StatsAppState {
+    pub stats_api: Arc<StatsApi>,
+    pub cache: Arc<CacheStore>,
+    pub online: Arc<AtomicBool>,
+}
 
 #[tauri::command]
 pub async fn get_heatmap(
@@ -19,10 +22,16 @@ pub async fn get_heatmap(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        state.stats_api.get_heatmap(&start_date, &end_date).await
+        state
+            .stats_api
+            .get_heatmap(&start_date, &end_date)
+            .await
             .map_err(|e| e.to_string())
     } else {
-        let cached_memos = state.cache.list_memos(10000, 0, None).await
+        let cached_memos = state
+            .cache
+            .list_memos(10000, 0, None)
+            .await
             .map_err(|e| e.to_string())?;
 
         let mut date_counts: HashMap<String, i32> = HashMap::new();
@@ -56,13 +65,22 @@ pub async fn get_timeline(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        state.stats_api.get_timeline(&start_date, &end_date).await
+        state
+            .stats_api
+            .get_timeline(&start_date, &end_date)
+            .await
             .map_err(|e| e.to_string())
     } else {
-        let cached_memos = state.cache.list_memos(10000, 0, None).await
+        let cached_memos = state
+            .cache
+            .list_memos(10000, 0, None)
+            .await
             .map_err(|e| e.to_string())?;
 
-        let cached_diaries = state.cache.list_diaries(10000, 0).await
+        let cached_diaries = state
+            .cache
+            .list_diaries(10000, 0)
+            .await
             .map_err(|e| e.to_string())?;
 
         let mut diary_map: HashMap<String, (String, String, i32)> = HashMap::new();
@@ -89,7 +107,8 @@ pub async fn get_timeline(
         let mut entries: Vec<TimelineEntry> = Vec::new();
         for date in dates {
             let memo_count = *date_memo_count.get(&date).unwrap_or(&0);
-            let (summary, mood_key, mood_score) = diary_map.get(&date)
+            let (summary, mood_key, mood_score) = diary_map
+                .get(&date)
                 .map(|(s, m, sc)| (s.clone(), Some(m.clone()), Some(*sc)))
                 .unwrap_or_else(|| (String::new(), None, None));
 
@@ -110,7 +129,7 @@ pub async fn get_timeline(
                 mood_score,
                 summary,
                 memo_count,
-                color,
+                color: color.to_string(),
             });
         }
 
@@ -127,10 +146,16 @@ pub async fn get_trends(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        state.stats_api.get_trends(&start_date, &end_date).await
+        state
+            .stats_api
+            .get_trends(&start_date, &end_date)
+            .await
             .map_err(|e| e.to_string())
     } else {
-        let cached_memos = state.cache.list_memos(10000, 0, None).await
+        let cached_memos = state
+            .cache
+            .list_memos(10000, 0, None)
+            .await
             .map_err(|e| e.to_string())?;
 
         let mut tag_counts: HashMap<String, i32> = HashMap::new();
@@ -164,20 +189,29 @@ pub async fn get_summary(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        state.stats_api.get_summary(year, month).await
+        state
+            .stats_api
+            .get_summary(year, month)
+            .await
             .map_err(|e| e.to_string())
     } else {
-        let cached_memos = state.cache.list_memos(10000, 0, None).await
+        let cached_memos = state
+            .cache
+            .list_memos(10000, 0, None)
+            .await
             .map_err(|e| e.to_string())?;
 
-        let cached_diaries = state.cache.list_diaries(10000, 0).await
+        let cached_diaries = state
+            .cache
+            .list_diaries(10000, 0)
+            .await
             .map_err(|e| e.to_string())?;
 
         let mut total_memos: i64 = 0;
         let mut total_diaries: i64 = 0;
 
         for memo in cached_memos {
-            let memo_date = chrono::Utc::timestamp_millis(memo.created_at);
+            let memo_date = chrono::Utc.timestamp_millis_opt(memo.created_at).unwrap();
             if memo_date.year() == year as i32 && memo_date.month() as u32 == month as u32 {
                 total_memos += 1;
             }

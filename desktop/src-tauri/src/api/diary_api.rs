@@ -1,10 +1,10 @@
 use super::client::ApiClient;
 use crate::error::AppResult;
-use crate::models::*;
-use serde::Serialize;
+use crate::models::{Diary, DiaryWithMemos, PaginatedResponse};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateOrUpdateDiaryRequest {
     pub summary: Option<String>,
@@ -13,27 +13,17 @@ pub struct CreateOrUpdateDiaryRequest {
     pub cover_image_id: Option<Uuid>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateDiarySummaryRequest {
     pub summary: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateDiaryMoodRequest {
     pub mood_key: String,
     pub mood_score: i32,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PaginatedResponse<T> {
-    pub items: Vec<T>,
-    pub total: i64,
-    pub page: u32,
-    pub page_size: u32,
-    pub total_pages: u32,
 }
 
 pub struct DiaryApi {
@@ -55,7 +45,11 @@ impl DiaryApi {
             .await
     }
 
-    pub async fn create_or_update(&self, date: &str, req: CreateOrUpdateDiaryRequest) -> AppResult<Diary> {
+    pub async fn create_or_update(
+        &self,
+        date: &str,
+        req: CreateOrUpdateDiaryRequest,
+    ) -> AppResult<Diary> {
         self.client
             .request::<Diary>(
                 reqwest::Method::POST,
@@ -72,10 +66,7 @@ impl DiaryApi {
         start_date: Option<&str>,
         end_date: Option<&str>,
     ) -> AppResult<PaginatedResponse<Diary>> {
-        let mut url = format!(
-            "/api/diaries?page={}&page_size={}",
-            page, page_size
-        );
+        let mut url = format!("/api/diaries?page={}&page_size={}", page, page_size);
         if let Some(start) = start_date {
             url.push_str(&format!("&start_date={}", start));
         }
@@ -84,15 +75,15 @@ impl DiaryApi {
         }
 
         self.client
-            .request::<PaginatedResponse<Diary>>(
-                reqwest::Method::GET,
-                &url,
-                None,
-            )
+            .request::<PaginatedResponse<Diary>>(reqwest::Method::GET, &url, None)
             .await
     }
 
-    pub async fn update_summary(&self, date: &str, req: UpdateDiarySummaryRequest) -> AppResult<()> {
+    pub async fn update_summary(
+        &self,
+        date: &str,
+        req: UpdateDiarySummaryRequest,
+    ) -> AppResult<()> {
         self.client
             .request::<()>(
                 reqwest::Method::PUT,

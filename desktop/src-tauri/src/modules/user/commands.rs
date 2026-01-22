@@ -1,10 +1,9 @@
 use crate::api::{ApiClient, UserApi};
 use crate::config::AppConfig;
-use crate::error::{AppError, AppResult};
 use crate::models::User;
-use tauri::State;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use tauri::State;
 
 pub struct UserAppState {
     pub config: Arc<AppConfig>,
@@ -31,14 +30,37 @@ pub async fn update_user(
     username: Option<String>,
     avatar_url: Option<String>,
 ) -> Result<User, String> {
-    let user_api = UserApi::new(ApiClient::new(state.config.server.url.clone()).with_token(
-        state.config.server.api_token.clone().unwrap_or_default()
-    ));
+    let user_api = UserApi::new(
+        ApiClient::new(state.config.server.url.clone())
+            .with_token(state.config.server.api_token.clone().unwrap_or_default()),
+    );
 
     let update_fields = crate::api::UpdateUserRequest {
         username,
         avatar_url,
     };
 
-    user_api.update(update_fields).await.map_err(|e| e.to_string())
+    user_api
+        .update(update_fields)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn upload_avatar(
+    state: State<'_, UserAppState>,
+    source_path: String,
+    data: Vec<u8>,
+    filename: String,
+    mime_type: String,
+) -> Result<User, String> {
+    let user_api = UserApi::new(
+        ApiClient::new(state.config.server.url.clone())
+            .with_token(state.config.server.api_token.clone().unwrap_or_default()),
+    );
+
+    user_api
+        .upload_avatar(source_path, data, filename, mime_type)
+        .await
+        .map_err(|e| e.to_string())
 }

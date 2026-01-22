@@ -1,10 +1,9 @@
-use crate::api::{ApiClient, MemoApi, DiaryApi};
-use crate::cache::{CacheStore, OfflineOperation, CachedMemo, CachedDiary};
+use crate::api::{ApiClient, DiaryApi, MemoApi};
+use crate::cache::{CacheStore, CachedDiary, CachedMemo, OfflineOperation};
 use crate::config::AppConfig;
 use crate::error::{AppError, AppResult};
-use crate::models::{MemoWithResources, Diary};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 pub struct SyncManager {
@@ -18,11 +17,7 @@ pub struct SyncManager {
 }
 
 impl SyncManager {
-    pub fn new(
-        config: AppConfig,
-        client: ApiClient,
-        cache: CacheStore,
-    ) -> Self {
+    pub fn new(config: AppConfig, client: ApiClient, cache: CacheStore) -> Self {
         let memo_api = Arc::new(MemoApi::new(client.clone()));
         let diary_api = Arc::new(DiaryApi::new(client.clone()));
 
@@ -66,33 +61,79 @@ impl SyncManager {
 
     async fn sync_create_operation(&self, op: &OfflineOperation) -> AppResult<()> {
         if op.entity_type == "memo" {
-            use crate::api::ApiCreateMemoRequest;
-            let req: ApiCreateMemoRequest = serde_json::from_str(&op.payload)?;
-            let memo = self.memo_api.create(req).await?;
-
-            let updated = CachedMemo::from_memo_with_resources(&memo);
-            self.cache.upsert_memo(&updated).await?;
+            use crate::modules::memo::commands::TauriUpdateMemoRequest;
+            let req: TauriUpdateMemoRequest =
+                serde_json::from_str(&op.payload).map_err(AppError::SerializationError)?;
+            // Only create operations have content
+            if let Some(content) = req.content {
+                let api_req = crate::api::CreateMemoRequest {
+                    content,
+                    tags: req.tags.unwrap_or_default(),
+                    diary_date: None,
+                    resource_filenames: req.resource_filenames,
+                };
+                let memo = self.memo_api.create(api_req).await?;
+                let updated = CachedMemo::from_memo_with_resources(&memo);
+                self.cache.upsert_memo(&updated).await?;
+            }
+        } else if op.entity_type == "diary" {
+            use crate::modules::diary::commands::CreateOrUpdateDiaryRequest;
+            let req: CreateOrUpdateDiaryRequest =
+                serde_json::from_str(&op.payload).map_err(AppError::SerializationError)?;
+            let api_req = crate::api::CreateOrUpdateDiaryRequest {
+                summary: req.summary,
+                mood_key: req.mood_key,
+                mood_score: req.mood_score,
+                cover_image_id: req
+                    .cover_image_id
+                    .as_ref()
+                    .and_then(|id| uuid::Uuid::parse_str(id).ok()),
+            };
+            let _diary = self
+                .diary_api
+                .create_or_update(&op.entity_id, api_req)
+                .await?;
         }
         Ok(())
     }
 
     async fn sync_update_operation(&self, op: &OfflineOperation) -> AppResult<()> {
         if op.entity_type == "memo" {
-            use crate::api::ApiUpdateMemoRequest;
-            let req: ApiUpdateMemoRequest = serde_json::from_str(&op.payload)?;
-            let id = uuid::Uuid::parse_str(&op.entity_id)?;
-            let memo = self.memo_api.update(id, req).await?;
+            use crate::modules::memo::commands::TauriUpdateMemoRequest;
+            let req: TauriUpdateMemoRequest =
+                serde_json::from_str(&op.payload).map_err(AppError::SerializationError)?;
 
-            let updated = CachedMemo::from_memo_with_resources(&memo);
-            self.cache.upsert_memo(&updated).await?;
+            // Convert TauriUpdateMemoRequest to UpdateMemoRequest
+            let api_req = crate::api::UpdateMemoRequest {
+                content: req.content,
+                tags: req.tags,
+                is_archived: None,
+                diary_date: None,
+                resource_filenames: req.resource_filenames,
+            };
+
+            let id = &op.entity_id;
+            let _memo = self.memo_api.update(id, api_req).await?;
+
+            // Update cache - fetch updated memo from server
+            // This is handled by sync_memos, so we skip here
+        } else if op.entity_type == "diary" {
+            use crate::modules::diary::commands::UpdateDiarySummaryRequest;
+            let req: UpdateDiarySummaryRequest =
+                serde_json::from_str(&op.payload).map_err(AppError::SerializationError)?;
+            let api_req = crate::api::UpdateDiarySummaryRequest {
+                summary: req.summary,
+            };
+            self.diary_api
+                .update_summary(&op.entity_id, api_req)
+                .await?;
         }
         Ok(())
     }
 
     async fn sync_delete_operation(&self, op: &OfflineOperation) -> AppResult<()> {
         if op.entity_type == "memo" {
-            let id = uuid::Uuid::parse_str(&op.entity_id)?;
-            self.memo_api.delete(&id).await?;
+            self.memo_api.delete(&op.entity_id).await?;
             self.cache.delete_memo(&op.entity_id).await?;
         }
         Ok(())

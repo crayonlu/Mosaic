@@ -1,16 +1,8 @@
 use crate::api::ResourceApi;
-use crate::error::{AppError, AppResult};
-use crate::models::ResourceType;
-use serde::Serialize;
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UploadedResource {
-    pub filename: String,
-    pub size: i64,
-    pub mime_type: String,
-    pub resource_type: ResourceType,
-}
+use crate::error::AppError;
+use crate::modules::asset::models::UploadedResource;
+use crate::modules::memo::models::ResourceType;
+use tauri::Manager;
 
 #[tauri::command]
 pub async fn upload_files(
@@ -21,8 +13,7 @@ pub async fn upload_files(
     let mut results = Vec::new();
 
     for path in file_paths {
-        let data = tokio::fs::read(&path).await
-            .map_err(|e| e.to_string())?;
+        let data = tokio::fs::read(&path).await.map_err(|e| e.to_string())?;
 
         let filename = std::path::Path::new(&path)
             .file_name()
@@ -30,16 +21,19 @@ pub async fn upload_files(
             .to_string_lossy()
             .to_string();
 
-        let mime_type = infer::get(&path).map(|m| m.mime_type().to_string())
+        let mime_type = infer::get(&data.as_slice())
+            .map(|m| m.mime_type().to_string())
             .unwrap_or_else(|| "application/octet-stream".to_string());
 
         if !mime_type.starts_with("image/") {
-            return Err(AppError::UploadError(
-                "Only image files are supported".to_string()
-            ).to_string());
+            return Err(
+                AppError::UploadError("Only image files are supported".to_string()).to_string(),
+            );
         }
 
-        let response = resource_api.upload(filename.clone(), data, mime_type).await
+        let response = resource_api
+            .upload(filename.clone(), data, mime_type)
+            .await
             .map_err(|e| e.to_string())?;
 
         results.push(UploadedResource {
@@ -59,18 +53,15 @@ pub async fn save_temp_file(
     filename: String,
     data: Vec<u8>,
 ) -> Result<String, String> {
-    let temp_dir = app_handle
-        .path()
-        .temp_dir()
-        .map_err(|e| e.to_string())?;
+    let temp_dir = app_handle.path().temp_dir().map_err(|e| e.to_string())?;
 
     if !temp_dir.exists() {
-        std::fs::create_dir_all(&temp_dir)
-            .map_err(|e| e.to_string())?;
+        std::fs::create_dir_all(&temp_dir).map_err(|e| e.to_string())?;
     }
 
     let file_path = temp_dir.join(&filename);
-    tokio::fs::write(&file_path, data).await
+    tokio::fs::write(&file_path, data)
+        .await
         .map_err(|e| e.to_string())?;
 
     Ok(file_path.to_string_lossy().to_string())
@@ -82,7 +73,9 @@ pub async fn read_image_file(
     filename: String,
 ) -> Result<Vec<u8>, String> {
     let resource_api = ResourceApi::new(api_client.inner().clone());
-    resource_api.download(filename).await
+    resource_api
+        .download(filename)
+        .await
         .map_err(|e| e.to_string())
 }
 
@@ -92,6 +85,8 @@ pub async fn delete_asset_file(
     filename: String,
 ) -> Result<(), String> {
     let resource_api = ResourceApi::new(api_client.inner().clone());
-    resource_api.delete(filename).await
+    resource_api
+        .delete(filename)
+        .await
         .map_err(|e| e.to_string())
 }
