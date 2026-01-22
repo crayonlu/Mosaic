@@ -1,5 +1,5 @@
-use reqwest::{Client, Response};
 use crate::error::{AppError, AppResult};
+use reqwest::Client;
 
 pub struct ApiClient {
     client: Client,
@@ -44,7 +44,7 @@ impl ApiClient {
         }
     }
 
-    pub async fn request<T>(
+    pub async fn request<T: for<'de> serde::Deserialize<'de>>(
         &self,
         method: reqwest::Method,
         path: &str,

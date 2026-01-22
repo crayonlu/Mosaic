@@ -1,23 +1,19 @@
-use crate::api::{DiaryApi, ApiCreateOrUpdateDiaryRequest};
-use crate::cache::{CacheStore, CachedDiary, CachedMemo, OfflineOperation};
-use crate::config::AppConfig;
-use crate::error::{AppError, AppResult};
-use crate::modules::diary::models::{DiaryWithMemos, Diary};
+use crate::api::DiaryApi;
+use crate::cache::{CacheStore, CachedDiary, OfflineOperation};
 use crate::models::PaginatedResponse;
-use crate::sync::SyncManager;
-use tauri::State;
-use std::sync::Arc;
+use crate::modules::diary::models::{Diary, DiaryWithMemos};
+use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use tauri::State;
 
 pub struct DiaryAppState {
-    pub config: Arc<AppConfig>,
     pub diary_api: Arc<DiaryApi>,
     pub cache: Arc<CacheStore>,
-    pub sync_manager: Arc<SyncManager>,
     pub online: Arc<AtomicBool>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateOrUpdateDiaryRequest {
     pub summary: Option<String>,
     pub mood_key: Option<String>,
@@ -25,13 +21,13 @@ pub struct CreateOrUpdateDiaryRequest {
     pub cover_image_id: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateDiarySummaryRequest {
     pub date: String,
     pub summary: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateDiaryMoodRequest {
     pub date: String,
     pub mood_key: String,
@@ -46,7 +42,10 @@ pub async fn get_diary_by_date(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        let diary_with_memos = state.diary_api.get_by_date(&date).await
+        let diary_with_memos = state
+            .diary_api
+            .get_by_date(&date)
+            .await
             .map_err(|e| e.to_string())?;
 
         let cached = CachedDiary {
@@ -54,8 +53,10 @@ pub async fn get_diary_by_date(
             summary: diary_with_memos.diary.summary.clone(),
             mood_key: diary_with_memos.diary.mood_key.clone(),
             mood_score: diary_with_memos.diary.mood_score,
-            cover_image_id: diary_with_memos.diary.cover_image_id.map(|id| id.to_string()),
-            memo_count: diary_with_memos.diary.memo_count,
+            cover_image_id: diary_with_memos
+                .diary
+                .cover_image_id
+                .map(|id| id.to_string()),
             created_at: diary_with_memos.diary.created_at,
             updated_at: diary_with_memos.diary.updated_at,
             synced_at: chrono::Utc::now().timestamp_millis(),
@@ -66,7 +67,10 @@ pub async fn get_diary_by_date(
     } else {
         match state.cache.get_diary(&date).await {
             Ok(Some(cached)) => {
-                let memos = state.cache.list_memos(1000, 0, None).await
+                let memos = state
+                    .cache
+                    .list_memos(1000, 0, None)
+                    .await
                     .map_err(|e| e.to_string())?;
 
                 let filtered_memos: Vec<crate::models::MemoWithResources> = memos
@@ -81,8 +85,10 @@ pub async fn get_diary_by_date(
                         summary: cached.summary,
                         mood_key: cached.mood_key,
                         mood_score: cached.mood_score,
-                        cover_image_id: cached.cover_image_id.as_ref().and_then(|id| uuid::Uuid::parse_str(id).ok()),
-                        memo_count: cached.memo_count,
+                        cover_image_id: cached
+                            .cover_image_id
+                            .as_ref()
+                            .and_then(|id| uuid::Uuid::parse_str(id).ok()),
                         created_at: cached.created_at,
                         updated_at: cached.updated_at,
                     },
@@ -90,6 +96,7 @@ pub async fn get_diary_by_date(
                 })
             }
             Ok(None) => Err("Diary not found in cache".to_string()),
+            Err(e) => Err(format!("Failed to get diary from cache: {}", e)),
         }
     }
 }
@@ -103,17 +110,25 @@ pub async fn create_or_update_diary(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        let api_req = ApiCreateOrUpdateDiaryRequest {
-            summary: req.summary.clone(),
-            mood_key: req.mood_key.clone(),
-            mood_score: req.mood_score,
-            cover_image_id: req.cover_image_id.as_ref().and_then(|id| uuid::Uuid::parse_str(id).ok()),
-        };
-        state.diary_api.create_or_update(&date, api_req).await
+        state
+            .diary_api
+            .create_or_update(
+                &date,
+                crate::api::CreateOrUpdateDiaryRequest {
+                    summary: req.summary.clone(),
+                    mood_key: req.mood_key.clone(),
+                    mood_score: req.mood_score,
+                    cover_image_id: req
+                        .cover_image_id
+                        .as_ref()
+                        .and_then(|id| uuid::Uuid::parse_str(id).ok()),
+                },
+            )
+            .await
             .map_err(|e| e.to_string())?;
 
-        if let Some(diary) = state.cache.get_diary(&date).await {
-            let mut updated = diary;
+        if let Ok(Some(diary)) = state.cache.get_diary(&date).await {
+            let mut updated = diary.clone();
             if let Some(summary) = &req.summary {
                 updated.summary = summary.clone();
             }
@@ -130,39 +145,72 @@ pub async fn create_or_update_diary(
             state.cache.upsert_diary(&updated).await.ok();
         }
     } else {
-        let cached_diary = state.cache.get_diary(&date).await;
-        let exists = cached_diary.is_some();
+        let cached_diary_result = state.cache.get_diary(&date).await;
+        let exists = cached_diary_result
+            .as_ref()
+            .ok()
+            .and_then(|x| x.as_ref())
+            .is_some();
 
         let cached = CachedDiary {
             date: date.clone(),
-            summary: req.summary.unwrap_or_else(|| {
-                cached_diary.as_ref().map(|d| d.summary.clone()).unwrap_or_default()
+            summary: req.summary.clone().unwrap_or_else(|| {
+                cached_diary_result
+                    .as_ref()
+                    .ok()
+                    .and_then(|x| x.as_ref())
+                    .map(|d| d.summary.clone())
+                    .unwrap_or_default()
             }),
-            mood_key: req.mood_key.unwrap_or_else(|| {
-                cached_diary.as_ref().map(|d| d.mood_key.clone()).unwrap_or_else(|| "neutral".to_string())
+            mood_key: req.mood_key.clone().unwrap_or_else(|| {
+                cached_diary_result
+                    .as_ref()
+                    .ok()
+                    .and_then(|x| x.as_ref())
+                    .map(|d| d.mood_key.clone())
+                    .unwrap_or_else(|| "neutral".to_string())
             }),
             mood_score: req.mood_score.unwrap_or_else(|| {
-                cached_diary.as_ref().map(|d| d.mood_score).unwrap_or(50)
+                cached_diary_result
+                    .as_ref()
+                    .ok()
+                    .and_then(|x| x.as_ref())
+                    .map(|d| d.mood_score)
+                    .unwrap_or(50)
             }),
             cover_image_id: req.cover_image_id.clone(),
-            memo_count: cached_diary.as_ref().map(|d| d.memo_count).unwrap_or(0),
-            created_at: cached_diary.as_ref().map(|d| d.created_at).unwrap_or_else(|| chrono::Utc::now().timestamp_millis()),
+            created_at: cached_diary_result
+                .as_ref()
+                .ok()
+                .and_then(|x| x.as_ref())
+                .map(|d| d.created_at)
+                .unwrap_or_else(|| chrono::Utc::now().timestamp_millis()),
             updated_at: chrono::Utc::now().timestamp_millis(),
             synced_at: 0,
         };
-        state.cache.upsert_diary(&cached).await
+        state
+            .cache
+            .upsert_diary(&cached)
+            .await
             .map_err(|e| e.to_string())?;
 
         let op = OfflineOperation {
             id: uuid::Uuid::new_v4().to_string(),
-            operation_type: if exists { "update".to_string() } else { "create".to_string() },
+            operation_type: if exists {
+                "update".to_string()
+            } else {
+                "create".to_string()
+            },
             entity_type: "diary".to_string(),
             entity_id: date.clone(),
             payload: serde_json::to_string(&req).unwrap(),
             created_at: chrono::Utc::now().timestamp_millis(),
             retried_count: 0,
         };
-        state.cache.add_offline_operation(&op).await
+        state
+            .cache
+            .add_offline_operation(&op)
+            .await
             .map_err(|e| e.to_string())?;
     }
     Ok(())
@@ -176,18 +224,24 @@ pub async fn update_diary_summary(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        state.diary_api.update_summary(&req.date, crate::api::UpdateDiarySummaryRequest {
-            summary: req.summary.clone(),
-        }).await
+        state
+            .diary_api
+            .update_summary(
+                &req.date,
+                crate::api::UpdateDiarySummaryRequest {
+                    summary: req.summary.clone(),
+                },
+            )
+            .await
             .map_err(|e| e.to_string())?;
 
-        if let Some(mut diary) = state.cache.get_diary(&req.date).await {
+        if let Ok(Some(mut diary)) = state.cache.get_diary(&req.date).await {
             diary.summary = req.summary.clone();
             diary.updated_at = chrono::Utc::now().timestamp_millis();
             state.cache.upsert_diary(&diary).await.ok();
         }
     } else {
-        if let Some(mut diary) = state.cache.get_diary(&req.date).await {
+        if let Ok(Some(mut diary)) = state.cache.get_diary(&req.date).await {
             diary.summary = req.summary.clone();
             diary.updated_at = chrono::Utc::now().timestamp_millis();
 
@@ -216,20 +270,26 @@ pub async fn update_diary_mood(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        state.diary_api.update_mood(&req.date, crate::api::UpdateDiaryMoodRequest {
-            mood_key: req.mood_key.clone(),
-            mood_score: req.mood_score,
-        }).await
+        state
+            .diary_api
+            .update_mood(
+                &req.date,
+                crate::api::UpdateDiaryMoodRequest {
+                    mood_key: req.mood_key.clone(),
+                    mood_score: req.mood_score,
+                },
+            )
+            .await
             .map_err(|e| e.to_string())?;
 
-        if let Some(mut diary) = state.cache.get_diary(&req.date).await {
+        if let Ok(Some(mut diary)) = state.cache.get_diary(&req.date).await {
             diary.mood_key = req.mood_key.clone();
             diary.mood_score = req.mood_score;
             diary.updated_at = chrono::Utc::now().timestamp_millis();
             state.cache.upsert_diary(&diary).await.ok();
         }
     } else {
-        if let Some(mut diary) = state.cache.get_diary(&req.date).await {
+        if let Ok(Some(mut diary)) = state.cache.get_diary(&req.date).await {
             diary.mood_key = req.mood_key.clone();
             diary.mood_score = req.mood_score;
             diary.updated_at = chrono::Utc::now().timestamp_millis();
@@ -262,15 +322,19 @@ pub async fn list_diaries(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        state.diary_api.list(
-            page.unwrap_or(1),
-            page_size.unwrap_or(10),
-            start_date.as_deref(),
-            end_date.as_deref(),
-        ).await
+        state
+            .diary_api
+            .list(
+                page.unwrap_or(1),
+                page_size.unwrap_or(10),
+                start_date.as_deref(),
+                end_date.as_deref(),
+            )
+            .await
             .map_err(|e| e.to_string())
     } else {
-        let cached = state.cache
+        let cached = state
+            .cache
             .list_diaries(
                 page_size.unwrap_or(10) as i64,
                 ((page.unwrap_or(1) - 1) * page_size.unwrap_or(10)) as i64,
@@ -285,16 +349,18 @@ pub async fn list_diaries(
                 summary: c.summary.clone(),
                 mood_key: c.mood_key.clone(),
                 mood_score: c.mood_score,
-                cover_image_id: c.cover_image_id.as_ref().and_then(|id| uuid::Uuid::parse_str(id).ok()),
-                memo_count: c.memo_count,
+                cover_image_id: c
+                    .cover_image_id
+                    .as_ref()
+                    .and_then(|id| uuid::Uuid::parse_str(id).ok()),
                 created_at: c.created_at,
                 updated_at: c.updated_at,
             })
             .collect();
 
         Ok(PaginatedResponse {
-            items,
             total: items.len() as i64,
+            items,
             page: page.unwrap_or(1),
             page_size: page_size.unwrap_or(10),
             total_pages: 1,

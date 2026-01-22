@@ -1,6 +1,5 @@
 use super::client::ApiClient;
-use crate::error::AppResult;
-use uuid::Uuid;
+use crate::error::{AppError, AppResult};
 
 pub struct ResourceApi {
     client: ApiClient,
@@ -19,17 +18,18 @@ impl ResourceApi {
     ) -> AppResult<serde_json::Value> {
         if !mime_type.starts_with("image/") {
             return Err(crate::error::AppError::UploadError(
-                "Only image uploads are supported".to_string()
+                "Only image uploads are supported".to_string(),
             ));
         }
 
         let url = format!("{}/api/resources/upload", self.client.base_url());
 
-        let form = reqwest::multipart::Form::new()
-            .part("file", reqwest::multipart::Part::bytes(data)
+        let form = reqwest::multipart::Form::new().part(
+            "file",
+            reqwest::multipart::Part::bytes(data)
                 .file_name(filename)
                 .mime_str(&mime_type)?,
-            );
+        );
 
         let mut request = self.client.inner().post(&url);
 
@@ -37,15 +37,13 @@ impl ResourceApi {
             request = request.header("Authorization", format!("Bearer {}", token));
         }
 
-        let response = request
-            .multipart(form)
-            .send()
-            .await?;
+        let response = request.multipart(form).send().await?;
 
         if !response.status().is_success() {
+            let status = response.status();
             let error_text = response.text().await.unwrap_or_default();
             return Err(crate::error::AppError::ApiError {
-                status: response.status().as_u16(),
+                status: status.as_u16(),
                 message: error_text,
             });
         }

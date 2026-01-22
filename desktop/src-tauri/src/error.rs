@@ -29,6 +29,9 @@ pub enum AppError {
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 
+    #[error("UUID error: {0}")]
+    UuidError(#[from] uuid::Error),
+
     #[error("Sync error: {0}")]
     SyncError(String),
 

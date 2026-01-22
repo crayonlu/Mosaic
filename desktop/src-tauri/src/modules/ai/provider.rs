@@ -1,14 +1,14 @@
+use crate::config::AppConfig;
 use crate::error::AppResult;
 use crate::modules::ai::models::{
     CompleteTextRequest, RewriteTextRequest, SuggestTagsRequest, SummarizeTextRequest,
 };
 use crate::modules::ai::prompts::PromptBuilder;
 use crate::modules::settings::models::AIConfig;
-use crate::config::AppConfig;
 
 pub async fn load_ai_config() -> AppResult<Option<AIConfig>> {
     let config = AppConfig::load().map_err(|e| {
-        crate::error::AppError::Unknown(format!("Failed to load config: {}", e))
+        crate::error::AppError::ConfigError(format!("Failed to load config: {}", e))
     })?;
 
     let provider = config.server.ai_provider;
@@ -22,7 +22,7 @@ pub async fn load_ai_config() -> AppResult<Option<AIConfig>> {
     let model = config.server.ai_model;
     let temperature = config.server.ai_temperature;
     let max_tokens = config.server.ai_max_tokens;
-    let timeout = config.server.ai_timeout;
+    let timeout = config.server.ai_timeout.map(|t| t as i32);
 
     Ok(Some(AIConfig {
         provider,
@@ -43,7 +43,7 @@ pub async fn create_provider() -> AppResult<Provider> {
     match config.provider.to_lowercase().as_str() {
         "openai" => Ok(Provider::OpenAI(OpenAIProvider::new(&config))),
         "anthropic" => Ok(Provider::Anthropic(AnthropicProvider::new(&config))),
-        _ => Err(crate::error::AppError::Unknown(format!(
+        _ => Err(crate::error::AppError::ConfigError(format!(
             "not supported provider: {}",
             config.provider
         ))),
@@ -141,21 +141,21 @@ impl OpenAIProvider {
             .timeout(std::time::Duration::from_secs(self.timeout))
             .send()
             .await
-            .map_err(|e| crate::error::AppError::Unknown(format!("Api error: {}", e)))?;
+            .map_err(crate::error::AppError::NetworkError)?;
 
         if !response.status().is_success() {
             let status = response.status();
             let error_text = response.text().await.unwrap_or_default();
-            return Err(crate::error::AppError::Unknown(format!(
-                "Api error: {} - {}",
-                status, error_text
-            )));
+            return Err(crate::error::AppError::ApiError {
+                status: status.as_u16(),
+                message: error_text,
+            });
         }
 
         let json: serde_json::Value = response
             .json()
             .await
-            .map_err(|e| crate::error::AppError::Unknown(format!("Json parsing error: {}", e)))?;
+            .map_err(|e| crate::error::AppError::Internal(format!("Json parsing error: {}", e)))?;
 
         let generated_text = json["choices"][0]["message"]["content"]
             .as_str()
@@ -238,24 +238,24 @@ impl AnthropicProvider {
             .timeout(std::time::Duration::from_secs(self.timeout))
             .send()
             .await
-            .map_err(|e| crate::error::AppError::Unknown(format!("Api error: {}", e)))?;
+            .map_err(crate::error::AppError::NetworkError)?;
 
         if !response.status().is_success() {
             let status = response.status();
             let error_text = response.text().await.unwrap_or_default();
-            return Err(crate::error::AppError::Unknown(format!(
-                "Api error: {} - {}",
-                status, error_text
-            )));
+            return Err(crate::error::AppError::ApiError {
+                status: status.as_u16(),
+                message: error_text,
+            });
         }
 
         let json: serde_json::Value = response
             .json()
             .await
-            .map_err(|e| crate::error::AppError::Unknown(format!("Json parsing error: {}", e)))?;
+            .map_err(|e| crate::error::AppError::Internal(format!("Json parsing error: {}", e)))?;
 
         let generated_text = json["content"][0]["text"].as_str().ok_or_else(|| {
-            crate::error::AppError::Unknown(
+            crate::error::AppError::NotFound(
                 "Json parsing error: cannot find content[0].text".to_string(),
             )
         })?;

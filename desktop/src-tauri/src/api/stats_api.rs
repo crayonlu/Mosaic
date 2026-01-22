@@ -1,6 +1,6 @@
 use super::client::ApiClient;
 use crate::error::AppResult;
-use crate::models::*;
+use crate::models::{HeatMapData, SummaryData, TimelineData, TrendsData};
 
 pub struct StatsApi {
     client: ApiClient,
@@ -15,7 +15,10 @@ impl StatsApi {
         self.client
             .request::<HeatMapData>(
                 reqwest::Method::GET,
-                &format!("/api/stats/heatmap?start_date={}&end_date={}", start_date, end_date),
+                &format!(
+                    "/api/stats/heatmap?start_date={}&end_date={}",
+                    start_date, end_date
+                ),
                 None,
             )
             .await
@@ -25,7 +28,10 @@ impl StatsApi {
         self.client
             .request::<TimelineData>(
                 reqwest::Method::GET,
-                &format!("/api/stats/timeline?start_date={}&end_date={}", start_date, end_date),
+                &format!(
+                    "/api/stats/timeline?start_date={}&end_date={}",
+                    start_date, end_date
+                ),
                 None,
             )
             .await
@@ -35,7 +41,10 @@ impl StatsApi {
         self.client
             .request::<TrendsData>(
                 reqwest::Method::GET,
-                &format!("/api/stats/trends?start_date={}&end_date={}", start_date, end_date),
+                &format!(
+                    "/api/stats/trends?start_date={}&end_date={}",
+                    start_date, end_date
+                ),
                 None,
             )
             .await

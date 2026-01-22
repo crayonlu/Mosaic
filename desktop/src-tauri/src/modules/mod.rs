@@ -1,5 +1,6 @@
 pub mod ai;
 pub mod asset;
+pub mod common;
 pub mod diary;
 pub mod memo;
 pub mod settings;

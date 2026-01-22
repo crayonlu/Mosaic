@@ -1,4 +1,5 @@
-pub const MIGRATION_SQL: &str = r#"
+-- Create cache tables for offline storage
+
 CREATE TABLE IF NOT EXISTS cached_memos (
     id TEXT PRIMARY KEY NOT NULL,
     content TEXT NOT NULL DEFAULT '',
@@ -55,4 +56,3 @@ CREATE TABLE IF NOT EXISTS cached_resources (
 
 CREATE INDEX IF NOT EXISTS idx_cached_resources_memo ON cached_resources(memo_id);
 CREATE INDEX IF NOT EXISTS idx_cached_resources_synced ON cached_resources(synced_at DESC);
-"#;

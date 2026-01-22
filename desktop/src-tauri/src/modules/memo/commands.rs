@@ -1,18 +1,22 @@
-use crate::api::{MemoApi, ApiCreateMemoRequest, ApiUpdateMemoRequest};
+use crate::api::{CreateMemoRequest, MemoApi, UpdateMemoRequest};
 use crate::cache::{CacheStore, CachedMemo, OfflineOperation};
-use crate::config::AppConfig;
-use crate::error::{AppError, AppResult};
 use crate::models::{MemoWithResources, PaginatedResponse};
-use crate::sync::SyncManager;
-use tauri::State;
-use std::sync::Arc;
+use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use tauri::State;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TauriUpdateMemoRequest {
+    pub id: String,
+    pub content: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub resource_filenames: Option<Vec<String>>,
+}
 
 pub struct AppState {
-    pub config: Arc<AppConfig>,
     pub memo_api: Arc<MemoApi>,
     pub cache: Arc<CacheStore>,
-    pub sync_manager: Arc<SyncManager>,
     pub online: Arc<AtomicBool>,
 }
 
@@ -24,7 +28,7 @@ pub async fn create_memo(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        match state.memo_api.create(convert_to_api_request(&req)).await {
+        match state.memo_api.create(req).await {
             Ok(memo) => {
                 let cached = CachedMemo::from_memo_with_resources(&memo);
                 let _ = state.cache.upsert_memo(&cached).await;
@@ -38,7 +42,7 @@ pub async fn create_memo(
         let cached = CachedMemo {
             id: temp_id.clone(),
             content: req.content.clone(),
-            tags: serde_json::to_string(&req.tags.unwrap_or_default()).unwrap_or_default(),
+            tags: serde_json::to_string(&req.tags).unwrap_or_else(|_| "[]".to_string()),
             is_archived: false,
             is_deleted: false,
             diary_date: None,
@@ -46,7 +50,10 @@ pub async fn create_memo(
             updated_at: chrono::Utc::now().timestamp_millis(),
             synced_at: 0,
         };
-        state.cache.upsert_memo(&cached).await
+        state
+            .cache
+            .upsert_memo(&cached)
+            .await
             .map_err(|e| e.to_string())?;
 
         let op = OfflineOperation {
@@ -58,7 +65,10 @@ pub async fn create_memo(
             created_at: chrono::Utc::now().timestamp_millis(),
             retried_count: 0,
         };
-        state.cache.add_offline_operation(&op).await
+        state
+            .cache
+            .add_offline_operation(&op)
+            .await
             .map_err(|e| e.to_string())?;
 
         Ok(temp_id)
@@ -73,10 +83,15 @@ pub async fn get_memo(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        state.memo_api.get(&uuid::Uuid::parse_str(&memo_id).map_err(|e| e.to_string())?).await
+        let memo_uuid = uuid::Uuid::parse_str(&memo_id).map_err(|e| e.to_string())?;
+        state
+            .memo_api
+            .get(&memo_uuid.to_string())
+            .await
             .map_err(|e| e.to_string())
     } else {
-        state.cache
+        state
+            .cache
             .get_memo(&memo_id)
             .await
             .map_err(|e| e.to_string())?
@@ -95,16 +110,14 @@ pub async fn list_memos(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        state.memo_api
-            .list(
-                page.unwrap_or(1),
-                page_size.unwrap_or(20),
-                is_archived,
-            )
+        state
+            .memo_api
+            .list(page.unwrap_or(1), page_size.unwrap_or(20), is_archived)
             .await
             .map_err(|e| e.to_string())
     } else {
-        let cached = state.cache
+        let cached = state
+            .cache
             .list_memos(
                 page_size.unwrap_or(20) as i64,
                 ((page.unwrap_or(1) - 1) * page_size.unwrap_or(20)) as i64,
@@ -119,8 +132,8 @@ pub async fn list_memos(
             .collect();
 
         Ok(PaginatedResponse {
-            items,
             total: items.len() as i64,
+            items,
             page: page.unwrap_or(1),
             page_size: page_size.unwrap_or(20),
             total_pages: 1,
@@ -136,10 +149,16 @@ pub async fn get_memos_by_date(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        state.memo_api.search(&date).await
+        state
+            .memo_api
+            .search(&date)
+            .await
             .map_err(|e| e.to_string())
     } else {
-        let cached = state.cache.list_memos(1000, 0, None).await
+        let cached = state
+            .cache
+            .list_memos(1000, 0, None)
+            .await
             .map_err(|e| e.to_string())?;
 
         let items: Vec<MemoWithResources> = cached
@@ -155,14 +174,22 @@ pub async fn get_memos_by_date(
 #[tauri::command]
 pub async fn update_memo(
     state: State<'_, AppState>,
-    req: UpdateMemoRequest,
+    req: TauriUpdateMemoRequest,
 ) -> Result<(), String> {
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        let id = uuid::Uuid::parse_str(&req.id).map_err(|e| e.to_string())?;
-        let api_req = convert_to_update_api_request(&req);
-        state.memo_api.update(id, api_req).await
+        let api_req = UpdateMemoRequest {
+            content: req.content.clone(),
+            tags: req.tags.clone(),
+            resource_filenames: req.resource_filenames,
+            is_archived: None,
+            diary_date: None,
+        };
+        state
+            .memo_api
+            .update(&req.id, api_req)
+            .await
             .map_err(|e| e.to_string())?;
 
         if let Ok(Some(memo)) = state.cache.get_memo(&req.id).await {
@@ -186,7 +213,10 @@ pub async fn update_memo(
             created_at: chrono::Utc::now().timestamp_millis(),
             retried_count: 0,
         };
-        state.cache.add_offline_operation(&op).await
+        state
+            .cache
+            .add_offline_operation(&op)
+            .await
             .map_err(|e| e.to_string())?;
 
         if let Ok(Some(mut memo)) = state.cache.get_memo(&req.id).await {
@@ -204,17 +234,20 @@ pub async fn update_memo(
 }
 
 #[tauri::command]
-pub async fn delete_memo(
-    state: State<'_, AppState>,
-    memo_id: String,
-) -> Result<(), String> {
+pub async fn delete_memo(state: State<'_, AppState>, memo_id: String) -> Result<(), String> {
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
         let id = uuid::Uuid::parse_str(&memo_id).map_err(|e| e.to_string())?;
-        state.memo_api.delete(id).await
+        state
+            .memo_api
+            .delete(&id.to_string())
+            .await
             .map_err(|e| e.to_string())?;
-        state.cache.delete_memo(&memo_id).await
+        state
+            .cache
+            .delete_memo(&memo_id)
+            .await
             .map_err(|e| e.to_string())?;
     } else {
         let op = OfflineOperation {
@@ -226,7 +259,10 @@ pub async fn delete_memo(
             created_at: chrono::Utc::now().timestamp_millis(),
             retried_count: 0,
         };
-        state.cache.add_offline_operation(&op).await
+        state
+            .cache
+            .add_offline_operation(&op)
+            .await
             .map_err(|e| e.to_string())?;
 
         if let Ok(Some(mut memo)) = state.cache.get_memo(&memo_id).await {
@@ -238,15 +274,15 @@ pub async fn delete_memo(
 }
 
 #[tauri::command]
-pub async fn archive_memo(
-    state: State<'_, AppState>,
-    memo_id: String,
-) -> Result<(), String> {
+pub async fn archive_memo(state: State<'_, AppState>, memo_id: String) -> Result<(), String> {
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
         let id = uuid::Uuid::parse_str(&memo_id).map_err(|e| e.to_string())?;
-        state.memo_api.archive(id).await
+        state
+            .memo_api
+            .archive(&id.to_string())
+            .await
             .map_err(|e| e.to_string())?;
 
         if let Ok(Some(mut memo)) = state.cache.get_memo(&memo_id).await {
@@ -259,16 +295,20 @@ pub async fn archive_memo(
             operation_type: "update".to_string(),
             entity_type: "memo".to_string(),
             entity_id: memo_id.clone(),
-            payload: serde_json::to_string(&UpdateMemoRequest {
+            payload: serde_json::to_string(&TauriUpdateMemoRequest {
                 id: memo_id.clone(),
                 content: None,
                 tags: None,
                 resource_filenames: None,
-            }).unwrap(),
+            })
+            .unwrap(),
             created_at: chrono::Utc::now().timestamp_millis(),
             retried_count: 0,
         };
-        state.cache.add_offline_operation(&op).await
+        state
+            .cache
+            .add_offline_operation(&op)
+            .await
             .map_err(|e| e.to_string())?;
 
         if let Ok(Some(mut memo)) = state.cache.get_memo(&memo_id).await {
@@ -280,15 +320,15 @@ pub async fn archive_memo(
 }
 
 #[tauri::command]
-pub async fn unarchive_memo(
-    state: State<'_, AppState>,
-    memo_id: String,
-) -> Result<(), String> {
+pub async fn unarchive_memo(state: State<'_, AppState>, memo_id: String) -> Result<(), String> {
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
         let id = uuid::Uuid::parse_str(&memo_id).map_err(|e| e.to_string())?;
-        state.memo_api.unarchive(id).await
+        state
+            .memo_api
+            .unarchive(&id.to_string())
+            .await
             .map_err(|e| e.to_string())?;
 
         if let Ok(Some(mut memo)) = state.cache.get_memo(&memo_id).await {
@@ -301,16 +341,20 @@ pub async fn unarchive_memo(
             operation_type: "update".to_string(),
             entity_type: "memo".to_string(),
             entity_id: memo_id.clone(),
-            payload: serde_json::to_string(&UpdateMemoRequest {
+            payload: serde_json::to_string(&TauriUpdateMemoRequest {
                 id: memo_id.clone(),
                 content: None,
                 tags: None,
                 resource_filenames: None,
-            }).unwrap(),
+            })
+            .unwrap(),
             created_at: chrono::Utc::now().timestamp_millis(),
             retried_count: 0,
         };
-        state.cache.add_offline_operation(&op).await
+        state
+            .cache
+            .add_offline_operation(&op)
+            .await
             .map_err(|e| e.to_string())?;
 
         if let Ok(Some(mut memo)) = state.cache.get_memo(&memo_id).await {
@@ -329,10 +373,16 @@ pub async fn search_memos(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        state.memo_api.search(&query).await
+        state
+            .memo_api
+            .search(&query)
+            .await
             .map_err(|e| e.to_string())
     } else {
-        let cached = state.cache.list_memos(1000, 0, None).await
+        let cached = state
+            .cache
+            .list_memos(1000, 0, None)
+            .await
             .map_err(|e| e.to_string())?;
 
         let items: Vec<MemoWithResources> = cached
@@ -345,44 +395,5 @@ pub async fn search_memos(
             .collect();
 
         Ok(items)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct CreateMemoRequest {
-    pub content: String,
-    pub tags: Option<Vec<String>>,
-    pub resource_filenames: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct UpdateMemoRequest {
-    pub id: String,
-    pub content: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub resource_filenames: Option<Vec<String>>,
-}
-
-fn convert_to_api_request(req: &CreateMemoRequest) -> ApiCreateMemoRequest {
-    ApiCreateMemoRequest {
-        content: req.content.clone(),
-        tags: req.tags.clone(),
-        diary_date: None,
-        resource_filenames: if req.resource_filenames.is_empty() {
-            None
-        } else {
-            Some(req.resource_filenames.clone())
-        },
-    }
-}
-
-fn convert_to_update_api_request(req: &UpdateMemoRequest) -> ApiUpdateMemoRequest {
-    ApiUpdateMemoRequest {
-        content: req.content.clone(),
-        tags: req.tags.clone(),
-        is_archived: None,
-        diary_date: None,
-        resource_filenames: req.resource_filenames.as_ref()
-            .and_then(|f| if f.is_empty() { None } else { Some(f.clone()) }),
     }
 }
