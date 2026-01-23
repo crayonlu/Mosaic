@@ -9,6 +9,8 @@ pub struct ServerConfig {
     pub password: String,
     #[serde(skip_serializing)]
     pub api_token: Option<String>,
+    #[serde(skip_serializing)]
+    pub refresh_token: Option<String>,
     // AI Configuration
     pub ai_provider: String,
     pub ai_base_url: String,
@@ -69,6 +71,7 @@ impl Default for ServerConfig {
             username: String::new(),
             password: String::new(),
             api_token: None,
+            refresh_token: None,
             ai_provider: String::new(),
             ai_base_url: String::new(),
             ai_api_key: String::new(),

@@ -9,8 +9,8 @@ mod sync;
 use api::*;
 use cache::*;
 use config::commands::{
-    get_server_config, get_sync_settings, login, logout, set_server_config, set_sync_settings,
-    test_server_connection,
+    change_password, get_server_config, get_sync_settings, login, logout, refresh_token,
+    set_server_config, set_sync_settings, test_server_connection,
 };
 use config::*;
 use modules::ai::commands::{complete_text, rewrite_text, suggest_tags, summarize_text};
@@ -90,12 +90,15 @@ pub fn run() {
             test_server_connection,
             login,
             logout,
+            refresh_token,
+            change_password,
             get_sync_settings,
             set_sync_settings,
             create_memo,
             get_memo,
             list_memos,
             get_memos_by_date,
+            get_memos_by_diary_date,
             update_memo,
             delete_memo,
             archive_memo,
@@ -118,6 +121,7 @@ pub fn run() {
             save_temp_file,
             read_image_file,
             delete_asset_file,
+            get_resource,
             get_setting,
             get_settings,
             set_setting,
@@ -151,13 +155,44 @@ pub fn run() {
                 };
 
                 if !config.server.is_configured() {
-                    eprintln!("No server configuration found");
-                    let config = config;
-                    let _: Result<(), Box<dyn std::error::Error>> = (|| {
-                        app.manage(config);
-                        Ok(())
-                    })();
-                    return Err("Server not configured".into());
+                    eprintln!("No server configuration found - starting in setup mode");
+                    // In setup mode, only manage config, don't initialize other services
+                    app.manage(config);
+
+                    // Still create tray icon even in setup mode
+                    let show_menu_item =
+                        MenuItem::with_id(&app_handle, "show", "显示窗口", true, None::<&str>)?;
+                    let quit_menu_item =
+                        MenuItem::with_id(&app_handle, "quit", "退出", true, None::<&str>)?;
+                    let menu = Menu::with_items(&app_handle, &[&show_menu_item, &quit_menu_item])?;
+
+                    let _tray = TrayIconBuilder::new()
+                        .icon(app_handle.default_window_icon().unwrap().clone())
+                        .menu(&menu)
+                        .on_menu_event(|app, event| match event.id.as_ref() {
+                            "show" => {
+                                if let Some(window) = app.get_webview_window("main") {
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                }
+                            }
+                            "quit" => {
+                                app.exit(0);
+                            }
+                            _ => {}
+                        })
+                        .on_tray_icon_event(|tray, event| {
+                            if let TrayIconEvent::Click { .. } = event {
+                                let app = tray.app_handle();
+                                if let Some(window) = app.get_webview_window("main") {
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                }
+                            }
+                        })
+                        .build(app)?;
+
+                    return Ok::<(), Box<dyn std::error::Error>>(());
                 }
 
                 let client = ApiClient::new(config.server.url.clone())

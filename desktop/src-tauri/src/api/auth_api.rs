@@ -20,6 +20,13 @@ pub struct RefreshTokenRequest {
     pub refresh_token: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangePasswordRequest {
+    pub old_password: String,
+    pub new_password: String,
+}
+
 pub struct AuthApi {
     client: ApiClient,
 }
@@ -51,6 +58,19 @@ impl AuthApi {
                 "/api/auth/refresh",
                 Some(serde_json::to_value(RefreshTokenRequest {
                     refresh_token: refresh_token.to_string(),
+                })?),
+            )
+            .await
+    }
+
+    pub async fn change_password(&self, old_password: &str, new_password: &str) -> AppResult<()> {
+        self.client
+            .request::<()>(
+                reqwest::Method::POST,
+                "/api/auth/change-password",
+                Some(serde_json::to_value(ChangePasswordRequest {
+                    old_password: old_password.to_string(),
+                    new_password: new_password.to_string(),
                 })?),
             )
             .await

@@ -45,6 +45,14 @@ pub struct UpdateDiaryRequest {
     pub cover_image_id: Option<Option<Uuid>>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct DiaryListQuery {
+    pub page: Option<u32>,
+    pub page_size: Option<u32>,
+    pub start_date: Option<NaiveDate>,
+    pub end_date: Option<NaiveDate>,
+}
+
 impl From<Diary> for DiaryResponse {
     fn from(diary: Diary) -> Self {
         DiaryResponse {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { assetCommands } from './callRust'
 
 const avatarUrlCache = new Map<string, string>()
@@ -20,7 +20,7 @@ export async function getAvatarUrl(
   }
 
   try {
-    const fileData = await assetCommands.readAudioFile(avatarPath)
+    const fileData = await assetCommands.readImageFile(avatarPath)
     const uint8Array = new Uint8Array(fileData)
 
     const ext = avatarPath.split('.').pop()?.toLowerCase()

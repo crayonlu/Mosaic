@@ -1,18 +1,18 @@
-import { DiaryList } from '@/components/DiaryList';
-import { MemoList } from '@/components/MemoList';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { apiClient } from '../lib/api-client';
-import type { User } from '../types/api';
+import { DiaryList } from '@/components/DiaryList'
+import { MemoList } from '@/components/MemoList'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
+import { apiClient } from '../lib/api-client'
+import type { User } from '../types/api'
 
 interface DashboardProps {
-  user: User | null;
-  onLogout: () => void;
+  user: User | null
+  onLogout: () => void
 }
 
 export function Dashboard({ user, onLogout }: DashboardProps) {
@@ -20,30 +20,30 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     memoCount: 0,
     diaryCount: 0,
     resourceCount: 0,
-  });
-  
+  })
+
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const memos = await apiClient.getMemos({ page: 1, page_size: 1000 });
-        const diaries = await apiClient.getDiaries({ page: 1, page_size: 1000 });
-  
+        const memos = await apiClient.getMemos({ page: 1, page_size: 1000 })
+        const diaries = await apiClient.getDiaries({ page: 1, page_size: 1000 })
+
         setStats({
           memoCount: memos.total,
           diaryCount: diaries.total,
           resourceCount: 0,
-        });
+        })
       } catch (error) {
-        console.error('Failed to load stats', error);
+        console.error('Failed to load stats', error)
       }
-    };
-    loadStats();
-  }, []);
+    }
+    loadStats()
+  }, [])
 
   const handleLogout = () => {
-    onLogout();
-    toast.success('已退出登录');
-  };
+    onLogout()
+    toast.success('已退出登录')
+  }
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
@@ -52,9 +52,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-semibold">Mosaic Dashboard</h1>
             <Separator orientation="vertical" className="h-6" />
-            <span className="text-sm text-stone-600 dark:text-stone-400">
-              {user?.username}
-            </span>
+            <span className="text-sm text-stone-600 dark:text-stone-400">{user?.username}</span>
           </div>
           <div className="flex items-center gap-4">
             <Avatar>
@@ -112,5 +110,5 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         </Tabs>
       </main>
     </div>
-  );
+  )
 }

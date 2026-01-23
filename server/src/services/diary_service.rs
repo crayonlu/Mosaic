@@ -1,5 +1,7 @@
 use crate::error::AppError;
-use crate::models::{CreateDiaryRequest, Diary, DiaryResponse, UpdateDiaryRequest};
+use crate::models::{
+    CreateDiaryRequest, Diary, DiaryResponse, MemoResponse, PaginatedResponse, UpdateDiaryRequest,
+};
 use chrono::{NaiveDate, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -48,6 +50,7 @@ impl DiaryService {
         Ok(DiaryResponse::from(diary))
     }
 
+    #[allow(dead_code)]
     pub async fn get_diary(
         &self,
         user_id: &str,
@@ -67,6 +70,7 @@ impl DiaryService {
         Ok(DiaryResponse::from(diary))
     }
 
+    #[allow(dead_code)]
     pub async fn list_diaries(&self, user_id: &str) -> Result<Vec<DiaryResponse>, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let diaries = sqlx::query_as::<_, Diary>(
@@ -78,6 +82,111 @@ impl DiaryService {
         .await?;
 
         Ok(diaries.into_iter().map(DiaryResponse::from).collect())
+    }
+
+    pub async fn list_diaries_paginated(
+        &self,
+        user_id: &str,
+        page: u32,
+        page_size: u32,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+    ) -> Result<PaginatedResponse<DiaryResponse>, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+        let offset = (page - 1) * page_size;
+
+        let diaries = sqlx::query_as::<_, Diary>(
+            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at
+             FROM diaries
+             WHERE user_id = $1
+             AND ($2::date IS NULL OR date >= $2)
+             AND ($3::date IS NULL OR date <= $3)
+             ORDER BY date DESC
+             LIMIT $4 OFFSET $5",
+        )
+        .bind(user_uuid)
+        .bind(start_date)
+        .bind(end_date)
+        .bind(page_size as i64)
+        .bind(offset as i64)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let total = self.count_diaries(user_id, start_date, end_date).await?;
+        let total_pages = ((total as f64) / (page_size as f64)).ceil() as u32;
+
+        Ok(PaginatedResponse {
+            items: diaries.into_iter().map(DiaryResponse::from).collect(),
+            total,
+            page,
+            page_size,
+            total_pages,
+        })
+    }
+
+    pub async fn get_diary_with_memos(
+        &self,
+        user_id: &str,
+        date: NaiveDate,
+    ) -> Result<crate::models::DiaryWithMemosResponse, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+
+        let diary = sqlx::query_as::<_, Diary>(
+            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at
+             FROM diaries WHERE date = $1 AND user_id = $2",
+        )
+        .bind(date)
+        .bind(user_uuid)
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or(AppError::DiaryNotFound)?;
+
+        let memos = sqlx::query_as::<_, crate::models::Memo>(
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+             FROM memos WHERE user_id = $1 AND diary_date = $2 AND is_deleted = false
+             ORDER BY created_at ASC",
+        )
+        .bind(user_uuid)
+        .bind(date)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let memo_responses: Vec<MemoResponse> = memos.into_iter().map(MemoResponse::from).collect();
+
+        Ok(crate::models::DiaryWithMemosResponse {
+            date: diary.date,
+            summary: diary.summary,
+            mood_key: diary.mood_key,
+            mood_score: diary.mood_score,
+            cover_image_id: diary.cover_image_id,
+            created_at: diary.created_at,
+            updated_at: diary.updated_at,
+            memos: memo_responses,
+        })
+    }
+
+    pub async fn count_diaries(
+        &self,
+        user_id: &str,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+    ) -> Result<i64, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+
+        let row = sqlx::query_as::<_, (i64,)>(
+            "SELECT COUNT(*) as total
+             FROM diaries
+             WHERE user_id = $1
+             AND ($2::date IS NULL OR date >= $2)
+             AND ($3::date IS NULL OR date <= $3)",
+        )
+        .bind(user_uuid)
+        .bind(start_date)
+        .bind(end_date)
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(row.0)
     }
 
     pub async fn update_diary(

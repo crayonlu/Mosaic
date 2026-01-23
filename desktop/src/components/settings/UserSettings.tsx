@@ -16,7 +16,7 @@ export function UserSettings() {
   const [username, setUsername] = useState('')
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const avatarUrl = useAvatarUrl(user?.avatarPath, user?.avatarUrl)
+  const avatarUrl = useAvatarUrl(user?.avatarUrl)
 
   useEffect(() => {
     if (user) {

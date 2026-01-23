@@ -18,14 +18,14 @@ pub struct CachedMemo {
 impl CachedMemo {
     pub fn from_memo_with_resources(memo: &crate::models::MemoWithResources) -> Self {
         Self {
-            id: memo.memo.id.to_string(),
-            content: memo.memo.content.clone(),
-            tags: serde_json::to_string(&memo.memo.tags).unwrap_or_default(),
-            is_archived: memo.memo.is_archived,
+            id: memo.id.to_string(),
+            content: memo.content.clone(),
+            tags: serde_json::to_string(&memo.tags).unwrap_or_default(),
+            is_archived: memo.is_archived,
             is_deleted: false,
-            diary_date: memo.memo.diary_date.clone(),
-            created_at: memo.memo.created_at,
-            updated_at: memo.memo.updated_at,
+            diary_date: memo.diary_date.clone(),
+            created_at: memo.created_at,
+            updated_at: memo.updated_at,
             synced_at: chrono::Utc::now().timestamp_millis(),
         }
     }
@@ -34,15 +34,13 @@ impl CachedMemo {
         let tags: Vec<String> = serde_json::from_str(&self.tags).unwrap_or_default();
 
         crate::models::MemoWithResources {
-            memo: crate::models::Memo {
-                id: Uuid::parse_str(&self.id).unwrap_or_else(|_| Uuid::new_v4()),
-                content: self.content.clone(),
-                tags,
-                is_archived: self.is_archived,
-                diary_date: self.diary_date.clone(),
-                created_at: self.created_at,
-                updated_at: self.updated_at,
-            },
+            id: Uuid::parse_str(&self.id).unwrap_or_else(|_| Uuid::new_v4()),
+            content: self.content.clone(),
+            tags,
+            is_archived: self.is_archived,
+            diary_date: self.diary_date.clone(),
+            created_at: self.created_at,
+            updated_at: self.updated_at,
             resources: Vec::new(),
         }
     }

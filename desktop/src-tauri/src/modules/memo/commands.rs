@@ -11,7 +11,7 @@ pub struct TauriUpdateMemoRequest {
     pub id: String,
     pub content: Option<String>,
     pub tags: Option<Vec<String>>,
-    pub resource_filenames: Option<Vec<String>>,
+    pub diary_date: Option<Option<String>>,
 }
 
 pub struct AppState {
@@ -32,7 +32,7 @@ pub async fn create_memo(
             Ok(memo) => {
                 let cached = CachedMemo::from_memo_with_resources(&memo);
                 let _ = state.cache.upsert_memo(&cached).await;
-                Ok(memo.memo.id.to_string())
+                Ok(memo.id.to_string())
             }
             Err(e) => Err(e.to_string()),
         }
@@ -182,9 +182,8 @@ pub async fn update_memo(
         let api_req = UpdateMemoRequest {
             content: req.content.clone(),
             tags: req.tags.clone(),
-            resource_filenames: req.resource_filenames,
             is_archived: None,
-            diary_date: None,
+            diary_date: req.diary_date.clone(),
         };
         state
             .memo_api
@@ -199,6 +198,9 @@ pub async fn update_memo(
             }
             if let Some(tags) = &req.tags {
                 updated.tags = serde_json::to_string(tags).unwrap_or_default();
+            }
+            if let Some(diary_date) = &req.diary_date {
+                updated.diary_date = diary_date.clone();
             }
             updated.updated_at = chrono::Utc::now().timestamp_millis();
             state.cache.upsert_memo(&updated).await.ok();
@@ -225,6 +227,9 @@ pub async fn update_memo(
             }
             if let Some(tags) = &req.tags {
                 memo.tags = serde_json::to_string(tags).unwrap_or_default();
+            }
+            if let Some(diary_date) = &req.diary_date {
+                memo.diary_date = diary_date.clone();
             }
             memo.updated_at = chrono::Utc::now().timestamp_millis();
             state.cache.upsert_memo(&memo).await.ok();
@@ -265,10 +270,9 @@ pub async fn delete_memo(state: State<'_, AppState>, memo_id: String) -> Result<
             .await
             .map_err(|e| e.to_string())?;
 
-        if let Ok(Some(mut memo)) = state.cache.get_memo(&memo_id).await {
-            memo.is_deleted = true;
-            state.cache.upsert_memo(&memo).await.ok();
-        }
+        // Note: Since we removed is_deleted from CachedMemo, we just remove the memo from cache
+        // when deleting in offline mode
+        let _ = state.cache.delete_memo(&memo_id).await;
     }
     Ok(())
 }
@@ -299,7 +303,7 @@ pub async fn archive_memo(state: State<'_, AppState>, memo_id: String) -> Result
                 id: memo_id.clone(),
                 content: None,
                 tags: None,
-                resource_filenames: None,
+                diary_date: None,
             })
             .unwrap(),
             created_at: chrono::Utc::now().timestamp_millis(),
@@ -345,7 +349,7 @@ pub async fn unarchive_memo(state: State<'_, AppState>, memo_id: String) -> Resu
                 id: memo_id.clone(),
                 content: None,
                 tags: None,
-                resource_filenames: None,
+                diary_date: None,
             })
             .unwrap(),
             created_at: chrono::Utc::now().timestamp_millis(),
@@ -363,6 +367,37 @@ pub async fn unarchive_memo(state: State<'_, AppState>, memo_id: String) -> Resu
         }
     }
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_memos_by_diary_date(
+    state: State<'_, AppState>,
+    diary_date: String,
+) -> Result<Vec<MemoWithResources>, String> {
+    let online = state.online.load(Ordering::Relaxed);
+
+    if online {
+        state
+            .memo_api
+            .list_by_diary_date(1, 1000, &diary_date)
+            .await
+            .map(|resp| resp.items)
+            .map_err(|e| e.to_string())
+    } else {
+        let cached = state
+            .cache
+            .list_memos(1000, 0, None)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let items: Vec<MemoWithResources> = cached
+            .into_iter()
+            .filter(|c| c.diary_date.as_ref().map_or(false, |d| d == &diary_date))
+            .map(|c| c.to_memo_with_resources())
+            .collect();
+
+        Ok(items)
+    }
 }
 
 #[tauri::command]
