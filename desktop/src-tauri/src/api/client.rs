@@ -1,6 +1,7 @@
 use crate::error::{AppError, AppResult};
 use reqwest::Client;
 
+#[derive(Clone)]
 pub struct ApiClient {
     client: Client,
     base_url: String,
@@ -32,16 +33,12 @@ impl ApiClient {
         self.token.as_ref()
     }
 
-    pub fn inner(&self) -> &Client {
-        &self.client
+    pub fn set_token(&mut self, token: Option<String>) {
+        self.token = token;
     }
 
-    pub fn clone(&self) -> Self {
-        Self {
-            client: self.client.clone(),
-            base_url: self.base_url.clone(),
-            token: self.token.clone(),
-        }
+    pub fn inner(&self) -> &Client {
+        &self.client
     }
 
     pub async fn request<T: for<'de> serde::Deserialize<'de>>(

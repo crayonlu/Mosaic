@@ -12,6 +12,6 @@ pub use diary_api::{
     CreateOrUpdateDiaryRequest, DiaryApi, UpdateDiaryMoodRequest, UpdateDiarySummaryRequest,
 };
 pub use memo_api::{CreateMemoRequest, MemoApi, UpdateMemoRequest};
-pub use resource_api::ResourceApi;
+pub use resource_api::{ResourceApi, ResourceResponse};
 pub use stats_api::StatsApi;
 pub use user_api::{UpdateUserRequest, UserApi};

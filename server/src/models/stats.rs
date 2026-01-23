@@ -1,36 +1,10 @@
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HeatMapData {
     pub dates: Vec<String>,
     pub counts: Vec<i32>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MemoWithResources {
-    pub id: Uuid,
-    pub content: String,
-    pub tags: Vec<String>,
-    pub is_archived: bool,
-    pub diary_date: Option<String>,
-    pub created_at: i64,
-    pub updated_at: i64,
-    pub resources: Vec<ResourceInfo>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ResourceInfo {
-    pub id: Uuid,
-    pub filename: String,
-    pub resource_type: String,
-    pub mime_type: String,
-    pub file_size: i64,
-    pub storage_type: String,
-    pub created_at: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

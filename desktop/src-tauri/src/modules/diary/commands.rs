@@ -49,16 +49,13 @@ pub async fn get_diary_by_date(
             .map_err(|e| e.to_string())?;
 
         let cached = CachedDiary {
-            date: diary_with_memos.diary.date.clone(),
-            summary: diary_with_memos.diary.summary.clone(),
-            mood_key: diary_with_memos.diary.mood_key.clone(),
-            mood_score: diary_with_memos.diary.mood_score,
-            cover_image_id: diary_with_memos
-                .diary
-                .cover_image_id
-                .map(|id| id.to_string()),
-            created_at: diary_with_memos.diary.created_at,
-            updated_at: diary_with_memos.diary.updated_at,
+            date: diary_with_memos.date.clone(),
+            summary: diary_with_memos.summary.clone(),
+            mood_key: diary_with_memos.mood_key.clone(),
+            mood_score: diary_with_memos.mood_score,
+            cover_image_id: diary_with_memos.cover_image_id.clone(),
+            created_at: diary_with_memos.created_at,
+            updated_at: diary_with_memos.updated_at,
             synced_at: chrono::Utc::now().timestamp_millis(),
         };
         let _ = state.cache.upsert_diary(&cached).await;
@@ -80,18 +77,13 @@ pub async fn get_diary_by_date(
                     .collect();
 
                 Ok(DiaryWithMemos {
-                    diary: Diary {
-                        date: cached.date,
-                        summary: cached.summary,
-                        mood_key: cached.mood_key,
-                        mood_score: cached.mood_score,
-                        cover_image_id: cached
-                            .cover_image_id
-                            .as_ref()
-                            .and_then(|id| uuid::Uuid::parse_str(id).ok()),
-                        created_at: cached.created_at,
-                        updated_at: cached.updated_at,
-                    },
+                    date: cached.date,
+                    summary: cached.summary,
+                    mood_key: cached.mood_key,
+                    mood_score: cached.mood_score,
+                    cover_image_id: cached.cover_image_id.clone(),
+                    created_at: cached.created_at,
+                    updated_at: cached.updated_at,
                     memos: filtered_memos,
                 })
             }
@@ -118,10 +110,7 @@ pub async fn create_or_update_diary(
                     summary: req.summary.clone(),
                     mood_key: req.mood_key.clone(),
                     mood_score: req.mood_score,
-                    cover_image_id: req
-                        .cover_image_id
-                        .as_ref()
-                        .and_then(|id| uuid::Uuid::parse_str(id).ok()),
+                    cover_image_id: req.cover_image_id.clone(),
                 },
             )
             .await
@@ -349,10 +338,7 @@ pub async fn list_diaries(
                 summary: c.summary.clone(),
                 mood_key: c.mood_key.clone(),
                 mood_score: c.mood_score,
-                cover_image_id: c
-                    .cover_image_id
-                    .as_ref()
-                    .and_then(|id| uuid::Uuid::parse_str(id).ok()),
+                cover_image_id: c.cover_image_id.clone(),
                 created_at: c.created_at,
                 updated_at: c.updated_at,
             })

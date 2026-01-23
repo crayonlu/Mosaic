@@ -46,6 +46,11 @@ pub struct RefreshTokenResponse {
     pub refresh_token: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct RefreshTokenRequest {
+    pub refresh_token: String,
+}
+
 impl From<User> for UserResponse {
     fn from(user: User) -> Self {
         UserResponse {

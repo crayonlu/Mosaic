@@ -41,6 +41,28 @@ pub async fn login(
 
     let mut config_clone = config.inner().clone();
     config_clone.server.api_token = Some(response.access_token.clone());
+    config_clone.server.refresh_token = Some(response.refresh_token.clone());
+    config_clone.save().map_err(|e| e.to_string())?;
+
+    Ok(response)
+}
+
+#[tauri::command]
+pub async fn refresh_token(config: State<'_, AppConfig>) -> Result<LoginResponse, String> {
+    let refresh_token = match config.server.refresh_token.clone() {
+        Some(token) => token,
+        None => return Err("No refresh token available".to_string()),
+    };
+
+    let auth_api = AuthApi::new(config.server.url.clone());
+    let response = auth_api
+        .refresh_token(&refresh_token)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let mut config_clone = config.inner().clone();
+    config_clone.server.api_token = Some(response.access_token.clone());
+    config_clone.server.refresh_token = Some(response.refresh_token.clone());
     config_clone.save().map_err(|e| e.to_string())?;
 
     Ok(response)
@@ -51,6 +73,19 @@ pub async fn logout(config: State<'_, AppConfig>) -> Result<(), String> {
     let mut config_clone = config.inner().clone();
     config_clone.server.api_token = None;
     config_clone.save().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn change_password(
+    config: State<'_, AppConfig>,
+    old_password: String,
+    new_password: String,
+) -> Result<(), String> {
+    let auth_api = AuthApi::new(config.server.url.clone());
+    auth_api
+        .change_password(&old_password, &new_password)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

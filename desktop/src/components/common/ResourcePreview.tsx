@@ -27,7 +27,7 @@ export function ResourcePreview({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
-  if(type === 'image') {
+  if (type === 'image') {
     return (
       <>
         <div className="group relative rounded-lg border bg-card overflow-hidden">

@@ -22,7 +22,8 @@ export function MonthlyView({
   onDateClick,
 }: MonthlyViewProps) {
   const { days, cellMap } = useMemo(() => {
-    const cellMap = new Map(heatmapData.cells.map(cell => [cell.date, cell]))
+    const cells = heatmapData.cells || []
+    const cellMap = new Map(cells.map(cell => [cell.date, cell]))
 
     const firstDayOfMonth = dayjs().year(year).month(month).date(1)
     const lastDayOfMonth = dayjs()
@@ -59,14 +60,16 @@ export function MonthlyView({
   }, [year, month, heatmapData])
 
   const getCellData = (dateStr: string) => {
-    return (
-      cellMap.get(dateStr) || {
-        date: dateStr,
-        color: 'transparent',
-        moodKey: undefined,
-        moodScore: undefined,
-      }
-    )
+    const cell = cellMap.get(dateStr)
+    if (cell && 'count' in cell) {
+      return cell
+    }
+    return {
+      date: dateStr,
+      color: 'transparent',
+      count: 0,
+      isToday: false,
+    }
   }
 
   const formatDateTooltip = (dateStr: string) => {

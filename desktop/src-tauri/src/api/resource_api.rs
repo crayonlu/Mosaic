@@ -1,5 +1,20 @@
 use super::client::ApiClient;
 use crate::error::{AppError, AppResult};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourceResponse {
+    pub id: String,
+    pub memo_id: String,
+    pub filename: String,
+    pub resource_type: String,
+    pub mime_type: String,
+    pub file_size: i64,
+    pub storage_type: String,
+    pub url: String,
+    pub created_at: i64,
+}
 
 pub struct ResourceApi {
     client: ApiClient,
@@ -49,6 +64,16 @@ impl ResourceApi {
         }
 
         response.json().await.map_err(AppError::from)
+    }
+
+    pub async fn get(&self, id: &str) -> AppResult<ResourceResponse> {
+        self.client
+            .request::<ResourceResponse>(
+                reqwest::Method::GET,
+                &format!("/api/resources/{}", id),
+                None,
+            )
+            .await
     }
 
     pub async fn download(&self, filename: String) -> AppResult<Vec<u8>> {
