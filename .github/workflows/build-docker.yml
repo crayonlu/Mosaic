@@ -52,8 +52,6 @@ jobs:
             type=sha,prefix=
             type=ref,event=branch
             type=ref,event=tag
-        env:
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index,image
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -61,7 +59,6 @@ jobs:
           context: ./server
           push: ${{ inputs.push == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
-          annotations: ${{ steps.meta.outputs.annotations }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
