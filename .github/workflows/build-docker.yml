@@ -58,6 +58,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          dockerfile: server/Dockerfile
           push: ${{ inputs.push == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
