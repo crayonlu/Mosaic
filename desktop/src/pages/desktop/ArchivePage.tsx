@@ -42,7 +42,7 @@ export default function ArchivePage() {
         memoCommands.getMemosByDate(formattedDate),
         diaryCommands.getDiaryByDate(formattedDate).catch(() => null),
       ])
-      setMemos(memosData.filter(memo => !memo.isDeleted))
+      setMemos(memosData)
       setExistingDiary(diaryData)
     } catch (error) {
       console.error('获取数据失败:', error)
@@ -79,9 +79,8 @@ export default function ArchivePage() {
   }
 
   const handleMemoSelect = (memoId: string, selected: boolean) => {
-    // 查找对应的memo，检查是否已归档
     const memo = memos.find(m => m.id === memoId)
-    if (memo?.isArchived) return // 已归档的memo不能选择
+    if (memo?.isArchived) return
 
     const newSelected = new Set(selectedMemos)
     if (selected) {
@@ -99,10 +98,8 @@ export default function ArchivePage() {
     ).length
 
     if (selectedUnarchivedCount === unarchivedMemos.length) {
-      // 如果所有未归档的memo都已选中，则取消全选
       setSelectedMemos(new Set())
     } else {
-      // 选择所有未归档的memo
       const newSelected = new Set(selectedMemos)
       unarchivedMemos.forEach(memo => {
         newSelected.add(memo.id)

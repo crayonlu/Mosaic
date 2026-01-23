@@ -1,41 +1,43 @@
-import { invoke } from '@tauri-apps/api/core'
-import type { User, UpdateUserRequest } from '@/types/user'
-import type {
-  MemoWithResources,
-  CreateMemoRequest,
-  ListMemosRequest,
-  SearchMemosRequest,
-  UpdateMemoRequest,
-} from '@/types/memo'
-import type {
-  DiaryWithMemos,
-  CreateOrUpdateDiaryRequest,
-  ListDiariesRequest,
-  UpdateDiarySummaryRequest,
-  UpdateDiaryMoodRequest,
-} from '@/types/diary'
-import type { PaginatedResponse } from '@/types/common'
-import type { UploadedResource } from '@/types/asset'
-import type {
-  HeatMapData,
-  HeatMapQuery,
-  TimelineData,
-  TimelineQuery,
-  TrendsData,
-  TrendsQuery,
-  SummaryData,
-  SummaryQuery,
-} from '@/types/stats'
 import type {
   CompleteTextRequest,
   CompleteTextResponse,
   RewriteTextRequest,
   RewriteTextResponse,
-  SummarizeTextRequest,
-  SummarizeTextResponse,
   SuggestTagsRequest,
   SuggestTagsResponse,
+  SummarizeTextRequest,
+  SummarizeTextResponse,
 } from '@/types/ai'
+import type { UploadedResource } from '@/types/asset'
+import type { PaginatedResponse } from '@/types/common'
+import type {
+  CreateOrUpdateDiaryRequest,
+  DiaryWithMemos,
+  ListDiariesRequest,
+  UpdateDiaryMoodRequest,
+  UpdateDiarySummaryRequest,
+} from '@/types/diary'
+import type {
+  CreateMemoRequest,
+  ListMemosRequest,
+  MemoWithResources,
+  SearchMemosRequest,
+  UpdateMemoRequest,
+} from '@/types/memo'
+import type { ServerConfig } from '@/types/settings'
+import type {
+  HeatMapData,
+  HeatMapQuery,
+  SummaryData,
+  SummaryQuery,
+  TimelineData,
+  TimelineQuery,
+  TrendsData,
+  TrendsQuery,
+} from '@/types/stats'
+import type { SyncStatus, SyncStatusInfo } from '@/types/sync'
+import type { UpdateUserRequest, User } from '@/types/user'
+import { invoke } from '@tauri-apps/api/core'
 
 export async function callRust<T = unknown>(
   cmd: string,
@@ -69,7 +71,10 @@ export const memoCommands = {
 
   getMemosByDate: (date: string) => callRust<MemoWithResources[]>('get_memos_by_date', { date }),
 
-  updateMemo: (req: UpdateMemoRequest) => callRust<void>('update_memo', { req }),
+  getMemosByDiaryDate: (diaryDate: string) =>
+    callRust<MemoWithResources[]>('get_memos_by_diary_date', { diaryDate }),
+
+  updateMemo: (id: string, req: UpdateMemoRequest) => callRust<void>('update_memo', { id, req }),
 
   deleteMemo: (memoId: string) => callRust<void>('delete_memo', { memoId }),
 
@@ -99,13 +104,8 @@ export const diaryCommands = {
 export const assetCommands = {
   uploadFiles: (filePaths: string[]) => callRust<UploadedResource[]>('upload_files', { filePaths }),
 
-  saveTempAudio: (filename: string, data: number[]) =>
-    callRust<string>('save_temp_audio', { filename, data }),
-
   saveTempFile: (filename: string, data: number[]) =>
     callRust<string>('save_temp_file', { filename, data }),
-
-  readAudioFile: (filename: string) => callRust<number[]>('read_audio_file', { filename }),
 
   readImageFile: (filename: string) => callRust<number[]>('read_image_file', { filename }),
 
@@ -113,10 +113,17 @@ export const assetCommands = {
 }
 
 export const statsCommands = {
-  getHeatmap: (query: HeatMapQuery) => callRust<HeatMapData>('get_heatmap', { query }),
-  getTimeline: (query: TimelineQuery) => callRust<TimelineData>('get_timeline', { query }),
-  getTrends: (query: TrendsQuery) => callRust<TrendsData>('get_trends', { query }),
-  getSummary: (query: SummaryQuery) => callRust<SummaryData>('get_summary', { query }),
+  getHeatmap: (query: HeatMapQuery) =>
+    callRust<HeatMapData>('get_heatmap', { startDate: query.startDate, endDate: query.endDate }),
+
+  getTimeline: (query: TimelineQuery) =>
+    callRust<TimelineData>('get_timeline', { startDate: query.startDate, endDate: query.endDate }),
+
+  getTrends: (query: TrendsQuery) =>
+    callRust<TrendsData>('get_trends', { startDate: query.startDate, endDate: query.endDate }),
+
+  getSummary: (query: SummaryQuery) =>
+    callRust<SummaryData>('get_summary', { year: query.year, month: query.month }),
 }
 
 export const aiCommands = {
@@ -131,10 +138,38 @@ export const aiCommands = {
   suggestTags: (req: SuggestTagsRequest) => callRust<SuggestTagsResponse>('suggest_tags', { req }),
 }
 
+export const syncCommands = {
+  triggerSync: () => callRust<SyncStatusInfo>('trigger_sync'),
+
+  getSyncStatus: () => callRust<SyncStatus>('get_sync_status'),
+}
+
+export const configCommands = {
+  getServerConfig: () => callRust<ServerConfig>('get_server_config'),
+
+  setServerConfig: (serverConfig: ServerConfig) =>
+    callRust<void>('set_server_config', { serverConfig }),
+
+  testServerConnection: () => callRust<void>('test_server_connection'),
+
+  login: (username: string, password: string) =>
+    callRust<{ accessToken: string }>('login', { username, password }),
+
+  refreshToken: () => callRust<{ accessToken: string }>('refresh_token'),
+
+  changePassword: (oldPassword: string, newPassword: string) =>
+    callRust<void>('change_password', { oldPassword, newPassword }),
+
+  logout: () => callRust<void>('logout'),
+}
+
 export default {
   user: userCommands,
   memo: memoCommands,
   diary: diaryCommands,
   asset: assetCommands,
   stats: statsCommands,
+  ai: aiCommands,
+  sync: syncCommands,
+  config: configCommands,
 }

@@ -20,12 +20,11 @@ export default function DeskTopHome() {
   const memoListRef = useRef<MemoListRef>(null)
   const appInputRef = useRef<AppInputRef>(null)
 
-  const handleSubmit = async (value: string, resourceFilenames?: string[], tags?: string[]) => {
+  const handleSubmit = async (value: string, tags?: string[]) => {
     try {
       await memoCommands.createMemo({
         content: value,
         tags: tags || [],
-        resourceFilenames: resourceFilenames || [],
       })
       clearInputValue()
       clearResources()

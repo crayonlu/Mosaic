@@ -9,19 +9,26 @@ export type MoodKey =
   | 'excited'
   | 'tired'
   | 'neutral'
+  | ''
 
 export interface Diary {
   date: string
-  summary?: string
-  moodKey?: MoodKey
-  moodScore?: number
+  summary: string
+  moodKey: MoodKey
+  moodScore: number
   coverImageId?: string
-  memoCount: number
   createdAt: number
   updatedAt: number
 }
 
-export interface DiaryWithMemos extends Diary {
+export interface DiaryWithMemos {
+  date: string
+  summary: string
+  moodKey: MoodKey
+  moodScore: number
+  coverImageId?: string
+  createdAt: number
+  updatedAt: number
   memos: MemoWithResources[]
 }
 

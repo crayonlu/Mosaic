@@ -28,27 +28,3 @@ pub struct SuggestTagsRequest {
     pub content: String,
     pub existing_tags: Option<Vec<String>>,
 }
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CompleteTextResponse {
-    pub generated_text: String,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RewriteTextResponse {
-    pub rewritten_text: String,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SummarizeTextResponse {
-    pub summary: String,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SuggestTagsResponse {
-    pub tags: Vec<String>,
-}

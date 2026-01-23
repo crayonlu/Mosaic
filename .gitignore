@@ -53,6 +53,7 @@ desktop/src-tauri/target/
 desktop/src-tauri/gen/
 src-tauri/target/
 gen/
+target/
 
 # Expo / React Native
 mobile/.expo/

@@ -1,12 +1,12 @@
-import { memo, useEffect, useState } from 'react'
-import dayjs from 'dayjs'
-import { Image as ImageIcon, Video as VideoIcon, FileText, Volume2, Archive, X } from 'lucide-react'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
 import { RichTextEditor } from '@/components/common/RichTextEditor'
-import type { MemoWithResources } from '@/types/memo'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
+import type { MemoWithResources } from '@/types/memo'
 import { assetCommands } from '@/utils/callRust'
+import dayjs from 'dayjs'
+import { Archive, Image as ImageIcon, Video as VideoIcon, X } from 'lucide-react'
+import { memo, useEffect, useState } from 'react'
 
 interface MemoCardProps {
   memo: MemoWithResources
@@ -49,19 +49,8 @@ export const MemoCard = memo<MemoCardProps>(
       }
     }, [memo.resources])
 
-    const getResourcePreview = () => {
-      const audios = memo.resources.filter(r => r.resourceType === 'voice')
-      const files = memo.resources.filter(r => r.resourceType === 'file')
-
-      const previews = []
-      if (audios.length > 0) previews.push({ icon: Volume2, count: audios.length, label: '音频' })
-      if (files.length > 0) previews.push({ icon: FileText, count: files.length, label: '文件' })
-
-      return previews
-    }
-
     const getMediaResources = () => {
-      return memo.resources.filter(r => r.resourceType === 'image' || r.resourceType === 'video')
+      return memo.resources.filter(r => r.resourceType === 'image')
     }
 
     const renderMediaGrid = () => {
@@ -134,7 +123,6 @@ export const MemoCard = memo<MemoCardProps>(
       )
     }
 
-    const resourcePreviews = getResourcePreview()
     const timeDisplay = dayjs.utc(memo.createdAt).local().format('HH:mm')
 
     const isArchived = memo.isArchived
@@ -206,23 +194,6 @@ export const MemoCard = memo<MemoCardProps>(
               )}
 
               {renderMediaGrid()}
-
-              {resourcePreviews.length > 0 && (
-                <div className="mt-3 flex items-center gap-2 flex-wrap">
-                  {resourcePreviews.map((preview, index) => {
-                    const Icon = preview.icon
-                    return (
-                      <div
-                        key={index}
-                        className="inline-flex items-center gap-1 rounded-full bg-muted/50 px-2 py-1 text-xs text-muted-foreground"
-                      >
-                        <Icon className="h-3 w-3" />
-                        <span>{preview.count}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
 
               {memo.tags && memo.tags.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1">

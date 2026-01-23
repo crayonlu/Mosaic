@@ -1,6 +1,9 @@
 export interface UploadedResource {
+  id: string
   filename: string
   size: number
   mimeType: string
-  resourceType: 'image' | 'voice' | 'video' | 'file'
+  resourceType: string
+  storageType?: string
+  storagePath?: string
 }

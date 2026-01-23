@@ -32,7 +32,7 @@ export function AppSidebar() {
   const location = useLocation()
   const { user, loadUser } = useUserStore()
   const { theme, toggleTheme } = useTheme()
-  const avatarUrl = useAvatarUrl(user?.avatarPath, user?.avatarUrl)
+  const avatarUrl = useAvatarUrl(user?.avatarUrl)
 
   useEffect(() => {
     if (!user) {

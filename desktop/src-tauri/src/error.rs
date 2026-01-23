@@ -1,55 +1,48 @@
-use serde::Serialize;
 use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Error, Debug)]
 pub enum AppError {
-    #[error("Database error: {0}")]
-    Database(#[from] sqlx::Error),
+    #[error("API error: {status} - {message}")]
+    ApiError { status: u16, message: String },
 
-    #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
-
-    #[error("Tauri error: {0}")]
-    Tauri(#[from] tauri::Error),
+    #[error("Network error: {0}")]
+    NetworkError(#[from] reqwest::Error),
 
     #[error("Serialization error: {0}")]
-    Json(#[from] serde_json::Error),
+    SerializationError(#[from] serde_json::Error),
 
-    #[error("Date parsing error: {0}")]
-    DateParse(String),
+    #[error("Cache error: {0}")]
+    CacheError(String),
 
-    #[error("Image processing error: {0}")]
-    Image(String),
-
-    #[error("Resource not found: {0}")]
+    #[error("Not found: {0}")]
     NotFound(String),
 
-    #[error("Unknown error: {0}")]
-    Unknown(String),
-}
+    #[error("Unauthorized")]
+    Unauthorized,
 
-impl Serialize for AppError {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut state = serializer.serialize_struct("AppError", 2)?;
+    #[error("Internal error: {0}")]
+    Internal(String),
 
-        let code = match self {
-            AppError::Database(_) => "DATABASE_ERROR",
-            AppError::Io(_) => "IO_ERROR",
-            AppError::Tauri(_) => "TAURI_ERROR",
-            AppError::Json(_) => "JSON_ERROR",
-            AppError::DateParse(_) => "DATE_PARSE_ERROR",
-            AppError::Image(_) => "IMAGE_ERROR",
-            AppError::NotFound(_) => "NOT_FOUND_ERROR",
-            AppError::Unknown(_) => "UNKNOWN_ERROR",
-        };
-        state.serialize_field("code", code)?;
-        state.serialize_field("message", &self.to_string())?;
-        state.end()
-    }
+    #[error("Config error: {0}")]
+    ConfigError(String),
+
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("UUID error: {0}")]
+    UuidError(#[from] uuid::Error),
+
+    #[error("Sync error: {0}")]
+    SyncError(String),
+
+    #[error("Upload failed: {0}")]
+    UploadError(String),
 }
 
 pub type AppResult<T> = Result<T, AppError>;
+
+impl From<AppError> for String {
+    fn from(error: AppError) -> Self {
+        error.to_string()
+    }
+}
