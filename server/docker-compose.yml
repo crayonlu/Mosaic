@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: mosaic-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mosaic
+      POSTGRES_USER: mosaic_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mosaic_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mosaic_user} -d mosaic"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mosaic-server:
+    image: ghcr.io/${GITHUB_USER:-crayonlu}/mosaic/mosaic-server:${IMAGE_TAG:-latest}
+    container_name: mosaic-server
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-mosaic_user}:${POSTGRES_PASSWORD:-mosaic_password}@postgres:5432/mosaic
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 8080
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      LOCAL_STORAGE_PATH: ./storage
+      R2_ENDPOINT: ${R2_ENDPOINT:-}
+      R2_BUCKET: ${R2_BUCKET:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - mosaic_storage:/app/storage
+      - mosaic_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  postgres_data:
+  mosaic_storage:
+  mosaic_logs:
