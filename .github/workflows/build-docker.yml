@@ -1,6 +1,14 @@
 name: Build Docker Image
 
 on:
+  pull_request:
+    branches:
+      - main
+      - feat/ci
+    paths:
+      - 'server/**'
+      - '.github/workflows/**'
+
   workflow_dispatch:
     inputs:
       tag:
