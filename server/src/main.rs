@@ -8,6 +8,7 @@ mod services;
 mod storage;
 
 use actix_web::{web, App, HttpResponse, HttpServer};
+use actix_files::Files;
 use config::Config;
 use database::{create_pool, run_migrations};
 use middleware::{configure_cors, AuthMiddleware};
@@ -59,6 +60,7 @@ async fn main() -> anyhow::Result<()> {
                     .configure(routes::configure_resource_routes)
                     .configure(routes::configure_stats_routes),
             )
+            .service(Files::new("/", "/app/dist").index_file("index.html"))
     })
     .bind(&bind_address)?
     .run()
