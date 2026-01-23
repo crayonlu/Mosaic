@@ -1,5 +1,8 @@
 use crate::error::AppError;
-use crate::models::{ChangePasswordRequest, LoginRequest, User, UserResponse};
+use crate::models::{
+    ChangePasswordRequest, LoginRequest, RefreshTokenResponse, User,
+    UserResponse,
+};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -137,6 +140,92 @@ impl AuthService {
         .await?;
 
         Ok(UserResponse::from(updated_user))
+    }
+
+    pub async fn update_user(
+        &self,
+        user_id: &str,
+        username: Option<String>,
+        avatar_url: Option<String>,
+    ) -> Result<UserResponse, AppError> {
+        let user = self
+            .find_user_by_id(user_id)
+            .await?
+            .ok_or(AppError::UserNotFound)?;
+
+        let now = Utc::now().timestamp();
+
+        if username.is_none() && avatar_url.is_none() {
+            return Ok(UserResponse::from(user));
+        }
+
+        match (username, avatar_url) {
+            (Some(username), Some(avatar_url)) => {
+                let updated_user = sqlx::query_as::<_, User>(
+                    "UPDATE users SET username = $1, avatar_url = $2, updated_at = $3 WHERE id = $4
+                     RETURNING id, username, password_hash, avatar_url, created_at, updated_at",
+                )
+                .bind(username)
+                .bind(avatar_url)
+                .bind(now)
+                .bind(user.id)
+                .fetch_one(&self.pool)
+                .await?;
+                Ok(UserResponse::from(updated_user))
+            }
+            (Some(username), None) => {
+                let updated_user = sqlx::query_as::<_, User>(
+                    "UPDATE users SET username = $1, updated_at = $2 WHERE id = $3
+                     RETURNING id, username, password_hash, avatar_url, created_at, updated_at",
+                )
+                .bind(username)
+                .bind(now)
+                .bind(user.id)
+                .fetch_one(&self.pool)
+                .await?;
+                Ok(UserResponse::from(updated_user))
+            }
+            (None, Some(avatar_url)) => {
+                let updated_user = sqlx::query_as::<_, User>(
+                    "UPDATE users SET avatar_url = $1, updated_at = $2 WHERE id = $3
+                     RETURNING id, username, password_hash, avatar_url, created_at, updated_at",
+                )
+                .bind(avatar_url)
+                .bind(now)
+                .bind(user.id)
+                .fetch_one(&self.pool)
+                .await?;
+                Ok(UserResponse::from(updated_user))
+            }
+            (None, None) => unreachable!(),
+        }
+    }
+
+    pub async fn refresh_token(
+        &self,
+        refresh_token: String,
+    ) -> Result<RefreshTokenResponse, AppError> {
+        let claims = decode::<Claims>(
+            &refresh_token,
+            &DecodingKey::from_secret(self.jwt_secret.as_ref()),
+            &Validation::default(),
+        )
+        .map_err(|_| AppError::InvalidToken)?;
+
+        let user_id = claims.claims.sub;
+
+        let _ = self
+            .find_user_by_id(&user_id)
+            .await?
+            .ok_or(AppError::UserNotFound)?;
+
+        let new_access_token = self.generate_token(&user_id, 3600 * 24)?;
+        let new_refresh_token = self.generate_token(&user_id, 3600 * 24 * 7)?;
+
+        Ok(RefreshTokenResponse {
+            access_token: new_access_token,
+            refresh_token: new_refresh_token,
+        })
     }
 
     pub fn verify_token(&self, token: &str) -> Result<String, AppError> {

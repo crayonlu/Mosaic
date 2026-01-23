@@ -1,7 +1,6 @@
-use crate::api::ResourceApi;
+use crate::api::{ResourceApi, ResourceResponse};
 use crate::error::AppError;
 use crate::modules::asset::models::UploadedResource;
-use crate::modules::memo::models::ResourceType;
 use tauri::Manager;
 
 #[tauri::command]
@@ -40,7 +39,7 @@ pub async fn upload_files(
             filename: response["filename"].as_str().unwrap().to_string(),
             size: response["size"].as_i64().unwrap_or(0),
             mime_type: response["mime_type"].as_str().unwrap().to_string(),
-            resource_type: ResourceType::Image,
+            resource_type: "image".to_string(),
         });
     }
 
@@ -89,4 +88,13 @@ pub async fn delete_asset_file(
         .delete(filename)
         .await
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_resource(
+    api_client: tauri::State<'_, crate::api::ApiClient>,
+    id: String,
+) -> Result<ResourceResponse, String> {
+    let resource_api = ResourceApi::new(api_client.inner().clone());
+    resource_api.get(&id).await.map_err(|e| e.to_string())
 }

@@ -55,6 +55,7 @@ async fn main() -> anyhow::Result<()> {
                 web::scope("/api")
                     .wrap(auth_middleware.clone())
                     .configure(routes::configure_memo_routes)
+                    .configure(routes::configure_diary_routes)
                     .configure(routes::configure_resource_routes)
                     .configure(routes::configure_stats_routes),
             )

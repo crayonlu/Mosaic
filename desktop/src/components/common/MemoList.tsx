@@ -6,7 +6,8 @@ import { ResourceThumbnails } from '@/components/common/ResourceThumbnails'
 import { LoadingMemoList } from '@/components/ui/loading/loading-skeleton'
 
 interface MemoListProps {
-  date: string
+  date?: string
+  diaryDate?: string
   className?: string
   onMemoClick?: (memo: MemoWithResources) => void
 }
@@ -16,21 +17,28 @@ export interface MemoListRef {
 }
 
 export const MemoList = forwardRef<MemoListRef, MemoListProps>(
-  ({ date, className, onMemoClick }, ref) => {
+  ({ date, diaryDate, className, onMemoClick }, ref) => {
     const [memos, setMemos] = useState<MemoWithResources[]>([])
     const [loading, setLoading] = useState(true)
 
     const fetchMemos = useCallback(async () => {
       try {
         setLoading(true)
-        const data = await memoCommands.getMemosByDate(date)
+        let data: MemoWithResources[]
+        if (diaryDate) {
+          data = await memoCommands.getMemosByDiaryDate(diaryDate)
+        } else if (date) {
+          data = await memoCommands.getMemosByDate(date)
+        } else {
+          data = []
+        }
         setMemos(data)
       } catch (error) {
         console.error('获取memos失败:', error)
       } finally {
         setLoading(false)
       }
-    }, [date])
+    }, [date, diaryDate])
 
     useImperativeHandle(
       ref,

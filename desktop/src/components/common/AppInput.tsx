@@ -30,16 +30,11 @@ interface AppInputProps {
 
 export const AppInput = forwardRef<AppInputRef, AppInputProps>(
   ({ placeholder = '输入内容...', onSubmit, onFileUpload, className }, ref) => {
-    const [isRecordingDialogOpen, setIsRecordingDialogOpen] = useState(false)
     const [tags, setTags] = useState<string[]>([])
     const [tagInput, setTagInput] = useState('')
     const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
     const [showSuggestions, setShowSuggestions] = useState(false)
-    const {
-      addResource,
-      resourceFilenames,
-      uploadingFiles,
-    } = useInputStore()
+    const { resourceFilenames, uploadingFiles } = useInputStore()
     const { suggestTags, loading: aiLoading } = useAI()
 
     const {

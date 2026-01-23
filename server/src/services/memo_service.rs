@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::models::{CreateMemoRequest, Memo, MemoResponse, UpdateMemoRequest};
+use crate::models::{CreateMemoRequest, Memo, MemoResponse, PaginatedResponse, UpdateMemoRequest};
 use chrono::Utc;
 use serde_json::json;
 use sqlx::PgPool;
@@ -65,50 +65,118 @@ impl MemoService {
         page: u32,
         page_size: u32,
         archived: Option<bool>,
-    ) -> Result<Vec<MemoResponse>, AppError> {
+        diary_date: Option<chrono::NaiveDate>,
+    ) -> Result<PaginatedResponse<MemoResponse>, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let offset = (page - 1) * page_size;
 
-        let memos = match archived {
-            Some(true) => {
-                sqlx::query_as::<_, Memo>(
-                    "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
-                     FROM memos WHERE user_id = $1 AND is_deleted = false AND is_archived = true
-                     ORDER BY created_at DESC LIMIT $2 OFFSET $3",
-                )
-                .bind(user_uuid)
-                .bind(page_size as i64)
-                .bind(offset as i64)
-                .fetch_all(&self.pool)
-                .await?
-            }
-            Some(false) => {
-                sqlx::query_as::<_, Memo>(
-                    "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
-                     FROM memos WHERE user_id = $1 AND is_deleted = false AND is_archived = false
-                     ORDER BY created_at DESC LIMIT $2 OFFSET $3",
-                )
-                .bind(user_uuid)
-                .bind(page_size as i64)
-                .bind(offset as i64)
-                .fetch_all(&self.pool)
-                .await?
-            }
-            None => {
-                sqlx::query_as::<_, Memo>(
-                    "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
-                     FROM memos WHERE user_id = $1 AND is_deleted = false
-                     ORDER BY created_at DESC LIMIT $2 OFFSET $3",
-                )
-                .bind(user_uuid)
-                .bind(page_size as i64)
-                .bind(offset as i64)
-                .fetch_all(&self.pool)
-                .await?
+        let memos = if let Some(diary_date) = diary_date {
+            sqlx::query_as::<_, Memo>(
+                "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+                 FROM memos WHERE user_id = $1 AND is_deleted = false AND diary_date = $2
+                 ORDER BY created_at DESC LIMIT $3 OFFSET $4",
+            )
+            .bind(user_uuid)
+            .bind(diary_date)
+            .bind(page_size as i64)
+            .bind(offset as i64)
+            .fetch_all(&self.pool)
+            .await?
+        } else {
+            match archived {
+                Some(true) => {
+                    sqlx::query_as::<_, Memo>(
+                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+                         FROM memos WHERE user_id = $1 AND is_deleted = false AND is_archived = true
+                         ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+                    )
+                    .bind(user_uuid)
+                    .bind(page_size as i64)
+                    .bind(offset as i64)
+                    .fetch_all(&self.pool)
+                    .await?
+                }
+                Some(false) => {
+                    sqlx::query_as::<_, Memo>(
+                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+                         FROM memos WHERE user_id = $1 AND is_deleted = false AND is_archived = false
+                         ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+                    )
+                    .bind(user_uuid)
+                    .bind(page_size as i64)
+                    .bind(offset as i64)
+                    .fetch_all(&self.pool)
+                    .await?
+                }
+                None => {
+                    sqlx::query_as::<_, Memo>(
+                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+                         FROM memos WHERE user_id = $1 AND is_deleted = false
+                         ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+                    )
+                    .bind(user_uuid)
+                    .bind(page_size as i64)
+                    .bind(offset as i64)
+                    .fetch_all(&self.pool)
+                    .await?
+                }
             }
         };
 
-        Ok(memos.into_iter().map(MemoResponse::from).collect())
+        let total = if let Some(diary_date) = diary_date {
+            let row = sqlx::query_as::<_, (i64,)>(
+                "SELECT COUNT(*) as total
+                 FROM memos WHERE user_id = $1 AND is_deleted = false AND diary_date = $2",
+            )
+            .bind(user_uuid)
+            .bind(diary_date)
+            .fetch_one(&self.pool)
+            .await?;
+            row.0
+        } else {
+            match archived {
+                Some(true) => {
+                    let row = sqlx::query_as::<_, (i64,)>(
+                        "SELECT COUNT(*) as total
+                         FROM memos WHERE user_id = $1 AND is_deleted = false AND is_archived = true",
+                    )
+                    .bind(user_uuid)
+                    .fetch_one(&self.pool)
+                    .await?;
+                    row.0
+                }
+                Some(false) => {
+                    let row = sqlx::query_as::<_, (i64,)>(
+                        "SELECT COUNT(*) as total
+                         FROM memos WHERE user_id = $1 AND is_deleted = false AND is_archived = false",
+                    )
+                    .bind(user_uuid)
+                    .fetch_one(&self.pool)
+                    .await?;
+                    row.0
+                }
+                None => {
+                    let row = sqlx::query_as::<_, (i64,)>(
+                        "SELECT COUNT(*) as total
+                         FROM memos WHERE user_id = $1 AND is_deleted = false",
+                    )
+                    .bind(user_uuid)
+                    .fetch_one(&self.pool)
+                    .await?;
+                    row.0
+                }
+            }
+        };
+
+        let total_pages = ((total as f64) / (page_size as f64)).ceil() as u32;
+
+        Ok(PaginatedResponse {
+            items: memos.into_iter().map(MemoResponse::from).collect(),
+            total,
+            page,
+            page_size,
+            total_pages,
+        })
     }
 
     pub async fn update_memo(

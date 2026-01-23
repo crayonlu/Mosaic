@@ -1,4 +1,3 @@
-use crate::modules::memo::models::ResourceType;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -7,5 +6,5 @@ pub struct UploadedResource {
     pub filename: String,
     pub size: i64,
     pub mime_type: String,
-    pub resource_type: ResourceType,
+    pub resource_type: String,
 }

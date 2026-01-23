@@ -23,12 +23,7 @@ interface InputState {
   toggleExpanded: () => void
   setInputValue: (value: string) => void
   clearInputValue: () => void
-  addResource: (
-    filename: string,
-    previewUrl?: string,
-    type?: 'image',
-    size?: number
-  ) => void
+  addResource: (filename: string, previewUrl?: string, type?: 'image', size?: number) => void
   removeResource: (filename: string) => void
   clearResources: () => void
   addUploadingFile: (file: UploadingFile) => void

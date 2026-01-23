@@ -2,7 +2,6 @@ use super::client::ApiClient;
 use crate::error::AppResult;
 use crate::models::{Diary, DiaryWithMemos, PaginatedResponse};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -10,7 +9,7 @@ pub struct CreateOrUpdateDiaryRequest {
     pub summary: Option<String>,
     pub mood_key: Option<String>,
     pub mood_score: Option<i32>,
-    pub cover_image_id: Option<Uuid>,
+    pub cover_image_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

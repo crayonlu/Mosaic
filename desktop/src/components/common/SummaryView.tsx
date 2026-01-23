@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { PieChart, BarChart3, Hash, Calendar as CalendarIcon } from 'lucide-react'
-import { statsCommands } from '@/utils/callRust'
-import { getMoodEmoji, getMoodLabel } from '@/utils/moodEmoji'
 import type { SummaryData, SummaryQuery } from '@/types/stats'
+import { statsCommands } from '@/utils/callRust'
+import { getMoodColor, getMoodLabel } from '@/utils/moodEmoji'
+import { Calendar as CalendarIcon, Hash, PieChart } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface SummaryViewProps {
   year: number
@@ -31,7 +31,15 @@ export function SummaryView({ year, month }: SummaryViewProps) {
   }
 
   const renderMoodPieChart = () => {
-    if (!data || data.moodDistribution.length === 0) return null
+    if (!data || !data.moodDistribution || Object.keys(data.moodDistribution).length === 0)
+      return null
+
+    const moodEntries = Object.entries(data.moodDistribution || {}).map(([moodKey, count]) => ({
+      moodKey,
+      count,
+      percentage:
+        (count / Object.values(data.moodDistribution || {}).reduce((a, b) => a + b, 0)) * 100,
+    }))
 
     const size = 120
     const center = size / 2
@@ -39,7 +47,7 @@ export function SummaryView({ year, month }: SummaryViewProps) {
 
     let cumulativeAngle = 0
 
-    const paths = data.moodDistribution.map(mood => {
+    const paths = moodEntries.map(mood => {
       const angle = (mood.percentage / 100) * 360
       const startAngle = cumulativeAngle
       const endAngle = cumulativeAngle + angle
@@ -61,7 +69,13 @@ export function SummaryView({ year, month }: SummaryViewProps) {
       cumulativeAngle = endAngle
 
       return (
-        <path key={mood.moodKey} d={pathData} fill={mood.color} stroke="white" strokeWidth="1" />
+        <path
+          key={mood.moodKey}
+          d={pathData}
+          fill={getMoodColor(mood.moodKey)}
+          stroke="white"
+          strokeWidth="1"
+        />
       )
     })
 
@@ -77,7 +91,7 @@ export function SummaryView({ year, month }: SummaryViewProps) {
             dominantBaseline="middle"
             className="text-xs font-semibold"
           >
-            {data.avgMoodScore.toFixed(1)}
+            {data.avgMoodScore?.toFixed(1) || '-'}
           </text>
         </svg>
       </div>
@@ -87,13 +101,8 @@ export function SummaryView({ year, month }: SummaryViewProps) {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-muted rounded w-1/3 mb-4"></div>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="h-48 bg-muted rounded"></div>
-            <div className="h-48 bg-muted rounded"></div>
-          </div>
-          <div className="h-32 bg-muted rounded mt-6"></div>
+        <div className="bg-card rounded-lg border p-6">
+          <div className="h-64 animate-pulse bg-muted rounded" />
         </div>
       </div>
     )
@@ -101,107 +110,119 @@ export function SummaryView({ year, month }: SummaryViewProps) {
 
   if (!data) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <PieChart className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg">暂无数据</p>
-        <p className="text-sm">这个月还没有足够的记录</p>
+      <div className="space-y-6">
+        <div className="bg-card rounded-lg border p-6">
+          <div className="flex items-center justify-center h-64 text-muted-foreground">
+            暂无数据
+          </div>
+        </div>
       </div>
     )
   }
 
+  const topTagsList = data.topTags || []
+
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold mb-2">
-          {year}年{month}月
-        </h2>
-        <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <CalendarIcon className="w-4 h-4" />
-            <span>
-              {data.recordedDays}/{data.totalDays}天
-            </span>
+      {/* 统计卡片 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-card rounded-lg border shadow-sm p-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-primary mb-1">{data.totalMemos}</div>
+            <div className="text-xs text-muted-foreground">总笔记数</div>
           </div>
-          {data.dominantMood && (
-            <div className="flex items-center gap-1">
-              <span>{getMoodEmoji(data.dominantMood)}</span>
-              <span>{getMoodLabel(data.dominantMood)}</span>
-            </div>
-          )}
+        </div>
+        <div className="bg-card rounded-lg border shadow-sm p-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-500 mb-1">{data.totalDiaries}</div>
+            <div className="text-xs text-muted-foreground">日记篇数</div>
+          </div>
+        </div>
+        <div className="bg-card rounded-lg border shadow-sm p-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-500 mb-1">{data.totalResources}</div>
+            <div className="text-xs text-muted-foreground">资源总数</div>
+          </div>
+        </div>
+        <div className="bg-card rounded-lg border shadow-sm p-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-500 mb-1">{data.recordedDays || 0}</div>
+            <div className="text-xs text-muted-foreground">记录天数</div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-card rounded-lg border shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <PieChart className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold">情绪分布</h3>
-          </div>
-          <div className="space-y-4">
-            {renderMoodPieChart()}
-            <div className="space-y-2">
-              {data.moodDistribution.slice(0, 5).map(mood => (
-                <div key={mood.moodKey} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: mood.color }}
-                    ></div>
-                    <span>{getMoodEmoji(mood.moodKey)}</span>
-                    <span>{getMoodLabel(mood.moodKey)}</span>
+      {/* 情绪分布 */}
+      <div className="bg-card rounded-lg border shadow-sm p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <PieChart className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">情绪分布</h3>
+        </div>
+        <div className="flex items-center gap-8">
+          {renderMoodPieChart()}
+          <div className="space-y-2">
+            {data.moodDistribution &&
+              Object.entries(data.moodDistribution)
+                .slice(0, 5)
+                .map(([moodKey, count]) => (
+                  <div key={moodKey} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: getMoodColor(moodKey) }}
+                      />
+                      <span>{getMoodLabel(moodKey)}</span>
+                    </div>
+                    <span className="text-muted-foreground">{count}</span>
                   </div>
-                  <span className="text-muted-foreground">{mood.percentage.toFixed(1)}%</span>
-                </div>
-              ))}
-            </div>
+                ))}
           </div>
         </div>
+      </div>
 
+      {/* 热门标签 */}
+      {topTagsList.length > 0 && (
         <div className="bg-card rounded-lg border shadow-sm p-6 flex flex-col">
           <div className="flex items-center gap-2 mb-4">
             <Hash className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">热门标签</h3>
           </div>
-          {data.topTags.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {data.topTags.slice(0, 10).map(tag => {
-                return (
-                  <span
-                    key={tag.tag}
-                    className={`inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium`}
-                  >
-                    {tag.tag}
-                  </span>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="text-center flex-1 flex flex-col justify-center items-center text-muted-foreground">
-              <Hash className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">暂无标签数据</p>
-            </div>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {topTagsList.slice(0, 10).map(tag => {
+              return (
+                <span
+                  key={tag.tag}
+                  className={`inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium`}
+                >
+                  {tag.tag} ({tag.count})
+                </span>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="bg-card rounded-lg border shadow-sm p-6">
+      {/* 月度概览 */}
+      <div className="bg-card rounded-lg border shadow-sm p-6 flex flex-col">
         <div className="flex items-center gap-2 mb-4">
-          <BarChart3 className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold">月度概览</h3>
+          <CalendarIcon className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">
+            {year}年{month}月概览
+          </h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-primary mb-1">{data.recordedDays}</div>
+            <div className="text-2xl font-bold text-primary mb-1">{data.recordedDays || 0}</div>
             <div className="text-xs text-muted-foreground">记录天数</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-500 mb-1">
-              {data.moodDistribution.length}
+              {data.moodDistribution ? Object.keys(data.moodDistribution).length : 0}
             </div>
             <div className="text-xs text-muted-foreground">情绪种类</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-purple-500 mb-1">{data.topTags.length}</div>
+            <div className="text-2xl font-bold text-purple-500 mb-1">{topTagsList.length}</div>
             <div className="text-xs text-muted-foreground">使用标签</div>
           </div>
         </div>

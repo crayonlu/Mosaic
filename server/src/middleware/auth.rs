@@ -12,7 +12,6 @@ use std::{future::Future, pin::Pin, rc::Rc};
 #[derive(Debug, Deserialize, Clone)]
 pub struct Claims {
     pub sub: String,
-    pub exp: usize,
 }
 
 #[derive(Clone)]

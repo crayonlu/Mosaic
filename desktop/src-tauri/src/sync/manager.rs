@@ -70,7 +70,6 @@ impl SyncManager {
                     content,
                     tags: req.tags.unwrap_or_default(),
                     diary_date: None,
-                    resource_filenames: req.resource_filenames,
                 };
                 let memo = self.memo_api.create(api_req).await?;
                 let updated = CachedMemo::from_memo_with_resources(&memo);
@@ -84,10 +83,7 @@ impl SyncManager {
                 summary: req.summary,
                 mood_key: req.mood_key,
                 mood_score: req.mood_score,
-                cover_image_id: req
-                    .cover_image_id
-                    .as_ref()
-                    .and_then(|id| uuid::Uuid::parse_str(id).ok()),
+                cover_image_id: req.cover_image_id,
             };
             let _diary = self
                 .diary_api
@@ -109,7 +105,6 @@ impl SyncManager {
                 tags: req.tags,
                 is_archived: None,
                 diary_date: None,
-                resource_filenames: req.resource_filenames,
             };
 
             let id = &op.entity_id;
@@ -142,19 +137,18 @@ impl SyncManager {
     async fn sync_memos(&self) -> AppResult<()> {
         let server_memos = self.memo_api.list(1, 1000, None).await?;
 
-        for memo_with_res in server_memos.items {
-            let server_memo = &memo_with_res.memo;
+        for server_memo in server_memos.items {
             let cached = self.cache.get_memo(&server_memo.id.to_string()).await?;
 
             match cached {
                 Some(local) => {
                     if server_memo.updated_at > local.updated_at {
-                        let updated = CachedMemo::from_memo_with_resources(&memo_with_res);
+                        let updated = CachedMemo::from_memo_with_resources(&server_memo);
                         self.cache.upsert_memo(&updated).await?;
                     }
                 }
                 None => {
-                    let cached = CachedMemo::from_memo_with_resources(&memo_with_res);
+                    let cached = CachedMemo::from_memo_with_resources(&server_memo);
                     self.cache.upsert_memo(&cached).await?;
                 }
             }
