@@ -19,7 +19,7 @@ COPY server/src ./src
 COPY server/migrations ./migrations
 COPY server/Cargo.toml ./server/Cargo.toml
 
-RUN cd server && cargo build --release
+RUN cargo build --release
 
 FROM node:20-alpine AS frontend-builder
 
