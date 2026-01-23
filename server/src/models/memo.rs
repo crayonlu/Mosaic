@@ -48,6 +48,7 @@ pub struct MemoListQuery {
     pub page: Option<u32>,
     pub page_size: Option<u32>,
     pub archived: Option<bool>,
+    pub diary_date: Option<chrono::NaiveDate>,
 }
 
 impl From<Memo> for MemoResponse {

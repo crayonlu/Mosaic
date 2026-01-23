@@ -27,3 +27,18 @@ export interface ShortcutConfig {
   showShortcut: string
   closeShortcut: string
 }
+
+export interface ServerConfig {
+  url: string
+  username: string
+  password: string
+  apiToken?: string
+  // AI Configuration
+  aiProvider: string
+  aiBaseUrl: string
+  aiApiKey: string
+  aiModel?: string
+  aiTemperature?: number
+  aiMaxTokens?: number
+  aiTimeout?: number
+}

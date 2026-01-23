@@ -3,9 +3,21 @@ export interface HeatMapQuery {
   endDate: string
 }
 
+export interface HeatMapCell {
+  date: string
+  count: number
+  color: string
+  isToday: boolean
+  moodKey?: string
+  moodScore?: number
+}
+
 export interface HeatMapData {
   dates: string[]
   counts: number[]
+  cells?: HeatMapCell[]
+  startDate?: string
+  endDate?: string
 }
 
 export interface TimelineQuery {
@@ -56,4 +68,10 @@ export interface SummaryData {
   totalMemos: number
   totalDiaries: number
   totalResources: number
+  moodDistribution?: Record<string, number>
+  avgMoodScore?: number
+  recordedDays?: number
+  totalDays?: number
+  dominantMood?: string
+  topTags?: { tag: string; count: number }[]
 }

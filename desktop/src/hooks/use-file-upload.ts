@@ -7,9 +7,7 @@ const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif']
 
 function isValidFileType(filename: string): boolean {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return (
-    IMAGE_EXTENSIONS.includes(ext)
-  )
+  return IMAGE_EXTENSIONS.includes(ext)
 }
 
 function getFileType(filename: string): 'image' {

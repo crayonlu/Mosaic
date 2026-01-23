@@ -1,14 +1,14 @@
 import type { MoodKey } from '@/types/diary'
 
-export const MOOD_EMOJIS: Record<string, string> = {
-  joy: '😊',
-  anger: '😠',
-  sadness: '😢',
-  calm: '😌',
-  anxiety: '😰',
-  focus: '🎯',
-  tired: '😴',
-  neutral: '😐',
+export const MOOD_EMOJIS: Record<string, { emoji: string; label: string }> = {
+  joy: { emoji: '😊', label: '愉悦' },
+  anger: { emoji: '😠', label: '愤怒' },
+  sadness: { emoji: '😢', label: '悲伤' },
+  calm: { emoji: '😌', label: '平静' },
+  anxiety: { emoji: '😰', label: '焦虑' },
+  focus: { emoji: '🎯', label: '专注' },
+  tired: { emoji: '😴', label: '疲惫' },
+  neutral: { emoji: '😐', label: '中性' },
 }
 
 export const MOOD_LABELS: Record<string, string> = {
@@ -24,12 +24,26 @@ export const MOOD_LABELS: Record<string, string> = {
 
 export function getMoodEmoji(moodKey?: MoodKey | string): string {
   if (!moodKey) return '😐'
-  return MOOD_EMOJIS[moodKey] || '😐'
+  return MOOD_EMOJIS[moodKey]?.emoji || '😐'
 }
 
 export function getMoodLabel(moodKey?: MoodKey | string): string {
   if (!moodKey) return '未知'
   return MOOD_LABELS[moodKey] || moodKey
+}
+
+export function getMoodColor(moodKey?: string): string {
+  const colors: Record<string, string> = {
+    happy: '#22c55e',
+    sad: '#3b82f6',
+    angry: '#ef4444',
+    anxious: '#f59e0b',
+    calm: '#06b6d4',
+    excited: '#f97316',
+    tired: '#6b7280',
+    neutral: '#8b5cf6',
+  }
+  return colors[moodKey || ''] || colors.neutral
 }
 
 export const MOOD_OPTIONS = [

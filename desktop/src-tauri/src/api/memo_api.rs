@@ -10,21 +10,19 @@ pub struct CreateMemoRequest {
     pub tags: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub diary_date: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub resource_filenames: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMemoRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_archived: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub diary_date: Option<Option<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub resource_filenames: Option<Vec<String>>,
 }
 
 pub struct MemoApi {
@@ -62,6 +60,22 @@ impl MemoApi {
         if let Some(archived) = archived {
             url.push_str(&format!("&archived={}", archived));
         }
+
+        self.client
+            .request::<PaginatedResponse<MemoWithResources>>(reqwest::Method::GET, &url, None)
+            .await
+    }
+
+    pub async fn list_by_diary_date(
+        &self,
+        page: u32,
+        page_size: u32,
+        diary_date: &str,
+    ) -> AppResult<PaginatedResponse<MemoWithResources>> {
+        let url = format!(
+            "/api/memos?page={}&page_size={}&diary_date={}",
+            page, page_size, diary_date
+        );
 
         self.client
             .request::<PaginatedResponse<MemoWithResources>>(reqwest::Method::GET, &url, None)
@@ -122,7 +136,6 @@ impl Default for UpdateMemoRequest {
             tags: None,
             is_archived: None,
             diary_date: None,
-            resource_filenames: None,
         }
     }
 }

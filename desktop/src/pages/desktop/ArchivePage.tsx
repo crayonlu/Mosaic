@@ -42,7 +42,7 @@ export default function ArchivePage() {
         memoCommands.getMemosByDate(formattedDate),
         diaryCommands.getDiaryByDate(formattedDate).catch(() => null),
       ])
-      setMemos(memosData.filter(memo => !memo.isDeleted))
+      setMemos(memosData)
       setExistingDiary(diaryData)
     } catch (error) {
       console.error('获取数据失败:', error)

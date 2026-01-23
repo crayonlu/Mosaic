@@ -1,5 +1,7 @@
 use crate::error::AppError;
-use crate::models::{HeatMapData, MoodData, SummaryData, TagData, TimelineData, TimelineEntry, TrendsData};
+use crate::models::{
+    HeatMapData, MoodData, SummaryData, TagData, TimelineData, TimelineEntry, TrendsData,
+};
 use chrono::{NaiveDate, TimeZone, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -59,7 +61,18 @@ impl StatsService {
         end_date: NaiveDate,
     ) -> Result<TimelineData, AppError> {
         // Get all memos in the date range
-        let memos = sqlx::query_as::<_, (Uuid, String, serde_json::Value, bool, Option<chrono::NaiveDate>, i64, i64)>(
+        let memos = sqlx::query_as::<
+            _,
+            (
+                Uuid,
+                String,
+                serde_json::Value,
+                bool,
+                Option<chrono::NaiveDate>,
+                i64,
+                i64,
+            ),
+        >(
             r#"
             SELECT
                 id, content, tags, is_archived, diary_date, created_at, updated_at
@@ -97,16 +110,14 @@ impl StatsService {
         use std::collections::HashMap;
         let mut diary_map: HashMap<String, (String, String, i32)> = HashMap::new();
         for diary in diaries {
-            diary_map.insert(
-                diary.0.to_string(),
-                (diary.1, diary.2, diary.3),
-            );
+            diary_map.insert(diary.0.to_string(), (diary.1, diary.2, diary.3));
         }
 
         // Group memos by date and count
         let mut date_memo_count: HashMap<String, i32> = HashMap::new();
         for memo in &memos {
-            let date = Utc.timestamp_opt(memo.5, 0)
+            let date = Utc
+                .timestamp_opt(memo.5, 0)
                 .unwrap()
                 .date_naive()
                 .to_string();
@@ -122,7 +133,8 @@ impl StatsService {
         let mut entries: Vec<TimelineEntry> = Vec::new();
         for date in dates {
             let memo_count = *date_memo_count.get(&date).unwrap_or(&0);
-            let (summary, mood_key, mood_score) = diary_map.get(&date)
+            let (summary, mood_key, mood_score) = diary_map
+                .get(&date)
                 .map(|(s, m, sc)| (s.clone(), Some(m.clone()), Some(*sc)))
                 .unwrap_or_else(|| (String::new(), None, None));
 
