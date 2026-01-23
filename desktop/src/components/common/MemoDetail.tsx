@@ -1,36 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
-import {
-  ArrowLeft,
-  Play,
-  Pause,
-  Image as ImageIcon,
-  Video as VideoIcon,
-  FileText,
-  Calendar,
-  Tag,
-  Edit2,
-  Save,
-  X,
-  Trash2,
-  Sparkles,
-  Loader2,
-  Plus,
-  Upload,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet'
 import { RichTextEditor } from '@/components/common/RichTextEditor'
-import type { MemoWithResources } from '@/types/memo'
-import { assetCommands, memoCommands } from '@/utils/callRust'
-import { toast } from '@/hooks/use-toast'
-import dayjs from 'dayjs'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -38,11 +8,36 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { useAI } from '@/hooks/use-ai'
-import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable'
-import { useSortable } from '@dnd-kit/sortable'
+import { toast } from '@/hooks/use-toast'
+import type { MemoWithResources } from '@/types/memo'
+import { assetCommands, memoCommands } from '@/utils/callRust'
+import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core'
+import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import dayjs from 'dayjs'
+import {
+  ArrowLeft,
+  Calendar,
+  Edit2,
+  Image as ImageIcon,
+  Loader2,
+  Plus,
+  Save,
+  Sparkles,
+  Tag,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 interface MemoDetailProps {
   memo: MemoWithResources | null
@@ -67,22 +62,13 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [resourceToDelete, setResourceToDelete] = useState<string | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [reorderedImageResources, setReorderedImageResources] = useState<any[]>([])
-  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
-  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null)
   const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
-  const [audioUrls, setAudioUrls] = useState<Map<string, string>>(new Map())
-  const [videoUrls, setVideoUrls] = useState<Map<string, string>>(new Map())
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const audioRefsRef = useRef<Map<string, HTMLAudioElement>>(new Map())
-  const videoRefsRef = useRef<Map<string, HTMLVideoElement>>(new Map())
   const { suggestTags, loading: aiLoading } = useAI()
 
   const imageResources = memo?.resources.filter(r => r.resourceType === 'image') || []
-  const audioResources = memo?.resources.filter(r => r.resourceType === 'voice') || []
-  const videoResources = memo?.resources.filter(r => r.resourceType === 'video') || []
-  const fileResources = memo?.resources.filter(r => r.resourceType === 'file') || []
 
   useEffect(() => {
     if (!memo) {
@@ -99,8 +85,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     const loadResources = async () => {
       const newImageUrls = new Map<string, string>()
-      const newAudioUrls = new Map<string, string>()
-      const newVideoUrls = new Map<string, string>()
 
       for (const resource of memo.resources) {
         try {
@@ -111,10 +95,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
           if (resource.resourceType === 'image') {
             newImageUrls.set(resource.id, url)
-          } else if (resource.resourceType === 'voice') {
-            newAudioUrls.set(resource.id, url)
-          } else if (resource.resourceType === 'video') {
-            newVideoUrls.set(resource.id, url)
           }
         } catch (error) {
           console.error(`加载资源失败 ${resource.filename}:`, error)
@@ -122,8 +102,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       }
 
       setImageUrls(newImageUrls)
-      setAudioUrls(newAudioUrls)
-      setVideoUrls(newVideoUrls)
     }
 
     loadResources()
@@ -133,26 +111,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
         prev.forEach(url => URL.revokeObjectURL(url))
         return new Map()
       })
-      setAudioUrls(prev => {
-        prev.forEach(url => URL.revokeObjectURL(url))
-        return new Map()
-      })
-      setVideoUrls(prev => {
-        prev.forEach(url => URL.revokeObjectURL(url))
-        return new Map()
-      })
-      audioRefsRef.current.forEach(audio => {
-        audio.pause()
-        audio.src = ''
-      })
-      audioRefsRef.current.clear()
-      videoRefsRef.current.forEach(video => {
-        video.pause()
-        video.src = ''
-      })
-      videoRefsRef.current.clear()
-      setPlayingAudioId(null)
-      setPlayingVideoId(null)
     }
   }, [memo, isEditing])
 
@@ -180,12 +138,9 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     try {
       setIsSaving(true)
-      const newFilenames = reorderedImageResources.map(r => r.filename)
-      await memoCommands.updateMemo({
-        id: memo.id,
+      await memoCommands.updateMemo(memo.id, {
         content: editedContent,
         tags: editedTags,
-        resourceFilenames: newFilenames,
       })
       setIsEditing(false)
       onUpdate?.()
@@ -317,11 +272,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       }
 
       if (uploadedFiles.length > 0) {
-        const existingFilenames = memo.resources.map(r => r.filename)
-        await memoCommands.updateMemo({
-          id: memo.id,
-          resourceFilenames: [...existingFilenames, ...uploadedFiles],
-        })
         onUpdate?.()
         toast.success(`成功添加 ${uploadedFiles.length} 个资源`)
       }
@@ -415,53 +365,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
   const handleFileSelect = () => {
     fileInputRef.current?.click()
-  }
-
-  const handleAudioPlay = async (resourceId: string) => {
-    if (playingAudioId === resourceId) {
-      const audio = audioRefsRef.current.get(resourceId)
-      if (audio) {
-        audio.pause()
-        setPlayingAudioId(null)
-      }
-      return
-    }
-
-    audioRefsRef.current.forEach(audio => {
-      audio.pause()
-      audio.currentTime = 0
-    })
-    setPlayingAudioId(null)
-
-    const audio = audioRefsRef.current.get(resourceId)
-    if (audio) {
-      try {
-        await audio.play()
-        setPlayingAudioId(resourceId)
-      } catch (error) {
-        console.error('播放音频失败:', error)
-      }
-    }
-  }
-
-  const handleVideoPlay = (resourceId: string) => {
-    if (playingVideoId === resourceId) {
-      const video = videoRefsRef.current.get(resourceId)
-      if (video) {
-        video.pause()
-        setPlayingVideoId(null)
-      }
-      return
-    }
-
-    videoRefsRef.current.forEach(video => video.pause())
-    setPlayingVideoId(null)
-
-    const video = videoRefsRef.current.get(resourceId)
-    if (video) {
-      video.play()
-      setPlayingVideoId(resourceId)
-    }
   }
 
   const openImageModal = (index: number) => {
@@ -728,174 +631,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
             </div>
           )}
 
-          {videoResources.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <VideoIcon className="h-4 w-4" />
-                <span>视频 ({videoResources.length})</span>
-              </div>
-              <div className="space-y-3">
-                {videoResources.map(resource => {
-                  const url = videoUrls.get(resource.id)
-                  if (!url) return null
-                  return (
-                    <div
-                      key={resource.id}
-                      className="relative rounded-lg border bg-card overflow-hidden"
-                    >
-                      <video
-                        ref={el => {
-                          if (el) videoRefsRef.current.set(resource.id, el)
-                        }}
-                        src={url}
-                        className="w-full"
-                        onPlay={() => setPlayingVideoId(resource.id)}
-                        onPause={() => setPlayingVideoId(null)}
-                        onEnded={() => setPlayingVideoId(null)}
-                      />
-                      <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
-                        {playingVideoId !== resource.id && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-12 w-12 bg-black/50 hover:bg-black/70 text-white rounded-full pointer-events-auto"
-                            onClick={() => handleVideoPlay(resource.id)}
-                          >
-                            <Play className="h-6 w-6 ml-1" />
-                          </Button>
-                        )}
-                      </div>
-                      {isEditing && (
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 h-8 w-8"
-                          onClick={() => {
-                            setResourceToDelete(resource.id)
-                            setIsDeleteResourceDialogOpen(true)
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <div className="p-3 bg-card">
-                        <div className="text-sm font-medium truncate">{resource.filename}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {formatSize(resource.size)}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {audioResources.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Play className="h-4 w-4" />
-                <span>音频 ({audioResources.length})</span>
-              </div>
-              <div className="space-y-2">
-                {audioResources.map(resource => {
-                  const url = audioUrls.get(resource.id)
-                  if (!url) return null
-                  return (
-                    <div key={resource.id} className="rounded-lg border bg-card p-4">
-                      <div className="flex items-center gap-3">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10 rounded-full shrink-0"
-                          onClick={() => handleAudioPlay(resource.id)}
-                        >
-                          {playingAudioId === resource.id ? (
-                            <Pause className="h-5 w-5" />
-                          ) : (
-                            <Play className="h-5 w-5 ml-0.5" />
-                          )}
-                        </Button>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">{resource.filename}</div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {formatSize(resource.size)}
-                          </div>
-                        </div>
-                        {isEditing && (
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={() => {
-                              setResourceToDelete(resource.id)
-                              setIsDeleteResourceDialogOpen(true)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                      <audio
-                        ref={el => {
-                          if (el) {
-                            audioRefsRef.current.set(resource.id, el)
-                            el.onended = () => setPlayingAudioId(null)
-                            el.onpause = () => {
-                              if (el.paused && playingAudioId === resource.id) {
-                                setPlayingAudioId(null)
-                              }
-                            }
-                          }
-                        }}
-                        src={url}
-                        preload="metadata"
-                        className="hidden"
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {fileResources.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <FileText className="h-4 w-4" />
-                <span>文件 ({fileResources.length})</span>
-              </div>
-              <div className="space-y-2">
-                {fileResources.map(resource => (
-                  <div key={resource.id} className="rounded-lg border bg-card p-4">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{resource.filename}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {formatSize(resource.size)}
-                        </div>
-                      </div>
-                      {isEditing && (
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="h-8 w-8 shrink-0"
-                          onClick={() => {
-                            setResourceToDelete(resource.id)
-                            setIsDeleteResourceDialogOpen(true)
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {isEditing && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -932,7 +667,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+                accept="image/*,video/*,.pdf,.doc,.docx,.txt"
                 onChange={e => {
                   if (e.target.files) {
                     handleUploadResources(e.target.files)
@@ -1021,7 +756,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
           <DialogHeader>
             <DialogTitle>删除 memo</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">确定要删除这条 memo 吗？此操作不可撤销。</p>
+          <p className="text-sm text-muted-foreground">确定要删除这条 memo 吗？此操作不可撤销</p>
           <DialogFooter className="mt-4 flex justify-end gap-2">
             <Button
               variant="outline"
@@ -1050,7 +785,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
           <DialogHeader>
             <DialogTitle>删除资源</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">确定要删除这个资源吗？此操作不可撤销。</p>
+          <p className="text-sm text-muted-foreground">确定要删除这个资源吗？此操作不可撤销</p>
           <DialogFooter className="mt-4 flex justify-end gap-2">
             <Button
               variant="outline"

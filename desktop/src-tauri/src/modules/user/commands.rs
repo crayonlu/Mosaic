@@ -1,29 +1,66 @@
-use crate::database::DBPool;
-use crate::error::AppResult;
-use crate::modules::user::models::{UpdateUserRequest, User};
-use crate::modules::user::service;
-use tauri::{AppHandle, State};
+use crate::api::{ApiClient, UserApi};
+use crate::config::AppConfig;
+use crate::models::User;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
+use tauri::State;
 
-#[tauri::command]
-pub async fn get_user(pool: State<'_, DBPool>) -> AppResult<Option<User>> {
-    service::get_user(pool.inner()).await
+pub struct UserAppState {
+    pub config: Arc<AppConfig>,
+    pub user_api: Arc<UserApi>,
+    pub online: Arc<AtomicBool>,
 }
 
 #[tauri::command]
-pub async fn get_or_create_default_user(pool: State<'_, DBPool>) -> AppResult<User> {
-    service::get_or_create_default_user(pool.inner()).await
+pub async fn get_user(state: State<'_, UserAppState>) -> Result<User, String> {
+    state.user_api.get().await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn update_user(pool: State<'_, DBPool>, req: UpdateUserRequest) -> AppResult<User> {
-    service::update_user(pool.inner(), req).await
+pub async fn get_or_create_default_user(state: State<'_, UserAppState>) -> Result<User, String> {
+    match state.user_api.get().await {
+        Ok(user) => Ok(user),
+        Err(_) => Err("User not found".to_string()),
+    }
+}
+
+#[tauri::command]
+pub async fn update_user(
+    state: State<'_, UserAppState>,
+    username: Option<String>,
+    avatar_url: Option<String>,
+) -> Result<User, String> {
+    let user_api = UserApi::new(
+        ApiClient::new(state.config.server.url.clone())
+            .with_token(state.config.server.api_token.clone().unwrap_or_default()),
+    );
+
+    let update_fields = crate::api::UpdateUserRequest {
+        username,
+        avatar_url,
+    };
+
+    user_api
+        .update(update_fields)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn upload_avatar(
-    app_handle: AppHandle,
-    pool: State<'_, DBPool>,
+    state: State<'_, UserAppState>,
     source_path: String,
-) -> AppResult<User> {
-    service::upload_avatar(pool.inner(), &app_handle, &source_path).await
+    data: Vec<u8>,
+    filename: String,
+    mime_type: String,
+) -> Result<User, String> {
+    let user_api = UserApi::new(
+        ApiClient::new(state.config.server.url.clone())
+            .with_token(state.config.server.api_token.clone().unwrap_or_default()),
+    );
+
+    user_api
+        .upload_avatar(source_path, data, filename, mime_type)
+        .await
+        .map_err(|e| e.to_string())
 }

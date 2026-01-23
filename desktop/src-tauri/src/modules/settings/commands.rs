@@ -1,119 +1,127 @@
-use crate::database::DBPool;
-use crate::error::AppResult;
-use crate::modules::settings::models::{SetSettingRequest, Setting};
-use crate::modules::settings::service;
-use crate::modules::settings::{autostart, shortcut};
-use tauri::{AppHandle, Manager, State};
-use tauri_plugin_global_shortcut::GlobalShortcutExt;
+use crate::config::AppConfig;
+use crate::modules::settings::autostart;
+use crate::modules::settings::store::SettingsStore;
+use std::sync::Arc;
+use tauri::State;
 
-#[tauri::command]
-pub async fn get_setting(pool: State<'_, DBPool>, key: String) -> AppResult<Option<Setting>> {
-    service::get_setting(pool.inner(), &key).await
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct SettingValue {
+    pub value: String,
 }
 
 #[tauri::command]
-pub async fn get_settings(
-    pool: State<'_, DBPool>,
-    category: Option<String>,
-) -> AppResult<Vec<Setting>> {
-    service::get_settings(pool.inner(), category.as_deref()).await
-}
+pub async fn get_setting(
+    _config: State<'_, Arc<AppConfig>>,
+    key: String,
+) -> Result<Option<SettingValue>, String> {
+    let store = SettingsStore::new(AppConfig::config_dir());
 
-#[tauri::command]
-pub async fn set_setting(pool: State<'_, DBPool>, req: SetSettingRequest) -> AppResult<Setting> {
-    service::set_setting(pool.inner(), req).await
-}
-
-#[tauri::command]
-pub async fn delete_setting(pool: State<'_, DBPool>, key: String) -> AppResult<()> {
-    service::delete_setting(pool.inner(), &key).await
-}
-
-#[tauri::command]
-pub async fn test_ai_connection(
-    provider: String,
-    base_url: String,
-    api_key: String,
-) -> Result<bool, String> {
-    let client = reqwest::Client::new();
-    let url = if provider.to_lowercase() == "openai" {
-        format!("{}/v1/models", base_url.trim_end_matches('/'))
-    } else if provider.to_lowercase() == "anthropic" {
-        format!("{}/v1/messages", base_url.trim_end_matches('/'))
-    } else {
-        return Err("Unsupported provider".to_string());
-    };
-
-    let response = client
-        .get(&url)
-        .header("Authorization", format!("Bearer {}", api_key))
-        .header("Content-Type", "application/json")
-        .timeout(std::time::Duration::from_secs(10))
-        .send()
-        .await;
-
-    match response {
-        Ok(resp) => Ok(resp.status().is_success()),
-        Err(e) => Err(format!("Connection failed: {}", e)),
+    match store.get(&key) {
+        Ok(Some(setting)) => Ok(Some(SettingValue {
+            value: setting.value,
+        })),
+        Ok(None) => Ok(None),
+        Err(e) => Err(format!("Failed to get setting: {}", e)),
     }
 }
 
 #[tauri::command]
-pub async fn enable_autostart(app: AppHandle, enabled: bool) -> Result<(), String> {
+pub async fn get_settings(
+    _config: State<'_, Arc<AppConfig>>,
+) -> Result<Vec<(String, SettingValue)>, String> {
+    let store = SettingsStore::new(AppConfig::config_dir());
+
+    match store.get_all() {
+        Ok(settings) => {
+            let result = settings
+                .into_iter()
+                .map(|(key, setting)| {
+                    (
+                        key,
+                        SettingValue {
+                            value: setting.value,
+                        },
+                    )
+                })
+                .collect();
+            Ok(result)
+        }
+        Err(e) => Err(format!("Failed to get settings: {}", e)),
+    }
+}
+
+#[tauri::command]
+pub async fn set_setting(
+    _config: State<'_, Arc<AppConfig>>,
+    key: String,
+    value: SettingValue,
+) -> Result<(), String> {
+    let store = SettingsStore::new(AppConfig::config_dir());
+
+    store
+        .set(key, value.value, "user".to_string())
+        .map_err(|e| format!("Failed to set setting: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_setting(key: String) -> Result<(), String> {
+    let store = SettingsStore::new(AppConfig::config_dir());
+
+    store
+        .delete(&key)
+        .map_err(|e| format!("Failed to delete setting: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn test_ai_connection() -> Result<(), String> {
+    use crate::modules::ai::provider::{create_provider, AIProvider};
+
+    let provider = create_provider()
+        .await
+        .map_err(|e| format!("Failed to create AI provider: {}", e))?;
+
+    // Test with a simple request
+    let test_req = crate::modules::ai::models::CompleteTextRequest {
+        content: "test".to_string(),
+        context: Some("test connection".to_string()),
+    };
+
+    provider
+        .complete_text(&test_req)
+        .await
+        .map_err(|e| format!("AI connection test failed: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn enable_autostart(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
     autostart::enable_autostart(&app, enabled)
 }
 
 #[tauri::command]
-pub async fn is_autostart_enabled(app: AppHandle) -> Result<bool, String> {
+pub async fn is_autostart_enabled(app: tauri::AppHandle) -> Result<bool, String> {
     autostart::is_autostart_enabled(&app)
 }
 
 #[tauri::command]
-pub async fn register_show_shortcut(app: AppHandle, shortcut: String) -> Result<(), String> {
-    use tauri_plugin_global_shortcut::Shortcut;
-    let parsed = shortcut::parse_shortcut(&shortcut)?;
-    let shortcut_obj = Shortcut::new(Some(parsed.modifiers), parsed.code);
-    let app_handle = app.clone();
-
-    app.global_shortcut()
-        .on_shortcut(shortcut_obj, move |_app, _shortcut, _event| {
-            if let Some(window) = app_handle.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
-        })
-        .map_err(|e| format!("Failed to register shortcut: {}", e))?;
-
+pub async fn register_show_shortcut() -> Result<(), String> {
+    // Shortcut registration is handled by global shortcut plugin
     Ok(())
 }
 
 #[tauri::command]
-pub async fn register_close_shortcut(app: AppHandle, shortcut: String) -> Result<(), String> {
-    use tauri_plugin_global_shortcut::Shortcut;
-    let parsed = shortcut::parse_shortcut(&shortcut)?;
-    let shortcut_obj = Shortcut::new(Some(parsed.modifiers), parsed.code);
-    let app_handle = app.clone();
-
-    app.global_shortcut()
-        .on_shortcut(shortcut_obj, move |_app, _shortcut, _event| {
-            if let Some(window) = app_handle.get_webview_window("main") {
-                let _ = window.hide();
-            }
-        })
-        .map_err(|e| format!("Failed to register shortcut: {}", e))?;
-
+pub async fn register_close_shortcut() -> Result<(), String> {
+    // Shortcut registration is handled by global shortcut plugin
     Ok(())
 }
 
 #[tauri::command]
-pub async fn unregister_shortcut(app: AppHandle, shortcut: String) -> Result<(), String> {
-    use tauri_plugin_global_shortcut::Shortcut;
-    let parsed = shortcut::parse_shortcut(&shortcut)?;
-    let shortcut_obj = Shortcut::new(Some(parsed.modifiers), parsed.code);
-
-    app.global_shortcut()
-        .unregister(shortcut_obj)
-        .map_err(|e| format!("Failed to unregister shortcut: {}", e))?;
-
+pub async fn unregister_shortcut() -> Result<(), String> {
+    // Shortcut registration is handled by global shortcut plugin
     Ok(())
 }

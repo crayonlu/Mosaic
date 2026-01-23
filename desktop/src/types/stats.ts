@@ -5,15 +5,19 @@ export interface HeatMapQuery {
 
 export interface HeatMapCell {
   date: string
+  count: number
+  color: string
+  isToday: boolean
   moodKey?: string
   moodScore?: number
-  color: string
 }
 
 export interface HeatMapData {
-  startDate: string
-  endDate: string
-  cells: HeatMapCell[]
+  dates: string[]
+  counts: number[]
+  cells?: HeatMapCell[]
+  startDate?: string
+  endDate?: string
 }
 
 export interface TimelineQuery {
@@ -39,17 +43,20 @@ export interface TrendsQuery {
   endDate: string
 }
 
-export interface TrendPoint {
-  date: string
-  moodScore?: number
-  color: string
+export interface MoodData {
+  moodKey: string
+  count: number
+  percentage: number
+}
+
+export interface TagData {
+  tag: string
+  count: number
 }
 
 export interface TrendsData {
-  points: TrendPoint[]
-  avgScore: number
-  maxScore: number
-  minScore: number
+  moods: MoodData[]
+  tags: TagData[]
 }
 
 export interface SummaryQuery {
@@ -57,25 +64,14 @@ export interface SummaryQuery {
   month: number
 }
 
-export interface MoodStats {
-  moodKey: string
-  count: number
-  percentage: number
-  color: string
-}
-
-export interface TagStats {
-  tag: string
-  count: number
-}
-
 export interface SummaryData {
-  year: number
-  month: number
-  totalDays: number
-  recordedDays: number
-  avgMoodScore: number
-  moodDistribution: MoodStats[]
-  topTags: TagStats[]
+  totalMemos: number
+  totalDiaries: number
+  totalResources: number
+  moodDistribution?: Record<string, number>
+  avgMoodScore?: number
+  recordedDays?: number
+  totalDays?: number
   dominantMood?: string
+  topTags?: { tag: string; count: number }[]
 }

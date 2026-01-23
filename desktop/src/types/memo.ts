@@ -3,7 +3,6 @@ export interface Memo {
   content: string
   tags: string[]
   isArchived: boolean
-  isDeleted: boolean
   diaryDate?: string
   createdAt: number
   updatedAt: number
@@ -13,9 +12,11 @@ export interface Resource {
   id: string
   memoId: string
   filename: string
-  resourceType: 'image' | 'voice' | 'video' | 'file'
+  resourceType: string
   mimeType: string
   size: number
+  storageType?: string
+  storagePath?: string
   createdAt: number
 }
 
@@ -24,7 +25,6 @@ export interface MemoWithResources {
   content: string
   tags: string[]
   isArchived: boolean
-  isDeleted: boolean
   diaryDate?: string
   createdAt: number
   updatedAt: number
@@ -34,7 +34,7 @@ export interface MemoWithResources {
 export interface CreateMemoRequest {
   content: string
   tags?: string[]
-  resourceFilenames?: string[]
+  diaryDate?: string
 }
 
 export interface ListMemosRequest {
@@ -46,10 +46,10 @@ export interface ListMemosRequest {
 }
 
 export interface UpdateMemoRequest {
-  id: string
   content?: string
   tags?: string[]
-  resourceFilenames?: string[]
+  isArchived?: boolean
+  diaryDate?: string
 }
 
 export interface SearchMemosRequest {

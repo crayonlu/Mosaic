@@ -1,33 +1,25 @@
-import { useCallback } from 'react'
-import { assetCommands } from '@/utils/callRust'
-import { useInputStore } from '@/stores/input-store'
 import { toast } from '@/hooks/use-toast'
+import { useInputStore } from '@/stores/input-store'
+import { assetCommands } from '@/utils/callRust'
+import { useCallback } from 'react'
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif']
-const AUDIO_EXTENSIONS = ['mp3', 'wav', 'm4a', 'aac', 'webm']
-const VIDEO_EXTENSIONS = ['mp4', 'mov']
 
 function isValidFileType(filename: string): boolean {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return (
-    IMAGE_EXTENSIONS.includes(ext) ||
-    AUDIO_EXTENSIONS.includes(ext) ||
-    VIDEO_EXTENSIONS.includes(ext)
-  )
+  return IMAGE_EXTENSIONS.includes(ext)
 }
 
-function getFileType(filename: string): 'image' | 'audio' | 'video' {
+function getFileType(filename: string): 'image' {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
   if (IMAGE_EXTENSIONS.includes(ext)) return 'image'
-  if (AUDIO_EXTENSIONS.includes(ext)) return 'audio'
-  if (VIDEO_EXTENSIONS.includes(ext)) return 'video'
   return 'image'
 }
 
 export interface UploadedFileInfo {
   filename: string
   previewUrl: string
-  type: 'image' | 'audio' | 'video'
+  type: 'image'
   size: number
 }
 
