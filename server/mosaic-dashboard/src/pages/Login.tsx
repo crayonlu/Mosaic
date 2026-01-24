@@ -22,6 +22,8 @@ export function Login({ onLogin }: LoginProps) {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080'
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -43,14 +45,14 @@ export function Login({ onLogin }: LoginProps) {
           <CardTitle className="text-2xl">Mosaic Dashboard</CardTitle>
           <CardDescription>登录到您的 Mosaic 服务器</CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="serverUrl">服务器地址</Label>
               <Input
                 id="serverUrl"
                 type="url"
-                placeholder="http://localhost:8080"
+                placeholder={currentOrigin}
                 value={serverUrl}
                 onChange={e => setServerUrl(e.target.value)}
                 required

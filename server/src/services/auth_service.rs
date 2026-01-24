@@ -1,7 +1,6 @@
 use crate::error::AppError;
 use crate::models::{
-    ChangePasswordRequest, LoginRequest, RefreshTokenResponse, User,
-    UserResponse,
+    ChangePasswordRequest, LoginRequest, RefreshTokenResponse, User, UserResponse,
 };
 use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::Utc;
@@ -26,6 +25,31 @@ pub struct AuthService {
 impl AuthService {
     pub fn new(pool: PgPool, jwt_secret: String) -> Self {
         Self { pool, jwt_secret }
+    }
+
+    pub async fn ensure_admin_user(&self, username: &str, password: &str) -> Result<(), AppError> {
+        let exists: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE username = $1")
+            .bind(username)
+            .fetch_one(&self.pool)
+            .await?;
+
+        if exists == 0 {
+            let now = chrono::Utc::now().timestamp();
+            let password_hash = bcrypt::hash(password, bcrypt::DEFAULT_COST)
+                .map_err(|_| AppError::Internal("Password hashing failed".to_string()))?;
+
+            sqlx::query(
+                "INSERT INTO users (username, password_hash, created_at, updated_at) VALUES ($1, $2, $3, $4)",
+            )
+            .bind(username)
+            .bind(password_hash)
+            .bind(now)
+            .bind(now)
+            .execute(&self.pool)
+            .await?;
+        }
+
+        Ok(())
     }
 
     async fn find_user_by_username(&self, username: &str) -> Result<Option<User>, AppError> {
