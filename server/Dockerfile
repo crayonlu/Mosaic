@@ -7,10 +7,10 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY server/src ./src
-COPY server/migrations ./migrations
-COPY server/Cargo.toml .
-COPY server/Cargo.lock .
+COPY src ./src
+COPY migrations ./migrations
+COPY Cargo.toml .
+COPY Cargo.lock .
 
 RUN cargo fetch
 RUN cargo build --release --package server
@@ -24,10 +24,10 @@ RUN curl -fsSL https://bun.sh/install | bash
 ENV BUN_INSTALL=/root/.bun
 ENV PATH=$BUN_INSTALL/bin:$PATH
 
-COPY server/mosaic-dashboard/package.json ./
-COPY server/mosaic-dashboard/bun.lock ./
+COPY mosaic-dashboard/package.json ./
+COPY mosaic-dashboard/bun.lock ./
 RUN bun install
-COPY server/mosaic-dashboard ./
+COPY mosaic-dashboard ./
 RUN bun run build
 
 FROM debian:bookworm-slim
