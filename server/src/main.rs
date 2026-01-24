@@ -7,11 +7,12 @@ mod routes;
 mod services;
 mod storage;
 
-use actix_web::{web, App, HttpResponse, HttpServer};
 use actix_files::Files;
+use actix_web::{web, App, HttpResponse, HttpServer};
+use anyhow::anyhow;
 use config::Config;
 use database::{create_pool, run_migrations};
-use middleware::{configure_cors, AuthMiddleware};
+use middleware::{configure_cors, configure_logging, AuthMiddleware};
 use services::{AuthService, DiaryService, MemoService, ResourceService, StatsService};
 use storage::create_storage;
 
@@ -60,7 +61,10 @@ async fn main() -> anyhow::Result<()> {
 
     log::info!("Initializing storage service...");
     let storage = create_storage(&config).await?;
-    log::info!("[OK] Storage service initialized: {:?}", config.storage_type);
+    log::info!(
+        "[OK] Storage service initialized: {:?}",
+        config.storage_type
+    );
 
     let auth_service = AuthService::new(pool.clone(), config.jwt_secret.clone());
     log::info!("[OK] Auth service initialized");
@@ -71,6 +75,17 @@ async fn main() -> anyhow::Result<()> {
     let stats_service = StatsService::new(pool.clone());
     log::info!("[OK] Business services initialized");
 
+    match auth_service
+        .ensure_admin_user(&config.admin_username, &config.admin_password)
+        .await
+    {
+        Ok(_) => log::info!("[OK] Admin user ensured"),
+        Err(e) => {
+            log::error!("[FAILED] Admin user initialization: {}", e);
+            return Err(anyhow!(e.to_string()));
+        }
+    }
+
     let auth_middleware = AuthMiddleware::new(config.jwt_secret.clone());
     let bind_address = format!("0.0.0.0:{}", config.port);
     log::info!("Binding to: {}", bind_address);
@@ -80,6 +95,7 @@ async fn main() -> anyhow::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(configure_logging())
             .wrap(configure_cors())
             .app_data(web::Data::new(auth_service.clone()))
             .app_data(web::Data::new(memo_service.clone()))

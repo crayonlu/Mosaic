@@ -76,7 +76,7 @@ pub async fn get_me(req: HttpRequest, auth_service: web::Data<AuthService>) -> H
 }
 
 pub async fn refresh_token(
-    req: HttpRequest,
+    _req: HttpRequest,
     payload: web::Json<RefreshTokenRequest>,
     auth_service: web::Data<AuthService>,
 ) -> HttpResponse {
