@@ -1,6 +1,5 @@
 # .dockerignore
 target/
-Cargo.lock
 .git/
 .gitignore
 **/*.md
