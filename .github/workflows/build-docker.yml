@@ -57,8 +57,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: server/Dockerfile
+          context: ./server
+          file: Dockerfile
           push: ${{ inputs.push == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha

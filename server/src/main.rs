@@ -18,29 +18,65 @@ use storage::create_storage;
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
     dotenv::dotenv().ok();
-    env_logger::init();
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+
+    log::info!("========================================");
+    log::info!("Mosaic Server starting...");
+    log::info!("========================================");
+
+    match Config::from_env() {
+        Ok(config) => {
+            log::info!("[OK] Configuration loaded");
+            log::info!("  - Database URL: [HIDDEN]");
+            log::info!("  - JWT Secret: [HIDDEN]");
+            log::info!("  - Port: {}", config.port);
+            log::info!("  - Storage Type: {:?}", config.storage_type);
+            log::info!("  - Local Storage Path: {}", config.local_storage_path);
+            log::info!("  - Admin User: {}", config.admin_username);
+        }
+        Err(e) => {
+            log::error!("[FAILED] Configuration load failed: {}", e);
+            log::error!("Please ensure the following environment variables are set:");
+            log::error!("  - DATABASE_URL");
+            log::error!("  - JWT_SECRET");
+            return Err(e);
+        }
+    }
 
     let config = Config::from_env()?;
-    log::info!("Starting server with config: {:?}", config.storage_type);
 
+    log::info!("Connecting to database...");
     let pool = create_pool(&config.database_url).await?;
-    run_migrations(&pool).await?;
-    log::info!("Database migrations completed");
+    log::info!("[OK] Database connected");
 
+    log::info!("Running database migrations...");
+    match run_migrations(&pool).await {
+        Ok(_) => log::info!("[OK] Database migrations completed"),
+        Err(e) => {
+            log::error!("[FAILED] Database migrations failed: {}", e);
+            return Err(e);
+        }
+    }
+
+    log::info!("Initializing storage service...");
     let storage = create_storage(&config).await?;
-    log::info!("Storage initialized: {:?}", config.storage_type);
+    log::info!("[OK] Storage service initialized: {:?}", config.storage_type);
 
     let auth_service = AuthService::new(pool.clone(), config.jwt_secret.clone());
-    log::info!("Auth service initialized");
+    log::info!("[OK] Auth service initialized");
 
     let memo_service = MemoService::new(pool.clone());
     let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone());
     let diary_service = DiaryService::new(pool.clone());
     let stats_service = StatsService::new(pool.clone());
-    log::info!("Services initialized");
+    log::info!("[OK] Business services initialized");
 
     let auth_middleware = AuthMiddleware::new(config.jwt_secret.clone());
     let bind_address = format!("0.0.0.0:{}", config.port);
+    log::info!("Binding to: {}", bind_address);
+
+    log::info!("Starting HTTP server...");
+    log::info!("========================================");
 
     HttpServer::new(move || {
         App::new()
@@ -66,6 +102,7 @@ async fn main() -> anyhow::Result<()> {
     .run()
     .await?;
 
+    log::info!("Server stopped");
     Ok(())
 }
 
