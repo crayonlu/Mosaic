@@ -150,7 +150,8 @@ export const configCommands = {
   setServerConfig: (serverConfig: ServerConfig) =>
     callRust<void>('set_server_config', { serverConfig }),
 
-  testServerConnection: () => callRust<void>('test_server_connection'),
+  testServerConnection: (serverConfig: ServerConfig) =>
+    callRust<void>('test_server_connection', { serverConfig }),
 
   login: (username: string, password: string) =>
     callRust<{ accessToken: string }>('login', { username, password }),

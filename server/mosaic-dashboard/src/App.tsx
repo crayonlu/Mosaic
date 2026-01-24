@@ -12,7 +12,7 @@ function App() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('access_token')
+      const token = localStorage.getItem('accessToken')
       if (token) {
         try {
           const user = await apiClient.getCurrentUser()
@@ -20,8 +20,8 @@ function App() {
           setIsAuthenticated(true)
         } catch (error) {
           console.error('auth: ', error)
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
+          localStorage.removeItem('accessToken')
+          localStorage.removeItem('refreshToken')
           setIsAuthenticated(false)
         }
       }

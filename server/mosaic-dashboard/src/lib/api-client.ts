@@ -24,8 +24,8 @@ class APIClient {
   }
 
   loadConfig() {
-    const token = localStorage.getItem('access_token')
-    const baseURL = localStorage.getItem('api_base_url')
+    const token = localStorage.getItem('accessToken')
+    const baseURL = localStorage.getItem('apiBaseUrl')
 
     if (baseURL) {
       this.baseURL = baseURL
@@ -48,17 +48,17 @@ class APIClient {
 
   async setBaseURL(url: string) {
     this.baseURL = url
-    localStorage.setItem('api_base_url', url)
+    localStorage.setItem('apiBaseUrl', url)
   }
 
   async setToken(token: string) {
-    localStorage.setItem('access_token', token)
+    localStorage.setItem('accessToken', token)
     this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`
   }
 
   async clearAuth() {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('api_base_url')
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('apiBaseUrl')
     this.axiosInstance.defaults.headers.common['Authorization'] = undefined
     this.baseURL = ''
   }
@@ -70,24 +70,24 @@ class APIClient {
     })
 
     await this.setBaseURL(serverUrl)
-    await this.setToken(response.data.access_token)
-    localStorage.setItem('refresh_token', response.data.refresh_token)
+    await this.setToken(response.data.accessToken)
+    localStorage.setItem('refreshToken', response.data.refreshToken)
 
     return response.data
   }
 
   async refreshToken() {
-    const refreshToken = localStorage.getItem('refresh_token')
+    const refreshToken = localStorage.getItem('refreshToken')
     if (!refreshToken) {
       throw new Error('No refresh token')
     }
 
     const response = await axios.post<LoginResponse>(`${this.baseURL}/api/auth/refresh`, {
-      refresh_token: refreshToken,
+      refreshToken: refreshToken,
     })
 
-    await this.setToken(response.data.access_token)
-    localStorage.setItem('refresh_token', response.data.refresh_token)
+    await this.setToken(response.data.accessToken)
+    localStorage.setItem('refreshToken', response.data.refreshToken)
   }
 
   async changePassword(data: ChangePasswordRequest): Promise<void> {
@@ -101,7 +101,7 @@ class APIClient {
 
   async getMemos(params?: {
     page?: number
-    page_size?: number
+    pageSize?: number
     search?: string
   }): Promise<PaginatedResponse<Memo>> {
     const response = await this.axiosInstance.get<PaginatedResponse<Memo>>(
@@ -137,7 +137,7 @@ class APIClient {
 
   async getResources(params?: {
     page?: number
-    page_size?: number
+    pageSize?: number
   }): Promise<PaginatedResponse<Resource>> {
     const response = await this.axiosInstance.get<PaginatedResponse<Resource>>(
       `${this.baseURL}/api/resources`,
@@ -150,7 +150,7 @@ class APIClient {
     const formData = new FormData()
     formData.append('file', file)
     if (memoId) {
-      formData.append('memo_id', memoId)
+      formData.append('memoId', memoId)
     }
 
     const response = await this.axiosInstance.post<Resource>(
@@ -176,7 +176,7 @@ class APIClient {
 
   async getDiaries(params?: {
     page?: number
-    page_size?: number
+    pageSize?: number
   }): Promise<PaginatedResponse<Diary>> {
     const response = await this.axiosInstance.get<PaginatedResponse<Diary>>(
       `${this.baseURL}/api/diaries`,

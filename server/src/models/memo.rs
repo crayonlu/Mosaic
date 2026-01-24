@@ -16,6 +16,7 @@ pub struct Memo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MemoResponse {
     pub id: Uuid,
     pub content: String,
@@ -27,6 +28,7 @@ pub struct MemoResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateMemoRequest {
     pub content: String,
     #[serde(default)]
@@ -36,6 +38,7 @@ pub struct CreateMemoRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateMemoRequest {
     pub content: Option<String>,
     pub tags: Option<Vec<String>>,

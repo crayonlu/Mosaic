@@ -35,7 +35,7 @@ export function MemoList() {
 
   const loadMemos = async () => {
     try {
-      const response = await apiClient.getMemos({ page: 1, page_size: 100 })
+      const response = await apiClient.getMemos({ page: 1, pageSize: 100 })
       setMemos(response.items)
     } catch (error: unknown) {
       console.error('加载 memos 失败', error)
@@ -52,7 +52,7 @@ export function MemoList() {
     }
 
     try {
-      const response = await apiClient.getMemos({ page: 1, page_size: 100, search: searchQuery })
+      const response = await apiClient.getMemos({ page: 1, pageSize: 100, search: searchQuery })
       setMemos(response.items)
     } catch (error: unknown) {
       console.error('搜索失败', error)
@@ -153,7 +153,7 @@ export function MemoList() {
                 <Label htmlFor="content">内容</Label>
                 <textarea
                   id="content"
-                  className="flex min-h-[100px] w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-stone-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-stone-800 dark:bg-stone-950 dark:ring-offset-stone-950 dark:placeholder:text-stone-400 dark:focus-visible:ring-stone-300"
+                  className="flex min-h-25 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-stone-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-stone-800 dark:bg-stone-950 dark:ring-offset-stone-950 dark:placeholder:text-stone-400 dark:focus-visible:ring-stone-300"
                   value={formData.content}
                   onChange={e => setFormData({ ...formData, content: e.target.value })}
                 />
@@ -205,8 +205,8 @@ export function MemoList() {
                           {tag}
                         </Badge>
                       ))}
-                      {memo.is_archived && <Badge variant="outline">已归档</Badge>}
-                    </CardDescription>
+                      {memo.isArchived && <Badge variant="outline">已归档</Badge>}
+                    </CardDescription>  
                   </div>
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(memo)}>
@@ -236,7 +236,7 @@ export function MemoList() {
               <Label htmlFor="editContent">内容</Label>
               <textarea
                 id="editContent"
-                className="flex min-h-[100px] w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-stone-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-stone-800 dark:bg-stone-950 dark:ring-offset-stone-950 dark:placeholder:text-stone-400 dark:focus-visible:ring-stone-300"
+                className="flex min-h-25 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-stone-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-stone-800 dark:bg-stone-950 dark:ring-offset-stone-950 dark:placeholder:text-stone-400 dark:focus-visible:ring-stone-300"
                 value={formData.content}
                 onChange={e => setFormData({ ...formData, content: e.target.value })}
               />

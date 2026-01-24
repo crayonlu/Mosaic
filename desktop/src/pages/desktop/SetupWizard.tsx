@@ -41,13 +41,14 @@ export default function SetupWizard() {
     setErrorMessage('')
 
     try {
-      await configCommands.testServerConnection()
+      await configCommands.testServerConnection(serverConfig)
       setConnectionStatus('success')
       toast.success('服务器连接测试通过')
     } catch (error) {
       setConnectionStatus('error')
-      setErrorMessage(error instanceof Error ? error.message : '连接失败，请检查配置')
-      toast.error(errorMessage)
+      const errMsg = error instanceof Error ? error.message : '连接失败，请检查配置'
+      setErrorMessage(errMsg)
+      toast.error(errMsg)
     } finally {
       setTestingConnection(false)
     }

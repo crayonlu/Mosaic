@@ -16,6 +16,7 @@ pub struct Diary {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DiaryResponse {
     pub date: NaiveDate,
     pub summary: String,
@@ -27,6 +28,7 @@ pub struct DiaryResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateDiaryRequest {
     pub date: NaiveDate,
     pub summary: String,
@@ -38,6 +40,7 @@ pub struct CreateDiaryRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateDiaryRequest {
     pub summary: Option<String>,
     pub mood_key: Option<String>,
