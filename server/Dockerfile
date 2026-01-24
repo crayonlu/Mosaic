@@ -16,7 +16,7 @@ RUN cargo fetch
 RUN cargo build --release --package server
 
 COPY server/src ./src
-COPY server/migrations ./migrations
+COPY migrations ./migrations
 COPY server/Cargo.toml ./server/Cargo.toml
 
 RUN cargo build --release
