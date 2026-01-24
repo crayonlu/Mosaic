@@ -1,4 +1,4 @@
-$dbPath = Join-Path $env:APPDATA "xyz.cyncyn.mosaic\mosaic.db"
+$dbPath = Join-Path $env:LOCALAPPDATA "mosaic"
 
 if (Test-Path $dbPath) {
     Remove-Item $dbPath -Force

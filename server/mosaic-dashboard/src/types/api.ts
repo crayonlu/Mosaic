@@ -4,81 +4,81 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  access_token: string
-  refresh_token: string
+  accessToken: string
+  refreshToken: string
   user: User
 }
 
 export interface User {
   id: string
   username: string
-  avatar_url?: string
-  created_at: number
-  updated_at: number
+  avatarUrl?: string
+  createdAt: number
+  updatedAt: number
 }
 
 export interface ChangePasswordRequest {
-  old_password: string
-  new_password: string
+  oldPassword: string
+  newPassword: string
 }
 
 export interface Memo {
   id: string
   content: string
   tags: string[]
-  is_archived: boolean
-  diary_date?: string
-  created_at: number
-  updated_at: number
+  isArchived: boolean
+  diaryDate?: string
+  createdAt: number
+  updatedAt: number
 }
 
 export interface CreateMemoRequest {
   content: string
   tags?: string[]
-  diary_date?: string
+  diaryDate?: string
 }
 
 export interface UpdateMemoRequest {
   content?: string
   tags?: string[]
-  is_archived?: boolean
-  diary_date?: string | null
+  isArchived?: boolean
+  diaryDate?: string | null
 }
 
 export interface Resource {
   id: string
-  memo_id: string
+  memoId: string
   filename: string
-  resource_type: string
-  mime_type: string
-  file_size: number
-  storage_type: string
+  resourceType: string
+  mimeType: string
+  fileSize: number
+  storageType: string
   url: string
-  created_at: number
+  createdAt: number
 }
 
 export interface Diary {
   date: string
   summary: string
-  mood_key: string
-  mood_score: number
-  cover_image_id?: string
-  memo_count: number
-  created_at: number
-  updated_at: number
+  moodKey: string
+  moodScore: number
+  coverImageId?: string
+  memoCount: number
+  createdAt: number
+  updatedAt: number
 }
 
 export interface CreateDiaryRequest {
   date: string
   summary: string
-  mood_key: string
-  mood_score?: number
-  cover_image_id?: string
+  moodKey: string
+  moodScore?: number
+  coverImageId?: string
 }
 
 export interface PaginatedResponse<T> {
   items: T[]
   total: number
   page: number
-  page_size: number
+  pageSize: number
 }

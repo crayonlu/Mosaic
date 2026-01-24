@@ -16,6 +16,7 @@ pub struct Resource {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ResourceResponse {
     pub id: Uuid,
     pub memo_id: Uuid,
@@ -29,6 +30,7 @@ pub struct ResourceResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateResourceRequest {
     pub memo_id: Uuid,
     pub filename: String,

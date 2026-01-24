@@ -18,13 +18,31 @@ pub async fn set_server_config(
 }
 
 #[tauri::command]
-pub async fn test_server_connection(config: State<'_, AppConfig>) -> Result<(), String> {
-    let auth_api = AuthApi::new(config.server.url.clone());
-    auth_api
-        .login(&config.server.username, &config.server.password)
+pub async fn test_server_connection(server_config: ServerConfig) -> Result<(), String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    let url = format!("{}/api/auth/login", server_config.url.trim_end_matches('/'));
+    
+    let response = client
+        .post(&url)
+        .json(&serde_json::json!({
+            "username": server_config.username,
+            "password": server_config.password
+        }))
+        .send()
         .await
-        .map_err(|e| e.to_string())?;
-    Ok(())
+        .map_err(|e| format!("Network error: {}", e))?;
+
+    let status = response.status();
+    if status.is_success() {
+        Ok(())
+    } else {
+        let error_text = response.text().await.unwrap_or_default();
+        Err(format!("Server returned error {}: {}", status.as_u16(), error_text))
+    }
 }
 
 #[tauri::command]
@@ -33,7 +51,10 @@ pub async fn login(
     username: String,
     password: String,
 ) -> Result<LoginResponse, String> {
-    let auth_api = AuthApi::new(config.server.url.clone());
+    // Reload config from disk to get the latest saved values
+    let current_config = AppConfig::load().map_err(|e| e.to_string())?;
+    
+    let auth_api = AuthApi::new(current_config.server.url.clone());
     let response = auth_api
         .login(&username, &password)
         .await

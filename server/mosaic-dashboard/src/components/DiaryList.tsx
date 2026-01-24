@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { apiClient } from '../lib/api-client'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { apiClient } from '../lib/api-client'
 import type { Diary } from '../types/api'
 
 export function DiaryList() {
@@ -15,7 +15,7 @@ export function DiaryList() {
 
   const loadDiaries = async () => {
     try {
-      const response = await apiClient.getDiaries({ page: 1, page_size: 100 })
+      const response = await apiClient.getDiaries({ page: 1, pageSize: 100 })
       setDiaries(response.items)
     } catch (error: unknown) {
       console.error('加载日记失败', error)
@@ -49,9 +49,9 @@ export function DiaryList() {
                 <CardTitle className="text-lg mb-2">{diary.date}</CardTitle>
                 <CardDescription className="text-base mb-3">{diary.summary}</CardDescription>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="outline">心情: {diary.mood_key}</Badge>
-                  <Badge variant="secondary">评分: {diary.mood_score}/100</Badge>
-                  <Badge variant="outline">{diary.memo_count} 条 memo</Badge>
+                  <Badge variant="outline">心情: {diary.moodKey}</Badge>
+                  <Badge variant="secondary">评分: {diary.moodScore}/100</Badge>
+                  <Badge variant="outline">{diary.memoCount} 条 memo</Badge>
                 </div>
               </div>
             </div>

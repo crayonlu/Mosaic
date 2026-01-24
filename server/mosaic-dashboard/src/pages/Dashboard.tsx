@@ -25,8 +25,8 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const memos = await apiClient.getMemos({ page: 1, page_size: 1000 })
-        const diaries = await apiClient.getDiaries({ page: 1, page_size: 1000 })
+        const memos = await apiClient.getMemos({ page: 1, pageSize: 1000 })
+        const diaries = await apiClient.getDiaries({ page: 1, pageSize: 1000 })
 
         setStats({
           memoCount: memos.total,
