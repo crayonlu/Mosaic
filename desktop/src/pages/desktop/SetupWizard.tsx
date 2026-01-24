@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useServerConfig } from '@/hooks/use-server-config'
 import { useTheme } from '@/hooks/use-theme'
 import { toast } from '@/hooks/use-toast'
 import type { ServerConfig } from '@/types/settings'
@@ -15,6 +16,7 @@ import { useNavigate } from 'react-router-dom'
 export default function SetupWizard() {
   const navigate = useNavigate()
   const { theme } = useTheme()
+  const { checkConfig } = useServerConfig()
   const [loading, setLoading] = useState(false)
   const [testingConnection, setTestingConnection] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -62,6 +64,10 @@ export default function SetupWizard() {
       await configCommands.login(serverConfig.username, serverConfig.password)
 
       toast.success('服务器配置已保存')
+
+      await checkConfig()
+      
+      window.location.reload()
       navigate('/')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '未知错误')

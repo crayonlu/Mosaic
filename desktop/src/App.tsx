@@ -25,8 +25,7 @@ import { useStatsStore } from './stores/stats-store'
 
 function App() {
   const loadHeatmap = useStatsStore(state => state.loadHeatmap)
-  const { isConfigured, loading: configLoading } = useServerConfig()
-
+  const { isConfigured, loading: configLoading, checkConfig } = useServerConfig()
   useEffect(() => {
     loadHeatmap()
   }, [loadHeatmap])

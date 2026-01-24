@@ -4,9 +4,10 @@ use crate::models::User;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use tauri::State;
+use tokio::sync::RwLock;
 
 pub struct UserAppState {
-    pub config: Arc<AppConfig>,
+    pub config: Arc<RwLock<AppConfig>>,
     pub user_api: Arc<UserApi>,
     pub online: Arc<AtomicBool>,
 }
@@ -30,9 +31,14 @@ pub async fn update_user(
     username: Option<String>,
     avatar_url: Option<String>,
 ) -> Result<User, String> {
+    let (server_url, api_token) = {
+        let config_guard = state.config.read().await;
+        (config_guard.server.url.clone(), config_guard.server.api_token.clone().unwrap_or_default())
+    };
+    
     let user_api = UserApi::new(
-        ApiClient::new(state.config.server.url.clone())
-            .with_token(state.config.server.api_token.clone().unwrap_or_default()),
+        ApiClient::new(server_url)
+            .with_token(api_token),
     );
 
     let update_fields = crate::api::UpdateUserRequest {
@@ -54,9 +60,14 @@ pub async fn upload_avatar(
     filename: String,
     mime_type: String,
 ) -> Result<User, String> {
+    let (server_url, api_token) = {
+        let config_guard = state.config.read().await;
+        (config_guard.server.url.clone(), config_guard.server.api_token.clone().unwrap_or_default())
+    };
+    
     let user_api = UserApi::new(
-        ApiClient::new(state.config.server.url.clone())
-            .with_token(state.config.server.api_token.clone().unwrap_or_default()),
+        ApiClient::new(server_url)
+            .with_token(api_token),
     );
 
     user_api

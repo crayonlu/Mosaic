@@ -1,4 +1,4 @@
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { ToolbarButtonProps } from './types'
 
@@ -11,8 +11,8 @@ export function ToolbarButton({
   canExecute,
   className,
 }: ToolbarButtonProps) {
-  const active = isActive ? isActive() : false
-  const canRun = canExecute ? canExecute() : true
+  const active = isActive ? (isActive() ?? false) : false
+  const canRun = canExecute ? (canExecute() ?? true) : true
 
   const tooltipContent = shortcut ? `${label} (${shortcut})` : label
 

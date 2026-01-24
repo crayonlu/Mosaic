@@ -154,12 +154,71 @@ pub fn run() {
                     }
                 };
 
+                let config_arc = std::sync::Arc::new(tokio::sync::RwLock::new(config.clone()));
+
                 if !config.server.is_configured() {
                     eprintln!("No server configuration found - starting in setup mode");
-                    // In setup mode, only manage config, don't initialize other services
-                    app.manage(config);
 
-                    // Still create tray icon even in setup mode
+                    let cache_dir =
+                        dirs::config_local_dir().map(|dir| dir.join("mosaic").join("cache"));
+
+                    let cache = match cache_dir {
+                        Some(path) => match CacheStore::new(path).await {
+                            Ok(c) => Some(c),
+                            Err(e) => {
+                                eprintln!("Failed to create cache in setup mode: {}", e);
+                                let temp_path = std::env::temp_dir().join("mosaic_cache");
+                                CacheStore::new(temp_path).await.ok()
+                            }
+                        },
+                        None => {
+                            eprintln!("Failed to get cache dir in setup mode");
+                            None
+                        }
+                    };
+
+                    if let Some(cache) = cache {
+                        let client = ApiClient::new("http://localhost:3000".to_string());
+                        
+                        let memo_api = Arc::new(MemoApi::new(client.clone()));
+                        let diary_api = Arc::new(DiaryApi::new(client.clone()));
+                        let stats_api = Arc::new(StatsApi::new(client.clone()));
+                        let user_api = Arc::new(UserApi::new(client.clone()));
+
+                        let memo_app_state = AppState {
+                            memo_api: memo_api.clone(),
+                            cache: Arc::new(cache.clone()),
+                            online: Arc::new(AtomicBool::new(false)), // Offline in setup mode
+                        };
+
+                        let diary_app_state = DiaryAppState {
+                            diary_api: diary_api.clone(),
+                            cache: Arc::new(cache.clone()),
+                            online: Arc::new(AtomicBool::new(false)),
+                        };
+
+                        let stats_app_state = StatsAppState {
+                            stats_api: stats_api.clone(),
+                            cache: Arc::new(cache.clone()),
+                            online: Arc::new(AtomicBool::new(false)),
+                        };
+
+                        let user_app_state = crate::modules::user::commands::UserAppState {
+                            config: config_arc.clone(),
+                            user_api: user_api.clone(),
+                            online: Arc::new(AtomicBool::new(false)),
+                        };
+
+                        app.manage(memo_app_state);
+                        app.manage(diary_app_state);
+                        app.manage(stats_app_state);
+                        app.manage(user_app_state);
+                        app.manage(cache);
+                        app.manage(client);
+                    }
+
+                    app.manage(config_arc);
+
                     let show_menu_item =
                         MenuItem::with_id(&app_handle, "show", "显示窗口", true, None::<&str>)?;
                     let quit_menu_item =
@@ -244,7 +303,7 @@ pub fn run() {
                 };
 
                 let user_app_state = crate::modules::user::commands::UserAppState {
-                    config: Arc::new(config.clone()),
+                    config: config_arc.clone(),
                     user_api: user_api.clone(),
                     online: Arc::new(AtomicBool::new(true)),
                 };
@@ -253,7 +312,7 @@ pub fn run() {
                 app.manage(diary_app_state);
                 app.manage(stats_app_state);
                 app.manage(user_app_state);
-                app.manage(config.clone());
+                app.manage(config_arc.clone());
                 app.manage(cache);
                 app.manage(client);
                 app.manage(Arc::new(sync_manager.clone()));

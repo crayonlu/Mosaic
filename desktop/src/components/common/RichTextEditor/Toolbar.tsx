@@ -1,34 +1,34 @@
+import { cn } from '@/lib/utils'
 import { Editor } from '@tiptap/react'
 import {
-  Bold,
-  Italic,
-  Strikethrough,
-  Underline,
-  Code,
-  Highlighter,
-  Heading1,
-  Heading2,
-  Heading3,
-  List,
-  ListOrdered,
-  Quote,
-  CheckSquare,
-  Link,
-  Code2,
-  Undo2,
-  Redo2,
-  RemoveFormatting,
-  Wand2,
-  Sparkles,
+    Bold,
+    CheckSquare,
+    Code,
+    Code2,
+    Heading1,
+    Heading2,
+    Heading3,
+    Highlighter,
+    Italic,
+    Link,
+    List,
+    ListOrdered,
+    Quote,
+    Redo2,
+    RemoveFormatting,
+    Sparkles,
+    Strikethrough,
+    Underline,
+    Undo2,
+    Wand2,
 } from 'lucide-react'
-import { ToolbarButton } from './ToolbarButton'
-import { InsertMenu } from './InsertMenu'
-import { LinkDialog } from './LinkDialog'
-import { CodeBlockLanguageSelector } from './CodeBlockLanguageSelector'
-import { HighlightColorSelector } from './HighlightColorSelector'
-import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { AIRewriteDialog } from '../AIRewriteDialog'
+import { CodeBlockLanguageSelector } from './CodeBlockLanguageSelector'
+import { HighlightColorSelector } from './HighlightColorSelector'
+import { InsertMenu } from './InsertMenu'
+import { LinkDialog } from './LinkDialog'
+import { ToolbarButton } from './ToolbarButton'
 
 interface ToolbarProps {
   editor: Editor
@@ -40,6 +40,11 @@ interface ToolbarProps {
 export function Toolbar({ editor, className, onCompleteText, isCompleting }: ToolbarProps) {
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
   const [isRewriteDialogOpen, setIsRewriteDialogOpen] = useState(false)
+
+  // Check if editor is ready
+  if (!editor || !editor.view || editor.isDestroyed) {
+    return null
+  }
 
   // 格式化组
   const formatButtons = [
