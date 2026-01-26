@@ -38,4 +38,6 @@ reqwest = { version = "0.12", features = ["json", "multipart", "default-tls"] }
 urlencoding = "2.1"
 tokio = { version = "1", features = ["full"] }
 infer = "0.16"
+jsonwebtoken = "9"
+base64 = "0.22"
 

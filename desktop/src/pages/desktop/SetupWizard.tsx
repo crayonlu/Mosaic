@@ -66,7 +66,7 @@ export default function SetupWizard() {
       toast.success('服务器配置已保存')
 
       await checkConfig()
-      
+
       window.location.reload()
       navigate('/')
     } catch (error) {

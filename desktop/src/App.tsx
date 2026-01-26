@@ -3,9 +3,6 @@ import './styles/App.css'
 import './styles/editer.css'
 import './styles/scroll-bar.css'
 
-// React
-import { useEffect } from 'react'
-
 // Router Imports
 import { Navigate, Route, Routes } from 'react-router-dom'
 import ArchivePage from './pages/desktop/ArchivePage'
@@ -21,14 +18,9 @@ import { Toaster } from './components/ui/toaster'
 
 // Stores
 import { useServerConfig } from './hooks/use-server-config'
-import { useStatsStore } from './stores/stats-store'
 
 function App() {
-  const loadHeatmap = useStatsStore(state => state.loadHeatmap)
-  const { isConfigured, loading: configLoading, checkConfig } = useServerConfig()
-  useEffect(() => {
-    loadHeatmap()
-  }, [loadHeatmap])
+  const { isConfigured, loading: configLoading } = useServerConfig()
 
   if (configLoading) {
     return null

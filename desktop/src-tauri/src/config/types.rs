@@ -8,9 +8,7 @@ pub struct ServerConfig {
     pub url: String,
     pub username: String,
     pub password: String,
-    #[serde(skip_serializing)]
     pub api_token: Option<String>,
-    #[serde(skip_serializing)]
     pub refresh_token: Option<String>,
     // AI Configuration
     pub ai_provider: String,

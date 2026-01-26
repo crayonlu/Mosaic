@@ -179,7 +179,7 @@ pub fn run() {
 
                     if let Some(cache) = cache {
                         let client = ApiClient::new("http://localhost:3000".to_string());
-                        
+
                         let memo_api = Arc::new(MemoApi::new(client.clone()));
                         let diary_api = Arc::new(DiaryApi::new(client.clone()));
                         let stats_api = Arc::new(StatsApi::new(client.clone()));
@@ -254,8 +254,42 @@ pub fn run() {
                     return Ok::<(), Box<dyn std::error::Error>>(());
                 }
 
+                let config_clone_for_refresh = config_arc.clone();
+                let refresh_fn = move || {
+                    let config = config_clone_for_refresh.clone();
+                    Box::pin(async move {
+                        let refresh_token = {
+                            let config_guard = config.read().await;
+                            config_guard.server.refresh_token.clone().ok_or_else(|| {
+                                error::AppError::Internal("No refresh token available".to_string())
+                            })?
+                        };
+
+                        let server_url = {
+                            let config_guard = config.read().await;
+                            config_guard.server.url.clone()
+                        };
+
+                        let auth_api = AuthApi::new(server_url);
+                        let response = auth_api.refresh_token(&refresh_token).await?;
+
+                        let mut config_guard = config.write().await;
+                        config_guard.server.api_token = Some(response.access_token.clone());
+                        config_guard.server.refresh_token = Some(response.refresh_token.clone());
+                        config_guard
+                            .save()
+                            .map_err(|e| error::AppError::Internal(e.to_string()))?;
+
+                        Ok(response.access_token)
+                    })
+                        as std::pin::Pin<
+                            Box<dyn std::future::Future<Output = error::AppResult<String>> + Send>,
+                        >
+                };
+
                 let client = ApiClient::new(config.server.url.clone())
-                    .with_token(config.server.api_token.clone().unwrap_or_default());
+                    .with_token(config.server.api_token.clone().unwrap_or_default())
+                    .with_refresh_fn(refresh_fn);
 
                 let cache_dir =
                     dirs::config_local_dir().map(|dir| dir.join("mosaic").join("cache"));

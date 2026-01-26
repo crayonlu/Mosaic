@@ -39,13 +39,63 @@ import type { SyncStatus, SyncStatusInfo } from '@/types/sync'
 import type { UpdateUserRequest, User } from '@/types/user'
 import { invoke } from '@tauri-apps/api/core'
 
+let isRefreshingToken = false
+let refreshPromise: Promise<void> | null = null
+
+async function refreshTokenIfNeeded() {
+  if (isRefreshingToken && refreshPromise) {
+    return refreshPromise
+  }
+
+  isRefreshingToken = true
+  refreshPromise = (async () => {
+    try {
+      await invoke<{ accessToken: string }>('refresh_token')
+      console.log('Token refreshed successfully')
+    } catch (error) {
+      const errorMessage = String(error)
+      if (errorMessage.includes('No refresh token available')) {
+        console.error('No refresh token available - redirecting to setup')
+        if (window.location.pathname !== '/setup') {
+          window.location.href = '/setup'
+        }
+        throw new Error('Please login again')
+      }
+      console.error('Token refresh failed:', error)
+      throw error
+    } finally {
+      isRefreshingToken = false
+      refreshPromise = null
+    }
+  })()
+
+  return refreshPromise
+}
+
 export async function callRust<T = unknown>(
   cmd: string,
-  args?: Record<string, unknown>
+  args?: Record<string, unknown>,
+  retryCount = 0
 ): Promise<T> {
   try {
     return await invoke<T>(cmd, args)
   } catch (error) {
+    const errorMessage = String(error)
+
+    if (
+      (errorMessage.includes('Unauthorized') || errorMessage.includes('User not found')) &&
+      retryCount === 0 &&
+      cmd !== 'refresh_token'
+    ) {
+      try {
+        await refreshTokenIfNeeded()
+        return await callRust<T>(cmd, args, 1)
+      } catch (refreshError) {
+        console.error(`Error calling ${cmd} after refresh:`, refreshError)
+        throw error
+      }
+    }
+
     console.error(`Error calling ${cmd}:`, error)
     throw error
   }
