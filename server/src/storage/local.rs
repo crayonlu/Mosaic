@@ -51,4 +51,14 @@ impl Storage for LocalStorage {
     async fn get_presigned_url(&self, path: &str, _expires_secs: u64) -> anyhow::Result<String> {
         Ok(format!("/api/resources/download/{}", path))
     }
+
+    async fn get_presigned_upload_url(
+        &self,
+        _path: &str,
+        _expires_secs: u64,
+    ) -> anyhow::Result<String> {
+        Err(anyhow::anyhow!(
+            "Direct upload not supported for local storage"
+        ))
+    }
 }

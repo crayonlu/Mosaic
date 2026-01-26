@@ -7,4 +7,9 @@ pub trait Storage: Send + Sync {
     async fn download(&self, path: &str) -> anyhow::Result<Bytes>;
     async fn delete(&self, path: &str) -> anyhow::Result<()>;
     async fn get_presigned_url(&self, path: &str, expires_secs: u64) -> anyhow::Result<String>;
+    async fn get_presigned_upload_url(
+        &self,
+        path: &str,
+        expires_secs: u64,
+    ) -> anyhow::Result<String>;
 }

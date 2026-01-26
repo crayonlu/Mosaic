@@ -98,6 +98,41 @@ pub async fn delete_memo(
     }
 }
 
+pub async fn archive_memo(
+    req: HttpRequest,
+    path: web::Path<uuid::Uuid>,
+    memo_service: web::Data<MemoService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match memo_service.archive_memo(&user_id, path.into_inner()).await {
+        Ok(()) => HttpResponse::Ok().finish(),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+pub async fn unarchive_memo(
+    req: HttpRequest,
+    path: web::Path<uuid::Uuid>,
+    memo_service: web::Data<MemoService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match memo_service
+        .unarchive_memo(&user_id, path.into_inner())
+        .await
+    {
+        Ok(()) => HttpResponse::Ok().finish(),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
 pub async fn search_memos(
     req: HttpRequest,
     query: web::Query<std::collections::HashMap<String, String>>,
@@ -120,8 +155,7 @@ pub fn configure_memo_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/memos")
             .route(web::post().to(create_memo))
-            .route(web::get().to(list_memos))
-            .route(web::get().to(search_memos)),
+            .route(web::get().to(list_memos)),
     )
     .service(
         web::resource("/memos/{id}")
@@ -129,5 +163,7 @@ pub fn configure_memo_routes(cfg: &mut web::ServiceConfig) {
             .route(web::put().to(update_memo))
             .route(web::delete().to(delete_memo)),
     )
+    .service(web::resource("/memos/{id}/archive").route(web::put().to(archive_memo)))
+    .service(web::resource("/memos/{id}/unarchive").route(web::put().to(unarchive_memo)))
     .service(web::resource("/memos/search").route(web::get().to(search_memos)));
 }

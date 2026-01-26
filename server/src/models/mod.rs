@@ -30,7 +30,10 @@ pub mod user;
 
 pub use diary::{CreateDiaryRequest, Diary, DiaryListQuery, DiaryResponse, UpdateDiaryRequest};
 pub use memo::{CreateMemoRequest, Memo, MemoListQuery, MemoResponse, UpdateMemoRequest};
-pub use resource::{CreateResourceRequest, Resource, ResourceResponse};
+pub use resource::{
+    ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse, Resource,
+    ResourceResponse,
+};
 pub use stats::{
     HeatMapData, MoodData, SummaryData, TagData, TimelineData, TimelineEntry, TrendsData,
 };

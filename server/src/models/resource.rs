@@ -37,3 +37,17 @@ pub struct CreateResourceRequest {
     pub mime_type: String,
     pub file_size: i64,
 }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresignedUploadResponse {
+    pub upload_url: String,
+    pub resource_id: Uuid,
+    pub storage_path: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfirmUploadRequest {
+    pub resource_id: Uuid,
+}
