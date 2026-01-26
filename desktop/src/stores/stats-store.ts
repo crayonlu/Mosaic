@@ -36,7 +36,7 @@ export const useStatsStore = create<StatsState>((set, get) => ({
       }
 
       const rawData = await statsCommands.getHeatmap(query)
-      
+
       const dateCountMap = new Map<string, number>()
       rawData.dates.forEach((date, index) => {
         dateCountMap.set(date, rawData.counts[index])
@@ -51,7 +51,7 @@ export const useStatsStore = create<StatsState>((set, get) => ({
       while (current.isBefore(end) || current.isSame(end, 'day')) {
         const dateStr = current.format('YYYY-MM-DD')
         const count = dateCountMap.get(dateStr) || 0
-        
+
         // Calculate color intensity based on count
         let color = '#ebedf0' // default empty color
         if (count > 0) {

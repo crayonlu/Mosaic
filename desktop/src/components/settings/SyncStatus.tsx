@@ -41,7 +41,7 @@ export function SyncStatusDisplay() {
           <div className="space-y-2 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">服务器地址</span>
-              <span className="font-mono">{config.url}</span>
+              <span>{config.url}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">用户名</span>

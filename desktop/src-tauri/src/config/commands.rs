@@ -5,7 +5,9 @@ use tauri::State;
 use tokio::sync::RwLock;
 
 #[tauri::command]
-pub async fn get_server_config(config: State<'_, Arc<RwLock<AppConfig>>>) -> Result<ServerConfig, String> {
+pub async fn get_server_config(
+    config: State<'_, Arc<RwLock<AppConfig>>>,
+) -> Result<ServerConfig, String> {
     let config_guard = config.read().await;
     Ok(config_guard.server.clone())
 }
@@ -29,7 +31,7 @@ pub async fn test_server_connection(server_config: ServerConfig) -> Result<(), S
         .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
 
     let url = format!("{}/api/auth/login", server_config.url.trim_end_matches('/'));
-    
+
     let response = client
         .post(&url)
         .json(&serde_json::json!({
@@ -45,7 +47,11 @@ pub async fn test_server_connection(server_config: ServerConfig) -> Result<(), S
         Ok(())
     } else {
         let error_text = response.text().await.unwrap_or_default();
-        Err(format!("Server returned error {}: {}", status.as_u16(), error_text))
+        Err(format!(
+            "Server returned error {}: {}",
+            status.as_u16(),
+            error_text
+        ))
     }
 }
 
@@ -59,7 +65,7 @@ pub async fn login(
         let config_guard = config.read().await;
         config_guard.server.url.clone()
     };
-    
+
     let auth_api = AuthApi::new(server_url);
     let response = auth_api
         .login(&username, &password)
@@ -75,7 +81,9 @@ pub async fn login(
 }
 
 #[tauri::command]
-pub async fn refresh_token(config: State<'_, Arc<RwLock<AppConfig>>>) -> Result<LoginResponse, String> {
+pub async fn refresh_token(
+    config: State<'_, Arc<RwLock<AppConfig>>>,
+) -> Result<LoginResponse, String> {
     let (refresh_token, server_url) = {
         let config_guard = config.read().await;
         let refresh_token = match config_guard.server.refresh_token.clone() {
@@ -116,7 +124,7 @@ pub async fn change_password(
         let config_guard = config.read().await;
         config_guard.server.url.clone()
     };
-    
+
     let auth_api = AuthApi::new(server_url);
     auth_api
         .change_password(&old_password, &new_password)
@@ -133,7 +141,9 @@ pub struct SyncSettings {
 }
 
 #[tauri::command]
-pub async fn get_sync_settings(config: State<'_, Arc<RwLock<AppConfig>>>) -> Result<SyncSettings, String> {
+pub async fn get_sync_settings(
+    config: State<'_, Arc<RwLock<AppConfig>>>,
+) -> Result<SyncSettings, String> {
     let config_guard = config.read().await;
     Ok(SyncSettings {
         auto_sync: config_guard.auto_sync,

@@ -1,18 +1,17 @@
-import { useState, useEffect, useRef } from 'react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Label } from '@radix-ui/react-label'
-import { userCommands } from '@/utils/callRust'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { User as UserIcon, Loader2 } from 'lucide-react'
-import { assetCommands } from '@/utils/callRust'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
 import { useUserStore } from '@/stores/user-store'
 import { useAvatarUrl } from '@/utils/avatar-helpers'
-import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { assetCommands, userCommands } from '@/utils/callRust'
+import { Label } from '@radix-ui/react-label'
+import { Loader2, User as UserIcon } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 export function UserSettings() {
-  const { user, loadUser } = useUserStore()
+  const { user, loadUser, loading: userLoading } = useUserStore()
   const [username, setUsername] = useState('')
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -67,7 +66,7 @@ export function UserSettings() {
     }
   }
 
-  if (!user) {
+  if (!user || userLoading) {
     return <LoadingSkeleton lines={3} />
   }
 

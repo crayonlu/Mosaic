@@ -33,13 +33,13 @@ pub async fn update_user(
 ) -> Result<User, String> {
     let (server_url, api_token) = {
         let config_guard = state.config.read().await;
-        (config_guard.server.url.clone(), config_guard.server.api_token.clone().unwrap_or_default())
+        (
+            config_guard.server.url.clone(),
+            config_guard.server.api_token.clone().unwrap_or_default(),
+        )
     };
-    
-    let user_api = UserApi::new(
-        ApiClient::new(server_url)
-            .with_token(api_token),
-    );
+
+    let user_api = UserApi::new(ApiClient::new(server_url).with_token(api_token));
 
     let update_fields = crate::api::UpdateUserRequest {
         username,
@@ -62,13 +62,13 @@ pub async fn upload_avatar(
 ) -> Result<User, String> {
     let (server_url, api_token) = {
         let config_guard = state.config.read().await;
-        (config_guard.server.url.clone(), config_guard.server.api_token.clone().unwrap_or_default())
+        (
+            config_guard.server.url.clone(),
+            config_guard.server.api_token.clone().unwrap_or_default(),
+        )
     };
-    
-    let user_api = UserApi::new(
-        ApiClient::new(server_url)
-            .with_token(api_token),
-    );
+
+    let user_api = UserApi::new(ApiClient::new(server_url).with_token(api_token));
 
     user_api
         .upload_avatar(source_path, data, filename, mime_type)

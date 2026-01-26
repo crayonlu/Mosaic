@@ -12,7 +12,7 @@ export function ToolbarButton({
   className,
 }: ToolbarButtonProps) {
   const active = isActive ? (isActive() ?? false) : false
-  const canRun = canExecute ? (canExecute() ?? true) : true
+  const canRun = canExecute ? (canExecute?.() ?? true) : true
 
   const tooltipContent = shortcut ? `${label} (${shortcut})` : label
 

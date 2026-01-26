@@ -68,7 +68,7 @@ impl UserApi {
 
         let mut request = self.client.inner().post(&url);
 
-        if let Some(ref token) = self.client.token() {
+        if let Some(token) = self.client.token().await {
             request = request.header("Authorization", format!("Bearer {}", token));
         }
 
