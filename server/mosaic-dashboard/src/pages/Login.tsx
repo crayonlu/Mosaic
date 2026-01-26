@@ -17,12 +17,11 @@ interface LoginProps {
 }
 
 export function Login({ onLogin }: LoginProps) {
-  const [serverUrl, setServerUrl] = useState('http://localhost:8080')
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080'
+  const [serverUrl, setServerUrl] = useState(currentOrigin)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-
-  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
