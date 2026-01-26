@@ -3,6 +3,7 @@ use crate::modules::settings::autostart;
 use crate::modules::settings::store::SettingsStore;
 use std::sync::Arc;
 use tauri::State;
+use tokio::sync::RwLock;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SettingValue {
@@ -11,7 +12,7 @@ pub struct SettingValue {
 
 #[tauri::command]
 pub async fn get_setting(
-    _config: State<'_, Arc<AppConfig>>,
+    _config: State<'_, Arc<RwLock<AppConfig>>>,
     key: String,
 ) -> Result<Option<SettingValue>, String> {
     let store = SettingsStore::new(AppConfig::config_dir());
@@ -27,7 +28,7 @@ pub async fn get_setting(
 
 #[tauri::command]
 pub async fn get_settings(
-    _config: State<'_, Arc<AppConfig>>,
+    _config: State<'_, Arc<RwLock<AppConfig>>>,
 ) -> Result<Vec<(String, SettingValue)>, String> {
     let store = SettingsStore::new(AppConfig::config_dir());
 
@@ -52,7 +53,7 @@ pub async fn get_settings(
 
 #[tauri::command]
 pub async fn set_setting(
-    _config: State<'_, Arc<AppConfig>>,
+    _config: State<'_, Arc<RwLock<AppConfig>>>,
     key: String,
     value: SettingValue,
 ) -> Result<(), String> {
@@ -124,4 +125,29 @@ pub async fn register_close_shortcut() -> Result<(), String> {
 pub async fn unregister_shortcut() -> Result<(), String> {
     // Shortcut registration is handled by global shortcut plugin
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_data_directory() -> Result<String, String> {
+    let dir = crate::config::AppConfig::config_dir();
+    Ok(dir.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub async fn get_default_data_directory() -> Result<String, String> {
+    let dir = crate::config::AppConfig::config_dir();
+    Ok(dir.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub async fn set_data_directory(_new_directory_path: String) -> Result<(), String> {
+    // Data directory is fixed, this is a no-op for now
+    // In the future, this could support custom data directories
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn needs_data_migration() -> Result<bool, String> {
+    // No migration needed by default
+    Ok(false)
 }

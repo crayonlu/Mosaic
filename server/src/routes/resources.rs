@@ -1,5 +1,5 @@
 use crate::middleware::get_user_id;
-use crate::models::CreateResourceRequest;
+use crate::models::{ConfirmUploadRequest, CreateResourceRequest};
 use crate::services::ResourceService;
 use actix_web::{web, HttpRequest, HttpResponse};
 use futures_util::StreamExt;
@@ -113,8 +113,90 @@ pub async fn delete_resource(
     }
 }
 
+pub async fn create_presigned_upload(
+    req: HttpRequest,
+    body: web::Json<CreateResourceRequest>,
+    resource_service: web::Data<ResourceService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match resource_service
+        .create_presigned_upload(&user_id, body.into_inner())
+        .await
+    {
+        Ok(response) => HttpResponse::Ok().json(response),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+pub async fn confirm_upload(
+    req: HttpRequest,
+    body: web::Json<ConfirmUploadRequest>,
+    resource_service: web::Data<ResourceService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match resource_service
+        .confirm_upload(&user_id, body.into_inner())
+        .await
+    {
+        Ok(resource) => HttpResponse::Ok().json(resource),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+pub async fn upload_avatar(
+    req: HttpRequest,
+    mut payload: web::Payload,
+    query: web::Query<std::collections::HashMap<String, String>>,
+    resource_service: web::Data<ResourceService>,
+    auth_service: web::Data<crate::services::AuthService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    let filename = query.get("filename").unwrap_or(&String::new()).clone();
+    let mime_type = query
+        .get("mime_type")
+        .unwrap_or(&"image/jpeg".to_string())
+        .clone();
+
+    let mut data = web::BytesMut::new();
+    while let Some(chunk) = payload.next().await {
+        match chunk {
+            Ok(c) => data.extend_from_slice(&c),
+            Err(_) => return HttpResponse::InternalServerError().finish(),
+        }
+    }
+
+    match resource_service
+        .upload_avatar(&user_id, filename, data.freeze(), mime_type)
+        .await
+    {
+        Ok(_avatar_url) => match auth_service.get_current_user(&user_id).await {
+            Ok(user) => HttpResponse::Ok().json(user),
+            Err(e) => HttpResponse::from_error(e),
+        },
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
 pub fn configure_resource_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/resources/upload").route(web::post().to(upload_resource)))
+        .service(
+            web::resource("/resources/presigned-upload")
+                .route(web::post().to(create_presigned_upload)),
+        )
+        .service(web::resource("/resources/confirm-upload").route(web::post().to(confirm_upload)))
+        .service(web::resource("/resources/upload-avatar").route(web::post().to(upload_avatar)))
         .service(
             web::resource("/resources/{id}")
                 .route(web::get().to(get_resource))

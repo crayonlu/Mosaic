@@ -1,6 +1,9 @@
 use crate::config::Config;
 use crate::error::AppError;
-use crate::models::{CreateResourceRequest, Resource, ResourceResponse};
+use crate::models::{
+    ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse, Resource,
+    ResourceResponse,
+};
 use crate::storage::traits::Storage;
 use bytes::Bytes;
 use chrono::Utc;
@@ -73,11 +76,16 @@ impl ResourceService {
         .fetch_one(&self.pool)
         .await?;
 
-        let url = self
-            .storage
-            .get_presigned_url(&storage_path, 86400)
-            .await
-            .map_err(|e| AppError::Storage(e.to_string()))?;
+        let url = match self.config.storage_type {
+            crate::config::StorageType::Local => {
+                format!("/api/resources/{}/download", resource_id)
+            }
+            crate::config::StorageType::R2 => self
+                .storage
+                .get_presigned_url(&storage_path, 86400)
+                .await
+                .map_err(|e| AppError::Storage(e.to_string()))?,
+        };
 
         Ok(ResourceResponse {
             id: resource.id,
@@ -110,11 +118,16 @@ impl ResourceService {
         .await?
         .ok_or(AppError::ResourceNotFound)?;
 
-        let url = self
-            .storage
-            .get_presigned_url(&resource.storage_path, 86400)
-            .await
-            .map_err(|e| AppError::Storage(e.to_string()))?;
+        let url = match self.config.storage_type {
+            crate::config::StorageType::Local => {
+                format!("/api/resources/{}/download", resource_id)
+            }
+            crate::config::StorageType::R2 => self
+                .storage
+                .get_presigned_url(&resource.storage_path, 86400)
+                .await
+                .map_err(|e| AppError::Storage(e.to_string()))?,
+        };
 
         Ok(ResourceResponse {
             id: resource.id,
@@ -178,5 +191,134 @@ impl ResourceService {
             .await?;
 
         Ok(())
+    }
+
+    pub async fn upload_avatar(
+        &self,
+        user_id: &str,
+        _filename: String,
+        data: Bytes,
+        mime_type: String,
+    ) -> Result<String, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+
+        let avatar_id = Uuid::new_v4();
+        let storage_path = format!("avatars/{}/{}", user_id, avatar_id);
+
+        self.storage
+            .upload(&storage_path, data, &mime_type)
+            .await
+            .map_err(|e| AppError::Storage(e.to_string()))?;
+
+        let url = self
+            .storage
+            .get_presigned_url(&storage_path, 86400 * 365)
+            .await
+            .map_err(|e| AppError::Storage(e.to_string()))?;
+
+        let now = Utc::now().timestamp();
+        sqlx::query("UPDATE users SET avatar_url = $1, updated_at = $2 WHERE id = $3")
+            .bind(&url)
+            .bind(now)
+            .bind(user_uuid)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(url)
+    }
+
+    pub async fn create_presigned_upload(
+        &self,
+        user_id: &str,
+        req: CreateResourceRequest,
+    ) -> Result<PresignedUploadResponse, AppError> {
+        if self.config.storage_type != crate::config::StorageType::R2 {
+            return Err(AppError::InvalidInput(
+                "Direct upload only supported for R2 storage".to_string(),
+            ));
+        }
+
+        let memo_id = req.memo_id;
+        let user_uuid = Uuid::parse_str(user_id)?;
+
+        let memo_exists = sqlx::query("SELECT id FROM memos WHERE id = $1 AND user_id = $2")
+            .bind(memo_id)
+            .bind(user_uuid)
+            .fetch_optional(&self.pool)
+            .await?;
+
+        if memo_exists.is_none() {
+            return Err(AppError::MemoNotFound);
+        }
+
+        let resource_id = Uuid::new_v4();
+        let storage_path = format!("resources/{}/{}", user_id, resource_id);
+
+        let upload_url = self
+            .storage
+            .get_presigned_upload_url(&storage_path, 3600)
+            .await
+            .map_err(|e| AppError::Storage(e.to_string()))?;
+
+        let now = Utc::now().timestamp();
+
+        sqlx::query(
+            "INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        )
+        .bind(resource_id)
+        .bind(memo_id)
+        .bind(&req.filename)
+        .bind("image")
+        .bind(&req.mime_type)
+        .bind(req.file_size)
+        .bind("r2")
+        .bind(&storage_path)
+        .bind(now)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(PresignedUploadResponse {
+            upload_url,
+            resource_id,
+            storage_path,
+        })
+    }
+
+    pub async fn confirm_upload(
+        &self,
+        user_id: &str,
+        req: ConfirmUploadRequest,
+    ) -> Result<ResourceResponse, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+        let resource = sqlx::query_as::<_, Resource>(
+            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.created_at
+             FROM resources r
+             JOIN memos m ON r.memo_id = m.id
+             WHERE r.id = $1 AND m.user_id = $2",
+        )
+        .bind(req.resource_id)
+        .bind(user_uuid)
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or(AppError::ResourceNotFound)?;
+
+        let url = self
+            .storage
+            .get_presigned_url(&resource.storage_path, 86400)
+            .await
+            .map_err(|e| AppError::Storage(e.to_string()))?;
+
+        Ok(ResourceResponse {
+            id: resource.id,
+            memo_id: resource.memo_id,
+            filename: resource.filename,
+            resource_type: resource.resource_type,
+            mime_type: resource.mime_type,
+            file_size: resource.file_size,
+            storage_type: resource.storage_type,
+            url,
+            created_at: resource.created_at,
+        })
     }
 }

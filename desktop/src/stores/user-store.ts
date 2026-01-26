@@ -1,6 +1,6 @@
-import { create } from 'zustand'
-import { userCommands } from '@/utils/callRust'
 import type { User } from '@/types/user'
+import { userCommands } from '@/utils/callRust'
+import { create } from 'zustand'
 
 interface UserState {
   user: User | null
@@ -15,10 +15,10 @@ export const useUserStore = create<UserState>(set => ({
   loadUser: async () => {
     set({ loading: true })
     try {
-      const user = await userCommands.getOrCreateDefaultUser()
-      set({ user })
+      const user = await userCommands.getUser()
+      set({ user: user || null })
     } catch (error) {
-      console.error('Failed to load user:', error)
+      set({ user: null })
     } finally {
       set({ loading: false })
     }

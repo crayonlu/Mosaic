@@ -149,11 +149,13 @@ pub async fn get_memos_by_date(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        state
+        let response = state
             .memo_api
-            .search(&date)
+            .list_by_diary_date(1, 1000, &date)
             .await
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+
+        Ok(response.data)
     } else {
         let cached = state
             .cache

@@ -1,6 +1,7 @@
 use super::client::ApiClient;
 use crate::error::{AppError, AppResult};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -14,6 +15,29 @@ pub struct ResourceResponse {
     pub storage_type: String,
     pub url: String,
     pub created_at: i64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateResourceRequest {
+    pub memo_id: String,
+    pub filename: String,
+    pub mime_type: String,
+    pub file_size: i64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresignedUploadResponse {
+    pub upload_url: String,
+    pub resource_id: String,
+    pub storage_path: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfirmUploadRequest {
+    pub resource_id: String,
 }
 
 pub struct ResourceApi {
@@ -76,37 +100,69 @@ impl ResourceApi {
             .await
     }
 
-    pub async fn download(&self, filename: String) -> AppResult<Vec<u8>> {
-        let url = format!(
-            "{}/api/resources/download/{}",
-            self.client.base_url(),
-            filename
-        );
-
-        let mut request = self.client.inner().get(&url);
-
-        if let Some(token) = self.client.token().await {
-            request = request.header("Authorization", format!("Bearer {}", token));
-        }
-
-        let response = request.send().await?;
-
-        if !response.status().is_success() {
-            return Err(crate::error::AppError::ApiError {
-                status: response.status().as_u16(),
-                message: "Download failed".to_string(),
-            });
-        }
-
-        Ok(response.bytes().await?.to_vec())
-    }
-
-    pub async fn delete(&self, filename: String) -> AppResult<()> {
+    pub async fn delete(&self, id: &str) -> AppResult<()> {
         self.client
             .request::<()>(
                 reqwest::Method::DELETE,
-                &format!("/api/resources/{}", filename),
+                &format!("/api/resources/{}", id),
                 None,
+            )
+            .await
+    }
+
+    pub async fn upload_direct(
+        &self,
+        memo_id: String,
+        filename: String,
+        data: Vec<u8>,
+        mime_type: String,
+    ) -> AppResult<ResourceResponse> {
+        if !mime_type.starts_with("image/") {
+            return Err(AppError::UploadError(
+                "Only image uploads are supported".to_string(),
+            ));
+        }
+
+        let create_req = CreateResourceRequest {
+            memo_id: memo_id.clone(),
+            filename: filename.clone(),
+            mime_type: mime_type.clone(),
+            file_size: data.len() as i64,
+        };
+
+        let presigned_response: PresignedUploadResponse = self
+            .client
+            .request(
+                reqwest::Method::POST,
+                "/api/resources/presigned-upload",
+                Some(&create_req),
+            )
+            .await?;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .put(&presigned_response.upload_url)
+            .header("content-type", &mime_type)
+            .body(data)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(AppError::UploadError(format!(
+                "Direct upload failed: {}",
+                response.status()
+            )));
+        }
+
+        let confirm_req = ConfirmUploadRequest {
+            resource_id: presigned_response.resource_id,
+        };
+
+        self.client
+            .request(
+                reqwest::Method::POST,
+                "/api/resources/confirm-upload",
+                Some(&confirm_req),
             )
             .await
     }
