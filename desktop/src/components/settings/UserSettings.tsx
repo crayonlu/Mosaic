@@ -23,7 +23,7 @@ export function UserSettings() {
     } else {
       loadUser()
     }
-  }, [user, loadUser])
+  }, [user])
 
   useEffect(() => {
     if (user && username !== user.username && username.trim()) {

@@ -112,9 +112,12 @@ pub async fn update_user(
 
 pub fn configure_auth_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/login").route(web::post().to(login)))
-        .service(web::resource("/refresh").route(web::post().to(refresh_token)))
-        .service(web::resource("/change-password").route(web::post().to(change_password)))
-        .service(web::resource("/update-user").route(web::put().to(update_user)))
-        .service(web::resource("/update-avatar").route(web::post().to(update_avatar)))
-        .service(web::resource("/me").route(web::get().to(get_me)));
+        .service(web::resource("/refresh").route(web::post().to(refresh_token)));
+}
+
+pub fn configure_protected_auth_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::resource("/auth/me").route(web::get().to(get_me)))
+        .service(web::resource("/auth/change-password").route(web::post().to(change_password)))
+        .service(web::resource("/auth/update-user").route(web::put().to(update_user)))
+        .service(web::resource("/auth/update-avatar").route(web::post().to(update_avatar)));
 }
