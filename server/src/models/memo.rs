@@ -81,6 +81,18 @@ pub struct MemoListQuery {
     pub diary_date: Option<chrono::NaiveDate>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchMemosRequest {
+    pub query: String,
+    pub tags: Option<Vec<String>>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub is_archived: Option<bool>,
+    pub page: Option<u32>,
+    pub page_size: Option<u32>,
+}
+
 impl From<Memo> for MemoResponse {
     fn from(memo: Memo) -> Self {
         let tags: Vec<String> = serde_json::from_value(memo.tags).unwrap_or_default();

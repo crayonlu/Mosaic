@@ -1,6 +1,6 @@
 use crate::error::AppError;
 use crate::models::{
-    CreateDiaryRequest, Diary, DiaryResponse, MemoResponse, MemoWithResources, MemoResourceResponse as ResourceResponse, PaginatedResponse, Resource, UpdateDiaryRequest,
+    CreateDiaryRequest, Diary, DiaryResponse, MemoWithResources, MemoResourceResponse as ResourceResponse, PaginatedResponse, Resource, UpdateDiaryRequest,
 };
 use chrono::{NaiveDate, Utc};
 use sqlx::PgPool;

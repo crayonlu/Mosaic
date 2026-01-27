@@ -1,22 +1,22 @@
-import { useState, useEffect, useMemo } from 'react'
-import dayjs from 'dayjs'
-import { Calendar, Archive, Trash2, CheckSquare, Square } from 'lucide-react'
+import { ArchiveDialog } from '@/components/archive/ArchiveDialog'
+import { MemoCard } from '@/components/archive/MemoCard'
+import { EmptyState } from '@/components/common/EmptyState'
+import { MemoDetail } from '@/components/common/MemoDetail'
 import DeskTopLayout from '@/components/layout/DeskTopLayout'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar as CalendarComponent } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
-import { MemoCard } from '@/components/archive/MemoCard'
-import { ArchiveDialog } from '@/components/archive/ArchiveDialog'
-import { MemoDetail } from '@/components/common/MemoDetail'
-import { LoadingMemoList } from '@/components/ui/loading/loading-skeleton'
-import { EmptyState } from '@/components/common/EmptyState'
-import { memoCommands, diaryCommands } from '@/utils/callRust'
 import { toast } from '@/hooks/use-toast'
-import { htmlToText } from '@/utils/domParser'
 import type { MemoWithResources } from '@/types/memo'
+import { diaryCommands, memoCommands } from '@/utils/callRust'
+import { htmlToText } from '@/utils/domParser'
+import dayjs from 'dayjs'
+import { Archive, Calendar, CheckSquare, Square, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 
 type Mode = 'view' | 'select'
 
@@ -261,7 +261,9 @@ export default function ArchivePage() {
 
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <LoadingMemoList count={2} />
+            <div className="flex items-center justify-center py-8">
+              <LoadingSpinner size="lg" />
+            </div>
           ) : memos.length === 0 ? (
             <EmptyState
               icon={Archive}

@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+pub use memo::SearchMemosRequest;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginatedResponse<T> {
@@ -30,7 +32,7 @@ pub mod stats;
 pub mod user;
 
 pub use diary::{CreateDiaryRequest, Diary, DiaryListQuery, DiaryResponse, UpdateDiaryRequest};
-pub use memo::{CreateMemoRequest, Memo, MemoListQuery, MemoResponse, MemoWithResources, ResourceResponse as MemoResourceResponse, UpdateMemoRequest};
+pub use memo::{CreateMemoRequest, Memo, MemoListQuery, MemoWithResources, ResourceResponse as MemoResourceResponse, UpdateMemoRequest};
 pub use resource::{
     ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse, Resource,
     ResourceResponse,

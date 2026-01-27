@@ -135,7 +135,7 @@ pub async fn unarchive_memo(
 
 pub async fn search_memos(
     req: HttpRequest,
-    query: web::Query<std::collections::HashMap<String, String>>,
+    query: web::Query<crate::models::SearchMemosRequest>,
     memo_service: web::Data<MemoService>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
@@ -143,10 +143,24 @@ pub async fn search_memos(
         Err(e) => return HttpResponse::from_error(e),
     };
 
-    let search_query = query.get("q").unwrap_or(&String::new()).clone();
+    let search_req = query.into_inner();
+    let page = search_req.page.unwrap_or(1);
+    let page_size = search_req.page_size.unwrap_or(50);
 
-    match memo_service.search_memos(&user_id, &search_query).await {
-        Ok(memos) => HttpResponse::Ok().json(memos),
+    match memo_service
+        .search_memos(
+            &user_id,
+            &search_req.query,
+            search_req.tags,
+            search_req.start_date,
+            search_req.end_date,
+            search_req.is_archived,
+            page,
+            page_size,
+        )
+        .await
+    {
+        Ok(result) => HttpResponse::Ok().json(result),
         Err(e) => HttpResponse::from_error(e),
     }
 }

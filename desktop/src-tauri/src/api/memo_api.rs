@@ -118,13 +118,43 @@ impl MemoApi {
             .await
     }
 
-    pub async fn search(&self, query: &str) -> AppResult<Vec<MemoWithResources>> {
+    pub async fn search(
+        &self,
+        query: &str,
+        tags: Option<Vec<String>>,
+        start_date: Option<String>,
+        end_date: Option<String>,
+        is_archived: Option<bool>,
+        page: u32,
+        page_size: u32,
+    ) -> AppResult<PaginatedResponse<MemoWithResources>> {
+        let mut url = format!(
+            "/api/memos/search?query={}&page={}&page_size={}",
+            urlencoding::encode(query),
+            page,
+            page_size
+        );
+
+        if let Some(tags) = tags {
+            if !tags.is_empty() {
+                url.push_str(&format!("&tags={}", tags.join(",")));
+            }
+        }
+
+        if let Some(start_date) = start_date {
+            url.push_str(&format!("&start_date={}", start_date));
+        }
+
+        if let Some(end_date) = end_date {
+            url.push_str(&format!("&end_date={}", end_date));
+        }
+
+        if let Some(is_archived) = is_archived {
+            url.push_str(&format!("&is_archived={}", is_archived));
+        }
+
         self.client
-            .request::<Vec<MemoWithResources>>(
-                reqwest::Method::GET,
-                &format!("/api/memos/search?q={}", urlencoding::encode(query)),
-                None,
-            )
+            .request::<PaginatedResponse<MemoWithResources>>(reqwest::Method::GET, &url, None)
             .await
     }
 }
