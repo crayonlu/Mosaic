@@ -15,6 +15,18 @@ pub struct TauriUpdateMemoRequest {
     pub diary_date: Option<Option<String>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchMemosRequest {
+    pub query: String,
+    pub tags: Option<Vec<String>>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub is_archived: Option<bool>,
+    pub page: Option<u32>,
+    pub page_size: Option<u32>,
+}
+
 pub struct AppState {
     pub memo_api: Arc<MemoApi>,
     pub cache: Arc<CacheStore>,
@@ -406,32 +418,96 @@ pub async fn get_memos_by_diary_date(
 #[tauri::command]
 pub async fn search_memos(
     state: State<'_, AppState>,
-    query: String,
-) -> Result<Vec<MemoWithResources>, String> {
+    req: SearchMemosRequest,
+) -> Result<PaginatedResponse<MemoWithResources>, String> {
     let online = state.online.load(Ordering::Relaxed);
+    let query = req.query.to_lowercase();
+    let page = req.page.unwrap_or(1);
+    let page_size = req.page_size.unwrap_or(50);
 
     if online {
         state
             .memo_api
-            .search(&query)
+            .search(
+                &req.query,
+                req.tags.clone(),
+                req.start_date.clone(),
+                req.end_date.clone(),
+                req.is_archived,
+                page,
+                page_size,
+            )
             .await
             .map_err(|e| e.to_string())
     } else {
         let cached = state
             .cache
-            .list_memos(1000, 0, None)
+            .list_memos(10000, 0, None)
             .await
             .map_err(|e| e.to_string())?;
 
-        let items: Vec<MemoWithResources> = cached
+        let mut filtered: Vec<MemoWithResources> = cached
             .into_iter()
             .filter(|c| {
-                c.content.to_lowercase().contains(&query.to_lowercase())
-                    || c.tags.to_lowercase().contains(&query.to_lowercase())
+                let matches_query = query.is_empty()
+                    || c.content.to_lowercase().contains(&query)
+                    || c.tags.to_lowercase().contains(&query);
+
+                if !matches_query {
+                    return false;
+                }
+
+                if let Some(is_archived) = req.is_archived {
+                    if c.is_archived != is_archived {
+                        return false;
+                    }
+                }
+
+                if let Some(ref start_date) = req.start_date {
+                    if let Some(created_date) = chrono::DateTime::from_timestamp_millis(c.created_at) {
+                        let date_str = created_date.format("%Y-%m-%d").to_string();
+                        if &date_str < start_date {
+                            return false;
+                        }
+                    }
+                }
+
+                if let Some(ref end_date) = req.end_date {
+                    if let Some(created_date) = chrono::DateTime::from_timestamp_millis(c.created_at) {
+                        let date_str = created_date.format("%Y-%m-%d").to_string();
+                        if &date_str > end_date {
+                            return false;
+                        }
+                    }
+                }
+
+                true
             })
             .map(|c| c.to_memo_with_resources())
             .collect();
 
-        Ok(items)
+        if let Some(ref tags) = req.tags {
+            if !tags.is_empty() {
+                filtered.retain(|memo| {
+                    tags.iter().any(|tag| memo.tags.contains(tag))
+                });
+            }
+        }
+
+        let total = filtered.len();
+        let offset = ((page - 1) * page_size) as usize;
+        let items: Vec<MemoWithResources> = filtered
+            .into_iter()
+            .skip(offset)
+            .take(page_size as usize)
+            .collect();
+
+        Ok(PaginatedResponse {
+            items,
+            total: total as i64,
+            page,
+            page_size,
+            total_pages: ((total as f64) / (page_size as f64)).ceil() as u32,
+        })
     }
 }

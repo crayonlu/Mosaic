@@ -1,9 +1,9 @@
-import { memoCommands } from '@/utils/callRust'
-import type { MemoWithResources } from '@/types/memo'
-import { useEffect, useState, useImperativeHandle, forwardRef, useCallback } from 'react'
-import { RichTextEditor } from '@/components/common/RichTextEditor'
 import { ResourceThumbnails } from '@/components/common/ResourceThumbnails'
-import { LoadingMemoList } from '@/components/ui/loading/loading-skeleton'
+import { RichTextEditor } from '@/components/common/RichTextEditor'
+import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
+import type { MemoWithResources } from '@/types/memo'
+import { memoCommands } from '@/utils/callRust'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react'
 
 interface MemoListProps {
   date?: string
@@ -53,7 +53,11 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
     }, [fetchMemos])
 
     if (loading) {
-      return <LoadingMemoList count={3} />
+      return (
+        <div className="flex items-center justify-center py-8">
+          <LoadingSpinner size="lg" />
+        </div>
+      )
     }
 
     if (memos.length === 0) {

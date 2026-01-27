@@ -1,15 +1,15 @@
-import { useState, useDeferredValue, useTransition, useEffect, useMemo } from 'react'
-import { Search as SearchIcon } from 'lucide-react'
-import DeskTopLayout from '@/components/layout/DeskTopLayout'
+import { EmptyState } from '@/components/common/EmptyState'
+import { MemoDetail } from '@/components/common/MemoDetail'
+import { SearchFilters } from '@/components/common/SearchFilters'
 import { SearchInput } from '@/components/common/SearchInput'
 import { SearchResults } from '@/components/common/SearchResults'
-import { SearchFilters } from '@/components/common/SearchFilters'
-import { MemoDetail } from '@/components/common/MemoDetail'
-import { LoadingMemoList } from '@/components/ui/loading/loading-skeleton'
-import { EmptyState } from '@/components/common/EmptyState'
-import { memoCommands } from '@/utils/callRust'
+import DeskTopLayout from '@/components/layout/DeskTopLayout'
+import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import type { MemoWithResources, SearchMemosRequest } from '@/types/memo'
+import { memoCommands } from '@/utils/callRust'
 import dayjs from 'dayjs'
+import { Search as SearchIcon } from 'lucide-react'
+import { useDeferredValue, useEffect, useMemo, useState, useTransition } from 'react'
 
 export default function SearchPage() {
   const [query, setQuery] = useState('')
@@ -37,7 +37,7 @@ export default function SearchPage() {
 
   const searchRequest = useMemo<SearchMemosRequest>(() => {
     return {
-      query: deferredQuery.trim() || undefined,
+      query: deferredQuery.trim() || '',
       tags: selectedTags.length > 0 ? selectedTags : undefined,
       startDate: startDate ? dayjs(startDate).format('YYYY-MM-DD') : undefined,
       endDate: endDate ? dayjs(endDate).format('YYYY-MM-DD') : undefined,
@@ -139,7 +139,9 @@ export default function SearchPage() {
 
         <div className="flex-1 overflow-y-auto">
           {isPending ? (
-            <LoadingMemoList count={1} />
+            <div className="flex items-center justify-center py-8">
+              <LoadingSpinner size="lg" />
+            </div>
           ) : !hasSearchCriteria ? (
             <EmptyState
               icon={SearchIcon}

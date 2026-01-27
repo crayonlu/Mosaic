@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::models::{CreateMemoRequest, Memo, MemoResponse, MemoWithResources, MemoResourceResponse as ResourceResponse, PaginatedResponse, Resource, UpdateMemoRequest};
+use crate::models::{CreateMemoRequest, Memo, MemoWithResources, MemoResourceResponse as ResourceResponse, PaginatedResponse, Resource, UpdateMemoRequest};
 use chrono::Utc;
 use serde_json::json;
 use sqlx::PgPool;
@@ -336,21 +336,122 @@ impl MemoService {
         &self,
         user_id: &str,
         query: &str,
-    ) -> Result<Vec<MemoResponse>, AppError> {
+        tags: Option<Vec<String>>,
+        start_date: Option<String>,
+        end_date: Option<String>,
+        is_archived: Option<bool>,
+        page: u32,
+        page_size: u32,
+    ) -> Result<PaginatedResponse<MemoWithResources>, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let search_pattern = format!("%{}%", query);
+        let offset = (page - 1) * page_size;
 
-        let memos = sqlx::query_as::<_, Memo>(
-            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
-             FROM memos WHERE user_id = $1 AND is_deleted = false 
-             AND (content ILIKE $2 OR tags::text ILIKE $2)
-             ORDER BY created_at DESC",
-        )
-        .bind(user_uuid)
-        .bind(&search_pattern)
-        .fetch_all(&self.pool)
-        .await?;
+        let mut query_str = String::from(
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at 
+             FROM memos WHERE user_id = $1 AND is_deleted = false",
+        );
 
-        Ok(memos.into_iter().map(MemoResponse::from).collect())
+        let mut conditions = Vec::new();
+        let mut param_count = 2;
+
+        if !query.is_empty() {
+            conditions.push(format!("(content ILIKE ${} OR tags::text ILIKE ${})", param_count, param_count));
+            param_count += 1;
+        }
+
+        if let Some(archived) = is_archived {
+            conditions.push(format!("is_archived = ${}", param_count));
+            param_count += 1;
+        }
+
+        if start_date.is_some() {
+            conditions.push(format!("DATE(to_timestamp(created_at / 1000)) >= ${}", param_count));
+            param_count += 1;
+        }
+
+        if end_date.is_some() {
+            conditions.push(format!("DATE(to_timestamp(created_at / 1000)) <= ${}", param_count));
+            param_count += 1;
+        }
+
+        if !conditions.is_empty() {
+            query_str.push_str(" AND ");
+            query_str.push_str(&conditions.join(" AND "));
+        }
+
+        query_str.push_str(" ORDER BY created_at DESC");
+
+        let count_query = format!(
+            "SELECT COUNT(*) FROM memos WHERE user_id = $1 AND is_deleted = false{}",
+            if conditions.is_empty() {
+                String::new()
+            } else {
+                format!(" AND {}", conditions.join(" AND "))
+            }
+        );
+
+        let mut count_builder = sqlx::query_scalar::<_, i64>(&count_query).bind(user_uuid);
+
+        if !query.is_empty() {
+            count_builder = count_builder.bind(&search_pattern);
+        }
+        if let Some(archived) = is_archived {
+            count_builder = count_builder.bind(archived);
+        }
+        if let Some(ref date) = start_date {
+            count_builder = count_builder.bind(date);
+        }
+        if let Some(ref date) = end_date {
+            count_builder = count_builder.bind(date);
+        }
+
+        let total = count_builder.fetch_one(&self.pool).await?;
+
+        query_str.push_str(&format!(" LIMIT ${} OFFSET ${}", param_count, param_count + 1));
+
+        let mut query_builder = sqlx::query_as::<_, Memo>(&query_str).bind(user_uuid);
+
+        if !query.is_empty() {
+            query_builder = query_builder.bind(&search_pattern);
+        }
+        if let Some(archived) = is_archived {
+            query_builder = query_builder.bind(archived);
+        }
+        if let Some(ref date) = start_date {
+            query_builder = query_builder.bind(date);
+        }
+        if let Some(ref date) = end_date {
+            query_builder = query_builder.bind(date);
+        }
+
+        query_builder = query_builder.bind(page_size as i64).bind(offset as i64);
+
+        let memos = query_builder.fetch_all(&self.pool).await?;
+
+        let mut items = Vec::new();
+        for memo in memos {
+            let resources = self.get_memo_resources(memo.id).await?;
+            items.push(MemoWithResources::from_memo(memo, resources));
+        }
+
+        if let Some(ref tag_filters) = tags {
+            if !tag_filters.is_empty() {
+                items.retain(|item| {
+                    tag_filters.iter().any(|tag| item.tags.contains(tag))
+                });
+            }
+        }
+
+        let filtered_total = items.len() as i64;
+        let total_pages = ((filtered_total as f64) / (page_size as f64)).ceil() as u32;
+
+        Ok(PaginatedResponse {
+            items,
+            total: filtered_total,
+            page,
+            page_size,
+            total_pages,
+        })
     }
 }

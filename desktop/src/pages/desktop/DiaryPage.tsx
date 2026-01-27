@@ -3,7 +3,7 @@ import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { LoadingMemoList } from '@/components/ui/loading/loading-skeleton'
+import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import { toast } from '@/hooks/use-toast'
 import type { Diary, PaginatedResponse } from '@/types'
 import { diaryCommands } from '@/utils/callRust'
@@ -86,7 +86,7 @@ export default function DiaryPage() {
     return (
       <DeskTopLayout className="relative">
         <div className="h-full flex items-center justify-center">
-          <LoadingMemoList count={5} />
+          <LoadingSpinner size="lg" />
         </div>
       </DeskTopLayout>
     )

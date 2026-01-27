@@ -4,7 +4,7 @@ import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { LoadingMemoList } from '@/components/ui/loading/loading-skeleton'
+import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import {
   Select,
   SelectContent,
@@ -117,7 +117,7 @@ export default function DiaryDetailPage() {
     return (
       <DeskTopLayout className="relative">
         <div className="h-full flex items-center justify-center">
-          <LoadingMemoList count={3} />
+          <LoadingSpinner size="lg" />
         </div>
       </DeskTopLayout>
     )
