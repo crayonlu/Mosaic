@@ -54,7 +54,7 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
 
     if (loading) {
       return (
-        <div className="flex items-center justify-center py-8">
+        <div className="flex items-center justify-center h-full">
           <LoadingSpinner size="lg" />
         </div>
       )

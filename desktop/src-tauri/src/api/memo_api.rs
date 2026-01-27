@@ -82,6 +82,17 @@ impl MemoApi {
             .await
     }
 
+    pub async fn get_by_created_date(
+        &self,
+        date: &str,
+    ) -> AppResult<Vec<MemoWithResources>> {
+        let url = format!("/api/memos/date/{}", date);
+
+        self.client
+            .request::<Vec<MemoWithResources>>(reqwest::Method::GET, &url, None)
+            .await
+    }
+
     pub async fn update(&self, id: &str, req: UpdateMemoRequest) -> AppResult<MemoWithResources> {
         self.client
             .request::<MemoWithResources>(

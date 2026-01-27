@@ -54,7 +54,7 @@ impl ResourceService {
             .await
             .map_err(|e| AppError::Storage(e.to_string()))?;
 
-        let now = Utc::now().timestamp();
+        let now = Utc::now().timestamp_millis();
 
         let resource = sqlx::query_as::<_, Resource>(
             "INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, created_at)
@@ -214,15 +214,14 @@ impl ResourceService {
             crate::config::StorageType::Local => {
                 format!("/api/avatars/{}", avatar_id)
             }
-            crate::config::StorageType::R2 => {
-                self.storage
-                    .get_presigned_url(&storage_path, 86400 * 365)
-                    .await
-                    .map_err(|e| AppError::Storage(e.to_string()))?
-            }
+            crate::config::StorageType::R2 => self
+                .storage
+                .get_presigned_url(&storage_path, 86400 * 365)
+                .await
+                .map_err(|e| AppError::Storage(e.to_string()))?,
         };
 
-        let now = Utc::now().timestamp();
+        let now = Utc::now().timestamp_millis();
         sqlx::query("UPDATE users SET avatar_url = $1, updated_at = $2 WHERE id = $3")
             .bind(&url)
             .bind(now)
@@ -238,18 +237,23 @@ impl ResourceService {
             crate::config::StorageType::Local => {
                 let base_path = &self.config.local_storage_path;
                 let base = std::path::Path::new(base_path).join("avatars");
-                
+
                 if let Ok(entries) = tokio::fs::read_dir(&base).await {
                     let mut entries = entries;
                     while let Ok(Some(user_entry)) = entries.next_entry().await {
                         if user_entry.path().is_dir() {
-                            if let Ok(avatar_entries) = tokio::fs::read_dir(user_entry.path()).await {
+                            if let Ok(avatar_entries) = tokio::fs::read_dir(user_entry.path()).await
+                            {
                                 let mut avatar_entries = avatar_entries;
-                                while let Ok(Some(avatar_entry)) = avatar_entries.next_entry().await {
+                                while let Ok(Some(avatar_entry)) = avatar_entries.next_entry().await
+                                {
                                     if let Some(filename) = avatar_entry.file_name().to_str() {
                                         if filename == avatar_id.to_string() {
-                                            let data = tokio::fs::read(avatar_entry.path()).await
-                                                .map_err(|e| AppError::Storage(e.to_string()))?;
+                                            let data = tokio::fs::read(avatar_entry.path())
+                                                .await
+                                                .map_err(|e| {
+                                                AppError::Storage(e.to_string())
+                                            })?;
                                             return Ok(Bytes::from(data));
                                         }
                                     }
@@ -258,12 +262,10 @@ impl ResourceService {
                         }
                     }
                 }
-                
+
                 Err(AppError::ResourceNotFound)
             }
-            crate::config::StorageType::R2 => {
-                Err(AppError::ResourceNotFound)
-            }
+            crate::config::StorageType::R2 => Err(AppError::ResourceNotFound),
         }
     }
 
@@ -300,7 +302,7 @@ impl ResourceService {
             .await
             .map_err(|e| AppError::Storage(e.to_string()))?;
 
-        let now = Utc::now().timestamp();
+        let now = Utc::now().timestamp_millis();
 
         sqlx::query(
             "INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, created_at)

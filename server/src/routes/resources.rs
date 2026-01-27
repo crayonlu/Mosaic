@@ -1,8 +1,8 @@
 use crate::middleware::get_user_id;
 use crate::models::{ConfirmUploadRequest, CreateResourceRequest};
 use crate::services::ResourceService;
-use actix_web::{web, HttpRequest, HttpResponse};
 use actix_multipart::Multipart;
+use actix_web::{web, HttpRequest, HttpResponse};
 use futures_util::StreamExt;
 
 pub async fn upload_resource(
@@ -208,7 +208,7 @@ pub async fn download_avatar(
     resource_service: web::Data<ResourceService>,
 ) -> HttpResponse {
     let avatar_id = path.into_inner();
-    
+
     match resource_service.download_avatar(avatar_id).await {
         Ok(data) => HttpResponse::Ok().body(data),
         Err(_) => HttpResponse::NotFound().finish(),

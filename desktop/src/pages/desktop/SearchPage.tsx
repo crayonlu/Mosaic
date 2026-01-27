@@ -139,7 +139,7 @@ export default function SearchPage() {
 
         <div className="flex-1 overflow-y-auto">
           {isPending ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center h-full">
               <LoadingSpinner size="lg" />
             </div>
           ) : !hasSearchCriteria ? (

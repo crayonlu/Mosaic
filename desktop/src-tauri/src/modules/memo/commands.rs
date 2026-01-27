@@ -162,13 +162,11 @@ pub async fn get_memos_by_date(
     let online = state.online.load(Ordering::Relaxed);
 
     if online {
-        let response = state
+        state
             .memo_api
-            .list_by_diary_date(1, 1000, &date)
+            .get_by_created_date(&date)
             .await
-            .map_err(|e| e.to_string())?;
-
-        Ok(response.items)
+            .map_err(|e| e.to_string())
     } else {
         let cached = state
             .cache
@@ -178,7 +176,14 @@ pub async fn get_memos_by_date(
 
         let items: Vec<MemoWithResources> = cached
             .into_iter()
-            .filter(|c| c.diary_date.as_ref().map_or(false, |d| d == &date))
+            .filter(|c| {
+                if let Some(created_date) = chrono::DateTime::from_timestamp_millis(c.created_at) {
+                    let date_str = created_date.format("%Y-%m-%d").to_string();
+                    date_str == date
+                } else {
+                    false
+                }
+            })
             .map(|c| c.to_memo_with_resources())
             .collect();
 
@@ -464,7 +469,9 @@ pub async fn search_memos(
                 }
 
                 if let Some(ref start_date) = req.start_date {
-                    if let Some(created_date) = chrono::DateTime::from_timestamp_millis(c.created_at) {
+                    if let Some(created_date) =
+                        chrono::DateTime::from_timestamp_millis(c.created_at)
+                    {
                         let date_str = created_date.format("%Y-%m-%d").to_string();
                         if &date_str < start_date {
                             return false;
@@ -473,7 +480,9 @@ pub async fn search_memos(
                 }
 
                 if let Some(ref end_date) = req.end_date {
-                    if let Some(created_date) = chrono::DateTime::from_timestamp_millis(c.created_at) {
+                    if let Some(created_date) =
+                        chrono::DateTime::from_timestamp_millis(c.created_at)
+                    {
                         let date_str = created_date.format("%Y-%m-%d").to_string();
                         if &date_str > end_date {
                             return false;
@@ -488,9 +497,7 @@ pub async fn search_memos(
 
         if let Some(ref tags) = req.tags {
             if !tags.is_empty() {
-                filtered.retain(|memo| {
-                    tags.iter().any(|tag| memo.tags.contains(tag))
-                });
+                filtered.retain(|memo| tags.iter().any(|tag| memo.tags.contains(tag)));
             }
         }
 

@@ -98,6 +98,24 @@ pub async fn delete_memo(
     }
 }
 
+pub async fn get_memos_by_date(
+    req: HttpRequest,
+    path: web::Path<String>,
+    memo_service: web::Data<MemoService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    let date = path.into_inner();
+
+    match memo_service.get_memos_by_created_date(&user_id, &date).await {
+        Ok(memos) => HttpResponse::Ok().json(memos),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
 pub async fn archive_memo(
     req: HttpRequest,
     path: web::Path<uuid::Uuid>,
@@ -171,6 +189,8 @@ pub fn configure_memo_routes(cfg: &mut web::ServiceConfig) {
             .route(web::post().to(create_memo))
             .route(web::get().to(list_memos)),
     )
+    .service(web::resource("/memos/search").route(web::get().to(search_memos)))
+    .service(web::resource("/memos/date/{date}").route(web::get().to(get_memos_by_date)))
     .service(
         web::resource("/memos/{id}")
             .route(web::get().to(get_memo))
@@ -178,6 +198,5 @@ pub fn configure_memo_routes(cfg: &mut web::ServiceConfig) {
             .route(web::delete().to(delete_memo)),
     )
     .service(web::resource("/memos/{id}/archive").route(web::put().to(archive_memo)))
-    .service(web::resource("/memos/{id}/unarchive").route(web::put().to(unarchive_memo)))
-    .service(web::resource("/memos/search").route(web::get().to(search_memos)));
+    .service(web::resource("/memos/{id}/unarchive").route(web::put().to(unarchive_memo)));
 }

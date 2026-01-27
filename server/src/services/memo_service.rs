@@ -1,5 +1,8 @@
 use crate::error::AppError;
-use crate::models::{CreateMemoRequest, Memo, MemoWithResources, MemoResourceResponse as ResourceResponse, PaginatedResponse, Resource, UpdateMemoRequest};
+use crate::models::{
+    CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse, MemoWithResources,
+    PaginatedResponse, Resource, UpdateMemoRequest,
+};
 use chrono::Utc;
 use serde_json::json;
 use sqlx::PgPool;
@@ -22,7 +25,7 @@ impl MemoService {
     ) -> Result<MemoWithResources, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let tags_json = json!(req.tags);
-        let now = Utc::now().timestamp();
+        let now = Utc::now().timestamp_millis();
 
         let memo = sqlx::query_as::<_, Memo>(
             "INSERT INTO memos (id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at)
@@ -70,7 +73,11 @@ impl MemoService {
             .collect())
     }
 
-    pub async fn get_memo(&self, user_id: &str, memo_id: Uuid) -> Result<MemoWithResources, AppError> {
+    pub async fn get_memo(
+        &self,
+        user_id: &str,
+        memo_id: Uuid,
+    ) -> Result<MemoWithResources, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let memo = sqlx::query_as::<_, Memo>(
             "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
@@ -212,6 +219,35 @@ impl MemoService {
         })
     }
 
+    pub async fn get_memos_by_created_date(
+        &self,
+        user_id: &str,
+        date: &str,
+    ) -> Result<Vec<MemoWithResources>, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+        
+        let memos = sqlx::query_as::<_, Memo>(
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+             FROM memos 
+             WHERE user_id = $1 
+                AND is_deleted = false 
+                AND DATE(to_timestamp(created_at / 1000)) = $2::date
+             ORDER BY created_at DESC",
+        )
+        .bind(user_uuid)
+        .bind(date)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut items = Vec::new();
+        for memo in memos {
+            let resources = self.get_memo_resources(memo.id).await?;
+            items.push(MemoWithResources::from_memo(memo, resources));
+        }
+
+        Ok(items)
+    }
+
     pub async fn update_memo(
         &self,
         user_id: &str,
@@ -219,7 +255,7 @@ impl MemoService {
         req: UpdateMemoRequest,
     ) -> Result<MemoWithResources, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
-        let now = Utc::now().timestamp();
+        let now = Utc::now().timestamp_millis();
 
         let mut query = String::from("UPDATE memos SET updated_at = $1");
         let mut param_count = 1;
@@ -274,7 +310,7 @@ impl MemoService {
 
     pub async fn delete_memo(&self, user_id: &str, memo_id: Uuid) -> Result<(), AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
-        let now = Utc::now().timestamp();
+        let now = Utc::now().timestamp_millis();
 
         let result = sqlx::query(
             "UPDATE memos SET is_deleted = true, updated_at = $1 WHERE id = $2 AND user_id = $3",
@@ -294,7 +330,7 @@ impl MemoService {
 
     pub async fn archive_memo(&self, user_id: &str, memo_id: Uuid) -> Result<(), AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
-        let now = Utc::now().timestamp();
+        let now = Utc::now().timestamp_millis();
 
         let result = sqlx::query(
             "UPDATE memos SET is_archived = true, updated_at = $1 WHERE id = $2 AND user_id = $3 AND is_deleted = false",
@@ -314,7 +350,7 @@ impl MemoService {
 
     pub async fn unarchive_memo(&self, user_id: &str, memo_id: Uuid) -> Result<(), AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
-        let now = Utc::now().timestamp();
+        let now = Utc::now().timestamp_millis();
 
         let result = sqlx::query(
             "UPDATE memos SET is_archived = false, updated_at = $1 WHERE id = $2 AND user_id = $3 AND is_deleted = false",
@@ -356,7 +392,10 @@ impl MemoService {
         let mut param_count = 2;
 
         if !query.is_empty() {
-            conditions.push(format!("(content ILIKE ${} OR tags::text ILIKE ${})", param_count, param_count));
+            conditions.push(format!(
+                "(content ILIKE ${} OR tags::text ILIKE ${})",
+                param_count, param_count
+            ));
             param_count += 1;
         }
 
@@ -366,12 +405,18 @@ impl MemoService {
         }
 
         if start_date.is_some() {
-            conditions.push(format!("DATE(to_timestamp(created_at / 1000)) >= ${}", param_count));
+            conditions.push(format!(
+                "DATE(to_timestamp(created_at / 1000)) >= ${}::date",
+                param_count
+            ));
             param_count += 1;
         }
 
         if end_date.is_some() {
-            conditions.push(format!("DATE(to_timestamp(created_at / 1000)) <= ${}", param_count));
+            conditions.push(format!(
+                "DATE(to_timestamp(created_at / 1000)) <= ${}::date",
+                param_count
+            ));
             param_count += 1;
         }
 
@@ -408,7 +453,11 @@ impl MemoService {
 
         let total = count_builder.fetch_one(&self.pool).await?;
 
-        query_str.push_str(&format!(" LIMIT ${} OFFSET ${}", param_count, param_count + 1));
+        query_str.push_str(&format!(
+            " LIMIT ${} OFFSET ${}",
+            param_count,
+            param_count + 1
+        ));
 
         let mut query_builder = sqlx::query_as::<_, Memo>(&query_str).bind(user_uuid);
 
@@ -437,9 +486,7 @@ impl MemoService {
 
         if let Some(ref tag_filters) = tags {
             if !tag_filters.is_empty() {
-                items.retain(|item| {
-                    tag_filters.iter().any(|tag| item.tags.contains(tag))
-                });
+                items.retain(|item| tag_filters.iter().any(|tag| item.tags.contains(tag)));
             }
         }
 

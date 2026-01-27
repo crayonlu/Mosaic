@@ -72,16 +72,30 @@ pub async fn read_image_file(
     filename: String,
 ) -> Result<Vec<u8>, String> {
     let resource_api = ResourceApi::new(api_client.inner().clone());
-    let resource = resource_api.get(&filename).await.map_err(|e| e.to_string())?;
-    
+    let resource = resource_api
+        .get(&filename)
+        .await
+        .map_err(|e| e.to_string())?;
+
     let client = reqwest::Client::new();
-    let response = client.get(&resource.url).send().await.map_err(|e| e.to_string())?;
-    
+    let response = client
+        .get(&resource.url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
     if !response.status().is_success() {
-        return Err(format!("Failed to download resource: {}", response.status()));
+        return Err(format!(
+            "Failed to download resource: {}",
+            response.status()
+        ));
     }
-    
-    response.bytes().await.map(|b| b.to_vec()).map_err(|e| e.to_string())
+
+    response
+        .bytes()
+        .await
+        .map(|b| b.to_vec())
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

@@ -26,12 +26,12 @@ impl StatsService {
         let rows = sqlx::query_as::<_, (chrono::NaiveDate, Option<i64>)>(
             r#"
             SELECT
-                to_timestamp(created_at)::date as date,
+                to_timestamp(created_at / 1000)::date as date,
                 COUNT(*) as count
             FROM memos
             WHERE user_id = $1
                 AND is_deleted = false
-                AND to_timestamp(created_at)::date BETWEEN $2 AND $3
+                AND to_timestamp(created_at / 1000)::date BETWEEN $2 AND $3
             GROUP BY date
             ORDER BY date
             "#,
@@ -79,7 +79,7 @@ impl StatsService {
             FROM memos
             WHERE user_id = $1
                 AND is_deleted = false
-                AND to_timestamp(created_at)::date BETWEEN $2 AND $3
+                AND to_timestamp(created_at / 1000)::date BETWEEN $2 AND $3
             ORDER BY created_at DESC
             "#,
         )
@@ -216,7 +216,7 @@ impl StatsService {
             FROM memos
             WHERE user_id = $1
                 AND is_deleted = false
-                AND to_timestamp(created_at)::date BETWEEN $2 AND $3
+                AND to_timestamp(created_at / 1000)::date BETWEEN $2 AND $3
             GROUP BY tag
             ORDER BY count DESC
             LIMIT 20
@@ -252,8 +252,8 @@ impl StatsService {
             SELECT COUNT(*) FROM memos
             WHERE user_id = $1 
                 AND is_deleted = false
-                AND EXTRACT(YEAR FROM to_timestamp(created_at)) = $2
-                AND EXTRACT(MONTH FROM to_timestamp(created_at)) = $3
+                AND EXTRACT(YEAR FROM to_timestamp(created_at / 1000)) = $2
+                AND EXTRACT(MONTH FROM to_timestamp(created_at / 1000)) = $3
             "#,
         )
         .bind(user_id)
@@ -283,8 +283,8 @@ impl StatsService {
             SELECT COUNT(*) FROM resources r
             JOIN memos m ON r.memo_id = m.id
             WHERE m.user_id = $1
-                AND EXTRACT(YEAR FROM to_timestamp(r.created_at)) = $2
-                AND EXTRACT(MONTH FROM to_timestamp(r.created_at)) = $3
+                AND EXTRACT(YEAR FROM to_timestamp(r.created_at / 1000)) = $2
+                AND EXTRACT(MONTH FROM to_timestamp(r.created_at / 1000)) = $3
             "#,
         )
         .bind(user_id)
