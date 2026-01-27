@@ -32,10 +32,22 @@ pub struct AppConfig {
     pub auto_sync: bool,
     pub sync_interval_seconds: u64,
     pub offline_mode: bool,
+    pub custom_data_directory: Option<String>,
 }
 
 impl AppConfig {
     pub fn config_dir() -> PathBuf {
+        if let Ok(config) = Self::load() {
+            if let Some(custom_dir) = config.custom_data_directory {
+                return PathBuf::from(custom_dir);
+            }
+        }
+        config_local_dir()
+            .map(|dir| dir.join("mosaic"))
+            .unwrap_or_else(|| PathBuf::from(".mosaic"))
+    }
+
+    pub fn default_config_dir() -> PathBuf {
         config_local_dir()
             .map(|dir| dir.join("mosaic"))
             .unwrap_or_else(|| PathBuf::from(".mosaic"))
@@ -89,6 +101,7 @@ impl Default for AppConfig {
             auto_sync: true,
             sync_interval_seconds: 300,
             offline_mode: false,
+            custom_data_directory: None,
         }
     }
 }

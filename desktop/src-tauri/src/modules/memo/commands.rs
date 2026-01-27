@@ -155,7 +155,7 @@ pub async fn get_memos_by_date(
             .await
             .map_err(|e| e.to_string())?;
 
-        Ok(response.data)
+        Ok(response.items)
     } else {
         let cached = state
             .cache
