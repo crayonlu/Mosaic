@@ -258,6 +258,46 @@ impl MemoService {
         Ok(())
     }
 
+    pub async fn archive_memo(&self, user_id: &str, memo_id: Uuid) -> Result<(), AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+        let now = Utc::now().timestamp();
+
+        let result = sqlx::query(
+            "UPDATE memos SET is_archived = true, updated_at = $1 WHERE id = $2 AND user_id = $3 AND is_deleted = false",
+        )
+        .bind(now)
+        .bind(memo_id)
+        .bind(user_uuid)
+        .execute(&self.pool)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(AppError::MemoNotFound);
+        }
+
+        Ok(())
+    }
+
+    pub async fn unarchive_memo(&self, user_id: &str, memo_id: Uuid) -> Result<(), AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+        let now = Utc::now().timestamp();
+
+        let result = sqlx::query(
+            "UPDATE memos SET is_archived = false, updated_at = $1 WHERE id = $2 AND user_id = $3 AND is_deleted = false",
+        )
+        .bind(now)
+        .bind(memo_id)
+        .bind(user_uuid)
+        .execute(&self.pool)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(AppError::MemoNotFound);
+        }
+
+        Ok(())
+    }
+
     pub async fn search_memos(
         &self,
         user_id: &str,

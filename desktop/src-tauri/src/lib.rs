@@ -18,8 +18,9 @@ use modules::asset::commands::*;
 use modules::diary::commands::*;
 use modules::memo::commands::*;
 use modules::settings::commands::{
-    delete_setting, enable_autostart, get_setting, get_settings, is_autostart_enabled,
-    register_close_shortcut, register_show_shortcut, set_setting, test_ai_connection,
+    delete_setting, enable_autostart, get_data_directory, get_default_data_directory, get_setting,
+    get_settings, is_autostart_enabled, needs_data_migration, register_close_shortcut,
+    register_show_shortcut, set_data_directory, set_setting, test_ai_connection,
     unregister_shortcut,
 };
 use modules::stats::commands::{get_heatmap, get_summary, get_timeline, get_trends};
@@ -132,6 +133,10 @@ pub fn run() {
             register_show_shortcut,
             register_close_shortcut,
             unregister_shortcut,
+            get_data_directory,
+            get_default_data_directory,
+            set_data_directory,
+            needs_data_migration,
             complete_text,
             rewrite_text,
             summarize_text,
