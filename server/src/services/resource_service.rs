@@ -210,11 +210,17 @@ impl ResourceService {
             .await
             .map_err(|e| AppError::Storage(e.to_string()))?;
 
-        let url = self
-            .storage
-            .get_presigned_url(&storage_path, 86400 * 365)
-            .await
-            .map_err(|e| AppError::Storage(e.to_string()))?;
+        let url = match self.config.storage_type {
+            crate::config::StorageType::Local => {
+                format!("/api/avatars/{}", avatar_id)
+            }
+            crate::config::StorageType::R2 => {
+                self.storage
+                    .get_presigned_url(&storage_path, 86400 * 365)
+                    .await
+                    .map_err(|e| AppError::Storage(e.to_string()))?
+            }
+        };
 
         let now = Utc::now().timestamp();
         sqlx::query("UPDATE users SET avatar_url = $1, updated_at = $2 WHERE id = $3")
@@ -225,6 +231,40 @@ impl ResourceService {
             .await?;
 
         Ok(url)
+    }
+
+    pub async fn download_avatar(&self, avatar_id: Uuid) -> Result<Bytes, AppError> {
+        match self.config.storage_type {
+            crate::config::StorageType::Local => {
+                let base_path = &self.config.local_storage_path;
+                let base = std::path::Path::new(base_path).join("avatars");
+                
+                if let Ok(entries) = tokio::fs::read_dir(&base).await {
+                    let mut entries = entries;
+                    while let Ok(Some(user_entry)) = entries.next_entry().await {
+                        if user_entry.path().is_dir() {
+                            if let Ok(avatar_entries) = tokio::fs::read_dir(user_entry.path()).await {
+                                let mut avatar_entries = avatar_entries;
+                                while let Ok(Some(avatar_entry)) = avatar_entries.next_entry().await {
+                                    if let Some(filename) = avatar_entry.file_name().to_str() {
+                                        if filename == avatar_id.to_string() {
+                                            let data = tokio::fs::read(avatar_entry.path()).await
+                                                .map_err(|e| AppError::Storage(e.to_string()))?;
+                                            return Ok(Bytes::from(data));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Err(AppError::ResourceNotFound)
+            }
+            crate::config::StorageType::R2 => {
+                Err(AppError::ResourceNotFound)
+            }
+        }
     }
 
     pub async fn create_presigned_upload(
