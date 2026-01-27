@@ -7,6 +7,7 @@ use std::sync::Arc;
 use tauri::State;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TauriUpdateMemoRequest {
     pub id: String,
     pub content: Option<String>,
