@@ -27,6 +27,7 @@ impl ServerConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     pub server: ServerConfig,
     pub auto_sync: bool,

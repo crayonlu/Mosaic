@@ -14,6 +14,7 @@ pub struct DiaryAppState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateOrUpdateDiaryRequest {
     pub summary: Option<String>,
     pub mood_key: Option<String>,
@@ -22,12 +23,14 @@ pub struct CreateOrUpdateDiaryRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateDiarySummaryRequest {
     pub date: String,
     pub summary: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateDiaryMoodRequest {
     pub date: String,
     pub mood_key: String,

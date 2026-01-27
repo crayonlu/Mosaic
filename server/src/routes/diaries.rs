@@ -176,11 +176,13 @@ pub async fn update_diary_mood(
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateDiarySummaryRequest {
     pub summary: String,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateDiaryMoodRequest {
     pub mood_key: String,
     pub mood_score: i32,

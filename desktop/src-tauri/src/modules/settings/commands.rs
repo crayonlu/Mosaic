@@ -6,6 +6,7 @@ use tauri::State;
 use tokio::sync::RwLock;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SettingValue {
     pub value: String,
 }
