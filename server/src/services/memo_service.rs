@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::models::{CreateMemoRequest, Memo, MemoResponse, PaginatedResponse, UpdateMemoRequest};
+use crate::models::{CreateMemoRequest, Memo, MemoResponse, MemoWithResources, MemoResourceResponse as ResourceResponse, PaginatedResponse, Resource, UpdateMemoRequest};
 use chrono::Utc;
 use serde_json::json;
 use sqlx::PgPool;
@@ -19,7 +19,7 @@ impl MemoService {
         &self,
         user_id: &str,
         req: CreateMemoRequest,
-    ) -> Result<MemoResponse, AppError> {
+    ) -> Result<MemoWithResources, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let tags_json = json!(req.tags);
         let now = Utc::now().timestamp();
@@ -41,10 +41,36 @@ impl MemoService {
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(MemoResponse::from(memo))
+        let resources = self.get_memo_resources(memo.id).await?;
+        Ok(MemoWithResources::from_memo(memo, resources))
     }
 
-    pub async fn get_memo(&self, user_id: &str, memo_id: Uuid) -> Result<MemoResponse, AppError> {
+    async fn get_memo_resources(&self, memo_id: Uuid) -> Result<Vec<ResourceResponse>, AppError> {
+        let resources = sqlx::query_as::<_, Resource>(
+            "SELECT id, memo_id, filename, resource_type, mime_type, file_size as size, storage_type, storage_path, created_at
+             FROM resources WHERE memo_id = $1 ORDER BY created_at ASC",
+        )
+        .bind(memo_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(resources
+            .into_iter()
+            .map(|r| ResourceResponse {
+                id: r.id,
+                memo_id: r.memo_id,
+                filename: r.filename,
+                resource_type: r.resource_type,
+                mime_type: r.mime_type,
+                size: r.file_size,
+                storage_type: Some(r.storage_type),
+                storage_path: Some(r.storage_path),
+                created_at: r.created_at,
+            })
+            .collect())
+    }
+
+    pub async fn get_memo(&self, user_id: &str, memo_id: Uuid) -> Result<MemoWithResources, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let memo = sqlx::query_as::<_, Memo>(
             "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
@@ -56,7 +82,8 @@ impl MemoService {
         .await?
         .ok_or(AppError::MemoNotFound)?;
 
-        Ok(MemoResponse::from(memo))
+        let resources = self.get_memo_resources(memo.id).await?;
+        Ok(MemoWithResources::from_memo(memo, resources))
     }
 
     pub async fn list_memos(
@@ -66,7 +93,7 @@ impl MemoService {
         page_size: u32,
         archived: Option<bool>,
         diary_date: Option<chrono::NaiveDate>,
-    ) -> Result<PaginatedResponse<MemoResponse>, AppError> {
+    ) -> Result<PaginatedResponse<MemoWithResources>, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let offset = (page - 1) * page_size;
 
@@ -170,8 +197,14 @@ impl MemoService {
 
         let total_pages = ((total as f64) / (page_size as f64)).ceil() as u32;
 
+        let mut items = Vec::new();
+        for memo in memos {
+            let resources = self.get_memo_resources(memo.id).await?;
+            items.push(MemoWithResources::from_memo(memo, resources));
+        }
+
         Ok(PaginatedResponse {
-            items: memos.into_iter().map(MemoResponse::from).collect(),
+            items,
             total,
             page,
             page_size,
@@ -184,7 +217,7 @@ impl MemoService {
         user_id: &str,
         memo_id: Uuid,
         req: UpdateMemoRequest,
-    ) -> Result<MemoResponse, AppError> {
+    ) -> Result<MemoWithResources, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let now = Utc::now().timestamp();
 
@@ -235,7 +268,8 @@ impl MemoService {
             .await?
             .ok_or(AppError::MemoNotFound)?;
 
-        Ok(MemoResponse::from(memo))
+        let resources = self.get_memo_resources(memo.id).await?;
+        Ok(MemoWithResources::from_memo(memo, resources))
     }
 
     pub async fn delete_memo(&self, user_id: &str, memo_id: Uuid) -> Result<(), AppError> {

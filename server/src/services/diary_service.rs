@@ -1,6 +1,6 @@
 use crate::error::AppError;
 use crate::models::{
-    CreateDiaryRequest, Diary, DiaryResponse, MemoResponse, PaginatedResponse, UpdateDiaryRequest,
+    CreateDiaryRequest, Diary, DiaryResponse, MemoResponse, MemoWithResources, MemoResourceResponse as ResourceResponse, PaginatedResponse, Resource, UpdateDiaryRequest,
 };
 use chrono::{NaiveDate, Utc};
 use sqlx::PgPool;
@@ -151,7 +151,11 @@ impl DiaryService {
         .fetch_all(&self.pool)
         .await?;
 
-        let memo_responses: Vec<MemoResponse> = memos.into_iter().map(MemoResponse::from).collect();
+        let mut memo_responses: Vec<MemoWithResources> = Vec::new();
+        for memo in memos {
+            let resources = self.get_memo_resources(memo.id).await?;
+            memo_responses.push(MemoWithResources::from_memo(memo, resources));
+        }
 
         Ok(crate::models::DiaryWithMemosResponse {
             date: diary.date,
@@ -163,6 +167,31 @@ impl DiaryService {
             updated_at: diary.updated_at,
             memos: memo_responses,
         })
+    }
+
+    async fn get_memo_resources(&self, memo_id: Uuid) -> Result<Vec<ResourceResponse>, AppError> {
+        let resources = sqlx::query_as::<_, Resource>(
+            "SELECT id, memo_id, filename, resource_type, mime_type, file_size as size, storage_type, storage_path, created_at
+             FROM resources WHERE memo_id = $1 ORDER BY created_at ASC",
+        )
+        .bind(memo_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(resources
+            .into_iter()
+            .map(|r| ResourceResponse {
+                id: r.id,
+                memo_id: r.memo_id,
+                filename: r.filename,
+                resource_type: r.resource_type,
+                mime_type: r.mime_type,
+                size: r.file_size,
+                storage_type: Some(r.storage_type),
+                storage_path: Some(r.storage_path),
+                created_at: r.created_at,
+            })
+            .collect())
     }
 
     pub async fn count_diaries(

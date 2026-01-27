@@ -19,7 +19,7 @@ pub struct DiaryWithMemosResponse {
     pub cover_image_id: Option<uuid::Uuid>,
     pub created_at: i64,
     pub updated_at: i64,
-    pub memos: Vec<MemoResponse>,
+    pub memos: Vec<MemoWithResources>,
 }
 
 pub mod diary;
@@ -29,7 +29,7 @@ pub mod stats;
 pub mod user;
 
 pub use diary::{CreateDiaryRequest, Diary, DiaryListQuery, DiaryResponse, UpdateDiaryRequest};
-pub use memo::{CreateMemoRequest, Memo, MemoListQuery, MemoResponse, UpdateMemoRequest};
+pub use memo::{CreateMemoRequest, Memo, MemoListQuery, MemoResponse, MemoWithResources, ResourceResponse as MemoResourceResponse, UpdateMemoRequest};
 pub use resource::{
     ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse, Resource,
     ResourceResponse,
