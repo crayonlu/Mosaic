@@ -32,7 +32,10 @@ pub mod stats;
 pub mod user;
 
 pub use diary::{CreateDiaryRequest, Diary, DiaryListQuery, DiaryResponse, UpdateDiaryRequest};
-pub use memo::{CreateMemoRequest, Memo, MemoListQuery, MemoWithResources, ResourceResponse as MemoResourceResponse, UpdateMemoRequest};
+pub use memo::{
+    CreateMemoRequest, Memo, MemoListQuery, MemoWithResources,
+    ResourceResponse as MemoResourceResponse, UpdateMemoRequest,
+};
 pub use resource::{
     ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse, Resource,
     ResourceResponse,

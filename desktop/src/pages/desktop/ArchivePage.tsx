@@ -261,7 +261,7 @@ export default function ArchivePage() {
 
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center h-full">
               <LoadingSpinner size="lg" />
             </div>
           ) : memos.length === 0 ? (

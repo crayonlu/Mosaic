@@ -106,15 +106,29 @@ async fn main() -> anyhow::Result<()> {
             .service(
                 web::scope("/api/auth")
                     .service(web::resource("/login").route(web::post().to(routes::auth::login)))
-                    .service(web::resource("/refresh").route(web::post().to(routes::auth::refresh_token)))
+                    .service(
+                        web::resource("/refresh")
+                            .route(web::post().to(routes::auth::refresh_token)),
+                    )
                     .service(
                         web::scope("")
                             .wrap(auth_middleware.clone())
-                            .service(web::resource("/me").route(web::get().to(routes::auth::get_me)))
-                            .service(web::resource("/change-password").route(web::post().to(routes::auth::change_password)))
-                            .service(web::resource("/update-user").route(web::put().to(routes::auth::update_user)))
-                            .service(web::resource("/update-avatar").route(web::post().to(routes::auth::update_avatar)))
-                    )
+                            .service(
+                                web::resource("/me").route(web::get().to(routes::auth::get_me)),
+                            )
+                            .service(
+                                web::resource("/change-password")
+                                    .route(web::post().to(routes::auth::change_password)),
+                            )
+                            .service(
+                                web::resource("/update-user")
+                                    .route(web::put().to(routes::auth::update_user)),
+                            )
+                            .service(
+                                web::resource("/update-avatar")
+                                    .route(web::post().to(routes::auth::update_avatar)),
+                            ),
+                    ),
             )
             .service(
                 web::scope("/api")

@@ -181,7 +181,7 @@ export default function DiaryPage() {
                           )}
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {dayjs(diary.updatedAt).format('HH:mm')}
+                          {dayjs.utc(diary.updatedAt).local().format('HH:mm')}
                         </div>
                       </div>
                     </CardContent>

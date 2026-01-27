@@ -1,6 +1,7 @@
 use crate::error::AppError;
 use crate::models::{
-    CreateDiaryRequest, Diary, DiaryResponse, MemoWithResources, MemoResourceResponse as ResourceResponse, PaginatedResponse, Resource, UpdateDiaryRequest,
+    CreateDiaryRequest, Diary, DiaryResponse, MemoResourceResponse as ResourceResponse,
+    MemoWithResources, PaginatedResponse, Resource, UpdateDiaryRequest,
 };
 use chrono::{NaiveDate, Utc};
 use sqlx::PgPool;
@@ -22,7 +23,7 @@ impl DiaryService {
         req: CreateDiaryRequest,
     ) -> Result<DiaryResponse, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
-        let now = Utc::now().timestamp();
+        let now = Utc::now().timestamp_millis();
 
         let diary = sqlx::query_as::<_, Diary>(
             "INSERT INTO diaries (date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at)
@@ -225,7 +226,7 @@ impl DiaryService {
         req: UpdateDiaryRequest,
     ) -> Result<DiaryResponse, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
-        let now = Utc::now().timestamp();
+        let now = Utc::now().timestamp_millis();
 
         let mut query = String::from("UPDATE diaries SET updated_at = $1");
         let mut param_count = 1;
@@ -283,7 +284,7 @@ impl DiaryService {
         summary: String,
     ) -> Result<DiaryResponse, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
-        let now = Utc::now().timestamp();
+        let now = Utc::now().timestamp_millis();
 
         let diary = sqlx::query_as::<_, Diary>(
             "UPDATE diaries SET summary = $1, updated_at = $2
@@ -309,7 +310,7 @@ impl DiaryService {
         mood_score: i32,
     ) -> Result<DiaryResponse, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
-        let now = Utc::now().timestamp();
+        let now = Utc::now().timestamp_millis();
 
         let diary = sqlx::query_as::<_, Diary>(
             "UPDATE diaries SET mood_key = $1, mood_score = $2, updated_at = $3

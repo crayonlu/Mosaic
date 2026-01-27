@@ -23,6 +23,7 @@ import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core'
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
 import {
   ArrowLeft,
   Calendar,
@@ -38,6 +39,8 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+
+dayjs.extend(utc)
 
 interface MemoDetailProps {
   memo: MemoWithResources | null
@@ -411,7 +414,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                <span>{formatTime(memo.createdAt)}</span>
+                <span>{dayjs.utc(memo.createdAt).local().format('YYYY-MM-DD HH:mm')}</span>
               </div>
             </div>
             {!isEditing ? (
