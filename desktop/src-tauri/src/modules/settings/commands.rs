@@ -135,14 +135,27 @@ pub async fn get_data_directory() -> Result<String, String> {
 
 #[tauri::command]
 pub async fn get_default_data_directory() -> Result<String, String> {
-    let dir = crate::config::AppConfig::config_dir();
+    let dir = crate::config::AppConfig::default_config_dir();
     Ok(dir.to_string_lossy().to_string())
 }
 
 #[tauri::command]
-pub async fn set_data_directory(_new_directory_path: String) -> Result<(), String> {
-    // Data directory is fixed, this is a no-op for now
-    // In the future, this could support custom data directories
+pub async fn set_data_directory(new_directory_path: String) -> Result<(), String> {
+    let mut config = crate::config::AppConfig::load()
+        .map_err(|e| format!("Failed to load config: {}", e))?;
+    
+    let new_path = std::path::PathBuf::from(&new_directory_path);
+    if !new_path.is_absolute() {
+        return Err("Data directory path must be absolute".to_string());
+    }
+    
+    std::fs::create_dir_all(&new_path)
+        .map_err(|e| format!("Failed to create directory: {}", e))?;
+    
+    config.custom_data_directory = Some(new_directory_path);
+    config.save()
+        .map_err(|e| format!("Failed to save config: {}", e))?;
+    
     Ok(())
 }
 

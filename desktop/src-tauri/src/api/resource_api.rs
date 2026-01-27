@@ -135,7 +135,7 @@ impl ResourceApi {
             .request(
                 reqwest::Method::POST,
                 "/api/resources/presigned-upload",
-                Some(&create_req),
+                Some(serde_json::to_value(create_req).map_err(AppError::SerializationError)?),
             )
             .await?;
 
@@ -162,7 +162,7 @@ impl ResourceApi {
             .request(
                 reqwest::Method::POST,
                 "/api/resources/confirm-upload",
-                Some(&confirm_req),
+                Some(serde_json::to_value(confirm_req).map_err(AppError::SerializationError)?),
             )
             .await
     }
