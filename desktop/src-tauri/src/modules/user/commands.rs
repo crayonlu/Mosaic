@@ -13,8 +13,11 @@ pub struct UserAppState {
 }
 
 #[tauri::command]
-pub async fn get_user(state: State<'_, UserAppState>) -> Result<User, String> {
-    state.user_api.get().await.map_err(|e| e.to_string())
+pub async fn get_user(state: State<'_, UserAppState>) -> Result<Option<User>, String> {
+    match state.user_api.get().await {
+        Ok(user) => Ok(Some(user)),
+        Err(_) => Ok(None),
+    }
 }
 
 #[tauri::command]

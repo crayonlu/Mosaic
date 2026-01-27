@@ -53,4 +53,16 @@ impl Storage for R2Storage {
             .await?;
         Ok(presigned_req.uri().to_string())
     }
+
+    async fn get_presigned_upload_url(
+        &self,
+        path: &str,
+        expires_secs: u64,
+    ) -> anyhow::Result<String> {
+        let presigned_req = self
+            .operator
+            .presign_write(path, Duration::from_secs(expires_secs))
+            .await?;
+        Ok(presigned_req.uri().to_string())
+    }
 }
