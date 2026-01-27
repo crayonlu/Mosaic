@@ -54,7 +54,7 @@ impl AppConfig {
     }
 
     pub fn config_file() -> PathBuf {
-        Self::config_dir().join("config.json")
+        Self::default_config_dir().join("config.json")
     }
 
     pub fn load() -> Result<Self, std::io::Error> {
