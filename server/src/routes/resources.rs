@@ -7,8 +7,7 @@ use futures_util::StreamExt;
 
 pub async fn upload_resource(
     req: HttpRequest,
-    mut payload: web::Payload,
-    query: web::Query<std::collections::HashMap<String, String>>,
+    mut payload: Multipart,
     resource_service: web::Data<ResourceService>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
@@ -16,30 +15,58 @@ pub async fn upload_resource(
         Err(e) => return HttpResponse::from_error(e),
     };
 
-    let memo_id = match query.get("memo_id") {
-        Some(id) => match uuid::Uuid::parse_str(id) {
-            Ok(uuid) => uuid,
-            Err(_) => return HttpResponse::BadRequest().json("Invalid memo_id"),
-        },
-        None => return HttpResponse::BadRequest().json("Missing memo_id"),
-    };
+    let mut memo_id: Option<uuid::Uuid> = None;
+    let mut filename = String::new();
+    let mut mime_type = String::from("image/jpeg");
+    let mut file_data = web::BytesMut::new();
 
-    let filename = query.get("filename").unwrap_or(&String::new()).clone();
-    let mime_type = query
-        .get("mime_type")
-        .unwrap_or(&"image/jpeg".to_string())
-        .clone();
+    while let Some(field_result) = payload.next().await {
+        let mut field = match field_result {
+            Ok(f) => f,
+            Err(_) => return HttpResponse::BadRequest().finish(),
+        };
 
-    let mut data = web::BytesMut::new();
-    while let Some(chunk) = payload.next().await {
-        #[allow(unused_variables)]
-        match chunk {
-            Ok(c) => data.extend_from_slice(&c),
-            Err(e) => return HttpResponse::InternalServerError().finish(),
+        let field_name = field.name().unwrap_or("").to_string();
+
+        if field_name == "file" {
+            if let Some(content_disposition) = field.content_disposition() {
+                if let Some(name) = content_disposition.get_filename() {
+                    filename = name.to_string();
+                }
+            }
+            if let Some(content_type) = field.content_type() {
+                mime_type = content_type.to_string();
+            }
+            while let Some(chunk_result) = field.next().await {
+                match chunk_result {
+                    Ok(bytes) => file_data.extend_from_slice(&bytes),
+                    Err(_) => return HttpResponse::InternalServerError().finish(),
+                }
+            }
+        } else if field_name == "memoId" {
+            let mut value = String::new();
+            while let Some(chunk_result) = field.next().await {
+                match chunk_result {
+                    Ok(bytes) => value.push_str(&String::from_utf8_lossy(&bytes)),
+                    Err(_) => return HttpResponse::InternalServerError().finish(),
+                }
+            }
+            if let Ok(id) = uuid::Uuid::parse_str(&value) {
+                memo_id = Some(id);
+            }
         }
     }
 
-    let file_size = data.len() as i64;
+    let memo_id = match memo_id {
+        Some(id) => id,
+        None => return HttpResponse::BadRequest().json("Missing memo_id"),
+    };
+
+    if filename.is_empty() {
+        filename = "unnamed".to_string();
+    }
+
+    let file_size = file_data.len() as i64;
 
     let create_req = CreateResourceRequest {
         memo_id,
@@ -49,7 +76,7 @@ pub async fn upload_resource(
     };
 
     match resource_service
-        .upload_resource(&user_id, create_req, data.freeze())
+        .upload_resource(&user_id, create_req, file_data.freeze())
         .await
     {
         Ok(resource) => HttpResponse::Ok().json(resource),
