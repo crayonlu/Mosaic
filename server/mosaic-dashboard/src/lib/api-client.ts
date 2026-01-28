@@ -219,35 +219,6 @@ class APIClient {
     return response.data
   }
 
-  async getHeatmap(): Promise<{
-    cells: Array<{ date: string; color: string; count: number }>
-    startDate: string
-    endDate: string
-  }> {
-    const endDate = new Date()
-    const startDate = new Date()
-    startDate.setFullYear(startDate.getFullYear() - 1)
-
-    const formatDate = (date: Date) => date.toISOString().split('T')[0]
-
-    const response = await this.axiosInstance.get(`${this.baseURL}/api/stats/heatmap`, {
-      params: {
-        start_date: formatDate(startDate),
-        end_date: formatDate(endDate),
-      },
-    })
-    return response.data
-  }
-
-  async getStatsSummary(): Promise<{
-    totalMemos: number
-    totalDiaries: number
-    totalResources: number
-    streakDays: number
-  }> {
-    const response = await this.axiosInstance.get(`${this.baseURL}/api/stats/summary`)
-    return response.data
-  }
 }
 
 export const apiClient = new APIClient()

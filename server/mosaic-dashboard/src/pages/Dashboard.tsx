@@ -1,7 +1,6 @@
 import { DiaryList } from '@/components/DiaryList'
 import { MemoList } from '@/components/MemoList'
 import { ResourceList } from '@/components/ResourceList'
-import { StatsCard } from '@/components/StatsCard'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -96,10 +95,6 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               <div className="text-4xl font-bold">{stats.resourceCount}</div>
             </CardContent>
           </Card>
-        </div>
-
-        <div className="mb-8">
-          <StatsCard />
         </div>
 
         <Tabs defaultValue="memos" className="w-full">
