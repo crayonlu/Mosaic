@@ -1,5 +1,7 @@
 import { DiaryList } from '@/components/DiaryList'
 import { MemoList } from '@/components/MemoList'
+import { ResourceList } from '@/components/ResourceList'
+import { StatsCard } from '@/components/StatsCard'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -96,16 +98,24 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
           </Card>
         </div>
 
+        <div className="mb-8">
+          <StatsCard />
+        </div>
+
         <Tabs defaultValue="memos" className="w-full">
           <TabsList>
             <TabsTrigger value="memos">Memos</TabsTrigger>
             <TabsTrigger value="diaries">Diaries</TabsTrigger>
+            <TabsTrigger value="resources">Resources</TabsTrigger>
           </TabsList>
           <TabsContent value="memos" className="mt-6">
             <MemoList />
           </TabsContent>
           <TabsContent value="diaries" className="mt-6">
             <DiaryList />
+          </TabsContent>
+          <TabsContent value="resources" className="mt-6">
+            <ResourceList />
           </TabsContent>
         </Tabs>
       </main>

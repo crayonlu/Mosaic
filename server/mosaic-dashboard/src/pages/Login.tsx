@@ -17,7 +17,8 @@ interface LoginProps {
 }
 
 export function Login({ onLogin }: LoginProps) {
-  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080'
+  const currentOrigin =
+    typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080'
   const [serverUrl, setServerUrl] = useState(currentOrigin)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')

@@ -206,7 +206,7 @@ export function MemoList() {
                         </Badge>
                       ))}
                       {memo.isArchived && <Badge variant="outline">已归档</Badge>}
-                    </CardDescription>  
+                    </CardDescription>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(memo)}>

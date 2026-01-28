@@ -22,12 +22,25 @@ export interface ChangePasswordRequest {
   newPassword: string
 }
 
+export interface Resource {
+  id: string
+  memoId: string
+  filename: string
+  resourceType: string
+  mimeType: string
+  fileSize: number
+  storageType: string
+  url: string
+  createdAt: number
+}
+
 export interface Memo {
   id: string
   content: string
   tags: string[]
   isArchived: boolean
   diaryDate?: string
+  resources?: Resource[]
   createdAt: number
   updatedAt: number
 }
@@ -43,18 +56,6 @@ export interface UpdateMemoRequest {
   tags?: string[]
   isArchived?: boolean
   diaryDate?: string | null
-}
-
-export interface Resource {
-  id: string
-  memoId: string
-  filename: string
-  resourceType: string
-  mimeType: string
-  fileSize: number
-  storageType: string
-  url: string
-  createdAt: number
 }
 
 export interface Diary {
@@ -81,4 +82,36 @@ export interface PaginatedResponse<T> {
   total: number
   page: number
   pageSize: number
+}
+
+export type MoodKey =
+  | 'happy'
+  | 'sad'
+  | 'angry'
+  | 'anxious'
+  | 'calm'
+  | 'excited'
+  | 'tired'
+  | 'neutral'
+
+export const moodLabels: Record<MoodKey, string> = {
+  happy: '愉悦',
+  sad: '悲伤',
+  angry: '愤怒',
+  calm: '平静',
+  anxious: '焦虑',
+  excited: '兴奋',
+  tired: '疲惫',
+  neutral: '中性',
+}
+
+export const moodColors: Record<MoodKey, string> = {
+  happy: '#FFD93D',
+  excited: '#FF6B6B',
+  calm: '#6BCB77',
+  neutral: '#95A5A6',
+  tired: '#9B59B6',
+  anxious: '#E67E22',
+  sad: '#3498DB',
+  angry: '#E74C3C',
 }

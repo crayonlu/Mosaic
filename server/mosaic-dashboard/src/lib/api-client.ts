@@ -1,14 +1,14 @@
 import axios, { type AxiosInstance } from 'axios'
 import type {
-  ChangePasswordRequest,
-  CreateDiaryRequest,
-  CreateMemoRequest,
-  Diary,
-  LoginResponse,
-  Memo,
-  PaginatedResponse,
-  Resource,
-  UpdateMemoRequest,
+    ChangePasswordRequest,
+    CreateDiaryRequest,
+    CreateMemoRequest,
+    Diary,
+    LoginResponse,
+    Memo,
+    PaginatedResponse,
+    Resource,
+    UpdateMemoRequest,
 } from '../types/api'
 
 class APIClient {
@@ -192,6 +192,60 @@ class APIClient {
 
   async createOrUpdateDiary(data: CreateDiaryRequest): Promise<Diary> {
     const response = await this.axiosInstance.post<Diary>(`${this.baseURL}/api/diaries`, data)
+    return response.data
+  }
+
+  async updateDiary(date: string, data: Partial<CreateDiaryRequest>): Promise<Diary> {
+    const response = await this.axiosInstance.put<Diary>(
+      `${this.baseURL}/api/diaries/${date}`,
+      data
+    )
+    return response.data
+  }
+
+  async updateDiarySummary(date: string, summary: string): Promise<Diary> {
+    const response = await this.axiosInstance.put<Diary>(
+      `${this.baseURL}/api/diaries/${date}/summary`,
+      { summary }
+    )
+    return response.data
+  }
+
+  async updateDiaryMood(date: string, moodKey: string, moodScore: number): Promise<Diary> {
+    const response = await this.axiosInstance.put<Diary>(
+      `${this.baseURL}/api/diaries/${date}/mood`,
+      { moodKey, moodScore }
+    )
+    return response.data
+  }
+
+  async getHeatmap(): Promise<{
+    cells: Array<{ date: string; color: string; count: number }>
+    startDate: string
+    endDate: string
+  }> {
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setFullYear(startDate.getFullYear() - 1)
+
+    const formatDate = (date: Date) => date.toISOString().split('T')[0]
+
+    const response = await this.axiosInstance.get(`${this.baseURL}/api/stats/heatmap`, {
+      params: {
+        start_date: formatDate(startDate),
+        end_date: formatDate(endDate),
+      },
+    })
+    return response.data
+  }
+
+  async getStatsSummary(): Promise<{
+    totalMemos: number
+    totalDiaries: number
+    totalResources: number
+    streakDays: number
+  }> {
+    const response = await this.axiosInstance.get(`${this.baseURL}/api/stats/summary`)
     return response.data
   }
 }
