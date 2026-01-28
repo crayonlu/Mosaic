@@ -215,8 +215,39 @@ pub async fn download_avatar(
     }
 }
 
+#[derive(serde::Deserialize)]
+pub struct ListResourcesQuery {
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+}
+
+pub async fn list_resources(
+    req: HttpRequest,
+    query: web::Query<ListResourcesQuery>,
+    resource_service: web::Data<ResourceService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    let page = query.page.unwrap_or(1);
+    let page_size = query.page_size.unwrap_or(100);
+
+    match resource_service.list_resources(&user_id, page, page_size).await {
+        Ok((items, total)) => HttpResponse::Ok().json(serde_json::json!({
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size
+        })),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
 pub fn configure_resource_routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::resource("/resources/upload").route(web::post().to(upload_resource)))
+    cfg.service(web::resource("/resources").route(web::get().to(list_resources)))
+        .service(web::resource("/resources/upload").route(web::post().to(upload_resource)))
         .service(
             web::resource("/resources/presigned-upload")
                 .route(web::post().to(create_presigned_upload)),

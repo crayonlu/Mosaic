@@ -75,10 +75,7 @@ export default function DeskTopHome() {
   return (
     <DeskTopLayout className="relative">
       <div className="h-[calc(100dvh-20rem)] overflow-hidden flex flex-col">
-        <div
-          className={`w-full pb-4 transition-all duration-500 ease-in-out memo-scrollbar overflow-y-auto flex-1 min-h-0
-          }`}
-        >
+        <div className="w-full pb-4 transition-all duration-500 ease-in-out memo-scrollbar overflow-y-auto flex-1 min-h-0">
           <MemoList ref={memoListRef} date={formattedDate} onMemoClick={handleMemoClick} />
         </div>
       </div>

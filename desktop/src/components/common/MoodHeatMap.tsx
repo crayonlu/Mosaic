@@ -29,6 +29,9 @@ export function MoodHeatMap({
     const firstDayOfWeek = new Date(startDate)
     firstDayOfWeek.setDate(startDate.getDate() - startDate.getDay())
 
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
     let currentDate = new Date(firstDayOfWeek)
     let weekIndex = 0
     let lastMonth = -1
@@ -37,6 +40,10 @@ export function MoodHeatMap({
       const week: HeatMapCell[] = []
 
       for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+        if (currentDate > today) {
+          break
+        }
+
         const dateStr = currentDate.toISOString().split('T')[0]
         const cell = cellMap.get(dateStr) || {
           date: dateStr,
@@ -61,7 +68,7 @@ export function MoodHeatMap({
       weeks.push(week)
       weekIndex++
     }
-
+    
     return { weeks }
   }, [data])
 
@@ -81,12 +88,12 @@ export function MoodHeatMap({
     }
 
     const moodLabels: Record<string, string> = {
-      joy: '愉悦',
-      anger: '愤怒',
-      sadness: '悲伤',
+      happy: '愉悦',
+      angry: '愤怒',
+      sad: '悲伤',
       calm: '平静',
-      anxiety: '焦虑',
-      focus: '专注',
+      anxious: '焦虑',
+      excited: '兴奋',
       tired: '疲惫',
       neutral: '中性',
     }

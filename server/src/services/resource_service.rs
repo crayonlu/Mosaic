@@ -327,6 +327,68 @@ impl ResourceService {
         })
     }
 
+    pub async fn list_resources(
+        &self,
+        user_id: &str,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<ResourceResponse>, i64), AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+        let offset = (page - 1) * page_size;
+
+        let resources = sqlx::query_as::<_, Resource>(
+            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.created_at
+             FROM resources r
+             JOIN memos m ON r.memo_id = m.id
+             WHERE m.user_id = $1
+             ORDER BY r.created_at DESC
+             LIMIT $2 OFFSET $3",
+        )
+        .bind(user_uuid)
+        .bind(page_size)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let total = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*)
+             FROM resources r
+             JOIN memos m ON r.memo_id = m.id
+             WHERE m.user_id = $1",
+        )
+        .bind(user_uuid)
+        .fetch_one(&self.pool)
+        .await?;
+
+        let mut responses = Vec::new();
+        for resource in resources {
+            let url = match self.config.storage_type {
+                crate::config::StorageType::Local => {
+                    format!("/api/resources/{}/download", resource.id)
+                }
+                crate::config::StorageType::R2 => self
+                    .storage
+                    .get_presigned_url(&resource.storage_path, 86400)
+                    .await
+                    .map_err(|e| AppError::Storage(e.to_string()))?,
+            };
+
+            responses.push(ResourceResponse {
+                id: resource.id,
+                memo_id: resource.memo_id,
+                filename: resource.filename,
+                resource_type: resource.resource_type,
+                mime_type: resource.mime_type,
+                file_size: resource.file_size,
+                storage_type: resource.storage_type,
+                url,
+                created_at: resource.created_at,
+            });
+        }
+
+        Ok((responses, total))
+    }
+
     pub async fn confirm_upload(
         &self,
         user_id: &str,
