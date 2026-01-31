@@ -1,4 +1,4 @@
-export type SyncStatus = 'idle' | 'syncing' | 'error' | 'completed'
+export type SyncStatus = 'idle' | 'syncing' | 'offline' | 'error' | 'completed'
 
 export interface SyncStatusInfo {
   status: SyncStatus

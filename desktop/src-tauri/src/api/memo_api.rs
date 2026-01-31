@@ -82,10 +82,7 @@ impl MemoApi {
             .await
     }
 
-    pub async fn get_by_created_date(
-        &self,
-        date: &str,
-    ) -> AppResult<Vec<MemoWithResources>> {
+    pub async fn get_by_created_date(&self, date: &str) -> AppResult<Vec<MemoWithResources>> {
         let url = format!("/api/memos/date/{}", date);
 
         self.client

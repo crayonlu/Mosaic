@@ -33,6 +33,7 @@ export interface ServerConfig {
   username: string
   password: string
   apiToken?: string
+  refreshToken?: string
   // AI Configuration
   aiProvider: string
   aiBaseUrl: string

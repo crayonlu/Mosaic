@@ -110,7 +110,10 @@ pub async fn get_memos_by_date(
 
     let date = path.into_inner();
 
-    match memo_service.get_memos_by_created_date(&user_id, &date).await {
+    match memo_service
+        .get_memos_by_created_date(&user_id, &date)
+        .await
+    {
         Ok(memos) => HttpResponse::Ok().json(memos),
         Err(e) => HttpResponse::from_error(e),
     }
