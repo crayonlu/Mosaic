@@ -1,8 +1,3 @@
-/**
- * Diary Types
- * Daily journal entries with mood tracking
- */
-
 import type { MemoWithResources } from './memo'
 
 export enum MoodKey {
@@ -17,14 +12,13 @@ export enum MoodKey {
 }
 
 export interface Diary {
-  date: string // format: 'YYYY-MM-DD'
+  date: string
   summary: string
-  moodKey: MoodKey
-  moodScore: number // 0-100
+  moodKey: string
+  moodScore: number
   coverImageId?: string
-  memoCount: number
-  createdAt: number // timestamp in milliseconds
-  updatedAt: number // timestamp in milliseconds
+  createdAt: number
+  updatedAt: number
 }
 
 export interface DiaryWithMemos extends Diary {

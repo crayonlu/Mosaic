@@ -1,8 +1,3 @@
-/**
- * Resource Types
- * File and attachment management types
- */
-
 export type ResourceType = 'image' | 'audio' | 'video' | 'file'
 
 export interface Resource {
@@ -11,8 +6,10 @@ export interface Resource {
   filename: string
   resourceType: ResourceType
   mimeType: string
-  size: number
-  createdAt: number // timestamp in milliseconds
+  fileSize: number
+  storageType: string
+  url: string
+  createdAt: number
 }
 
 export interface ResourcePreview {
