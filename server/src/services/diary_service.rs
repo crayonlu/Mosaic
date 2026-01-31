@@ -228,51 +228,27 @@ impl DiaryService {
         let user_uuid = Uuid::parse_str(user_id)?;
         let now = Utc::now().timestamp_millis();
 
-        let mut query = String::from("UPDATE diaries SET updated_at = $1");
-        let mut param_count = 1;
-        let mut params: Vec<String> = Vec::new();
-
-        if let Some(summary) = &req.summary {
-            param_count += 1;
-            query.push_str(&format!(", summary = ${}", param_count));
-            params.push(format!("\'{}\'", summary));
-        }
-
-        if let Some(mood_key) = &req.mood_key {
-            param_count += 1;
-            query.push_str(&format!(", mood_key = ${}", param_count));
-            params.push(format!("\'{}\'", mood_key));
-        }
-
-        if let Some(mood_score) = req.mood_score {
-            param_count += 1;
-            query.push_str(&format!(", mood_score = ${}", param_count));
-            params.push(mood_score.to_string());
-        }
-
-        if let Some(cover_image_id) = &req.cover_image_id {
-            param_count += 1;
-            query.push_str(&format!(", cover_image_id = ${}", param_count));
-            match cover_image_id {
-                Some(id) => params.push(format!("\'{}\'", id)),
-                None => params.push("NULL".to_string()),
-            }
-        }
-
-        param_count += 1;
-        query.push_str(&format!(
-            " WHERE date = ${} AND user_id = ${} RETURNING *",
-            param_count,
-            param_count + 1
-        ));
-
-        let diary = sqlx::query_as::<_, Diary>(&query)
-            .bind(now)
-            .bind(date)
-            .bind(user_uuid)
-            .fetch_optional(&self.pool)
-            .await?
-            .ok_or(AppError::DiaryNotFound)?;
+        let diary = sqlx::query_as::<_, Diary>(
+            "UPDATE diaries SET 
+             updated_at = $1,
+             summary = COALESCE($2, summary),
+             mood_key = COALESCE($3, mood_key),
+             mood_score = COALESCE($4, mood_score),
+             cover_image_id = CASE WHEN $5 THEN $6 ELSE cover_image_id END
+             WHERE date = $7 AND user_id = $8
+             RETURNING *",
+        )
+        .bind(now)
+        .bind(&req.summary)
+        .bind(&req.mood_key)
+        .bind(req.mood_score)
+        .bind(req.cover_image_id.is_some()) // Flag to indicate if cover_image_id should be updated
+        .bind(req.cover_image_id.as_ref().and_then(|v| v.as_ref())) // The actual cover_image_id value
+        .bind(date)
+        .bind(user_uuid)
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or(AppError::DiaryNotFound)?;
 
         Ok(DiaryResponse::from(diary))
     }

@@ -225,7 +225,7 @@ impl MemoService {
         date: &str,
     ) -> Result<Vec<MemoWithResources>, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
-        
+
         let memos = sqlx::query_as::<_, Memo>(
             "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
              FROM memos 

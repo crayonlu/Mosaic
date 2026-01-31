@@ -111,6 +111,7 @@ pub async fn refresh_token(
 pub async fn logout(config: State<'_, Arc<RwLock<AppConfig>>>) -> Result<(), String> {
     let mut config_guard = config.write().await;
     config_guard.server.api_token = None;
+    config_guard.server.refresh_token = None;
     config_guard.save().map_err(|e| e.to_string())
 }
 

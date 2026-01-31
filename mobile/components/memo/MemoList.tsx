@@ -1,5 +1,5 @@
 import { Loading } from '@/components/ui'
-import { memoService } from '@/lib/services/memo-service'
+import { memosApi } from '@/lib/api'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@/types/memo'
@@ -31,7 +31,6 @@ export function MemoList({
   const [hasMore, setHasMore] = useState(true)
   const flatListRef = useRef<FlatList>(null)
 
-  // Load memos
   const loadMemos = useCallback(
     async (loadMore = false) => {
       try {
@@ -42,27 +41,24 @@ export function MemoList({
         let loadedMemos: MemoWithResources[]
 
         if (date) {
-          // Load by date
-          loadedMemos = await memoService.getMemosByDate(date)
+          loadedMemos = await memosApi.getByDate(date)
+          setHasMore(false)
         } else {
-          // Load paginated
           const currentPage = loadMore ? page : 1
-          const newMemos = await memoService.listMemos({
+          const response = await memosApi.list({
             page: currentPage,
             pageSize: 20,
-            isArchived: false,
-            isDeleted: false,
+            archived: false,
           })
 
           if (loadMore) {
-            loadedMemos = [...memos, ...newMemos]
+            loadedMemos = [...memos, ...response.items]
           } else {
-            loadedMemos = newMemos
+            loadedMemos = response.items
             setPage(1)
           }
 
-          // Check if there are more items
-          setHasMore(newMemos.length === 20)
+          setHasMore(response.page < response.totalPages)
         }
 
         setMemos(loadedMemos)
@@ -76,26 +72,24 @@ export function MemoList({
     [date, page, memos]
   )
 
-  // Initial load
   useEffect(() => {
     loadMemos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date])
 
-  // Refresh when trigger changes
   useEffect(() => {
     if (refreshTrigger !== undefined) {
       loadMemos()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger])
 
-  // Pull to refresh
   const handleRefresh = useCallback(() => {
     setRefreshing(true)
     setPage(1)
     loadMemos()
   }, [loadMemos])
 
-  // Load more when scrolling to bottom
   const handleLoadMore = useCallback(() => {
     if (!loading && !refreshing && hasMore && !date) {
       setPage(prev => prev + 1)
@@ -103,11 +97,10 @@ export function MemoList({
     }
   }, [loading, refreshing, hasMore, date, loadMemos])
 
-  // Handle memo actions
   const handleArchive = useCallback(
     async (id: string) => {
       try {
-        await memoService.archiveMemo(id, true)
+        await memosApi.archive(id)
         await loadMemos()
         onMemoArchive?.(id)
       } catch (error) {
@@ -120,7 +113,7 @@ export function MemoList({
   const handleDelete = useCallback(
     async (id: string) => {
       try {
-        await memoService.deleteMemo(id)
+        await memosApi.delete(id)
         await loadMemos()
         onMemoDelete?.(id)
       } catch (error) {
@@ -130,14 +123,12 @@ export function MemoList({
     [loadMemos, onMemoDelete]
   )
 
-  // Group memos by date
   const groupedMemos = useMemo(() => {
     const groups: Record<
       string,
       { date: string; displayDate: string; memos: MemoWithResources[] }
     > = {}
 
-    // If date is specified, use it as the group
     if (date) {
       const displayDate = stringUtils.formatDate(date)
       groups[date] = {
@@ -146,7 +137,6 @@ export function MemoList({
         memos,
       }
     } else {
-      // Group by date
       memos.forEach(memo => {
         const memoDate = stringUtils.getDateStringFromTimestamp(memo.createdAt)
         const today = stringUtils.getTodayDateString()
@@ -173,11 +163,10 @@ export function MemoList({
     }
 
     return Object.entries(groups)
-      .map(([date, group]) => group)
+      .map(([, group]) => group)
       .sort((a, b) => b.date.localeCompare(a.date))
   }, [memos, date])
 
-  // Render date header
   const renderDateHeader = (displayDate: string, count: number, isFirst: boolean) => (
     <View
       style={[
@@ -193,7 +182,6 @@ export function MemoList({
     </View>
   )
 
-  // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <View style={[styles.emptyIcon, { backgroundColor: `${theme.primary}10` }]}>
@@ -208,7 +196,6 @@ export function MemoList({
     </View>
   )
 
-  // Render a single date group
   const renderGroup = ({
     item: group,
     index,
@@ -230,7 +217,6 @@ export function MemoList({
     </View>
   )
 
-  // Render list footer
   const renderFooter = () => {
     if (!hasMore) {
       return (

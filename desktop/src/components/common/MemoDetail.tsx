@@ -2,18 +2,18 @@ import { RichTextEditor } from '@/components/common/RichTextEditor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
 import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
 } from '@/components/ui/sheet'
 import { useAI } from '@/hooks/use-ai'
 import { toast } from '@/hooks/use-toast'
@@ -25,18 +25,18 @@ import { CSS } from '@dnd-kit/utilities'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
-    ArrowLeft,
-    Calendar,
-    Edit2,
-    Image as ImageIcon,
-    Loader2,
-    Plus,
-    Save,
-    Sparkles,
-    Tag,
-    Trash2,
-    Upload,
-    X,
+  ArrowLeft,
+  Calendar,
+  Edit2,
+  Image as ImageIcon,
+  Loader2,
+  Plus,
+  Save,
+  Sparkles,
+  Tag,
+  Trash2,
+  Upload,
+  X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -376,10 +376,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     setIsImageModalOpen(true)
   }
 
-  const formatTime = (timestamp: number) => {
-    return dayjs.utc(timestamp).local().format('YYYY年MM月DD日 HH:mm')
-  }
-
   const getImageGridClass = (count: number) => {
     if (count === 1) return 'grid-cols-1'
     if (count === 2) return 'grid-cols-2'
@@ -455,7 +451,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
           </div>
         </SheetHeader>
 
-        <div className="px-6 py-6 space-y-6">
+        <div className="px-6 pb-6 pt-2 space-y-6">
           {isEditing ? (
             <div className="space-y-4">
               <RichTextEditor
@@ -463,9 +459,10 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 onChange={setEditedContent}
                 placeholder="输入内容..."
                 editable={true}
+                className='border border-t-0'
               />
 
-              <div className="border rounded-lg p-4 bg-muted/30">
+              <div className="border rounded-lg p-4">
                 <div className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                   <Tag className="h-4 w-4" />
                   标签
@@ -575,7 +572,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                   content={memo.content}
                   onChange={() => {}}
                   editable={false}
-                  className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1"
+                  className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1 border"
                 />
               ) : (
                 <span className="text-muted-foreground italic">无文字内容</span>

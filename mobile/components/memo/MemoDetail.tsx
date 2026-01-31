@@ -1,6 +1,11 @@
+import { RichTextEditor } from '@/components/editor/RichTextEditor'
+import { Badge, Button } from '@/components/ui'
+import { memosApi } from '@/lib/api'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
-import { ArrowLeft, Check } from 'lucide-react-native'
+import type { MemoWithResources } from '@/types/memo'
+import DateTimePicker from '@react-native-community/datetimepicker'
+import { ArrowLeft, Check, Plus } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import {
   Alert,
@@ -11,15 +16,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import DateTimePicker from '@react-native-community/datetimepicker'
-import type { MemoWithResources } from '@/types/memo'
-import { Badge, Button } from '@/components/ui'
-import { RichTextEditor } from '@/components/editor/RichTextEditor'
-import { memoService } from '@/lib/services/memo-service'
 
 interface MemoDetailProps {
   visible: boolean
@@ -64,8 +65,7 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
     if (!memo) return
 
     try {
-      const updatedMemo = await memoService.updateMemo({
-        id: memo.id,
+      const updatedMemo = await memosApi.update(memo.id, {
         content,
         tags,
         resourceFilenames: memo.resources.map(r => r.filename),
@@ -86,8 +86,12 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
     if (!memo) return
 
     try {
-      await memoService.archiveMemo(memo.id, !memo.isArchived)
-      const updatedMemo = await memoService.getMemo(memo.id)
+      if (memo.isArchived) {
+        await memosApi.unarchive(memo.id)
+      } else {
+        await memosApi.archive(memo.id)
+      }
+      const updatedMemo = await memosApi.get(memo.id)
       if (updatedMemo) {
         onMemoUpdate(updatedMemo)
       }
@@ -109,7 +113,7 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
         style: 'destructive',
         onPress: async () => {
           try {
-            await memoService.deleteMemo(memo.id)
+            await memosApi.delete(memo.id)
             onDelete?.(memo.id)
             onClose()
           } catch (error) {
@@ -215,21 +219,37 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
 
           <ScrollView style={styles.scrollView}>
             {/* Tags */}
-            {tags.length > 0 && (
-              <View style={styles.tagsSection}>
-                <View style={styles.tagsRow}>
-                  {tags.map(tag => (
-                    <TouchableOpacity
-                      key={tag}
-                      onPress={() => handleRemoveTag(tag)}
-                      style={styles.tagContainer}
-                    >
-                      <Badge text={tag} variant="solid" />
-                    </TouchableOpacity>
-                  ))}
-                </View>
+            <View style={styles.tagsSection}>
+              <View style={styles.tagsRow}>
+                {tags.map(tag => (
+                  <TouchableOpacity
+                    key={tag}
+                    onPress={() => handleRemoveTag(tag)}
+                    style={styles.tagContainer}
+                  >
+                    <Badge text={tag} variant="solid" />
+                  </TouchableOpacity>
+                ))}
               </View>
-            )}
+              <View style={styles.tagInputRow}>
+                <TextInput
+                  style={[styles.tagInput, { color: theme.text, borderColor: theme.border }]}
+                  value={tagInput}
+                  onChangeText={setTagInput}
+                  placeholder="添加标签..."
+                  placeholderTextColor={theme.textSecondary}
+                  onSubmitEditing={handleAddTag}
+                  returnKeyType="done"
+                />
+                <TouchableOpacity
+                  onPress={handleAddTag}
+                  style={[styles.addTagButton, { backgroundColor: theme.primary }]}
+                  disabled={!tagInput.trim()}
+                >
+                  <Plus size={18} color="#fff" strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
+            </View>
 
             {/* Diary Date */}
             {diaryDate && (
@@ -287,7 +307,7 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
                           📎 {resource.filename}
                         </Text>
                         <Text style={[styles.otherResourceSize, { color: theme.textSecondary }]}>
-                          {stringUtils.formatFileSize(resource.size)}
+                          {stringUtils.formatFileSize(resource.fileSize)}
                         </Text>
                       </View>
                     ))}
@@ -386,9 +406,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    marginBottom: 12,
   },
   tagContainer: {
     marginRight: -8,
+  },
+  tagInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tagInput: {
+    flex: 1,
+    height: 36,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 14,
+  },
+  addTagButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dateSection: {
     paddingHorizontal: 16,
