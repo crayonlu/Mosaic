@@ -239,7 +239,7 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
   ]
 
   return (
-    <div className={cn('flex items-center gap-1 border-b p-2 flex-wrap shrink-0', className)}>
+    <div className={cn('flex items-center gap-1 border-b p-2 flex-wrap shrink-0 border', className)}>
       <div className="flex items-center gap-1">
         {formatButtons.map(btn => (
           <ToolbarButton key={btn.label} editor={editor} {...btn} />

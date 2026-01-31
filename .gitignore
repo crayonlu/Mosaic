@@ -69,3 +69,5 @@ mobile/web-build/
 unused
 .shared/
 .github/prompts/
+
+__tests__

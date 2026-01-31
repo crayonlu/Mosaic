@@ -36,10 +36,22 @@ pub async fn upload_files(
             .map_err(|e| e.to_string())?;
 
         results.push(UploadedResource {
-            filename: response["filename"].as_str().unwrap().to_string(),
+            id: response["id"].as_str().unwrap_or_default().to_string(),
+            filename: response["filename"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
             size: response["size"].as_i64().unwrap_or(0),
-            mime_type: response["mime_type"].as_str().unwrap().to_string(),
-            resource_type: "image".to_string(),
+            mime_type: response["mimeType"]
+                .as_str()
+                .unwrap_or("application/octet-stream")
+                .to_string(),
+            resource_type: response["resourceType"]
+                .as_str()
+                .unwrap_or("image")
+                .to_string(),
+            storage_type: response["storageType"].as_str().map(|s| s.to_string()),
+            storage_path: response["storagePath"].as_str().map(|s| s.to_string()),
         });
     }
 
