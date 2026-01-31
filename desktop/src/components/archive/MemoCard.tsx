@@ -130,13 +130,13 @@ export const MemoCard = memo<MemoCardProps>(
     return (
       <div
         className={cn(
-          'group relative rounded-lg border bg-card text-sm text-card-foreground shadow-sm transition-all',
+          'group relative rounded-lg border bg-card text-sm text-card-foreground transition-all',
           mode === 'select' && !isArchived && 'hover:border-primary/30 cursor-pointer',
           mode === 'view' &&
             !isArchived &&
-            'hover:shadow-md hover:border-primary/50 cursor-pointer',
+            'hover:border-primary/50 cursor-pointer',
           selected && 'ring-2 ring-primary/50 border-primary',
-          isArchived && 'opacity-60 cursor-pointer hover:opacity-80 hover:shadow-md transition-all'
+          isArchived && 'opacity-60 cursor-pointer hover:opacity-80 transition-all'
         )}
         onClick={() => {
           if (mode === 'select') {
@@ -159,7 +159,7 @@ export const MemoCard = memo<MemoCardProps>(
 
         {isArchived && (
           <div className="absolute top-2 right-2 z-20">
-            <div className="flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-2.5 py-1 text-xs font-semibold shadow-sm border border-primary/20 group-hover:bg-primary/90 transition-colors">
+            <div className="flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-2.5 py-1 text-xs font-semibold border border-primary/20 group-hover:bg-primary/90 transition-colors">
               <Archive className="h-3.5 w-3.5" />
               <span>已归档</span>
               {mode === 'select' && (

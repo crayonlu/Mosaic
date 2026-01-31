@@ -96,7 +96,7 @@ export function CodeBlockLanguageSelector({ editor }: CodeBlockLanguageSelectorP
         <ChevronDown className={cn('h-3 w-3 transition-transform', isOpen && 'rotate-180')} />
       </Button>
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-popover border rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[120px]">
+        <div className="absolute top-full left-0 mt-1 z-50 bg-popover border rounded-md max-h-64 overflow-y-auto min-w-[120px]">
           {languages.map(lang => (
             <button
               key={lang.value}

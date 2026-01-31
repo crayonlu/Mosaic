@@ -78,7 +78,7 @@ export function TimelineView({ startDate, endDate }: TimelineViewProps) {
             <div key={entry.date} className="relative flex gap-6">
               <div className="flex flex-col items-center z-10">
                 <div
-                  className="w-4 h-4 rounded-full border-2 border-background shadow-sm"
+                  className="w-4 h-4 rounded-full border-2 border-background"
                   style={{ backgroundColor: entry.color }}
                 ></div>
                 {index < data.entries.length - 1 && (
@@ -87,7 +87,7 @@ export function TimelineView({ startDate, endDate }: TimelineViewProps) {
               </div>
 
               <div className="flex-1">
-                <div className="bg-card rounded-lg border shadow-sm p-4 hover:shadow-md transition-shadow">
+                <div className="bg-card rounded-lg border p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-primary" />

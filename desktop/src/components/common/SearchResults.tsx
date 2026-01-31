@@ -175,7 +175,7 @@ function SearchResultItem({ memo, searchWords, onMemoClick }: SearchResultItemPr
 
   return (
     <div
-      className="group rounded-lg border bg-card overflow-hidden text-sm text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer hover:border-primary/50"
+      className="group rounded-lg border bg-card overflow-hidden text-sm text-card-foreground transition-all cursor-pointer hover:border-primary/50"
       onClick={() => onMemoClick?.(memo)}
     >
       <div className="p-4" ref={editorRef}>

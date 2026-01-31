@@ -156,7 +156,7 @@ export default function DiaryPage() {
                 {diaries.map(diary => (
                   <Card
                     key={diary.date}
-                    className="cursor-pointer hover:shadow-md transition-all"
+                    className="cursor-pointer transition-all"
                     onClick={() => handleDiaryClick(diary.date)}
                   >
                     <CardContent className="p-4">

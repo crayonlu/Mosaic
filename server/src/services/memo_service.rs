@@ -257,47 +257,56 @@ impl MemoService {
         let user_uuid = Uuid::parse_str(user_id)?;
         let now = Utc::now().timestamp_millis();
 
-        let mut query = String::from("UPDATE memos SET updated_at = $1");
-        let mut param_count = 1;
-        let mut params: Vec<String> = Vec::new();
+        let mut set_clauses = vec!["updated_at = $1".to_string()];
+        let mut param_idx = 2;
+
+        if req.content.is_some() {
+            set_clauses.push(format!("content = ${}", param_idx));
+            param_idx += 1;
+        }
+
+        if req.tags.is_some() {
+            set_clauses.push(format!("tags = ${}", param_idx));
+            param_idx += 1;
+        }
+
+        if req.is_archived.is_some() {
+            set_clauses.push(format!("is_archived = ${}", param_idx));
+            param_idx += 1;
+        }
+
+        if req.diary_date.is_some() {
+            set_clauses.push(format!("diary_date = ${}", param_idx));
+            param_idx += 1;
+        }
+
+        let query = format!(
+            "UPDATE memos SET {} WHERE id = ${} AND user_id = ${} RETURNING *",
+            set_clauses.join(", "),
+            param_idx,
+            param_idx + 1
+        );
+
+        let mut query_builder = sqlx::query_as::<_, Memo>(&query).bind(now);
 
         if let Some(content) = &req.content {
-            param_count += 1;
-            query.push_str(&format!(", content = ${}", param_count));
-            params.push(format!("'{}'", content));
+            query_builder = query_builder.bind(content);
         }
 
         if let Some(tags) = &req.tags {
-            param_count += 1;
-            query.push_str(&format!(", tags = ${}", param_count));
             let tags_json = json!(tags);
-            params.push(tags_json.to_string());
+            query_builder = query_builder.bind(tags_json);
         }
 
         if let Some(is_archived) = req.is_archived {
-            param_count += 1;
-            query.push_str(&format!(", is_archived = ${}", param_count));
-            params.push(is_archived.to_string());
+            query_builder = query_builder.bind(is_archived);
         }
 
         if let Some(diary_date) = &req.diary_date {
-            param_count += 1;
-            query.push_str(&format!(", diary_date = ${}", param_count));
-            match diary_date {
-                Some(date) => params.push(format!("'{}'", date)),
-                None => params.push("NULL".to_string()),
-            }
+            query_builder = query_builder.bind(*diary_date);
         }
 
-        param_count += 1;
-        query.push_str(&format!(
-            " WHERE id = ${} AND user_id = ${} RETURNING *",
-            param_count,
-            param_count + 1
-        ));
-
-        let memo = sqlx::query_as::<_, Memo>(&query)
-            .bind(now)
+        let memo = query_builder
             .bind(memo_id)
             .bind(user_uuid)
             .fetch_optional(&self.pool)

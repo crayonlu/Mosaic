@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
 import { MoodHeatMap } from '@/components/common/MoodHeatMap'
 import { useStatsStore } from '@/stores/stats-store'
+import { useEffect } from 'react'
 
 export function SidebarHeatMap() {
   const { heatmapData, heatmapLoading, loadHeatmap } = useStatsStore()

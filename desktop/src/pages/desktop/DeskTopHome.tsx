@@ -1,14 +1,14 @@
-import { useState, useRef } from 'react'
-import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { AppInput, type AppInputRef } from '@/components/common/AppInput'
-import { MemoList, type MemoListRef } from '@/components/common/MemoList'
 import { MemoDetail } from '@/components/common/MemoDetail'
-import { useInputStore } from '@/stores/input-store'
-import { useTime } from '@/hooks/use-time'
-import { memoCommands } from '@/utils/callRust'
+import { MemoList, type MemoListRef } from '@/components/common/MemoList'
+import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { useFileUpload } from '@/hooks/use-file-upload'
+import { useTime } from '@/hooks/use-time'
 import { toast } from '@/hooks/use-toast'
+import { useInputStore } from '@/stores/input-store'
 import type { MemoWithResources } from '@/types/memo'
+import { memoCommands } from '@/utils/callRust'
+import { useRef, useState } from 'react'
 
 export default function DeskTopHome() {
   const isInputExpanded = useInputStore(state => state.isExpanded)

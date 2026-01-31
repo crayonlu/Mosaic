@@ -2,18 +2,18 @@ import { RichTextEditor } from '@/components/common/RichTextEditor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
 } from '@/components/ui/sheet'
 import { useAI } from '@/hooks/use-ai'
 import { toast } from '@/hooks/use-toast'
@@ -25,18 +25,18 @@ import { CSS } from '@dnd-kit/utilities'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
-  ArrowLeft,
-  Calendar,
-  Edit2,
-  Image as ImageIcon,
-  Loader2,
-  Plus,
-  Save,
-  Sparkles,
-  Tag,
-  Trash2,
-  Upload,
-  X,
+    ArrowLeft,
+    Calendar,
+    Edit2,
+    Image as ImageIcon,
+    Loader2,
+    Plus,
+    Save,
+    Sparkles,
+    Tag,
+    Trash2,
+    Upload,
+    X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -141,7 +141,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     try {
       setIsSaving(true)
-      await memoCommands.updateMemo(memo.id, {
+      await memoCommands.updateMemo({
+        id: memo.id,
         content: editedContent,
         tags: editedTags,
       })

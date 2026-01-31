@@ -103,7 +103,7 @@ export function MonthlyView({
 
   return (
     <TooltipProvider>
-      <div className="bg-card rounded-xl border shadow-sm p-4">
+      <div className="bg-card rounded-xl border p-4">
         <div className="text-center mb-4">
           <h3 className="text-lg font-semibold">
             {year}年{month + 1}月

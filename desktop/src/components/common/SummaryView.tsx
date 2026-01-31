@@ -126,25 +126,25 @@ export function SummaryView({ year, month }: SummaryViewProps) {
     <div className="space-y-6">
       {/* 统计卡片 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-card rounded-lg border shadow-sm p-6">
+        <div className="bg-card rounded-lg border p-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-primary mb-1">{data.totalMemos}</div>
             <div className="text-xs text-muted-foreground">总笔记数</div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border shadow-sm p-6">
+        <div className="bg-card rounded-lg border p-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-500 mb-1">{data.totalDiaries}</div>
             <div className="text-xs text-muted-foreground">日记篇数</div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border shadow-sm p-6">
+        <div className="bg-card rounded-lg border p-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-green-500 mb-1">{data.totalResources}</div>
             <div className="text-xs text-muted-foreground">资源总数</div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border shadow-sm p-6">
+        <div className="bg-card rounded-lg border p-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-500 mb-1">{data.recordedDays || 0}</div>
             <div className="text-xs text-muted-foreground">记录天数</div>
@@ -153,7 +153,7 @@ export function SummaryView({ year, month }: SummaryViewProps) {
       </div>
 
       {/* 情绪分布 */}
-      <div className="bg-card rounded-lg border shadow-sm p-6">
+      <div className="bg-card rounded-lg border p-6">
         <div className="flex items-center gap-2 mb-4">
           <PieChart className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">情绪分布</h3>
@@ -182,7 +182,7 @@ export function SummaryView({ year, month }: SummaryViewProps) {
 
       {/* 热门标签 */}
       {topTagsList.length > 0 && (
-        <div className="bg-card rounded-lg border shadow-sm p-6 flex flex-col">
+        <div className="bg-card rounded-lg border p-6 flex flex-col">
           <div className="flex items-center gap-2 mb-4">
             <Hash className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">热门标签</h3>
@@ -203,7 +203,7 @@ export function SummaryView({ year, month }: SummaryViewProps) {
       )}
 
       {/* 月度概览 */}
-      <div className="bg-card rounded-lg border shadow-sm p-6 flex flex-col">
+      <div className="bg-card rounded-lg border p-6 flex flex-col">
         <div className="flex items-center gap-2 mb-4">
           <CalendarIcon className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">
