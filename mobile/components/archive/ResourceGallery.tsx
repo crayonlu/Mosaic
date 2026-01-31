@@ -1,17 +1,17 @@
 import { useThemeStore } from '@/stores/theme-store'
+import type { MemoWithResources } from '@/types/memo'
 import { useState } from 'react'
 import {
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  Modal,
-  ScrollView,
-  Dimensions,
+    Dimensions,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native'
-import { Video, ResizeMode } from 'react-native-video'
-import type { MemoWithResources } from '@/types/memo'
+import { ResizeMode, Video } from 'react-native-video'
 
 interface ResourceGalleryProps {
   memo: MemoWithResources
@@ -175,7 +175,6 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
 }
 
 function ImagePreview({ visible, images, initialIndex, onClose }: ImagePreviewProps) {
-  const { theme } = useThemeStore()
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const screenWidth = Dimensions.get('window').width
 

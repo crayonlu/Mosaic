@@ -1,13 +1,13 @@
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
 import { Loading, toast } from '@/components/ui'
-import { memoService } from '@/lib/services/memo-service'
+import { memosApi } from '@/lib/api'
+import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@/types/memo'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Archive, ArrowLeft, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { stringUtils } from '@/lib/utils'
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -19,15 +19,14 @@ export default function MemoDetailScreen() {
 
   const loadMemo = useCallback(async () => {
     try {
-      const data = await memoService.getMemo(id)
+      const data = await memosApi.get(id)
       if (data) {
-        console.log('Loaded memo:', data)
         setMemo(data)
         setContent(data.content)
       }
     } catch (error) {
-      toast.error('错误', '加载备忘录失败')
       console.error('Load memo error:', error)
+      toast.error('错误', '加载备忘录失败')
       router.back()
     } finally {
       setLoading(false)
@@ -35,20 +34,17 @@ export default function MemoDetailScreen() {
   }, [id])
 
   useEffect(() => {
-    if (id) {
-      loadMemo()
-    }
+    if (id) loadMemo()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   const handleSave = async () => {
     if (!memo) return
 
     try {
-      const updated = await memoService.updateMemo({
-        id: memo.id,
+      const updated = await memosApi.update(memo.id, {
         content: content.trim(),
         tags: memo.tags,
-        resourceFilenames: memo.resources.map(r => r.filename),
       })
       if (updated) {
         setMemo(updated)
@@ -56,8 +52,8 @@ export default function MemoDetailScreen() {
         toast.success('成功', '备忘录已更新')
       }
     } catch (error) {
-      toast.error('错误', '更新失败')
       console.error('Update memo error:', error)
+      toast.error('错误', '更新失败')
     }
   }
 
@@ -65,15 +61,19 @@ export default function MemoDetailScreen() {
     if (!memo) return
 
     try {
-      await memoService.archiveMemo(memo.id, !memo.isArchived)
-      const updated = await memoService.getMemo(memo.id)
+      if (memo.isArchived) {
+        await memosApi.unarchive(memo.id)
+      } else {
+        await memosApi.archive(memo.id)
+      }
+      const updated = await memosApi.get(memo.id)
       if (updated) {
         setMemo(updated)
         toast.success('成功', memo.isArchived ? '备忘录已取消归档' : '备忘录已归档')
       }
     } catch (error) {
+      console.error('Archive/Unarchive memo error:', error)
       toast.error('错误', '操作失败')
-      console.error('Archive error:', error)
     }
   }
 
@@ -87,12 +87,12 @@ export default function MemoDetailScreen() {
       actionLabel: '删除',
       onAction: async () => {
         try {
-          await memoService.deleteMemo(memo.id)
+          await memosApi.delete(memo.id)
           toast.success('成功', '备忘录已删除')
           router.back()
         } catch (error) {
+          console.error('Delete memo error:', error)
           toast.error('错误', '删除失败')
-          console.error('Delete error:', error)
         }
       },
     })

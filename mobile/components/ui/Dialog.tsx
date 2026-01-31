@@ -63,6 +63,7 @@ export function Dialog({ visible, type = 'info', title, message, buttons, onClos
         }),
       ]).start()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
 
   const handleBackdropPress = () => {

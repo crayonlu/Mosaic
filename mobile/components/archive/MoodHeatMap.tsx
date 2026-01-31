@@ -1,11 +1,22 @@
 import { Loading } from '@/components/ui'
-import { TimeRanges, type TimeRangeValue } from '@/constants/common'
-import { statsService } from '@/lib/services/stats-service'
-import { useDatabaseStore } from '@/lib/database/state-manager'
+import { type TimeRangeValue } from '@/constants/common'
+import { statsApi } from '@/lib/api'
 import { useThemeStore } from '@/stores/theme-store'
-import type { HeatMapCell, HeatMapData } from '@/types/stats'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+
+interface HeatMapCell {
+  date: string
+  color: string
+  moodKey?: string
+  count?: number
+}
+
+interface HeatMapData {
+  startDate: string
+  endDate: string
+  cells: HeatMapCell[]
+}
 
 interface MoodHeatMapProps {
   onDateClick?: (date: string) => void
@@ -19,7 +30,6 @@ export function MoodHeatMap({
   onTimeRangeChange,
 }: MoodHeatMapProps) {
   const { theme } = useThemeStore()
-  const { isReady: dbReady, isInitializing: dbInitializing, error: dbError } = useDatabaseStore()
   const [data, setData] = useState<HeatMapData | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -38,17 +48,9 @@ export function MoodHeatMap({
     [theme.border]
   )
 
-  // Load heat map data
   const loadHeatMapData = useCallback(async () => {
     try {
       setLoading(true)
-
-      // Check database readiness
-      if (!dbReady) {
-        console.warn('[MoodHeatMap] Database not ready, skipping load')
-        setLoading(false)
-        return
-      }
 
       const endDate = new Date()
       const startDate = new Date()
@@ -68,35 +70,34 @@ export function MoodHeatMap({
       const startDateStr = startDate.toISOString().split('T')[0]
       const endDateStr = endDate.toISOString().split('T')[0]
 
-      console.log(
-        '[MoodHeatMap] Loading data for range:',
-        startDateStr,
-        'to',
-        endDateStr,
-        'months:',
-        months
-      )
-
-      const heatMapData = await statsService.getHeatMapData({
+      const response = await statsApi.getHeatmap({
         startDate: startDateStr,
         endDate: endDateStr,
       })
 
-      console.log('[MoodHeatMap] Data loaded successfully:', heatMapData.cells.length, 'cells')
-      setData(heatMapData)
+      const cells: HeatMapCell[] = response.dates.map((date, index) => ({
+        date,
+        color: response.counts[index] > 0 ? moodLegend[0].color : theme.border,
+        count: response.counts[index],
+      }))
+
+      setData({
+        startDate: startDateStr,
+        endDate: endDateStr,
+        cells,
+      })
     } catch (error) {
-      console.error('[MoodHeatMap] Failed to load heat map data:', error)
+      console.error('Failed to load heat map data:', error)
       setData(null)
     } finally {
       setLoading(false)
     }
-  }, [timeRange, dbReady])
+  }, [timeRange, moodLegend, theme.border])
 
   useEffect(() => {
-    if (dbReady) {
-      loadHeatMapData()
-    }
-  }, [dbReady])
+    loadHeatMapData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeRange])
 
   // Group cells by weeks
   const weeks = useMemo(() => {
@@ -149,20 +150,10 @@ export function MoodHeatMap({
     }
   }
 
-  if (dbInitializing || loading) {
+  if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: 'transparent' }]}>
         <Loading text="加载中..." />
-      </View>
-    )
-  }
-
-  if (dbError) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.headerText, { color: theme.text }]}>数据库错误</Text>
-        </View>
       </View>
     )
   }

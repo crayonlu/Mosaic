@@ -1,31 +1,40 @@
-/**
- * Root Layout
- * Main entry point for the app
- */
-
 import { Loading, ToastContainer } from '@/components/ui'
-import { useDatabaseStore } from '@/lib/database/state-manager'
+import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
-import { Stack } from 'expo-router'
+import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 
 export default function RootLayout() {
   const { theme } = useThemeStore()
-  const { isInitializing: dbInitializing, initializeDatabase } = useDatabaseStore()
+  const { isAuthenticated, isInitialized, isLoading, initialize } = useAuthStore()
+  const segments = useSegments()
+  const router = useRouter()
 
-  // Initialize database on app start
   useEffect(() => {
-    initializeDatabase()
-  }, [])
+    initialize()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[])
 
-  // Show loading screen while database is initializing
-  if (dbInitializing) {
+  useEffect(() => {
+    if (!isInitialized) return
+
+    const inSetup = (segments[0] as string) === 'setup'
+
+    if (!isAuthenticated && !inSetup) {
+      router.replace('/setup')
+    } else if (isAuthenticated && inSetup) {
+      router.replace('/')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isInitialized, segments])
+
+  if (!isInitialized || isLoading) {
     return (
       <SafeAreaProvider>
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-          <Loading text="初始化数据库中..." fullScreen />
+          <Loading text="加载中..." fullScreen />
         </SafeAreaView>
       </SafeAreaProvider>
     )
@@ -41,6 +50,7 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: theme.background },
           }}
         >
+          <Stack.Screen name="setup" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="modal"

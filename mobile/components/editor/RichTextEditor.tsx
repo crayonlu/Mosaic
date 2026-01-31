@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { EditorToolbar } from './EditorToolbar'
 import { LinkDialog } from './LinkDialog'
-import { marked } from 'marked'
 
 interface RichTextEditorProps {
   content: string
@@ -85,34 +84,6 @@ export function RichTextEditor({
         })
       }
     }
-  }
-
-  // Handle paste with Markdown support
-  const handlePaste = (event: any) => {
-    const pastedText = event.clipboardData?.getData('text/plain') || ''
-
-    // Check for Markdown syntax
-    const hasMarkdownSyntax =
-      /(#+\s|^\s*[-*+]\s|\*\*.*\*\*|\*.*\*|`.*`|^\s*\d+\.\s|\[.*\]\(.*\)|^\s*>)/m.test(pastedText)
-
-    if (hasMarkdownSyntax) {
-      try {
-        const htmlContent = marked.parse(pastedText)
-        // Use insertHTML if available
-        if ('insertHTML' in editor && typeof editor.insertHTML === 'function') {
-          editor.insertHTML(htmlContent)
-        } else {
-          editor.getHTML().then(currentContent => {
-            editor.setContent(currentContent + htmlContent)
-          })
-        }
-        return true
-      } catch (error) {
-        console.warn('Failed to parse pasted Markdown:', error)
-      }
-    }
-
-    return false
   }
 
   if (!editor) {
