@@ -6,7 +6,7 @@ pub mod resource_api;
 pub mod stats_api;
 pub mod user_api;
 
-pub use auth_api::{AuthApi, LoginResponse};
+pub use auth_api::{AuthApi, LoginResponse, RefreshTokenResponse};
 pub use client::ApiClient;
 pub use diary_api::{
     CreateOrUpdateDiaryRequest, DiaryApi, UpdateDiaryMoodRequest, UpdateDiarySummaryRequest,

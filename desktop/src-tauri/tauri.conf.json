@@ -13,7 +13,7 @@
     "windows": [
       {
         "title": "mosaic",
-        "width": 800,
+        "width": 1000,
         "height": 600,
         "decorations": false,
         "transparent": true

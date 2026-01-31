@@ -41,19 +41,37 @@ import { invoke } from '@tauri-apps/api/core'
 
 let isRefreshingToken = false
 let refreshPromise: Promise<void> | null = null
+let lastRefreshAttempt = 0
+let refreshFailed = false
+const REFRESH_COOLDOWN_MS = 5000
 
 async function refreshTokenIfNeeded() {
+  if (refreshFailed) {
+    throw new Error('Token refresh already failed')
+  }
+
   if (isRefreshingToken && refreshPromise) {
     return refreshPromise
   }
 
+  const now = Date.now()
+  if (now - lastRefreshAttempt < REFRESH_COOLDOWN_MS) {
+    throw new Error('Token refresh on cooldown')
+  }
+
+  lastRefreshAttempt = now
   isRefreshingToken = true
+
   refreshPromise = (async () => {
     try {
       await invoke<{ accessToken: string }>('refresh_token')
       console.log('Token refreshed successfully')
+      refreshFailed = false
     } catch (error) {
       const errorMessage = String(error)
+      console.error('Error refreshing token:', errorMessage)
+      refreshFailed = true
+
       if (errorMessage.includes('No refresh token available')) {
         console.error('No refresh token available - redirecting to setup')
         if (window.location.pathname !== '/setup') {
@@ -78,10 +96,10 @@ export async function callRust<T = unknown>(
   retryCount = 0
 ): Promise<T> {
   try {
-    return await invoke<T>(cmd, args)
+    const result = await invoke<T>(cmd, args)
+    return result
   } catch (error) {
     const errorMessage = String(error)
-
     if (
       (errorMessage.includes('Unauthorized') || errorMessage.includes('User not found')) &&
       retryCount === 0 &&
@@ -124,7 +142,7 @@ export const memoCommands = {
   getMemosByDiaryDate: (diaryDate: string) =>
     callRust<MemoWithResources[]>('get_memos_by_diary_date', { diaryDate }),
 
-  updateMemo: (id: string, req: UpdateMemoRequest) => callRust<void>('update_memo', { id, req }),
+  updateMemo: (req: UpdateMemoRequest) => callRust<void>('update_memo', { req }),
 
   deleteMemo: (memoId: string) => callRust<void>('delete_memo', { memoId }),
 

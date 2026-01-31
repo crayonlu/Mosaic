@@ -1,42 +1,41 @@
-import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
+import { useAI } from '@/hooks/use-ai'
+import { cn } from '@/lib/utils'
 import { Code } from '@tiptap/extension-code'
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
+import { Highlight } from '@tiptap/extension-highlight'
 import { Link } from '@tiptap/extension-link'
-import { TaskList } from '@tiptap/extension-task-list'
-import { TaskItem } from '@tiptap/extension-task-item'
+import Placeholder from '@tiptap/extension-placeholder'
 import { Table } from '@tiptap/extension-table'
-import { TableRow } from '@tiptap/extension-table-row'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { TableHeader } from '@tiptap/extension-table-header'
+import { TableRow } from '@tiptap/extension-table-row'
+import { TaskItem } from '@tiptap/extension-task-item'
+import { TaskList } from '@tiptap/extension-task-list'
 import { Underline } from '@tiptap/extension-underline'
-import { Highlight } from '@tiptap/extension-highlight'
-import { Markdown } from 'tiptap-markdown'
-import { marked } from 'marked'
-import { useEffect, useState, useCallback } from 'react'
+import { EditorContent, useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
 import { createLowlight } from 'lowlight'
-import { cn } from '@/lib/utils'
-import { Toolbar } from './RichTextEditor/Toolbar'
+import { marked } from 'marked'
+import { useCallback, useEffect, useState } from 'react'
+import { Markdown } from 'tiptap-markdown'
 import { LinkDialog } from './RichTextEditor/LinkDialog'
-import { useAI } from '@/hooks/use-ai'
+import { Toolbar } from './RichTextEditor/Toolbar'
 
-import javascript from 'highlight.js/lib/languages/javascript'
-import typescript from 'highlight.js/lib/languages/typescript'
-import css from 'highlight.js/lib/languages/css'
-import html from 'highlight.js/lib/languages/xml'
-import json from 'highlight.js/lib/languages/json'
-import python from 'highlight.js/lib/languages/python'
-import java from 'highlight.js/lib/languages/java'
+import bash from 'highlight.js/lib/languages/bash'
 import cpp from 'highlight.js/lib/languages/cpp'
 import csharp from 'highlight.js/lib/languages/csharp'
+import css from 'highlight.js/lib/languages/css'
 import go from 'highlight.js/lib/languages/go'
+import java from 'highlight.js/lib/languages/java'
+import javascript from 'highlight.js/lib/languages/javascript'
+import json from 'highlight.js/lib/languages/json'
+import markdown from 'highlight.js/lib/languages/markdown'
+import python from 'highlight.js/lib/languages/python'
 import rust from 'highlight.js/lib/languages/rust'
 import sql from 'highlight.js/lib/languages/sql'
-import bash from 'highlight.js/lib/languages/bash'
-import markdown from 'highlight.js/lib/languages/markdown'
+import typescript from 'highlight.js/lib/languages/typescript'
+import { default as html, default as xml } from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
-import xml from 'highlight.js/lib/languages/xml'
 
 const lowlight = createLowlight()
 
@@ -221,7 +220,7 @@ export function RichTextEditor({
   }, [editor, editable, isCompleting, aiLoading, completeText])
 
   useEffect(() => {
-    if (!editor) return
+    if (!editor || !editable) return
     const rerender = () => setRenderCounter(c => c + 1)
     editor.on('selectionUpdate', rerender)
     editor.on('transaction', rerender)
@@ -229,7 +228,7 @@ export function RichTextEditor({
       editor.off('selectionUpdate', rerender)
       editor.off('transaction', rerender)
     }
-  }, [editor])
+  }, [editor, editable])
 
   useEffect(() => {
     if (editor && editor.isEditable !== editable) {
@@ -238,17 +237,17 @@ export function RichTextEditor({
   }, [editor, editable])
 
   useEffect(() => {
-    if (editor && editor.getHTML() !== content) {
+    if (editor && editable && editor.getHTML() !== content) {
       editor.commands.setContent(content)
     }
-  }, [content, editor])
+  }, [content, editor, editable])
 
   if (!editor) {
     return null
   }
 
   return (
-    <div className="w-full h-full border bg-background flex flex-col overflow-hidden">
+    <div className="w-full h-full bg-background flex flex-col overflow-hidden">
       {editable && editor && (
         <Toolbar
           editor={editor}

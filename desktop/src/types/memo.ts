@@ -46,6 +46,7 @@ export interface ListMemosRequest {
 }
 
 export interface UpdateMemoRequest {
+  id: string
   content?: string
   tags?: string[]
   isArchived?: boolean

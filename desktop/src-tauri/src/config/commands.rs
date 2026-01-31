@@ -1,4 +1,4 @@
-use crate::api::{AuthApi, LoginResponse};
+use crate::api::{AuthApi, LoginResponse, RefreshTokenResponse};
 use crate::config::{AppConfig, ServerConfig};
 use std::sync::Arc;
 use tauri::State;
@@ -83,7 +83,7 @@ pub async fn login(
 #[tauri::command]
 pub async fn refresh_token(
     config: State<'_, Arc<RwLock<AppConfig>>>,
-) -> Result<LoginResponse, String> {
+) -> Result<RefreshTokenResponse, String> {
     let (refresh_token, server_url) = {
         let config_guard = config.read().await;
         let refresh_token = match config_guard.server.refresh_token.clone() {

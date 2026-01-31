@@ -35,12 +35,14 @@ export function MoodHeatMap({
     let currentDate = new Date(firstDayOfWeek)
     let weekIndex = 0
     let lastMonth = -1
+    let reachedEnd = false
 
-    while (currentDate <= endDate) {
+    while (currentDate <= endDate && !reachedEnd) {
       const week: HeatMapCell[] = []
 
       for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
         if (currentDate > today) {
+          reachedEnd = true
           break
         }
 
@@ -65,7 +67,9 @@ export function MoodHeatMap({
         currentDate.setDate(currentDate.getDate() + 1)
       }
 
-      weeks.push(week)
+      if (week.length > 0) {
+        weeks.push(week)
+      }
       weekIndex++
     }
     

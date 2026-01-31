@@ -97,7 +97,7 @@ export function HighlightColorSelector({ editor }: HighlightColorSelectorProps) 
         </TooltipContent>
       </Tooltip>
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-popover border rounded-md shadow-lg p-2 min-w-[140px]">
+        <div className="absolute top-full left-0 mt-1 z-50 bg-popover border rounded-md p-2 min-w-[140px]">
           <div className="grid grid-cols-4 gap-1">
             <Tooltip>
               <TooltipTrigger asChild>

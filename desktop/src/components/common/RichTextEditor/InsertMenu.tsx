@@ -57,7 +57,7 @@ export function InsertMenu({ editor }: InsertMenuProps) {
       </Tooltip>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 min-w-[120px]">
+        <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-md z-50 min-w-[120px]">
           <button
             type="button"
             onClick={insertTable}

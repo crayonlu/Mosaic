@@ -70,7 +70,7 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
           {memos.map(memo => (
             <div
               key={memo.id}
-              className="group rounded-lg border bg-card overflow-hidden text-sm text-card-foreground shadow-sm hover:shadow-md transition-all cursor-pointer hover:border-primary/50"
+              className="group rounded-lg border bg-card overflow-hidden text-sm text-card-foreground transition-all cursor-pointer"
               onClick={() => onMemoClick?.(memo)}
             >
               <div>
