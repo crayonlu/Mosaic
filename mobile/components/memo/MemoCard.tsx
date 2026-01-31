@@ -1,10 +1,9 @@
+import { Badge } from '@/components/ui'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
-import { Trash2 } from 'lucide-react-native'
-import { useState } from 'react'
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import type { MemoWithResources } from '@/types/memo'
-import { Badge } from '@/components/ui'
+import { Archive, Trash2 } from 'lucide-react-native'
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 
 interface MemoCardProps {
   memo: MemoWithResources
@@ -22,11 +21,9 @@ export function MemoCard({
   showActions = true,
 }: MemoCardProps) {
   const { theme } = useThemeStore()
-  const [showMenu, setShowMenu] = useState(false)
 
   // Extract plain text from HTML for preview
   const plainText = stringUtils.extractTextFromHtml(memo.content)
-  const previewText = plainText.length > 200 ? plainText.substring(0, 200) + '...' : plainText
 
   // Format timestamp
   const formattedTime = stringUtils.formatRelativeTime(memo.createdAt)
@@ -39,14 +36,12 @@ export function MemoCard({
   // Get image preview
   const imageResource = memo.resources.find(r => r.resourceType === 'image')
 
-  const handleArchive = () => {
-    onArchive?.(memo.id)
-    setShowMenu(false)
-  }
-
   const handleDelete = () => {
     onDelete?.(memo.id)
-    setShowMenu(false)
+  }
+
+  const handleArchive = () => {
+    onArchive?.(memo.id)
   }
 
   return (
@@ -61,12 +56,10 @@ export function MemoCard({
         },
       ]}
     >
-      {/* Main content area */}
       <View style={styles.contentContainer}>
-        {/* Image preview */}
         {imageResource && (
           <Image
-            source={{ uri: `file://${imageResource.filename}` }}
+            source={{ uri: imageResource.url }}
             style={styles.imagePreview}
             resizeMode="cover"
           />
@@ -118,7 +111,16 @@ export function MemoCard({
           {/* Actions */}
           {showActions && (
             <View style={styles.actionsContainer}>
-              {showActions && (
+              {onArchive && (
+                <Pressable
+                  onPress={handleArchive}
+                  style={styles.actionButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Archive size={16} color={theme.textSecondary} strokeWidth={2} />
+                </Pressable>
+              )}
+              {onDelete && (
                 <Pressable
                   onPress={handleDelete}
                   style={styles.actionButton}

@@ -126,7 +126,14 @@ export const userCommands = {
 
   updateUser: (req: UpdateUserRequest) => callRust<User>('update_user', { req }),
 
-  uploadAvatar: (sourcePath: string) => callRust<User>('upload_avatar', { sourcePath }),
+  uploadAvatar: async (sourcePath: string): Promise<User> => {
+    // Read file data using asset commands
+    const filename = sourcePath.split(/[\\/]/).pop() || 'avatar'
+    const ext = filename.split('.').pop()?.toLowerCase() || 'png'
+    const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'png' ? 'image/png' : 'image/webp'
+    const data = await callRust<number[]>('read_image_file', { filename: sourcePath })
+    return callRust<User>('upload_avatar', { sourcePath, data, filename, mimeType })
+  },
 }
 
 export const memoCommands = {
@@ -135,7 +142,11 @@ export const memoCommands = {
   getMemo: (memoId: string) => callRust<MemoWithResources>('get_memo', { memoId }),
 
   listMemos: (req: ListMemosRequest) =>
-    callRust<PaginatedResponse<MemoWithResources>>('list_memos', { req }),
+    callRust<PaginatedResponse<MemoWithResources>>('list_memos', {
+      page: req.page,
+      pageSize: req.pageSize,
+      isArchived: req.isArchived,
+    }),
 
   getMemosByDate: (date: string) => callRust<MemoWithResources[]>('get_memos_by_date', { date }),
 
@@ -195,15 +206,25 @@ export const statsCommands = {
 }
 
 export const aiCommands = {
-  completeText: (req: CompleteTextRequest) =>
-    callRust<CompleteTextResponse>('complete_text', { req }),
+  completeText: async (req: CompleteTextRequest): Promise<CompleteTextResponse> => {
+    const generatedText = await callRust<string>('complete_text', { req })
+    return { generatedText }
+  },
 
-  rewriteText: (req: RewriteTextRequest) => callRust<RewriteTextResponse>('rewrite_text', { req }),
+  rewriteText: async (req: RewriteTextRequest): Promise<RewriteTextResponse> => {
+    const rewrittenText = await callRust<string>('rewrite_text', { req })
+    return { rewrittenText }
+  },
 
-  summarizeText: (req: SummarizeTextRequest) =>
-    callRust<SummarizeTextResponse>('summarize_text', { req }),
+  summarizeText: async (req: SummarizeTextRequest): Promise<SummarizeTextResponse> => {
+    const summary = await callRust<string>('summarize_text', { req })
+    return { summary }
+  },
 
-  suggestTags: (req: SuggestTagsRequest) => callRust<SuggestTagsResponse>('suggest_tags', { req }),
+  suggestTags: async (req: SuggestTagsRequest): Promise<SuggestTagsResponse> => {
+    const tags = await callRust<string[]>('suggest_tags', { req })
+    return { tags }
+  },
 }
 
 export const syncCommands = {

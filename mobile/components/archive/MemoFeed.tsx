@@ -1,6 +1,5 @@
 import { Badge, Loading } from '@/components/ui'
-import { useDatabaseStore } from '@/lib/database/state-manager'
-import { memoService } from '@/lib/services/memo-service'
+import { memosApi } from '@/lib/api'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
@@ -33,7 +32,6 @@ export function MemoFeed({
   headerComponent,
 }: MemoFeedProps) {
   const { theme } = useThemeStore()
-  const { isReady: dbReady, isInitializing: dbInitializing, error: dbError } = useDatabaseStore()
   const [memos, setMemos] = useState<MemoWithResources[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -43,11 +41,8 @@ export function MemoFeed({
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
   const flatListRef = useRef<FlatList>(null)
 
-  // Load memos
   const loadMemos = useCallback(
     async (loadMore = false) => {
-      if (!dbReady) return
-
       try {
         if (!loadMore) {
           setLoading(true)
@@ -58,27 +53,24 @@ export function MemoFeed({
         let loadedMemos: MemoWithResources[]
 
         if (targetDate) {
-          // Load by date
-          loadedMemos = await memoService.getMemosByDate(targetDate)
+          loadedMemos = await memosApi.getByDate(targetDate)
+          setHasMore(false)
         } else {
-          // Load paginated
           const currentPage = loadMore ? page : 1
-          const newMemos = await memoService.listMemos({
+          const response = await memosApi.list({
             page: currentPage,
             pageSize: 20,
-            isArchived: false,
-            isDeleted: false,
+            archived: false,
           })
 
           if (loadMore) {
-            loadedMemos = [...memos, ...newMemos]
+            loadedMemos = [...memos, ...response.items]
           } else {
-            loadedMemos = newMemos
+            loadedMemos = response.items
             setPage(1)
           }
 
-          // Check if there are more items
-          setHasMore(newMemos.length === 20)
+          setHasMore(response.page < response.totalPages)
         }
 
         setMemos(loadedMemos)
@@ -90,15 +82,13 @@ export function MemoFeed({
         setLoadingMore(false)
       }
     },
-    [targetDate, page, memos, dbReady]
+    [targetDate, page, memos]
   )
 
-  // Initial load
   useEffect(() => {
-    if (dbReady) {
-      loadMemos()
-    }
-  }, [dbReady])
+    loadMemos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[])
 
   // Pull to refresh
   const handleRefresh = useCallback(() => {
@@ -118,7 +108,7 @@ export function MemoFeed({
   const handleDelete = useCallback(
     async (id: string) => {
       try {
-        await memoService.deleteMemo(id)
+        await memosApi.delete(id)
         await loadMemos()
         onMemoDelete?.(id)
       } catch (error) {
@@ -268,17 +258,8 @@ export function MemoFeed({
     return null
   }
 
-  if (dbInitializing || loading) {
+  if (loading) {
     return <Loading text="加载中..." fullScreen />
-  }
-
-  if (dbError) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={[styles.emptyTitle, { color: theme.text }]}>数据库错误</Text>
-        <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>{dbError}</Text>
-      </View>
-    )
   }
 
   if (memos.length === 0) {

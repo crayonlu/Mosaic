@@ -13,6 +13,7 @@ pub struct TauriUpdateMemoRequest {
     pub content: Option<String>,
     pub tags: Option<Vec<String>>,
     pub diary_date: Option<Option<String>>,
+    pub is_archived: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -324,6 +325,7 @@ pub async fn archive_memo(state: State<'_, AppState>, memo_id: String) -> Result
                 content: None,
                 tags: None,
                 diary_date: None,
+                is_archived: Some(true),
             })
             .unwrap(),
             created_at: chrono::Utc::now().timestamp_millis(),
@@ -370,6 +372,7 @@ pub async fn unarchive_memo(state: State<'_, AppState>, memo_id: String) -> Resu
                 content: None,
                 tags: None,
                 diary_date: None,
+                is_archived: Some(false),
             })
             .unwrap(),
             created_at: chrono::Utc::now().timestamp_millis(),

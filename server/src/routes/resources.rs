@@ -261,7 +261,10 @@ pub async fn list_resources(
     let page = query.page.unwrap_or(1);
     let page_size = query.page_size.unwrap_or(100);
 
-    match resource_service.list_resources(&user_id, page, page_size).await {
+    match resource_service
+        .list_resources(&user_id, page, page_size)
+        .await
+    {
         Ok((items, total)) => HttpResponse::Ok().json(serde_json::json!({
             "items": items,
             "total": total,

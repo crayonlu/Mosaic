@@ -20,7 +20,6 @@ import {
   Underline,
   Undo2,
 } from 'lucide-react-native'
-import { useState } from 'react'
 import {
   KeyboardAvoidingView,
   Platform,
@@ -39,17 +38,14 @@ interface EditorToolbarProps {
 export function EditorToolbar({ editor, onSave, onInsertLink }: EditorToolbarProps) {
   const { theme } = useThemeStore()
 
-  // Simple state tracking without useEditorState
-  const [activeStates, setActiveStates] = useState<Record<string, boolean>>({})
-
-  // Helper to check if a mark is active
-  const isMarkActive = (markName: string): boolean => {
-    return activeStates[markName] || false
+  // Helper to check if a mark is active (placeholder for future editor state tracking)
+  const isMarkActive = (_markName: string): boolean => {
+    return false
   }
 
   // Helper to check if a node is active
-  const isNodeActive = (nodeName: string): boolean => {
-    return activeStates[nodeName] || false
+  const isNodeActive = (_nodeName: string): boolean => {
+    return false
   }
 
   // Format buttons
