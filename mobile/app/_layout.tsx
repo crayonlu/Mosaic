@@ -14,8 +14,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     initialize()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!isInitialized) return

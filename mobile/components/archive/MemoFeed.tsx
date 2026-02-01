@@ -3,7 +3,7 @@ import { memosApi } from '@/lib/api'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
-import { MoreVertical, Trash2 } from 'lucide-react-native'
+import { FileX, MoreVertical, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
@@ -88,7 +88,7 @@ export function MemoFeed({
   useEffect(() => {
     loadMemos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[])
+  }, [])
 
   // Pull to refresh
   const handleRefresh = useCallback(() => {
@@ -174,7 +174,6 @@ export function MemoFeed({
                 {
                   backgroundColor: theme.surface,
                   borderColor: theme.border,
-                  shadowColor: '#000',
                 },
               ]}
             >
@@ -228,6 +227,9 @@ export function MemoFeed({
   // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
+      <View style={[styles.emptyIcon, { backgroundColor: `${theme.primary}10` }]}>
+        <FileX size={48} color={theme.primary} strokeWidth={1.5} />
+      </View>
       <Text style={[styles.emptyTitle, { color: theme.text }]}>
         {targetDate ? '今天还没有记录' : '暂无Memo'}
       </Text>
@@ -383,6 +385,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 60,
   },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -391,6 +401,7 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 14,
     textAlign: 'center',
+    opacity: 0.7,
   },
   footer: {
     paddingVertical: 20,

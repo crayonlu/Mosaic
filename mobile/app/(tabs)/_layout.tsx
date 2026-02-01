@@ -6,7 +6,7 @@
 import { Colors, Tabs as TabItems } from '@/constants/common'
 import { useThemeStore } from '@/stores/theme-store'
 import { Tabs } from 'expo-router'
-import { Book, Files, Settings, TestTubes } from 'lucide-react-native'
+import { Book, Calendar, Files, Search, Settings, TestTubes } from 'lucide-react-native'
 
 export default function TabLayout() {
   const { theme, isDark } = useThemeStore()
@@ -50,6 +50,24 @@ export default function TabLayout() {
           title: TabItems.items[1].label,
           tabBarIcon: ({ focused, color }) => (
             <Files size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="diaries"
+        options={{
+          title: '日记',
+          tabBarIcon: ({ focused, color }) => (
+            <Calendar size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: '搜索',
+          tabBarIcon: ({ focused, color }) => (
+            <Search size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),
         }}
       />

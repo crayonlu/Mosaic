@@ -1,4 +1,5 @@
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
+import { TagInput } from '@/components/tag/TagInput'
 import { Loading, toast } from '@/components/ui'
 import { memosApi } from '@/lib/api'
 import { stringUtils } from '@/lib/utils'
@@ -16,6 +17,7 @@ export default function MemoDetailScreen() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [content, setContent] = useState('')
+  const [tags, setTags] = useState<string[]>([])
 
   const loadMemo = useCallback(async () => {
     try {
@@ -23,6 +25,7 @@ export default function MemoDetailScreen() {
       if (data) {
         setMemo(data)
         setContent(data.content)
+        setTags(data.tags || [])
       }
     } catch (error) {
       console.error('Load memo error:', error)
@@ -44,7 +47,7 @@ export default function MemoDetailScreen() {
     try {
       const updated = await memosApi.update(memo.id, {
         content: content.trim(),
-        tags: memo.tags,
+        tags,
       })
       if (updated) {
         setMemo(updated)
@@ -143,14 +146,20 @@ export default function MemoDetailScreen() {
       {/* Content */}
       <ScrollView style={styles.content}>
         {editing ? (
-          <RichTextEditor
-            content={content}
-            onChange={setContent}
-            editable={true}
-            placeholder="编辑你的备忘录内容..."
-            isExpanded={true}
-            onSave={handleSave}
-          />
+          <>
+            <RichTextEditor
+              content={content}
+              onChange={setContent}
+              editable={true}
+              placeholder="编辑你的备忘录内容..."
+              isExpanded={true}
+              onSave={handleSave}
+            />
+            <View style={{ padding: 16 }}>
+              <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>标签</Text>
+              <TagInput tags={tags} onTagsChange={setTags} placeholder="添加标签..." />
+            </View>
+          </>
         ) : (
           <RichTextEditor content={memo.content} editable={false} onChange={() => {}} />
         )}
