@@ -38,7 +38,7 @@ export default function HomeScreen() {
     }
   }
 
-  const handleSubmit = async (content: string) => {
+  const handleSubmit = async (content: string, tags: string[]) => {
     if (!content || content.trim().length === 0) {
       return
     }
@@ -46,7 +46,7 @@ export default function HomeScreen() {
     try {
       await memosApi.create({
         content: content.trim(),
-        tags: [],
+        tags,
       })
       setRefreshTrigger(prev => prev + 1)
       toast.success('成功', '备忘录已创建')
