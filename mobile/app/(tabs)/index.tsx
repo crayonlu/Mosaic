@@ -1,6 +1,8 @@
 import { MemoInput } from '@/components/editor/MemoInput'
 import { MemoList } from '@/components/memo/MemoList'
 import { toast } from '@/components/ui'
+import { useConnection } from '@/hooks/use-connection'
+import { useErrorHandler } from '@/hooks/use-error-handler'
 import { memosApi } from '@/lib/api'
 import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@/types/memo'
@@ -10,6 +12,8 @@ import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 
 export default function HomeScreen() {
   const { theme } = useThemeStore()
+  const { canUseNetwork } = useConnection()
+  const handleError = useErrorHandler()
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   const handleMemoPress = (memo: MemoWithResources) => {
@@ -17,29 +21,31 @@ export default function HomeScreen() {
   }
 
   const handleArchive = async (id: string) => {
+    if (!canUseNetwork) return
     try {
       await memosApi.archive(id)
       setRefreshTrigger(prev => prev + 1)
       toast.success('成功', '备忘录已归档')
     } catch (error) {
-      console.error('Archive memo error:', error)
+      handleError(error)
       toast.error('错误', '归档失败')
     }
   }
 
   const handleDelete = async (id: string) => {
+    if (!canUseNetwork) return
     try {
       await memosApi.delete(id)
       setRefreshTrigger(prev => prev + 1)
       toast.success('成功', '备忘录已删除')
     } catch (error) {
-      console.error('Delete memo error:', error)
+      handleError(error)
       toast.error('错误', '删除失败')
     }
   }
 
-  const handleSubmit = async (content: string, tags: string[]) => {
-    if (!content || content.trim().length === 0) {
+  const handleSubmit = async (content: string, tags: string[], resources: string[]) => {
+    if (!content || content.trim().length === 0 || !canUseNetwork) {
       return
     }
 
@@ -47,11 +53,12 @@ export default function HomeScreen() {
       await memosApi.create({
         content: content.trim(),
         tags,
+        resourceIds: resources,
       })
       setRefreshTrigger(prev => prev + 1)
       toast.success('成功', '备忘录已创建')
     } catch (error) {
-      console.error('Create memo error:', error)
+      handleError(error)
       toast.error('错误', '创建备忘录失败')
     }
   }
@@ -72,7 +79,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={[styles.inputContainer, { backgroundColor: theme.background }]}>
-        <MemoInput onSubmit={handleSubmit} />
+        <MemoInput onSubmit={handleSubmit} disabled={!canUseNetwork} />
       </View>
     </KeyboardAvoidingView>
   )

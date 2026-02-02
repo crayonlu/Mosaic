@@ -16,7 +16,7 @@ export function ImagePicker({ images, onImagesChange, maxImages = 4 }: ImagePick
     if (images.length >= maxImages) return
 
     const result = await ExpoImagePicker.launchImageLibraryAsync({
-      mediaTypes: ExpoImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,

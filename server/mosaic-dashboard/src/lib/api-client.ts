@@ -1,14 +1,14 @@
 import axios, { type AxiosInstance } from 'axios'
 import type {
-    ChangePasswordRequest,
-    CreateDiaryRequest,
-    CreateMemoRequest,
-    Diary,
-    LoginResponse,
-    Memo,
-    PaginatedResponse,
-    Resource,
-    UpdateMemoRequest,
+  ChangePasswordRequest,
+  CreateDiaryRequest,
+  CreateMemoRequest,
+  Diary,
+  LoginResponse,
+  Memo,
+  PaginatedResponse,
+  Resource,
+  UpdateMemoRequest,
 } from '../types/api'
 
 class APIClient {
