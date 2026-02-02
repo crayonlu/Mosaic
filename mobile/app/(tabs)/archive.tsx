@@ -1,10 +1,10 @@
 import { ArchiveDateFilter } from '@/components/archive/ArchiveDateFilter'
 import { MemoFeed } from '@/components/archive/MemoFeed'
 import { MoodSelector } from '@/components/archive/MoodSelector'
-import { diariesApi, memosApi } from '@/lib/api'
 import { toast } from '@/components/ui'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
+import { useCreateDiary, useArchiveMemo, useDeleteMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import type { MoodKey } from '@/constants/common'
@@ -20,7 +20,11 @@ export default function ArchiveScreen() {
   const [isArchiveMode, setIsArchiveMode] = useState(false)
   const [selectedMemoIds, setSelectedMemoIds] = useState<string[]>([])
   const [showMoodSelector, setShowMoodSelector] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const { mutateAsync: createDiary, isPending: isCreatingDiary } = useCreateDiary()
+  const { mutateAsync: archiveMemo, isPending: isArchiving } = useArchiveMemo()
+  const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
+
+  const isPending = isCreatingDiary || isArchiving || isDeleting
 
   const handleMemoPress = (memo: MemoWithResources) => {
     if (!isArchiveMode) {
@@ -29,7 +33,7 @@ export default function ArchiveScreen() {
   }
 
   const handleMemoDelete = (id: string) => {
-    console.log('Delete memo:', id)
+    deleteMemo(id)
   }
 
   const handleSelectionChange = (id: string) => {
@@ -57,30 +61,31 @@ export default function ArchiveScreen() {
   }
 
   const handleMoodSubmit = async (moodKey: MoodKey, summary: string) => {
-    if (!canUseNetwork || !selectedDate) {
+    if (!canUseNetwork || !selectedDate || isPending) {
       return
     }
-    setSubmitting(true)
+
     try {
-      await diariesApi.create(selectedDate, {
-        summary: summary || `${selectedMemoIds.length} 条备忘录`,
-        moodKey,
-        moodScore: 1,
+      await createDiary({
+        date: selectedDate,
+        data: {
+          summary: summary || `${selectedMemoIds.length} 条Memo`,
+          moodKey,
+          moodScore: 1,
+        },
       })
 
       for (const id of selectedMemoIds) {
-        await memosApi.archive(id)
+        await archiveMemo(id)
       }
 
-      toast.success('成功', '已归档到日记')
+      toast.success('成功', '已归档')
       setShowMoodSelector(false)
       setIsArchiveMode(false)
       setSelectedMemoIds([])
     } catch (error) {
       handleError(error)
       toast.error('错误', '归档失败')
-    } finally {
-      setSubmitting(false)
     }
   }
 
@@ -105,7 +110,7 @@ export default function ArchiveScreen() {
         visible={showMoodSelector}
         onClose={() => setShowMoodSelector(false)}
         onSubmit={handleMoodSubmit}
-        submitting={submitting}
+        submitting={isPending}
       />
     </View>
   )

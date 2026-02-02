@@ -1,15 +1,14 @@
 import { MemoCard } from '@/components/memo/MemoCard'
 import { MoodSlider } from '@/components/diary/MoodSlider'
 import { Button, Loading, toast } from '@/components/ui'
-import { diariesApi } from '@/lib/api'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
+import { useDiary, useUpdateDiaryMood } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import { MOODS, type MoodKey } from '@/constants/common'
-import { type DiaryWithMemosResponse } from '@/types/api'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, Calendar } from 'lucide-react-native'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function DiaryDetailScreen() {
@@ -17,55 +16,32 @@ export default function DiaryDetailScreen() {
   const { theme } = useThemeStore()
   const { canUseNetwork } = useConnection()
   const handleError = useErrorHandler()
-  const [diary, setDiary] = useState<DiaryWithMemosResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [savingMood, setSavingMood] = useState(false)
+  const { data: diary, isLoading } = useDiary(date || '')
+  const { mutateAsync: updateMood, isPending: isSavingMood } = useUpdateDiaryMood()
+
   const [selectedMood, setSelectedMood] = useState<MoodKey | null>(null)
   const [intensity, setIntensity] = useState(3)
-
-  const loadDiary = useCallback(async () => {
-    if (!date || !canUseNetwork) return
-    try {
-      const data = await diariesApi.get(date)
-      setDiary(data)
-      if (data.moodKey) {
-        setSelectedMood(data.moodKey as MoodKey)
-        setIntensity(data.moodScore || 3)
-      }
-    } catch (error) {
-      handleError(error)
-      toast.error('错误', '加载日记失败')
-    } finally {
-      setLoading(false)
-    }
-  }, [date, canUseNetwork, handleError])
-
-  useEffect(() => {
-    loadDiary()
-  }, [loadDiary])
 
   const handleMemoPress = (memoId: string) => {
     router.push({ pathname: '/memo/[id]', params: { id: memoId } })
   }
 
-  const handleMoodSave = async () => {
+  const handleMoodSave = useCallback(async () => {
     if (!selectedMood || !date || !canUseNetwork) return
-    setSavingMood(true)
+
     try {
-      await diariesApi.update(date, {
-        moodKey: selectedMood,
-        moodScore: intensity,
+      await updateMood({
+        date,
+        data: { moodKey: selectedMood, moodScore: intensity },
       })
-      toast.success('已保存')
+      toast.success('成功', '已保存')
     } catch (error) {
       handleError(error)
       toast.error('错误', '保存失败')
-    } finally {
-      setSavingMood(false)
     }
-  }
+  }, [selectedMood, date, intensity, canUseNetwork, updateMood, handleError])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <Loading text="加载中..." fullScreen />
@@ -114,7 +90,7 @@ export default function DiaryDetailScreen() {
         )}
 
         <View style={[styles.moodCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-          <Text style={[styles.moodLabel, { color: theme.textSecondary }]}>心情</Text>
+          <Text style={[styles.moodLabel, { color: theme.textSecondary }]}>Mood</Text>
           <View style={styles.moodSelector}>
             {MOODS.map(mood => (
               <TouchableOpacity
@@ -134,10 +110,10 @@ export default function DiaryDetailScreen() {
             <View style={styles.intensitySection}>
               <MoodSlider value={intensity} onChange={setIntensity} disabled={!canUseNetwork} />
               <Button
-                title="保存"
+                title="Save"
                 variant="primary"
                 onPress={handleMoodSave}
-                loading={savingMood}
+                loading={isSavingMood}
                 disabled={!canUseNetwork}
               />
             </View>
@@ -146,7 +122,7 @@ export default function DiaryDetailScreen() {
 
         {diary.memos && diary.memos.length > 0 && (
           <View style={styles.memosSection}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>相关备忘录</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>相关Memo</Text>
             {diary.memos.map(memo => (
               <MemoCard key={memo.id} memo={memo} onPress={() => handleMemoPress(memo.id)} />
             ))}
