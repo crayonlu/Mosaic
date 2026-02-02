@@ -142,8 +142,8 @@ export interface ConfirmUploadRequest {
 }
 
 export interface StatsQuery {
-  startDate: string
-  endDate: string
+  start_date: string
+  end_date: string
 }
 
 export interface SummaryQuery {

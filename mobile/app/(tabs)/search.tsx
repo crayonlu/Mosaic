@@ -152,6 +152,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 16,
     gap: 12,
+    paddingBottom: 4,
   },
   resultsContainer: {
     flex: 1,

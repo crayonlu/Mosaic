@@ -50,10 +50,9 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
 
       const startDateStr = startDate.toISOString().split('T')[0]
       const endDateStr = endDate.toISOString().split('T')[0]
-
       const response = await statsApi.getHeatmap({
-        startDate: startDateStr,
-        endDate: endDateStr,
+        start_date: startDateStr,
+        end_date: endDateStr,
       })
 
       const cells: HeatMapCell[] = response.dates.map((date, index) => ({

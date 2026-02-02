@@ -14,6 +14,7 @@ interface MemoListProps {
   onMemoArchive?: (id: string) => void
   onMemoDelete?: (id: string) => void
   refreshTrigger?: number
+  headerComponent?: React.ComponentType<any> | React.ReactElement | null | undefined
 }
 
 export function MemoList({
@@ -22,6 +23,7 @@ export function MemoList({
   onMemoArchive,
   onMemoDelete,
   refreshTrigger,
+  headerComponent,
 }: MemoListProps) {
   const { theme } = useThemeStore()
   const [memos, setMemos] = useState<MemoWithResources[]>([])
@@ -248,6 +250,7 @@ export function MemoList({
       renderItem={renderGroup}
       keyExtractor={item => item.date}
       contentContainerStyle={styles.listContent}
+      ListHeaderComponent={headerComponent}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
