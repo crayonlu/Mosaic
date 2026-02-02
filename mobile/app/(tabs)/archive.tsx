@@ -5,59 +5,34 @@
 import { CalendarPicker } from '@/components/archive/CalendarPicker'
 import { MemoFeed } from '@/components/archive/MemoFeed'
 import { MoodHeatMap } from '@/components/archive/MoodHeatMap'
-import { Select } from '@/components/ui/Select'
-import { TimeRanges, type TimeRangeValue } from '@/constants/common'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import { router } from 'expo-router'
-import { ChevronDown, ChevronUp } from 'lucide-react-native'
 import { useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 
 export default function ArchiveScreen() {
   const { theme } = useThemeStore()
-  const [isHeatMapExpanded, setIsHeatMapExpanded] = useState(true)
   const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
-  const [timeRange, setTimeRange] = useState<TimeRangeValue>('quarter')
 
-  // Handle date selection from calendar
   const handleDateSelect = (date: string) => {
     setSelectedDate(date)
-    // Scroll to the memo for this date
-    setTimeout(() => {
-      // Find and scroll to the memo
-      console.log('Scrolling to date:', date)
-    }, 100)
   }
 
-  // Handle date click from heat map
   const handleDateClick = (date: string) => {
     handleDateSelect(date)
   }
 
-  // Handle memo press
   const handleMemoPress = (memo: MemoWithResources) => {
     router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
   }
 
-  // Handle memo archive
   const handleMemoArchive = (id: string) => {
     console.log('Archive memo:', id)
   }
 
-  // Handle memo delete
   const handleMemoDelete = (id: string) => {
     console.log('Delete memo:', id)
-  }
-
-  // Toggle heat map
-  const toggleHeatMap = () => {
-    setIsHeatMapExpanded(!isHeatMapExpanded)
-  }
-
-  // Handle time range change
-  const handleTimeRangeChange = (range: string) => {
-    setTimeRange(range as TimeRangeValue)
   }
 
   return (
@@ -69,7 +44,6 @@ export default function ArchiveScreen() {
         onMemoDelete={handleMemoDelete}
         headerComponent={
           <>
-            {/* Heat Map Section */}
             <View
               style={[
                 styles.section,
@@ -79,8 +53,7 @@ export default function ArchiveScreen() {
                 },
               ]}
             >
-              <TouchableOpacity
-                onPress={toggleHeatMap}
+              <View
                 style={[
                   styles.sectionHeader,
                   {
@@ -88,37 +61,13 @@ export default function ArchiveScreen() {
                   },
                 ]}
               >
-                <View style={styles.headerLeft}>
-                  <Text style={[styles.sectionTitle, { color: theme.text }]}>情绪热力图</Text>
-                  <Select
-                    options={Object.values(TimeRanges).map(range => ({
-                      label: range.label,
-                      value: range.value,
-                    }))}
-                    value={timeRange}
-                    onValueChange={handleTimeRangeChange}
-                    size="small"
-                  />
-                </View>
-                {isHeatMapExpanded ? (
-                  <ChevronUp size={20} color={theme.textSecondary} strokeWidth={2} />
-                ) : (
-                  <ChevronDown size={20} color={theme.textSecondary} strokeWidth={2} />
-                )}
-              </TouchableOpacity>
-
-              {isHeatMapExpanded && (
-                <View style={styles.sectionContent}>
-                  <MoodHeatMap
-                    onDateClick={handleDateClick}
-                    timeRange={timeRange}
-                    onTimeRangeChange={handleTimeRangeChange}
-                  />
-                </View>
-              )}
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>情绪热力图</Text>
+              </View>
+              <View style={styles.sectionContent}>
+                <MoodHeatMap onDateClick={handleDateClick} />
+              </View>
             </View>
 
-            {/* Calendar Picker Section */}
             <View
               style={[
                 styles.section,

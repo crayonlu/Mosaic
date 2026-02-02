@@ -133,8 +133,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   emptyContainer: {
-    height: '100%',
-    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },

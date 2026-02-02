@@ -1,4 +1,5 @@
-import { Loading, ToastContainer } from '@/components/ui'
+import { ToastContainer } from '@/components/ui'
+import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
 import { Stack, useRouter, useSegments } from 'expo-router'
@@ -34,7 +35,7 @@ export default function RootLayout() {
     return (
       <SafeAreaProvider>
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-          <Loading text="加载中..." fullScreen />
+          <ThemeAwareSplash />
         </SafeAreaView>
       </SafeAreaProvider>
     )

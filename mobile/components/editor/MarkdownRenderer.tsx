@@ -1,4 +1,3 @@
-import { Colors } from '@/constants/colors'
 import { useThemeStore } from '@/stores/theme-store'
 import { StyleSheet, View } from 'react-native'
 import { WebView } from 'react-native-webview'
@@ -83,7 +82,7 @@ export function MarkdownRenderer({ content, style }: MarkdownRendererProps) {
             padding: 0;
           }
           a {
-            color: ${Colors.primary.DEFAULT};
+            color: ${theme.link};
             text-decoration: none;
           }
           a:hover {
@@ -96,7 +95,7 @@ export function MarkdownRenderer({ content, style }: MarkdownRendererProps) {
             font-style: italic;
           }
           mark {
-            background-color: ${Colors.warning};
+            background-color: ${theme.mark};
             padding: 2px 4px;
             border-radius: 2px;
           }
