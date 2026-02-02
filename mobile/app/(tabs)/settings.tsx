@@ -69,124 +69,120 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>账户</Text>
-        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <TouchableOpacity style={styles.row} onPress={handleAvatarPress} disabled={!isConnected}>
-            <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-              {user?.avatar ? (
-                <Text style={styles.avatarText}>{user.username?.charAt(0).toUpperCase()}</Text>
-              ) : (
-                <User size={24} color="#FFFFFF" />
-              )}
-            </View>
-            <View style={styles.userInfo}>
-              <Text style={[styles.username, { color: theme.text }]}>
-                {user?.username || '未登录'}
-              </Text>
-              <Text style={[styles.serverUrl, { color: theme.textSecondary }]}>
-                {serverUrl || '未配置服务器'}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>AI 设置</Text>
-        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => setShowAISettings(!showAISettings)}
-          >
-            <Text style={[styles.menuItemText, { color: theme.text }]}>AI 配置</Text>
-          </TouchableOpacity>
-          {showAISettings && aiConfig && (
-            <View style={styles.aiSettings}>
-              <View style={styles.settingRow}>
-                <Text style={[styles.settingLabel, { color: theme.text }]}>提供商</Text>
-                <View style={styles.providerButtons}>
-                  <TouchableOpacity
-                    style={[
-                      styles.providerButton,
-                      aiConfig.provider === 'openai' && { backgroundColor: theme.primary },
-                    ]}
-                    onPress={() => setLocalAIConfig({ ...aiConfig, provider: 'openai' })}
-                  >
-                    <Text
-                      style={[
-                        styles.providerButtonText,
-                        aiConfig.provider === 'openai' && { color: '#FFFFFF' },
-                      ]}
-                    >
-                      OpenAI
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.providerButton,
-                      aiConfig.provider === 'anthropic' && { backgroundColor: theme.primary },
-                    ]}
-                    onPress={() => setLocalAIConfig({ ...aiConfig, provider: 'anthropic' })}
-                  >
-                    <Text
-                      style={[
-                        styles.providerButtonText,
-                        aiConfig.provider === 'anthropic' && { color: '#FFFFFF' },
-                      ]}
-                    >
-                      Anthropic
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+      <View style={styles.content}>
+        <View style={[styles.section, { marginBottom: 12 }]}>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <TouchableOpacity style={styles.row} onPress={handleAvatarPress} disabled={!isConnected}>
+              <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+                {user?.avatar ? (
+                  <Text style={styles.avatarText}>{user.username?.charAt(0).toUpperCase()}</Text>
+                ) : (
+                  <User size={20} color="#FFFFFF" />
+                )}
               </View>
-              <Input
-                label="API Key"
-                value={aiConfig.apiKey}
-                onChangeText={text => setLocalAIConfig({ ...aiConfig, apiKey: text })}
-                placeholder="sk-..."
-                secureTextEntry
-              />
-              <Input
-                label="模型"
-                value={aiConfig.model}
-                onChangeText={text => setLocalAIConfig({ ...aiConfig, model: text })}
-                placeholder={aiConfig.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'}
-              />
-              <Button
-                title="保存 AI 配置"
-                variant="primary"
-                onPress={handleSaveAIConfig}
-                loading={savingAI}
-                disabled={!isConnected}
-              />
-            </View>
-          )}
+              <View style={styles.userInfo}>
+                <Text style={[styles.username, { color: theme.text }]}>
+                  {user?.username || '未登录'}
+                </Text>
+                <Text style={[styles.serverUrl, { color: theme.textSecondary }]}>
+                  {serverUrl || '未配置服务器'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>外观</Text>
-        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <TouchableOpacity style={styles.menuItem} onPress={toggleTheme}>
-            {themeMode === 'light' ? (
-              <Sun size={20} color={theme.text} />
-            ) : (
-              <Moon size={20} color={theme.text} />
+        <View style={[styles.section, { marginBottom: 12 }]}>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <TouchableOpacity
+              style={[styles.menuItem, showAISettings && { borderBottomColor: theme.border }]}
+              onPress={() => setShowAISettings(!showAISettings)}
+            >
+              <Text style={[styles.menuItemText, { color: theme.text }]}>AI 配置</Text>
+            </TouchableOpacity>
+            {showAISettings && aiConfig && (
+              <View style={styles.aiSettings}>
+                <View style={styles.settingRow}>
+                  <View style={styles.providerButtons}>
+                    <TouchableOpacity
+                      style={[
+                        styles.providerButton,
+                        aiConfig.provider === 'openai' && { backgroundColor: theme.primary },
+                      ]}
+                      onPress={() => setLocalAIConfig({ ...aiConfig, provider: 'openai' })}
+                    >
+                      <Text
+                        style={[
+                          styles.providerButtonText,
+                          aiConfig.provider === 'openai' && { color: '#FFFFFF' },
+                        ]}
+                      >
+                        OpenAI
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.providerButton,
+                        aiConfig.provider === 'anthropic' && { backgroundColor: theme.primary },
+                      ]}
+                      onPress={() => setLocalAIConfig({ ...aiConfig, provider: 'anthropic' })}
+                    >
+                      <Text
+                        style={[
+                          styles.providerButtonText,
+                          aiConfig.provider === 'anthropic' && { color: '#FFFFFF' },
+                        ]}
+                      >
+                        Anthropic
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <Input
+                  value={aiConfig.apiKey}
+                  onChangeText={text => setLocalAIConfig({ ...aiConfig, apiKey: text })}
+                  placeholder="sk-..."
+                  secureTextEntry
+                />
+                <Input
+                  value={aiConfig.model}
+                  onChangeText={text => setLocalAIConfig({ ...aiConfig, model: text })}
+                  placeholder={aiConfig.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'}
+                />
+                <Button
+                  title="保存"
+                  variant="primary"
+                  onPress={handleSaveAIConfig}
+                  loading={savingAI}
+                  disabled={!isConnected}
+                />
+              </View>
             )}
-            <Text style={[styles.menuItemText, { color: theme.text }]}>
-              {themeMode === 'light' ? '浅色模式' : '深色模式'}
-            </Text>
-          </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Button title="退出登录" variant="danger" onPress={handleLogout} fullWidth />
-      </View>
+        <View style={[styles.section, { marginBottom: 12 }]}>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <TouchableOpacity style={styles.menuItem} onPress={toggleTheme}>
+              {themeMode === 'light' ? (
+                <Sun size={18} color={theme.text} />
+              ) : (
+                <Moon size={18} color={theme.text} />
+              )}
+              <Text style={[styles.menuItemText, { color: theme.text }]}>
+                {themeMode === 'light' ? '浅色模式' : '深色模式'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-      <View style={styles.footer}>
-        <Text style={[styles.version, { color: theme.textSecondary }]}>Mosaic v1.0.0</Text>
+        <View style={[styles.section, { marginBottom: 24 }]}>
+          <Button title="退出登录" variant="danger" onPress={handleLogout} fullWidth />
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={[styles.version, { color: theme.textSecondary }]}>Mosaic v1.0.0</Text>
+        </View>
       </View>
     </ScrollView>
   )
@@ -196,35 +192,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  section: {
-    padding: 16,
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+  section: {
     marginBottom: 12,
-    opacity: 0.7,
   },
   card: {
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 12,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   avatarText: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -232,34 +226,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   username: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   serverUrl: {
-    fontSize: 13,
+    fontSize: 12,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    gap: 12,
+    padding: 12,
+    gap: 10,
   },
   menuItemText: {
-    fontSize: 15,
+    fontSize: 14,
   },
   aiSettings: {
-    padding: 16,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    padding: 12,
+    gap: 10,
   },
   settingRow: {
     gap: 8,
-  },
-  settingLabel: {
-    fontSize: 14,
-    marginBottom: 4,
   },
   providerButtons: {
     flexDirection: 'row',
@@ -267,20 +255,20 @@ const styles = StyleSheet.create({
   },
   providerButton: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
     backgroundColor: '#F0F0F0',
     alignItems: 'center',
   },
   providerButtonText: {
-    fontSize: 14,
+    fontSize: 13,
   },
   footer: {
-    padding: 32,
+    paddingBottom: 24,
     alignItems: 'center',
   },
   version: {
-    fontSize: 12,
+    fontSize: 11,
   },
 })

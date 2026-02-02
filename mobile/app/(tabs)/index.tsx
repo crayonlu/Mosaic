@@ -1,5 +1,6 @@
 import { MemoInput } from '@/components/editor/MemoInput'
 import { MemoList } from '@/components/memo/MemoList'
+import { MoodHeatMap } from '@/components/archive/MoodHeatMap'
 import { toast } from '@/components/ui'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
@@ -8,7 +9,7 @@ import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@/types/memo'
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native'
 
 export default function HomeScreen() {
   const { theme } = useThemeStore()
@@ -63,6 +64,10 @@ export default function HomeScreen() {
     }
   }
 
+  const handleDateClick = (date: string) => {
+    router.push({ pathname: '/diary/[date]', params: { date } })
+  }
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.background }]}
@@ -75,6 +80,14 @@ export default function HomeScreen() {
           onMemoArchive={handleArchive}
           onMemoDelete={handleDelete}
           refreshTrigger={refreshTrigger}
+          headerComponent={
+            <View style={styles.heatMapSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>情绪热力图</Text>
+              </View>
+              <MoodHeatMap onDateClick={handleDateClick} />
+            </View>
+          }
         />
       </View>
 
@@ -92,6 +105,16 @@ const styles = StyleSheet.create({
   listContainer: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+  heatMapSection: {
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    paddingVertical: 12,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   inputContainer: {
     padding: 8,

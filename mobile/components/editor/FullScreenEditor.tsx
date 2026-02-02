@@ -1,9 +1,10 @@
 import { TagInput } from '@/components/tag/TagInput'
 import { Button, Loading, toast } from '@/components/ui'
-import { resourcesApi } from '@/lib/api'
 import { useConnection } from '@/hooks/use-connection'
+import { resourcesApi } from '@/lib/api'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
+import * as ImagePicker from 'expo-image-picker'
 import { Image, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import {
@@ -18,7 +19,6 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { RichTextEditor } from './RichTextEditor'
-import * as ImagePicker from 'expo-image-picker'
 
 interface FullScreenEditorProps {
   visible: boolean
