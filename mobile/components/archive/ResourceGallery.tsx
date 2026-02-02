@@ -149,7 +149,7 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
                   {audio.filename.split('/').pop()}
                 </Text>
                 <Text style={[styles.audioDuration, { color: theme.textSecondary }]}>
-                  {audio.size ? `${(audio.size / 1024).toFixed(1)} KB` : ''}
+                  {audio.fileSize ? `${(audio.fileSize / 1024).toFixed(1)} KB` : ''}
                 </Text>
               </View>
               <TouchableOpacity

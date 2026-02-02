@@ -22,7 +22,7 @@ export const LightTheme: Theme = {
   border: 'rgba(0, 0, 0, 0.08)',
   borderRadius: 20,
   spacing: 16,
-  primary: '#8F5F39',
+  primary: '#B2794C',
   card: '#FFF5EB',
   link: '#FFB5A7',
   mark: '#FFD93D',

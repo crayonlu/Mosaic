@@ -1,25 +1,34 @@
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
 import { TagInput } from '@/components/tag/TagInput'
-import { Loading, toast } from '@/components/ui'
-import { memosApi } from '@/lib/api'
+import { Button, Loading, toast } from '@/components/ui'
+import { diariesApi, memosApi } from '@/lib/api'
+import { useConnection } from '@/hooks/use-connection'
+import { useErrorHandler } from '@/hooks/use-error-handler'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
+import { MOODS, type MoodKey } from '@/constants/common'
 import { type MemoWithResources } from '@/types/memo'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Archive, ArrowLeft, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { theme } = useThemeStore()
+  const { canUseNetwork } = useConnection()
+  const handleError = useErrorHandler()
   const [memo, setMemo] = useState<MemoWithResources | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [content, setContent] = useState('')
   const [tags, setTags] = useState<string[]>([])
+  const [showArchiveModal, setShowArchiveModal] = useState(false)
+  const [selectedMood, setSelectedMood] = useState<MoodKey | null>(null)
+  const [archiving, setArchiving] = useState(false)
 
   const loadMemo = useCallback(async () => {
+    if (!id || !canUseNetwork) return
     try {
       const data = await memosApi.get(id)
       if (data) {
@@ -28,18 +37,17 @@ export default function MemoDetailScreen() {
         setTags(data.tags || [])
       }
     } catch (error) {
-      console.error('Load memo error:', error)
+      handleError(error)
       toast.error('错误', '加载备忘录失败')
       router.back()
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, canUseNetwork, handleError])
 
   useEffect(() => {
     if (id) loadMemo()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
+  }, [id, loadMemo])
 
   const handleSave = async () => {
     if (!memo) return
@@ -55,7 +63,7 @@ export default function MemoDetailScreen() {
         toast.success('成功', '备忘录已更新')
       }
     } catch (error) {
-      console.error('Update memo error:', error)
+      handleError(error)
       toast.error('错误', '更新失败')
     }
   }
@@ -67,7 +75,8 @@ export default function MemoDetailScreen() {
       if (memo.isArchived) {
         await memosApi.unarchive(memo.id)
       } else {
-        await memosApi.archive(memo.id)
+        setShowArchiveModal(true)
+        return
       }
       const updated = await memosApi.get(memo.id)
       if (updated) {
@@ -75,8 +84,28 @@ export default function MemoDetailScreen() {
         toast.success('成功', memo.isArchived ? '备忘录已取消归档' : '备忘录已归档')
       }
     } catch (error) {
-      console.error('Archive/Unarchive memo error:', error)
+      handleError(error)
       toast.error('错误', '操作失败')
+    }
+  }
+
+  const handleArchiveToDiary = async () => {
+    if (!memo || !selectedMood) return
+    setArchiving(true)
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      await diariesApi.createOrUpdate(today, {
+        moodKey: selectedMood,
+      })
+      await memosApi.archive(memo.id)
+      toast.success('成功', '已归档到今日日记')
+      setShowArchiveModal(false)
+      router.back()
+    } catch (error) {
+      handleError(error)
+      toast.error('错误', '归档失败')
+    } finally {
+      setArchiving(false)
     }
   }
 
@@ -94,7 +123,7 @@ export default function MemoDetailScreen() {
           toast.success('成功', '备忘录已删除')
           router.back()
         } catch (error) {
-          console.error('Delete memo error:', error)
+          handleError(error)
           toast.error('错误', '删除失败')
         }
       },
@@ -121,7 +150,6 @@ export default function MemoDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={router.back} style={styles.headerButton}>
           <ArrowLeft size={24} color={theme.text} />
@@ -143,7 +171,6 @@ export default function MemoDetailScreen() {
         )}
       </View>
 
-      {/* Content */}
       <ScrollView style={styles.content}>
         {editing ? (
           <>
@@ -157,14 +184,18 @@ export default function MemoDetailScreen() {
             />
             <View style={{ padding: 16 }}>
               <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>标签</Text>
-              <TagInput tags={tags} onTagsChange={setTags} placeholder="添加标签..." />
+              <TagInput
+                tags={tags}
+                onTagsChange={setTags}
+                content={content}
+                placeholder="添加标签..."
+              />
             </View>
           </>
         ) : (
           <RichTextEditor content={memo.content} editable={false} onChange={() => {}} />
         )}
 
-        {/* Tags */}
         {memo.tags && memo.tags.length > 0 && (
           <View style={styles.tagsContainer}>
             {memo.tags.map((tag, index) => (
@@ -172,10 +203,7 @@ export default function MemoDetailScreen() {
                 key={index}
                 style={[
                   styles.tag,
-                  {
-                    backgroundColor: theme.surface,
-                    borderColor: theme.border,
-                  },
+                  { backgroundColor: theme.surface, borderColor: theme.border },
                 ]}
               >
                 <Text style={[styles.tagText, { color: theme.textSecondary }]}>#{tag}</Text>
@@ -184,7 +212,6 @@ export default function MemoDetailScreen() {
           </View>
         )}
 
-        {/* Metadata */}
         <View style={styles.metadata}>
           <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
             创建于 {stringUtils.formatDateTime(memo.createdAt)}
@@ -197,12 +224,12 @@ export default function MemoDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Footer Actions */}
       {!editing && (
         <View style={[styles.footer, { borderTopColor: theme.border }]}>
           <TouchableOpacity
             onPress={handleArchive}
             style={[styles.actionButton, { borderColor: theme.border }]}
+            disabled={!canUseNetwork}
           >
             <Archive size={20} color={theme.text} />
             <Text style={[styles.actionButtonText, { color: theme.text }]}>
@@ -215,6 +242,49 @@ export default function MemoDetailScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      <Modal visible={showArchiveModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>归档到日记</Text>
+            <Text style={[styles.modalLabel, { color: theme.textSecondary }]}>选择心情</Text>
+            <View style={styles.moodSelector}>
+              {MOODS.map(mood => (
+                <TouchableOpacity
+                  key={mood.value}
+                  style={[
+                    styles.moodOption,
+                    selectedMood === mood.value && { backgroundColor: theme.primary + '20' },
+                  ]}
+                  onPress={() => setSelectedMood(mood.value)}
+                >
+                  <Text style={styles.moodEmoji}>{mood.emoji}</Text>
+                  <Text>{mood.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.surface }]}
+                onPress={() => setShowArchiveModal(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: theme.text }]}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.primary }]}
+                onPress={handleArchiveToDiary}
+                disabled={!selectedMood || archiving}
+              >
+                {archiving ? (
+                  <Loading size="small" />
+                ) : (
+                  <Text style={styles.modalButtonText}>确认归档</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -262,16 +332,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-  },
-  input: {
-    margin: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderRadius: 12,
-    minHeight: 200,
-    lineHeight: 24,
-    fontSize: 16,
-    textAlignVertical: 'top',
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -332,6 +392,56 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 15,
     fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  modalContent: {
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  modalLabel: {
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  moodSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-evenly',
+    marginBottom: 20,
+    gap: 'auto',
+  },
+  moodOption: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  moodEmoji: {
+    fontSize: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
     color: '#FFFFFF',
   },
 })

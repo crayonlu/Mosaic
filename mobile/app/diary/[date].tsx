@@ -1,7 +1,11 @@
 import { MemoCard } from '@/components/memo/MemoCard'
-import { Loading, toast } from '@/components/ui'
+import { MoodSlider } from '@/components/diary/MoodSlider'
+import { Button, Loading, toast } from '@/components/ui'
 import { diariesApi } from '@/lib/api'
+import { useConnection } from '@/hooks/use-connection'
+import { useErrorHandler } from '@/hooks/use-error-handler'
 import { useThemeStore } from '@/stores/theme-store'
+import { MOODS, type MoodKey } from '@/constants/common'
 import { type DiaryWithMemosResponse } from '@/types/api'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, Calendar } from 'lucide-react-native'
@@ -11,21 +15,30 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 export default function DiaryDetailScreen() {
   const { date } = useLocalSearchParams<{ date: string }>()
   const { theme } = useThemeStore()
+  const { canUseNetwork } = useConnection()
+  const handleError = useErrorHandler()
   const [diary, setDiary] = useState<DiaryWithMemosResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [savingMood, setSavingMood] = useState(false)
+  const [selectedMood, setSelectedMood] = useState<MoodKey | null>(null)
+  const [intensity, setIntensity] = useState(3)
 
   const loadDiary = useCallback(async () => {
-    if (!date) return
+    if (!date || !canUseNetwork) return
     try {
       const data = await diariesApi.get(date)
       setDiary(data)
+      if (data.moodKey) {
+        setSelectedMood(data.moodKey as MoodKey)
+        setIntensity(data.moodScore || 3)
+      }
     } catch (error) {
-      console.error('Load diary error:', error)
+      handleError(error)
       toast.error('错误', '加载日记失败')
     } finally {
       setLoading(false)
     }
-  }, [date])
+  }, [date, canUseNetwork, handleError])
 
   useEffect(() => {
     loadDiary()
@@ -33,6 +46,23 @@ export default function DiaryDetailScreen() {
 
   const handleMemoPress = (memoId: string) => {
     router.push({ pathname: '/memo/[id]', params: { id: memoId } })
+  }
+
+  const handleMoodSave = async () => {
+    if (!selectedMood || !date || !canUseNetwork) return
+    setSavingMood(true)
+    try {
+      await diariesApi.update(date, {
+        moodKey: selectedMood,
+        moodScore: intensity,
+      })
+      toast.success('已保存')
+    } catch (error) {
+      handleError(error)
+      toast.error('错误', '保存失败')
+    } finally {
+      setSavingMood(false)
+    }
   }
 
   if (loading) {
@@ -83,17 +113,36 @@ export default function DiaryDetailScreen() {
           </View>
         )}
 
-        {diary.moodKey && (
-          <View
-            style={[styles.moodCard, { backgroundColor: theme.card, borderColor: theme.border }]}
-          >
-            <Text style={[styles.moodLabel, { color: theme.textSecondary }]}>心情</Text>
-            <Text style={styles.moodEmoji}>{diary.moodKey}</Text>
-            <Text style={[styles.moodScore, { color: theme.text }]}>
-              评分: {diary.moodScore}/10
-            </Text>
+        <View style={[styles.moodCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <Text style={[styles.moodLabel, { color: theme.textSecondary }]}>心情</Text>
+          <View style={styles.moodSelector}>
+            {MOODS.map(mood => (
+              <TouchableOpacity
+                key={mood.value}
+                style={[
+                  styles.moodOption,
+                  selectedMood === mood.value && { backgroundColor: theme.primary + '20' },
+                ]}
+                onPress={() => setSelectedMood(mood.value)}
+                disabled={!canUseNetwork}
+              >
+                <Text style={styles.moodEmoji}>{mood.emoji}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        )}
+          {selectedMood && (
+            <View style={styles.intensitySection}>
+              <MoodSlider value={intensity} onChange={setIntensity} disabled={!canUseNetwork} />
+              <Button
+                title="保存"
+                variant="primary"
+                onPress={handleMoodSave}
+                loading={savingMood}
+                disabled={!canUseNetwork}
+              />
+            </View>
+          )}
+        </View>
 
         {diary.memos && diary.memos.length > 0 && (
           <View style={styles.memosSection}>
@@ -162,18 +211,25 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 12,
-    alignItems: 'center',
   },
   moodLabel: {
     fontSize: 14,
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  moodSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  moodOption: {
+    padding: 8,
+    borderRadius: 8,
   },
   moodEmoji: {
-    fontSize: 48,
-    marginBottom: 8,
+    fontSize: 24,
   },
-  moodScore: {
-    fontSize: 14,
+  intensitySection: {
+    gap: 16,
   },
   memosSection: {
     marginTop: 8,

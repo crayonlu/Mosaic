@@ -8,15 +8,17 @@ import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
 import { FullScreenEditor } from './FullScreenEditor'
 
 interface MemoInputProps {
-  onSubmit?: (content: string, tags: string[]) => void
+  onSubmit?: (content: string, tags: string[], resources: string[]) => void
   placeholder?: string
   availableTags?: string[]
+  disabled?: boolean
 }
 
 export function MemoInput({
   onSubmit,
   placeholder = '记录你的想法...',
   availableTags = [],
+  disabled = false,
 }: MemoInputProps) {
   const { theme } = useThemeStore()
   const [isFullScreenVisible, setIsFullScreenVisible] = useState(false)
@@ -29,16 +31,16 @@ export function MemoInput({
   }, [text])
 
   const handleSubmit = () => {
-    if (!text.trim()) return
+    if (!text.trim() || disabled) return
     if (textContent) {
-      onSubmit?.(textContent, tags)
+      onSubmit?.(textContent, tags, [])
       setText('')
       setTags([])
     }
   }
 
-  const handleFullScreenSubmit = (content: string, submitTags: string[]) => {
-    onSubmit?.(content, submitTags)
+  const handleFullScreenSubmit = (content: string, submitTags: string[], resources: string[]) => {
+    onSubmit?.(content, submitTags, resources)
     setIsFullScreenVisible(false)
     setText('')
     setTags([])
@@ -54,6 +56,7 @@ export function MemoInput({
               backgroundColor: theme.background,
               borderColor: theme.border,
               borderWidth: 1,
+              opacity: disabled ? 0.6 : 1,
             },
           ]}
         >
@@ -63,7 +66,7 @@ export function MemoInput({
             placeholderTextColor={theme.textSecondary}
             value={text}
             onChangeText={setText}
-            editable={true}
+            editable={!disabled}
             multiline={false}
             numberOfLines={1}
           />
@@ -71,6 +74,7 @@ export function MemoInput({
           <TouchableOpacity
             onPress={() => setIsFullScreenVisible(true)}
             style={styles.expandButton}
+            disabled={disabled}
           >
             <Maximize2 size={18} color={theme.textSecondary} />
           </TouchableOpacity>
@@ -81,6 +85,7 @@ export function MemoInput({
             title="创建"
             variant={textContent ? 'primary' : 'secondary'}
             onPress={handleSubmit}
+            disabled={disabled || !textContent}
           />
         </View>
       </View>

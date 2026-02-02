@@ -143,6 +143,26 @@ export type MoodKey =
   | 'tired'
   | 'neutral'
 
+export interface MoodOption {
+  value: MoodKey
+  emoji: string
+  label: string
+  intensity: number
+}
+
+export const MOODS: MoodOption[] = [
+  { value: 'happy', emoji: '😊', label: '开心', intensity: 1 },
+  { value: 'calm', emoji: '😌', label: '平静', intensity: 1 },
+  { value: 'sad', emoji: '😢', label: '难过', intensity: 1 },
+  { value: 'anxious', emoji: '😰', label: '焦虑', intensity: 1 },
+  { value: 'excited', emoji: '🤩', label: '兴奋', intensity: 1 },
+  { value: 'tired', emoji: '😴', label: '疲惫', intensity: 1 },
+  { value: 'angry', emoji: '😠', label: '愤怒', intensity: 1 },
+  { value: 'neutral', emoji: '😐', label: '平淡', intensity: 1 },
+]
+
+export const MOOD_INTENSITY_LEVELS = 5
+
 // Editor formatting options
 export const EditorFormats = {
   BOLD: 'bold',

@@ -66,6 +66,7 @@ export interface ListMemosQuery {
 export interface CreateMemoRequest {
   content: string
   tags?: string[]
+  resourceIds?: string[]
   diaryDate?: string
 }
 
