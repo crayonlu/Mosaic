@@ -5,7 +5,7 @@ import { Moon, Sun, User } from 'lucide-react-native'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function SettingsScreen() {
-  const { theme, mode, setMode } = useThemeStore()
+  const { theme, themeMode, setThemeMode } = useThemeStore()
   const { user, serverUrl, logout } = useAuthStore()
 
   const handleLogout = async () => {
@@ -13,7 +13,7 @@ export default function SettingsScreen() {
   }
 
   const toggleTheme = () => {
-    setMode(mode === 'light' ? 'dark' : 'light')
+    setThemeMode(themeMode === 'light' ? 'dark' : 'light')
   }
 
   return (
@@ -41,13 +41,13 @@ export default function SettingsScreen() {
         <Text style={[styles.sectionTitle, { color: theme.text }]}>外观</Text>
         <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <TouchableOpacity style={styles.menuItem} onPress={toggleTheme}>
-            {mode === 'light' ? (
+            {themeMode === 'light' ? (
               <Sun size={20} color={theme.text} />
             ) : (
               <Moon size={20} color={theme.text} />
             )}
             <Text style={[styles.menuItemText, { color: theme.text }]}>
-              {mode === 'light' ? '浅色模式' : '深色模式'}
+              {themeMode === 'light' ? '浅色模式' : '深色模式'}
             </Text>
           </TouchableOpacity>
         </View>
