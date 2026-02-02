@@ -1,16 +1,15 @@
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
 import { TagInput } from '@/components/tag/TagInput'
-import { Button, Loading, toast } from '@/components/ui'
-import { diariesApi, memosApi } from '@/lib/api'
+import { Loading, toast } from '@/components/ui'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
+import { useMemo, useUpdateMemo, useArchiveMemo, useDeleteMemo, useCreateDiary } from '@/lib/query'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
 import { MOODS, type MoodKey } from '@/constants/common'
-import { type MemoWithResources } from '@/types/memo'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Archive, ArrowLeft, Trash2 } from 'lucide-react-native'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function MemoDetailScreen() {
@@ -18,109 +17,81 @@ export default function MemoDetailScreen() {
   const { theme } = useThemeStore()
   const { canUseNetwork } = useConnection()
   const handleError = useErrorHandler()
-  const [memo, setMemo] = useState<MemoWithResources | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data: memo, isLoading } = useMemo(id || '')
+  const { mutateAsync: updateMemo, isPending: isUpdating } = useUpdateMemo()
+  const { mutateAsync: archiveMemo, isPending: isArchiving } = useArchiveMemo()
+  const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
+  const { mutateAsync: createDiary, isPending: isCreatingDiary } = useCreateDiary()
+
   const [editing, setEditing] = useState(false)
   const [content, setContent] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [showArchiveModal, setShowArchiveModal] = useState(false)
   const [selectedMood, setSelectedMood] = useState<MoodKey | null>(null)
-  const [archiving, setArchiving] = useState(false)
 
-  const loadMemo = useCallback(async () => {
-    if (!id || !canUseNetwork) return
-    try {
-      const data = await memosApi.get(id)
-      if (data) {
-        setMemo(data)
-        setContent(data.content)
-        setTags(data.tags || [])
-      }
-    } catch (error) {
-      handleError(error)
-      toast.error('错误', '加载备忘录失败')
-      router.back()
-    } finally {
-      setLoading(false)
-    }
-  }, [id, canUseNetwork, handleError])
+  const isPending = isUpdating || isArchiving || isDeleting || isCreatingDiary
 
-  useEffect(() => {
-    if (id) loadMemo()
-  }, [id, loadMemo])
-
-  const handleSave = async () => {
-    if (!memo) return
+  const handleSave = useCallback(async () => {
+    if (!memo || !canUseNetwork || isPending) return
 
     try {
-      const updated = await memosApi.update(memo.id, {
-        content: content.trim(),
-        tags,
+      await updateMemo({
+        id: memo.id,
+        data: { content: content.trim(), tags },
       })
-      if (updated) {
-        setMemo(updated)
-        setEditing(false)
-        toast.success('成功', '备忘录已更新')
-      }
+      setEditing(false)
+      toast.success('成功', '已更新')
     } catch (error) {
       handleError(error)
       toast.error('错误', '更新失败')
     }
-  }
+  }, [memo, content, tags, canUseNetwork, isPending, updateMemo, handleError])
 
-  const handleArchive = async () => {
-    if (!memo) return
+  const handleArchive = useCallback(async () => {
+    if (!memo || !canUseNetwork || isPending) return
 
     try {
       if (memo.isArchived) {
-        await memosApi.unarchive(memo.id)
+        await archiveMemo(memo.id)
+        toast.success('成功', '已取消归档')
       } else {
         setShowArchiveModal(true)
         return
-      }
-      const updated = await memosApi.get(memo.id)
-      if (updated) {
-        setMemo(updated)
-        toast.success('成功', memo.isArchived ? '备忘录已取消归档' : '备忘录已归档')
       }
     } catch (error) {
       handleError(error)
       toast.error('错误', '操作失败')
     }
-  }
+  }, [memo, canUseNetwork, isPending, archiveMemo, handleError])
 
-  const handleArchiveToDiary = async () => {
-    if (!memo || !selectedMood) return
-    setArchiving(true)
+  const handleArchiveToDiary = useCallback(async () => {
+    if (!memo || !selectedMood || !canUseNetwork) return
+
     try {
       const today = new Date().toISOString().split('T')[0]
-      await diariesApi.createOrUpdate(today, {
-        moodKey: selectedMood,
-      })
-      await memosApi.archive(memo.id)
+      await createDiary({ date: today, data: { moodKey: selectedMood } })
+      await archiveMemo(memo.id)
       toast.success('成功', '已归档到今日日记')
       setShowArchiveModal(false)
       router.back()
     } catch (error) {
       handleError(error)
       toast.error('错误', '归档失败')
-    } finally {
-      setArchiving(false)
     }
-  }
+  }, [memo, selectedMood, canUseNetwork, archiveMemo, createDiary, handleError])
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (!memo) return
 
     toast.show({
       type: 'warning',
       title: '确认删除',
-      message: '确定要删除这条备忘录吗？此操作无法撤销。',
+      message: '确定要删除这条Memo吗？此操作无法撤销。',
       actionLabel: '删除',
       onAction: async () => {
         try {
-          await memosApi.delete(memo.id)
-          toast.success('成功', '备忘录已删除')
+          await deleteMemo(memo.id)
+          toast.success('成功', 'Memo已删除')
           router.back()
         } catch (error) {
           handleError(error)
@@ -128,9 +99,9 @@ export default function MemoDetailScreen() {
         }
       },
     })
-  }
+  }, [memo, deleteMemo, handleError])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <Loading text="加载中..." fullScreen />
@@ -142,7 +113,7 @@ export default function MemoDetailScreen() {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { color: theme.text }]}>备忘录不存在</Text>
+          <Text style={[styles.emptyText, { color: theme.text }]}>Memo不存在</Text>
         </View>
       </View>
     )
@@ -154,9 +125,9 @@ export default function MemoDetailScreen() {
         <TouchableOpacity onPress={router.back} style={styles.headerButton}>
           <ArrowLeft size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>备忘录详情</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Memo详情</Text>
         {!editing ? (
-          <TouchableOpacity onPress={() => setEditing(true)} style={styles.headerButton}>
+          <TouchableOpacity onPress={() => { setEditing(true); setContent(memo.content); setTags(memo.tags || []); }} style={styles.headerButton}>
             <Text style={[styles.editButtonText, { color: theme.primary }]}>编辑</Text>
           </TouchableOpacity>
         ) : (
@@ -164,8 +135,8 @@ export default function MemoDetailScreen() {
             <TouchableOpacity onPress={() => setEditing(false)} style={styles.headerButton}>
               <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>取消</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
-              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>保存</Text>
+            <TouchableOpacity onPress={handleSave} style={styles.headerButton} disabled={isPending}>
+              <Text style={[styles.cancelButtonText, { color: isPending ? theme.textSecondary : theme.primary }]}>保存</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -178,7 +149,7 @@ export default function MemoDetailScreen() {
               content={content}
               onChange={setContent}
               editable={true}
-              placeholder="编辑你的备忘录内容..."
+              placeholder="编辑你的Memo内容..."
               isExpanded={true}
               onSave={handleSave}
             />
@@ -229,14 +200,14 @@ export default function MemoDetailScreen() {
           <TouchableOpacity
             onPress={handleArchive}
             style={[styles.actionButton, { borderColor: theme.border }]}
-            disabled={!canUseNetwork}
+            disabled={!canUseNetwork || isPending}
           >
             <Archive size={20} color={theme.text} />
             <Text style={[styles.actionButtonText, { color: theme.text }]}>
               {memo.isArchived ? '取消归档' : '归档'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+          <TouchableOpacity onPress={handleDelete} style={styles.deleteButton} disabled={isPending}>
             <Trash2 size={20} color="#FFFFFF" />
             <Text style={styles.deleteButtonText}>删除</Text>
           </TouchableOpacity>
@@ -273,9 +244,9 @@ export default function MemoDetailScreen() {
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: theme.primary }]}
                 onPress={handleArchiveToDiary}
-                disabled={!selectedMood || archiving}
+                disabled={!selectedMood || isPending}
               >
-                {archiving ? (
+                {isPending ? (
                   <Loading size="small" />
                 ) : (
                   <Text style={styles.modalButtonText}>确认归档</Text>

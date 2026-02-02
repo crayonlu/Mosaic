@@ -1,10 +1,10 @@
 import { Loading } from '@/components/ui'
-import { memosApi } from '@/lib/api'
+import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@/types/memo'
 import { FileX } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { MemoCard } from './MemoCard'
 
@@ -13,7 +13,6 @@ interface MemoListProps {
   onMemoPress: (memo: MemoWithResources) => void
   onMemoArchive?: (id: string) => void
   onMemoDelete?: (id: string) => void
-  refreshTrigger?: number
   headerComponent?: React.ComponentType<any> | React.ReactElement | null | undefined
 }
 
@@ -22,114 +21,54 @@ export function MemoList({
   onMemoPress,
   onMemoArchive,
   onMemoDelete,
-  refreshTrigger,
   headerComponent,
 }: MemoListProps) {
   const { theme } = useThemeStore()
-  const [memos, setMemos] = useState<MemoWithResources[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
   const flatListRef = useRef<FlatList>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
-  const loadMemos = useCallback(
-    async (loadMore = false) => {
-      try {
-        if (!loadMore) {
-          setLoading(true)
-        }
+  const { data: memosByDate, isLoading: loadingByDate } = useMemosByDate(date || '')
 
-        let loadedMemos: MemoWithResources[]
+  const {
+    data: paginatedData,
+    isLoading: loadingList,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteMemos({ pageSize: 20, archived: false })
 
-        if (date) {
-          loadedMemos = await memosApi.getByDate(date)
-          setHasMore(false)
-        } else {
-          const currentPage = loadMore ? page : 1
-          const response = await memosApi.list({
-            page: currentPage,
-            pageSize: 20,
-            archived: false,
-          })
-
-          if (loadMore) {
-            loadedMemos = [...memos, ...response.items]
-          } else {
-            loadedMemos = response.items
-            setPage(1)
-          }
-
-          setHasMore(response.page < response.totalPages)
-        }
-
-        setMemos(loadedMemos)
-      } catch (error) {
-        console.error('Failed to load memos:', error)
-      } finally {
-        setLoading(false)
-        setRefreshing(false)
-      }
-    },
-    [date, page, memos]
-  )
-
-  useEffect(() => {
-    loadMemos()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date])
-
-  useEffect(() => {
-    if (refreshTrigger !== undefined) {
-      loadMemos()
+  const memos = useMemo(() => {
+    if (date) {
+      return memosByDate || []
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshTrigger])
+    return paginatedData?.pages.flatMap(page => page.items) || []
+  }, [date, memosByDate, paginatedData])
 
-  const handleRefresh = useCallback(() => {
+  const isLoading = date ? loadingByDate : loadingList
+  const hasMore = date ? false : hasNextPage
+
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true)
-    setPage(1)
-    loadMemos()
-  }, [loadMemos])
+    await refetch()
+    setRefreshing(false)
+  }, [refetch])
 
   const handleLoadMore = useCallback(() => {
-    if (!loading && !refreshing && hasMore && !date) {
-      setPage(prev => prev + 1)
-      loadMemos(true)
+    if (!isLoading && hasMore && !date) {
+      fetchNextPage()
     }
-  }, [loading, refreshing, hasMore, date, loadMemos])
-
-  const handleArchive = useCallback(
-    async (id: string) => {
-      try {
-        await memosApi.archive(id)
-        await loadMemos()
-        onMemoArchive?.(id)
-      } catch (error) {
-        console.error('Failed to archive memo:', error)
-      }
-    },
-    [loadMemos, onMemoArchive]
-  )
+  }, [isLoading, hasMore, date, fetchNextPage])
 
   const handleDelete = useCallback(
-    async (id: string) => {
-      try {
-        await memosApi.delete(id)
-        await loadMemos()
-        onMemoDelete?.(id)
-      } catch (error) {
-        console.error('Failed to delete memo:', error)
-      }
+    (id: string) => {
+      onMemoDelete?.(id)
     },
-    [loadMemos, onMemoDelete]
+    [onMemoDelete]
   )
 
   const groupedMemos = useMemo(() => {
-    const groups: Record<
-      string,
-      { date: string; displayDate: string; memos: MemoWithResources[] }
-    > = {}
+    const groups: Record<string, { date: string; displayDate: string; memos: MemoWithResources[] }> = {}
 
     if (date) {
       const displayDate = stringUtils.formatDate(date)
@@ -227,14 +166,18 @@ export function MemoList({
       )
     }
 
-    return (
-      <View style={styles.footer}>
-        <ActivityIndicator size="small" color={theme.primary} />
-      </View>
-    )
+    if (isFetchingNextPage) {
+      return (
+        <View style={styles.footer}>
+          <ActivityIndicator size="small" color={theme.primary} />
+        </View>
+      )
+    }
+
+    return null
   }
 
-  if (loading) {
+  if (isLoading) {
     return <Loading text="加载中..." fullScreen />
   }
 

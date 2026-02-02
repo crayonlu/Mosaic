@@ -61,7 +61,7 @@ export function SearchResults({
   }
 
   const renderFooter = () => {
-    if (!hasMore) {
+    if (!hasMore && results.length > 0) {
       return (
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: theme.textSecondary }]}>
@@ -71,11 +71,15 @@ export function SearchResults({
       )
     }
 
-    return (
-      <View style={styles.footer}>
-        <ActivityIndicator size="small" color={theme.primary} />
-      </View>
-    )
+    if (refreshing) {
+      return (
+        <View style={styles.footer}>
+          <ActivityIndicator size="small" color={theme.primary} />
+        </View>
+      )
+    }
+
+    return null
   }
 
   if (loading && results.length === 0) {

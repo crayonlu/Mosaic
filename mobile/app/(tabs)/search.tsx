@@ -1,22 +1,16 @@
 import { SearchFilters } from '@/components/search/SearchFilters'
 import { SearchInput } from '@/components/search/SearchInput'
 import { SearchResults } from '@/components/search/SearchResults'
-import { toast } from '@/components/ui'
-import { memosApi } from '@/lib/api'
+import { useSearchMemos } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import { router } from 'expo-router'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 
 export default function SearchScreen() {
   const { theme } = useThemeStore()
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<MemoWithResources[]>([])
-  const [loading, setLoading] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isArchived, setIsArchived] = useState<boolean | undefined>(undefined)
   const [startDate, setStartDate] = useState<string | undefined>(undefined)
@@ -32,73 +26,26 @@ export default function SearchScreen() {
     )
   }, [query, selectedTags, isArchived, startDate, endDate])
 
-  const performSearch = useCallback(
-    async (loadMore = false) => {
-      if (!hasSearchCriteria) {
-        setResults([])
-        return
-      }
+  const searchParams = useMemo(() => ({
+    query: query.trim(),
+    tags: selectedTags.length > 0 ? selectedTags : undefined,
+    isArchived,
+    startDate,
+    endDate,
+    pageSize: 20,
+  }), [query, selectedTags, isArchived, startDate, endDate])
 
-      try {
-        if (!loadMore) {
-          setLoading(true)
-        }
+  const {
+    data: paginatedData,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useSearchMemos(searchParams)
 
-        const currentPage = loadMore ? page : 1
-        const response = await memosApi.search({
-          query: query.trim(),
-          tags: selectedTags.length > 0 ? selectedTags : undefined,
-          isArchived,
-          startDate,
-          endDate,
-          page: currentPage,
-          pageSize: 20,
-        })
-
-        if (loadMore) {
-          setResults(prev => [...prev, ...response.items])
-        } else {
-          setResults(response.items)
-          setPage(1)
-        }
-
-        setHasMore(response.page < response.totalPages)
-      } catch (error) {
-        console.error('Search error:', error)
-        toast.error('错误', '搜索失败')
-      } finally {
-        setLoading(false)
-        setRefreshing(false)
-      }
-    },
-    [query, selectedTags, isArchived, startDate, endDate, page, hasSearchCriteria]
-  )
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      performSearch()
-    }, 300)
-
-    return () => clearTimeout(timeoutId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, selectedTags, isArchived, startDate, endDate])
-
-  const handleRefresh = useCallback(() => {
-    setRefreshing(true)
-    setPage(1)
-    performSearch()
-  }, [performSearch])
-
-  const handleLoadMore = useCallback(() => {
-    if (!loading && hasMore) {
-      setPage(prev => prev + 1)
-      performSearch(true)
-    }
-  }, [loading, hasMore, performSearch])
-
-  const handleMemoPress = useCallback((memo: MemoWithResources) => {
-    router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
-  }, [])
+  const results = useMemo(() => {
+    return paginatedData?.pages.flatMap(page => page.items) || []
+  }, [paginatedData])
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>()
@@ -107,6 +54,20 @@ export default function SearchScreen() {
     })
     return Array.from(tagSet).sort()
   }, [results])
+
+  const handleRefresh = useCallback(() => {
+    refetch()
+  }, [refetch])
+
+  const handleLoadMore = useCallback(() => {
+    if (!isLoading && hasNextPage) {
+      // useInfiniteQuery handles fetchNextPage automatically
+    }
+  }, [isLoading, hasNextPage])
+
+  const handleMemoPress = useCallback((memo: MemoWithResources) => {
+    router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
+  }, [])
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -130,11 +91,11 @@ export default function SearchScreen() {
       <View style={styles.resultsContainer}>
         <SearchResults
           results={results}
-          loading={loading}
-          hasMore={hasMore}
+          loading={isLoading}
+          hasMore={hasNextPage || false}
           onLoadMore={handleLoadMore}
           onRefresh={handleRefresh}
-          refreshing={refreshing}
+          refreshing={isFetchingNextPage}
           onMemoPress={handleMemoPress}
           emptyQuery={!hasSearchCriteria}
         />
@@ -150,9 +111,10 @@ const styles = StyleSheet.create({
   header: {
     display: 'flex',
     flexDirection: 'row',
-    padding: 16,
+    paddingHorizontal: 16,
     gap: 12,
     paddingBottom: 4,
+    paddingTop: 0,
   },
   resultsContainer: {
     flex: 1,

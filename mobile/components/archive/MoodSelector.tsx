@@ -67,7 +67,7 @@ export function MoodSelector({ visible, onClose, onSubmit, submitting }: MoodSel
               style={[
                 styles.button,
                 { backgroundColor: theme.primary },
-                !selectedMood && { opacity: 0.5 },
+                (!selectedMood || submitting) && { opacity: 0.5 },
               ]}
               onPress={handleSubmit}
               disabled={!selectedMood || submitting}

@@ -1,5 +1,6 @@
 import { ToastContainer } from '@/components/ui'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
+import { QueryProvider } from '@/components/query-provider'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore, useThemeInit } from '@/stores/theme-store'
@@ -51,29 +52,31 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
         <StatusBar style="auto" />
-        {isAuthenticated && !isServerReachable && (
-          <View style={[styles.offlineBanner, { backgroundColor: '#EF4444' }]}>
-            <Text style={styles.offlineText}>无法连接到服务器</Text>
-          </View>
-        )}
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: theme.background },
-          }}
-        >
-          <Stack.Screen name="setup" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="modal"
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
+        <QueryProvider>
+          {isAuthenticated && !isServerReachable && (
+            <View style={[styles.offlineBanner, { backgroundColor: '#EF4444' }]}>
+              <Text style={styles.offlineText}>无法连接到服务器</Text>
+            </View>
+          )}
+          <Stack
+            screenOptions={{
               headerShown: false,
+              contentStyle: { backgroundColor: theme.background },
             }}
-          />
-        </Stack>
-        <ToastContainer />
+          >
+            <Stack.Screen name="setup" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="modal"
+              options={{
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+                headerShown: false,
+              }}
+            />
+          </Stack>
+          <ToastContainer />
+        </QueryProvider>
       </SafeAreaView>
     </SafeAreaProvider>
   )

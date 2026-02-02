@@ -1,10 +1,10 @@
 import { Loading } from '@/components/ui'
-import { diariesApi } from '@/lib/api'
+import { useDiaries } from '@/lib/query'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { DiaryResponse } from '@/types/api'
 import { FileX } from 'lucide-react-native'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   FlatList,
   RefreshControl,
@@ -42,32 +42,32 @@ const MOOD_EMOJIS: Record<string, string> = {
 
 export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
   const { theme } = useThemeStore()
-  const [diaries, setDiaries] = useState<DiaryResponse[]>([])
-  const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const flatListRef = useRef<FlatList>(null)
 
-  const loadDiaries = useCallback(async () => {
-    try {
-      setLoading(true)
-      const response = await diariesApi.list()
-      setDiaries(response.items)
-    } catch (error) {
-      console.error('Failed to load diaries:', error)
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }, [])
+  const {
+    data: paginatedData,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refetch,
+  } = useDiaries({ pageSize: 20 })
 
-  useEffect(() => {
-    loadDiaries()
-  }, [loadDiaries])
+  const diaries = useMemo(() => {
+    return paginatedData?.pages.flatMap(page => page.items) || []
+  }, [paginatedData])
 
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true)
-    loadDiaries()
-  }, [loadDiaries])
+    await refetch()
+    setRefreshing(false)
+  }, [refetch])
+
+  const handleLoadMore = useCallback(() => {
+    if (!isLoading && hasNextPage) {
+      fetchNextPage()
+    }
+  }, [isLoading, hasNextPage, fetchNextPage])
 
   const getMoodEmoji = (moodKey?: string): string => {
     if (!moodKey) return '平淡的'
@@ -133,20 +133,34 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
       <View style={[styles.emptyIcon, { backgroundColor: `${theme.primary}10` }]}>
         <FileX size={48} color={theme.primary} strokeWidth={1.5} />
       </View>
-      <Text style={[styles.emptyTitle, { color: theme.text }]}>暂无日记</Text>
+      <Text style={[styles.emptyTitle, { color: theme.text }]}>No Diaries</Text>
       <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-        开始记录你的生活点滴
+        Start recording your daily moments
       </Text>
     </View>
   )
 
-  const renderFooter = () => (
-    <View style={styles.footer}>
-      <Text style={[styles.footerText, { color: theme.textSecondary }]}>没有更多了</Text>
-    </View>
-  )
+  const renderFooter = () => {
+    if (isFetchingNextPage) {
+      return (
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>Loading...</Text>
+        </View>
+      )
+    }
 
-  if (loading) {
+    if (!hasNextPage && diaries.length > 0) {
+      return (
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>没有更多了</Text>
+        </View>
+      )
+    }
+
+    return null
+  }
+
+  if (isLoading) {
     return <Loading text="加载中..." fullScreen />
   }
 
@@ -156,7 +170,6 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
 
   return (
     <FlatList
-      ref={flatListRef}
       data={diaries}
       renderItem={renderDiaryCard}
       keyExtractor={item => item.date}
@@ -171,6 +184,8 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
           colors={[theme.primary]}
         />
       }
+      onEndReached={handleLoadMore}
+      onEndReachedThreshold={0.3}
       ListFooterComponent={renderFooter}
       showsVerticalScrollIndicator={false}
     />

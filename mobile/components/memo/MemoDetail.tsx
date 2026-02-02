@@ -1,6 +1,6 @@
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
 import { Badge, Button } from '@/components/ui'
-import { memosApi } from '@/lib/api'
+import { useUpdateMemo, useArchiveMemo, useDeleteMemo } from '@/lib/query'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
@@ -25,13 +25,16 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 interface MemoDetailProps {
   visible: boolean
   memo: MemoWithResources | null
-  onMemoUpdate: (memo: MemoWithResources) => void
   onClose: () => void
   onDelete?: (id: string) => void
 }
 
-export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: MemoDetailProps) {
+export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps) {
   const { theme } = useThemeStore()
+  const { mutateAsync: updateMemo, isPending: isUpdating } = useUpdateMemo()
+  const { mutateAsync: archiveMemo, isPending: isArchiving } = useArchiveMemo()
+  const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
+
   const [content, setContent] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
@@ -39,7 +42,8 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
-  // Initialize form when memo changes
+  const isPending = isUpdating || isArchiving || isDeleting
+
   useEffect(() => {
     if (memo) {
       setContent(memo.content)
@@ -49,7 +53,6 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
     }
   }, [memo])
 
-  // Track changes
   useEffect(() => {
     if (memo) {
       const contentChanged = content !== memo.content
@@ -60,60 +63,52 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
     }
   }, [content, tags, diaryDate, memo])
 
-  // Handle save
   const handleSave = useCallback(async () => {
-    if (!memo) return
+    if (!memo || !hasChanges || isPending) return
 
     try {
-      const updatedMemo = await memosApi.update(memo.id, {
-        content,
-        tags,
-        resourceFilenames: memo.resources.map(r => r.filename),
+      await updateMemo({
+        id: memo.id,
+        data: {
+          content,
+          tags,
+          resourceFilenames: memo.resources.map(r => r.filename),
+        },
       })
-
-      if (updatedMemo) {
-        onMemoUpdate(updatedMemo)
-        onClose()
-      }
+      onClose()
     } catch (error) {
       console.error('Failed to update memo:', error)
       Alert.alert('错误', '更新Memo失败')
     }
-  }, [memo, content, tags, onMemoUpdate, onClose])
+  }, [memo, content, tags, hasChanges, isPending, updateMemo, onClose])
 
-  // Handle archive
   const handleArchive = useCallback(async () => {
-    if (!memo) return
+    if (!memo || isPending) return
 
     try {
       if (memo.isArchived) {
-        await memosApi.unarchive(memo.id)
+        await archiveMemo(memo.id)
       } else {
-        await memosApi.archive(memo.id)
-      }
-      const updatedMemo = await memosApi.get(memo.id)
-      if (updatedMemo) {
-        onMemoUpdate(updatedMemo)
+        await archiveMemo(memo.id)
       }
       onClose()
     } catch (error) {
       console.error('Failed to archive memo:', error)
       Alert.alert('错误', memo.isArchived ? '取消归档失败' : '归档失败')
     }
-  }, [memo, onMemoUpdate, onClose])
+  }, [memo, isPending, archiveMemo, onClose])
 
-  // Handle delete
   const handleDelete = useCallback(() => {
     if (!memo) return
 
-    Alert.alert('删除Memo', '确定要删除这条Memo吗？删除后可以在归档中恢复。', [
+    Alert.alert('删除Memo', '确定要删除这条Memo吗？删除后无法恢复。', [
       { text: '取消', style: 'cancel' },
       {
         text: '删除',
         style: 'destructive',
         onPress: async () => {
           try {
-            await memosApi.delete(memo.id)
+            await deleteMemo(memo.id)
             onDelete?.(memo.id)
             onClose()
           } catch (error) {
@@ -123,9 +118,8 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
         },
       },
     ])
-  }, [memo, onDelete, onClose])
+  }, [memo, isPending, deleteMemo, onDelete, onClose])
 
-  // Handle add tag
   const handleAddTag = useCallback(() => {
     const trimmedTag = tagInput.trim()
     if (trimmedTag && !tags.includes(trimmedTag)) {
@@ -134,7 +128,6 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
     }
   }, [tagInput, tags])
 
-  // Handle remove tag
   const handleRemoveTag = useCallback(
     (tagToRemove: string) => {
       setTags(tags.filter(tag => tag !== tagToRemove))
@@ -142,7 +135,6 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
     [tags]
   )
 
-  // Handle date change
   const handleDateChange = useCallback((event: any, selectedDate?: Date) => {
     setShowDatePicker(false)
     if (selectedDate) {
@@ -150,7 +142,6 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
     }
   }, [])
 
-  // Handle close with unsaved changes confirmation
   const handleClose = useCallback(() => {
     if (hasChanges) {
       Alert.alert('未保存的更改', '您有未保存的更改，确定要关闭吗？', [
@@ -189,7 +180,6 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-          {/* Header */}
           <View style={[styles.header, { borderBottomColor: theme.border }]}>
             <TouchableOpacity
               onPress={handleClose}
@@ -205,20 +195,19 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
 
             <TouchableOpacity
               onPress={handleSave}
-              style={[styles.headerButton, !hasChanges && styles.headerButtonDisabled]}
+              style={[styles.headerButton, (!hasChanges || isPending) && styles.headerButtonDisabled]}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              disabled={!hasChanges}
+              disabled={!hasChanges || isPending}
             >
               <Check
                 size={24}
-                color={hasChanges ? theme.primary : theme.textSecondary}
+                color={hasChanges && !isPending ? theme.primary : theme.textSecondary}
                 strokeWidth={2}
               />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.scrollView}>
-            {/* Tags */}
             <View style={styles.tagsSection}>
               <View style={styles.tagsRow}>
                 {tags.map(tag => (
@@ -251,7 +240,6 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
               </View>
             </View>
 
-            {/* Diary Date */}
             {diaryDate && (
               <View style={styles.dateSection}>
                 <Text style={[styles.dateLabel, { color: theme.textSecondary }]}>
@@ -260,7 +248,6 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
               </View>
             )}
 
-            {/* Content */}
             <View style={styles.contentSection}>
               <RichTextEditor
                 content={content}
@@ -271,14 +258,12 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
               />
             </View>
 
-            {/* Resources */}
             {memo.resources.length > 0 && (
               <View style={styles.resourcesSection}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>
                   附件 ({memo.resources.length})
                 </Text>
 
-                {/* Images */}
                 {imageResources.length > 0 && (
                   <View style={styles.imagesGrid}>
                     {imageResources.map(resource => (
@@ -292,7 +277,6 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
                   </View>
                 )}
 
-                {/* Other resources */}
                 {otherResources.length > 0 && (
                   <View style={styles.otherResources}>
                     {otherResources.map(resource => (
@@ -304,7 +288,7 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
                         ]}
                       >
                         <Text style={[styles.otherResourceName, { color: theme.text }]}>
-                          📎 {resource.filename}
+                          {resource.filename}
                         </Text>
                         <Text style={[styles.otherResourceSize, { color: theme.textSecondary }]}>
                           {stringUtils.formatFileSize(resource.fileSize)}
@@ -316,7 +300,6 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
               </View>
             )}
 
-            {/* Timestamp */}
             <View style={styles.timestampSection}>
               <Text style={[styles.timestampText, { color: theme.textSecondary }]}>
                 创建于 {stringUtils.formatDateTime(memo.createdAt)}
@@ -330,7 +313,6 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
           </ScrollView>
         </KeyboardAvoidingView>
 
-        {/* Footer actions */}
         <View
           style={[
             styles.footer,
@@ -343,6 +325,7 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
             variant="secondary"
             size="medium"
             style={styles.footerButton}
+            disabled={isPending}
           />
           <Button
             title="删除"
@@ -350,10 +333,10 @@ export function MemoDetail({ visible, memo, onMemoUpdate, onClose, onDelete }: M
             variant="danger"
             size="medium"
             style={styles.footerButton}
+            disabled={isPending}
           />
         </View>
 
-        {/* Date Picker */}
         {showDatePicker && (
           <DateTimePicker
             value={diaryDate || new Date()}
