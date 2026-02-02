@@ -93,7 +93,6 @@ export function SearchResults({
         <MemoCard
           memo={item}
           onPress={() => onMemoPress(item)}
-          onArchive={onMemoArchive}
           onDelete={onMemoDelete}
         />
       )}

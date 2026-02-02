@@ -2,13 +2,12 @@ import { Badge } from '@/components/ui'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
-import { Archive, Trash2 } from 'lucide-react-native'
+import { Trash2 } from 'lucide-react-native'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 
 interface MemoCardProps {
   memo: MemoWithResources
   onPress: () => void
-  onArchive?: (id: string) => void
   onDelete?: (id: string) => void
   showActions?: boolean
 }
@@ -16,7 +15,6 @@ interface MemoCardProps {
 export function MemoCard({
   memo,
   onPress,
-  onArchive,
   onDelete,
   showActions = true,
 }: MemoCardProps) {
@@ -38,10 +36,6 @@ export function MemoCard({
 
   const handleDelete = () => {
     onDelete?.(memo.id)
-  }
-
-  const handleArchive = () => {
-    onArchive?.(memo.id)
   }
 
   return (
@@ -111,15 +105,6 @@ export function MemoCard({
           {/* Actions */}
           {showActions && (
             <View style={styles.actionsContainer}>
-              {onArchive && (
-                <Pressable
-                  onPress={handleArchive}
-                  style={styles.actionButton}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Archive size={16} color={theme.textSecondary} strokeWidth={2} />
-                </Pressable>
-              )}
               {onDelete && (
                 <Pressable
                   onPress={handleDelete}

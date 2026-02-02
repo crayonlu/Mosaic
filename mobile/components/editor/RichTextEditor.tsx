@@ -1,5 +1,5 @@
 import { useThemeStore } from '@/stores/theme-store'
-import { RichText, useEditorBridge, useEditorContent } from '@10play/tentap-editor'
+import { CoreBridge, RichText, TenTapStartKit, useEditorBridge, useEditorContent } from '@10play/tentap-editor'
 import { useEffect, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { EditorToolbar } from './EditorToolbar'
@@ -28,10 +28,21 @@ export function RichTextEditor({
   const previousContentRef = useRef<string>(content)
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
 
+  const customTextCSS = `
+    body {
+      color: ${theme.text};
+      background-color: ${theme.background};
+    }
+  `
+
   const editor = useEditorBridge({
     autofocus: false,
     avoidIosKeyboard: true,
     initialContent: content || '',
+    bridgeExtensions: [
+      ...TenTapStartKit,
+      CoreBridge.configureCSS(customTextCSS),
+    ],
   })
 
   // Sync content changes from parent
@@ -93,13 +104,6 @@ export function RichTextEditor({
   return (
     <>
       <View style={[styles.container]}>
-        {editable && (
-          <EditorToolbar
-            editor={editor}
-            onSave={onSave}
-            onInsertLink={() => setIsLinkDialogOpen(true)}
-          />
-        )}
         <View
           style={[
             styles.editorContainer,
@@ -114,6 +118,13 @@ export function RichTextEditor({
             style={[styles.richText, { backgroundColor: theme.background }]}
           />
         </View>
+        {editable && (
+          <EditorToolbar
+            editor={editor}
+            onSave={onSave}
+            onInsertLink={() => setIsLinkDialogOpen(true)}
+          />
+        )}
       </View>
 
       <LinkDialog

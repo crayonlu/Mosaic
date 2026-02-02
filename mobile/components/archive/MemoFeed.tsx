@@ -1,35 +1,38 @@
-import { Badge, Loading } from '@/components/ui'
+import { Loading } from '@/components/ui'
 import { memosApi } from '@/lib/api'
-import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
-import { FileX, MoreVertical, Trash2 } from 'lucide-react-native'
+import { Check } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native'
-import { ResourceGallery } from './ResourceGallery'
+import { MemoCard } from '../memo/MemoCard'
 
 interface MemoFeedProps {
   targetDate?: string
   onMemoPress?: (memo: MemoWithResources) => void
-  onMemoArchive?: (id: string) => void
   onMemoDelete?: (id: string) => void
   headerComponent?: React.ReactNode
+  isSelectionMode?: boolean
+  selectedIds?: string[]
+  onSelectionChange?: (id: string) => void
 }
 
 export function MemoFeed({
   targetDate,
   onMemoPress,
-  onMemoArchive,
   onMemoDelete,
   headerComponent,
+  isSelectionMode = false,
+  selectedIds = [],
+  onSelectionChange,
 }: MemoFeedProps) {
   const { theme } = useThemeStore()
   const [memos, setMemos] = useState<MemoWithResources[]>([])
@@ -38,7 +41,6 @@ export function MemoFeed({
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [page, setPage] = useState(1)
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
   const flatListRef = useRef<FlatList>(null)
 
   const loadMemos = useCallback(
@@ -90,14 +92,13 @@ export function MemoFeed({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Pull to refresh
   const handleRefresh = useCallback(() => {
     setRefreshing(true)
     setPage(1)
     loadMemos()
-  }, [loadMemos])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  // Load more when scrolling to bottom
   const handleLoadMore = useCallback(() => {
     if (!loading && !refreshing && !loadingMore && hasMore && !targetDate) {
       setPage(prev => prev + 1)
@@ -118,117 +119,48 @@ export function MemoFeed({
     [loadMemos, onMemoDelete]
   )
 
-  // Extract plain text from HTML for preview
-  const getPreviewText = (content: string): string => {
-    const plainText = stringUtils.extractTextFromHtml(content)
-    return plainText.length > 200 ? plainText.substring(0, 200) + '...' : plainText
+  const handleSelectionChange = (id: string) => {
+    onSelectionChange?.(id)
   }
 
-  // Format timestamp
-  const formatTimestamp = (timestamp: number): string => {
-    return stringUtils.formatRelativeTime(timestamp)
-  }
+  const isSelected = (id: string) => selectedIds.includes(id)
 
-  // Render memo card
-  const renderMemoCard = ({ item }: { item: MemoWithResources }) => {
-    const previewText = getPreviewText(item.content)
-    const hasResources = item.resources.length > 0
-
-    return (
-      <TouchableOpacity
-        onPress={() => onMemoPress?.(item)}
-        activeOpacity={0.8}
-        style={[
-          styles.memoCard,
-          {
-            backgroundColor: theme.card,
-            borderColor: theme.border,
-          },
-        ]}
-      >
-        {/* Header */}
-        <View style={styles.memoHeader}>
-          <View style={styles.userInfo}>
-            <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-              <Text style={styles.avatarText}>M</Text>
-            </View>
-            <View style={styles.userMeta}>
-              <Text style={[styles.userName, { color: theme.text }]}>Mosaic</Text>
-              <Text style={[styles.timestamp, { color: theme.textSecondary }]}>
-                {formatTimestamp(item.createdAt)}
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={styles.moreButton}
-            onPress={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <MoreVertical size={20} color={theme.textSecondary} strokeWidth={2} />
-          </TouchableOpacity>
-
-          {activeMenuId === item.id && (
-            <View
-              style={[
-                styles.menuBubble,
-                {
-                  backgroundColor: theme.surface,
-                  borderColor: theme.border,
-                },
-              ]}
-            >
-              <TouchableOpacity
-                onPress={() => {
-                  handleDelete(item.id)
-                  setActiveMenuId(null)
-                }}
-                style={styles.menuItem}
-              >
-                <Trash2 size={16} color="#EF4444" />
-                <Text style={[styles.menuText, { color: '#EF4444' }]}>删除</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+  const renderMemoCard = ({ item }: { item: MemoWithResources }) => (
+    <Pressable
+      onPress={() => {
+        if (isSelectionMode) {
+          handleSelectionChange(item.id)
+        } else {
+          onMemoPress?.(item)
+        }
+      }}
+      style={({ pressed }) => [
+        styles.cardContainer,
+      ]}
+    >
+      <View style={styles.cardContent}>
+        <MemoCard
+          memo={item}
+          onPress={() => {
+            if (!isSelectionMode) {
+              onMemoPress?.(item)
+            }
+          }}
+          onDelete={() => handleDelete(item.id)}
+        />
+      </View>
+      {isSelectionMode && (
+        <View style={[styles.checkbox, isSelected(item.id) && { backgroundColor: theme.primary }]}>
+          {isSelected(item.id) && <Check size={14} color="#FFFFFF" />}
         </View>
+      )}
+    </Pressable>
+  )
 
-        {/* Content */}
-        {previewText && (
-          <Text style={[styles.memoContent, { color: theme.text }]}>{previewText}</Text>
-        )}
-
-        {/* Resources */}
-        {hasResources && (
-          <ResourceGallery
-            memo={item}
-            onImagePress={index => {
-              // Handle image press
-              console.log('Image pressed:', index)
-            }}
-          />
-        )}
-
-        {/* Tags */}
-        {item.tags && item.tags.length > 0 && (
-          <View style={styles.tagsContainer}>
-            {item.tags.slice(0, 3).map(tag => (
-              <Badge key={tag} text={tag} variant="outline" size="small" />
-            ))}
-            {item.tags.length > 3 && (
-              <Text style={[styles.moreTags, { color: theme.textSecondary }]}>
-                +{item.tags.length - 3}
-              </Text>
-            )}
-          </View>
-        )}
-      </TouchableOpacity>
-    )
-  }
-
-  // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <View style={[styles.emptyIcon, { backgroundColor: `${theme.primary}10` }]}>
-        <FileX size={48} color={theme.primary} strokeWidth={1.5} />
+        <Text style={{ fontSize: 32 }}>📝</Text>
       </View>
       <Text style={[styles.emptyTitle, { color: theme.text }]}>
         {targetDate ? '今天还没有记录' : '暂无Memo'}
@@ -239,7 +171,6 @@ export function MemoFeed({
     </View>
   )
 
-  // Render list footer
   const renderFooter = () => {
     if (loadingMore) {
       return (
@@ -249,7 +180,7 @@ export function MemoFeed({
       )
     }
 
-    if (!hasMore) {
+    if (!hasMore && memos.length > 0) {
       return (
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: theme.textSecondary }]}>没有更多了</Text>
@@ -294,90 +225,22 @@ export function MemoFeed({
 
 const styles = StyleSheet.create({
   listContent: {},
-  memoCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  memoHeader: {
+  cardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
   },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  cardContent: {
     flex: 1,
   },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#E5E5E5',
+    marginHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  userMeta: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  timestamp: {
-    fontSize: 12,
-  },
-  moreButton: {
-    padding: 8,
-  },
-  menuBubble: {
-    position: 'absolute',
-    top: 10,
-    right: 48,
-    width: 120,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingVertical: 4,
-    zIndex: 100,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 10,
-  },
-  menuDivider: {
-    height: 1,
-    marginHorizontal: 8,
-  },
-  menuText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  memoContent: {
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-    gap: 6,
-  },
-  moreTags: {
-    fontSize: 12,
   },
   emptyContainer: {
     flex: 1,

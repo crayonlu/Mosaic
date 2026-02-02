@@ -8,7 +8,6 @@ import {
   Heading1,
   Heading2,
   Heading3,
-  Highlighter,
   Italic,
   Link,
   List,
@@ -95,26 +94,7 @@ export function EditorToolbar({ editor, onSave, onInsertLink }: EditorToolbarPro
       label: '行内代码',
       onPress: () => editor.toggleCode(),
       isActive: isMarkActive('code'),
-    },
-    {
-      icon: Highlighter,
-      label: '高亮',
-      onPress: () => {
-        try {
-          if ('toggleHighlight' in editor && typeof editor.toggleHighlight === 'function') {
-            const highlightMethod = editor.toggleHighlight as any
-            if (highlightMethod.length === 0) {
-              highlightMethod()
-            } else {
-              highlightMethod({ color: '#FFD93D' })
-            }
-          }
-        } catch (error) {
-          console.warn('Highlight not supported:', error)
-        }
-      },
-      isActive: isMarkActive('highlight'),
-    },
+    }
   ]
 
   // Structure buttons
