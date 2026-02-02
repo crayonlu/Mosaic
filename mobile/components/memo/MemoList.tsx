@@ -212,7 +212,6 @@ export function MemoList({
           key={memo.id}
           memo={memo}
           onPress={() => onMemoPress(memo)}
-          onArchive={handleArchive}
           onDelete={handleDelete}
         />
       ))}

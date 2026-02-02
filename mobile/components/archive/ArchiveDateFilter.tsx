@@ -1,15 +1,24 @@
 import { useThemeStore } from '@/stores/theme-store'
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { Calendar, X } from 'lucide-react-native'
+import { Calendar, Check, X } from 'lucide-react-native'
 import { useState } from 'react'
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface ArchiveDateFilterProps {
   selectedDate?: string
   onDateSelect: (date?: string) => void
+  isArchiveMode: boolean
+  hasSelection: boolean
+  onArchivePress: () => void
 }
 
-export function ArchiveDateFilter({ selectedDate, onDateSelect }: ArchiveDateFilterProps) {
+export function ArchiveDateFilter({
+  selectedDate,
+  onDateSelect,
+  isArchiveMode,
+  hasSelection,
+  onArchivePress,
+}: ArchiveDateFilterProps) {
   const { theme } = useThemeStore()
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [tempDate, setTempDate] = useState<Date>(selectedDate ? new Date(selectedDate) : new Date())
@@ -20,11 +29,11 @@ export function ArchiveDateFilter({ selectedDate, onDateSelect }: ArchiveDateFil
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
   }
 
-  const onDateChange = (event: { type: string }, selectedDate?: Date) => {
+  const onDateChange = (event: { type: string }, date?: Date) => {
     setShowDatePicker(Platform.OS === 'ios')
-    if (selectedDate && event.type !== 'dismissed') {
-      const dateString = selectedDate.toISOString().split('T')[0]
-      setTempDate(selectedDate)
+    if (date && event.type !== 'dismissed') {
+      const dateString = date.toISOString().split('T')[0]
+      setTempDate(date)
       onDateSelect(dateString)
     }
   }
@@ -58,6 +67,29 @@ export function ArchiveDateFilter({ selectedDate, onDateSelect }: ArchiveDateFil
             </TouchableOpacity>
           )}
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.archiveButton,
+            { backgroundColor: hasSelection ? theme.primary : theme.surface },
+            { borderColor: hasSelection ? theme.primary : theme.border },
+          ]}
+          onPress={onArchivePress}
+        >
+          {hasSelection ? (
+            <Check size={18} color="#FFFFFF" />
+          ) : isArchiveMode ? (
+            <X size={18} color={theme.textSecondary} />
+          ) : null}
+          <Text
+            style={[
+              styles.archiveButtonText,
+              { color: hasSelection ? '#FFFFFF' : theme.textSecondary },
+            ]}
+          >
+            {hasSelection ? '确定' : isArchiveMode ? '取消' : '归档'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {showDatePicker && (
@@ -77,6 +109,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     marginBottom: 16,
   },
   filterButton: {
@@ -93,5 +126,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     flex: 1,
+  },
+  archiveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 6,
+  },
+  archiveButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
   },
 })
