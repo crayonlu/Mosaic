@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Calendar, FileText } from 'lucide-react'
 import { statsCommands } from '@/utils/callRust'
-import { getMoodEmoji } from '@/utils/moodEmoji'
+import { getMoodEmoji } from '@/utils/mood'
 import type { TimelineData, TimelineQuery } from '@/types/stats'
 
 interface TimelineViewProps {
@@ -15,6 +15,7 @@ export function TimelineView({ startDate, endDate }: TimelineViewProps) {
 
   useEffect(() => {
     loadTimelineData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate])
 
   const loadTimelineData = async () => {
@@ -71,7 +72,7 @@ export function TimelineView({ startDate, endDate }: TimelineViewProps) {
   return (
     <div className="space-y-6">
       <div className="relative">
-        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/20 via-primary/40 to-primary/20"></div>
+        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-linear-to-b from-primary/20 via-primary/40 to-primary/20"></div>
 
         <div className="space-y-6">
           {data.entries.map((entry, index) => (

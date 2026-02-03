@@ -2,14 +2,14 @@ import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import { useState } from 'react'
 import {
-    Dimensions,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 import { ResizeMode, Video } from 'react-native-video'
 
@@ -149,7 +149,7 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
                   {audio.filename.split('/').pop()}
                 </Text>
                 <Text style={[styles.audioDuration, { color: theme.textSecondary }]}>
-                  {audio.size ? `${(audio.size / 1024).toFixed(1)} KB` : ''}
+                  {audio.fileSize ? `${(audio.fileSize / 1024).toFixed(1)} KB` : ''}
                 </Text>
               </View>
               <TouchableOpacity

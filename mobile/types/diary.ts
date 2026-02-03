@@ -1,20 +1,10 @@
 import type { MemoWithResources } from './memo'
-
-export enum MoodKey {
-  Joy = 'joy',
-  Anger = 'anger',
-  Sadness = 'sadness',
-  Calm = 'calm',
-  Anxiety = 'anxiety',
-  Focus = 'focus',
-  Tired = 'tired',
-  Neutral = 'neutral',
-}
+import type { MoodKey } from '@/lib/utils/mood'
 
 export interface Diary {
   date: string
   summary: string
-  moodKey: string
+  moodKey: MoodKey
   moodScore: number
   coverImageId?: string
   createdAt: number

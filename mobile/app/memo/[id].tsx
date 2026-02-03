@@ -1,104 +1,107 @@
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
+import { TagInput } from '@/components/tag/TagInput'
 import { Loading, toast } from '@/components/ui'
-import { memosApi } from '@/lib/api'
+import { MOODS, type MoodKey } from '@/constants/common'
+import { useConnection } from '@/hooks/use-connection'
+import { useErrorHandler } from '@/hooks/use-error-handler'
+import { useArchiveMemo, useCreateDiary, useDeleteMemo, useMemo as useQueryMemo, useUpdateMemo } from '@/lib/query'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
-import { type MemoWithResources } from '@/types/memo'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Archive, ArrowLeft, Trash2 } from 'lucide-react-native'
-import { useCallback, useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useCallback, useState } from 'react'
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { theme } = useThemeStore()
-  const [memo, setMemo] = useState<MemoWithResources | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { canUseNetwork } = useConnection()
+  const handleError = useErrorHandler()
+  const { data: memo, isLoading } = useQueryMemo(id || '')
+  const { mutateAsync: updateMemo, isPending: isUpdating } = useUpdateMemo()
+  const { mutateAsync: archiveMemo, isPending: isArchiving } = useArchiveMemo()
+  const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
+  const { mutateAsync: createDiary, isPending: isCreatingDiary } = useCreateDiary()
+
   const [editing, setEditing] = useState(false)
   const [content, setContent] = useState('')
+  const [tags, setTags] = useState<string[]>([])
+  const [showArchiveModal, setShowArchiveModal] = useState(false)
+  const [selectedMood, setSelectedMood] = useState<MoodKey | null>(null)
 
-  const loadMemo = useCallback(async () => {
-    try {
-      const data = await memosApi.get(id)
-      if (data) {
-        setMemo(data)
-        setContent(data.content)
-      }
-    } catch (error) {
-      console.error('Load memo error:', error)
-      toast.error('错误', '加载备忘录失败')
-      router.back()
-    } finally {
-      setLoading(false)
-    }
-  }, [id])
+  const isPending = isUpdating || isArchiving || isDeleting || isCreatingDiary
 
-  useEffect(() => {
-    if (id) loadMemo()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
-
-  const handleSave = async () => {
-    if (!memo) return
+  const handleSave = useCallback(async () => {
+    if (!memo || !canUseNetwork || isPending) return
 
     try {
-      const updated = await memosApi.update(memo.id, {
-        content: content.trim(),
-        tags: memo.tags,
+      await updateMemo({
+        id: memo.id,
+        data: { content: content.trim(), tags },
       })
-      if (updated) {
-        setMemo(updated)
-        setEditing(false)
-        toast.success('成功', '备忘录已更新')
-      }
+      setEditing(false)
+      toast.success('成功', '已更新')
     } catch (error) {
-      console.error('Update memo error:', error)
+      handleError(error)
       toast.error('错误', '更新失败')
     }
-  }
+  }, [memo, content, tags, canUseNetwork, isPending, updateMemo, handleError])
 
-  const handleArchive = async () => {
-    if (!memo) return
+  const handleArchive = useCallback(async () => {
+    if (!memo || !canUseNetwork || isPending) return
 
     try {
       if (memo.isArchived) {
-        await memosApi.unarchive(memo.id)
+        await archiveMemo(memo.id)
+        toast.success('成功', '已取消归档')
       } else {
-        await memosApi.archive(memo.id)
-      }
-      const updated = await memosApi.get(memo.id)
-      if (updated) {
-        setMemo(updated)
-        toast.success('成功', memo.isArchived ? '备忘录已取消归档' : '备忘录已归档')
+        setShowArchiveModal(true)
+        return
       }
     } catch (error) {
-      console.error('Archive/Unarchive memo error:', error)
+      handleError(error)
       toast.error('错误', '操作失败')
     }
-  }
+  }, [memo, canUseNetwork, isPending, archiveMemo, handleError])
 
-  const handleDelete = () => {
+  const handleArchiveToDiary = useCallback(async () => {
+    if (!memo || !selectedMood || !canUseNetwork) return
+
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      await createDiary({ date: today, data: { moodKey: selectedMood } })
+      await archiveMemo(memo.id)
+      toast.success('成功', '已归档到今日日记')
+      setShowArchiveModal(false)
+      router.back()
+    } catch (error) {
+      handleError(error)
+      toast.error('错误', '归档失败')
+    }
+  }, [memo, selectedMood, canUseNetwork, archiveMemo, createDiary, handleError])
+
+  const handleDelete = useCallback(() => {
     if (!memo) return
 
     toast.show({
       type: 'warning',
       title: '确认删除',
-      message: '确定要删除这条备忘录吗？此操作无法撤销。',
+      message: '确定要删除这条Memo吗？此操作无法撤销。',
       actionLabel: '删除',
       onAction: async () => {
         try {
-          await memosApi.delete(memo.id)
-          toast.success('成功', '备忘录已删除')
+          await deleteMemo(memo.id)
+          toast.success('成功', 'Memo已删除')
           router.back()
         } catch (error) {
-          console.error('Delete memo error:', error)
+          handleError(error)
           toast.error('错误', '删除失败')
         }
       },
     })
-  }
+  }, [memo, deleteMemo, handleError])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <Loading text="加载中..." fullScreen />
@@ -110,7 +113,7 @@ export default function MemoDetailScreen() {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { color: theme.text }]}>备忘录不存在</Text>
+          <Text style={[styles.emptyText, { color: theme.text }]}>Memo不存在</Text>
         </View>
       </View>
     )
@@ -118,14 +121,13 @@ export default function MemoDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={router.back} style={styles.headerButton}>
           <ArrowLeft size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>备忘录详情</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Memo详情</Text>
         {!editing ? (
-          <TouchableOpacity onPress={() => setEditing(true)} style={styles.headerButton}>
+          <TouchableOpacity onPress={() => { setEditing(true); setContent(memo.content); setTags(memo.tags || []); }} style={styles.headerButton}>
             <Text style={[styles.editButtonText, { color: theme.primary }]}>编辑</Text>
           </TouchableOpacity>
         ) : (
@@ -133,29 +135,38 @@ export default function MemoDetailScreen() {
             <TouchableOpacity onPress={() => setEditing(false)} style={styles.headerButton}>
               <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>取消</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
-              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>保存</Text>
+            <TouchableOpacity onPress={handleSave} style={styles.headerButton} disabled={isPending}>
+              <Text style={[styles.cancelButtonText, { color: isPending ? theme.textSecondary : theme.primary }]}>保存</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
-      {/* Content */}
       <ScrollView style={styles.content}>
         {editing ? (
-          <RichTextEditor
-            content={content}
-            onChange={setContent}
-            editable={true}
-            placeholder="编辑你的备忘录内容..."
-            isExpanded={true}
-            onSave={handleSave}
-          />
+          <>
+            <RichTextEditor
+              content={content}
+              onChange={setContent}
+              editable={true}
+              placeholder="编辑你的Memo内容..."
+              isExpanded={true}
+              onSave={handleSave}
+            />
+            <View style={{ padding: 16, paddingBottom: 0 }}>
+              <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>标签</Text>
+              <TagInput
+                tags={tags}
+                onTagsChange={setTags}
+                content={content}
+                placeholder="添加标签..."
+              />
+            </View>
+          </>
         ) : (
           <RichTextEditor content={memo.content} editable={false} onChange={() => {}} />
         )}
 
-        {/* Tags */}
         {memo.tags && memo.tags.length > 0 && (
           <View style={styles.tagsContainer}>
             {memo.tags.map((tag, index) => (
@@ -163,10 +174,7 @@ export default function MemoDetailScreen() {
                 key={index}
                 style={[
                   styles.tag,
-                  {
-                    backgroundColor: theme.surface,
-                    borderColor: theme.border,
-                  },
+                  { backgroundColor: theme.surface, borderColor: theme.border },
                 ]}
               >
                 <Text style={[styles.tagText, { color: theme.textSecondary }]}>#{tag}</Text>
@@ -175,7 +183,6 @@ export default function MemoDetailScreen() {
           </View>
         )}
 
-        {/* Metadata */}
         <View style={styles.metadata}>
           <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
             创建于 {stringUtils.formatDateTime(memo.createdAt)}
@@ -188,24 +195,67 @@ export default function MemoDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Footer Actions */}
       {!editing && (
         <View style={[styles.footer, { borderTopColor: theme.border }]}>
           <TouchableOpacity
             onPress={handleArchive}
             style={[styles.actionButton, { borderColor: theme.border }]}
+            disabled={!canUseNetwork || isPending}
           >
             <Archive size={20} color={theme.text} />
             <Text style={[styles.actionButtonText, { color: theme.text }]}>
               {memo.isArchived ? '取消归档' : '归档'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+          <TouchableOpacity onPress={handleDelete} style={styles.deleteButton} disabled={isPending}>
             <Trash2 size={20} color="#FFFFFF" />
             <Text style={styles.deleteButtonText}>删除</Text>
           </TouchableOpacity>
         </View>
       )}
+
+      <Modal visible={showArchiveModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>归档到日记</Text>
+            <Text style={[styles.modalLabel, { color: theme.textSecondary }]}>选择心情</Text>
+            <View style={styles.moodSelector}>
+              {MOODS.map(mood => (
+                <TouchableOpacity
+                  key={mood.key}
+                  style={[
+                    styles.moodOption,
+                    selectedMood === mood.key && { backgroundColor: theme.primary + '20' },
+                  ]}
+                  onPress={() => setSelectedMood(mood.key)}
+                >
+                  <Text style={styles.moodEmoji}>{mood.emoji}</Text>
+                  <Text>{mood.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.surface }]}
+                onPress={() => setShowArchiveModal(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: theme.text }]}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.primary }]}
+                onPress={handleArchiveToDiary}
+                disabled={!selectedMood || isPending}
+              >
+                {isPending ? (
+                  <Loading size="small" />
+                ) : (
+                  <Text style={styles.modalButtonText}>确认归档</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -254,16 +304,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  input: {
-    margin: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderRadius: 12,
-    minHeight: 200,
-    lineHeight: 24,
-    fontSize: 16,
-    textAlignVertical: 'top',
-  },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -282,6 +322,7 @@ const styles = StyleSheet.create({
   },
   metadata: {
     padding: 16,
+    paddingTop: 0,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.05)',
     marginTop: 16,
@@ -323,6 +364,56 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 15,
     fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  modalContent: {
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  modalLabel: {
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  moodSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-evenly',
+    marginBottom: 20,
+    gap: 'auto',
+  },
+  moodOption: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  moodEmoji: {
+    fontSize: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
     color: '#FFFFFF',
   },
 })

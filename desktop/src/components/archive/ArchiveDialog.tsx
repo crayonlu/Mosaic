@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { MOOD_OPTIONS } from '@/utils/moodEmoji'
+import { MOODS } from '@/utils/mood'
 import { useAI } from '@/hooks/use-ai'
 import { AILoadingIndicator } from '@/components/common/AILoadingIndicator'
 
@@ -161,7 +161,7 @@ export function ArchiveDialog({
                 <SelectValue placeholder="选择今天的心情" />
               </SelectTrigger>
               <SelectContent>
-                {MOOD_OPTIONS.map(mood => (
+                {MOODS.map(mood => (
                   <SelectItem key={mood.key} value={mood.key}>
                     <div className="flex items-center gap-2">
                       <span>{mood.emoji}</span>

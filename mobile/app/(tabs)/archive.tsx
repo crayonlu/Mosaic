@@ -1,155 +1,116 @@
-/**
- * Archive Tab - History & Timeline View
- */
-
-import { CalendarPicker } from '@/components/archive/CalendarPicker'
+import { ArchiveDateFilter } from '@/components/archive/ArchiveDateFilter'
 import { MemoFeed } from '@/components/archive/MemoFeed'
-import { MoodHeatMap } from '@/components/archive/MoodHeatMap'
-import { Select } from '@/components/ui/Select'
-import { TimeRanges, type TimeRangeValue } from '@/constants/common'
+import { MoodSelector } from '@/components/archive/MoodSelector'
+import { toast } from '@/components/ui'
+import { useConnection } from '@/hooks/use-connection'
+import { useErrorHandler } from '@/hooks/use-error-handler'
+import { useCreateDiary, useArchiveMemo, useDeleteMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
+import type { MoodKey } from '@/constants/common'
 import { router } from 'expo-router'
-import { ChevronDown, ChevronUp } from 'lucide-react-native'
 import { useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 
 export default function ArchiveScreen() {
   const { theme } = useThemeStore()
-  const [isHeatMapExpanded, setIsHeatMapExpanded] = useState(true)
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
-  const [timeRange, setTimeRange] = useState<TimeRangeValue>('quarter')
+  const { canUseNetwork } = useConnection()
+  const handleError = useErrorHandler()
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(new Date().toISOString().split('T')[0])
+  const [isArchiveMode, setIsArchiveMode] = useState(false)
+  const [selectedMemoIds, setSelectedMemoIds] = useState<string[]>([])
+  const [showMoodSelector, setShowMoodSelector] = useState(false)
+  const { mutateAsync: createDiary, isPending: isCreatingDiary } = useCreateDiary()
+  const { mutateAsync: archiveMemo, isPending: isArchiving } = useArchiveMemo()
+  const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
 
-  // Handle date selection from calendar
-  const handleDateSelect = (date: string) => {
-    setSelectedDate(date)
-    // Scroll to the memo for this date
-    setTimeout(() => {
-      // Find and scroll to the memo
-      console.log('Scrolling to date:', date)
-    }, 100)
-  }
+  const isPending = isCreatingDiary || isArchiving || isDeleting
 
-  // Handle date click from heat map
-  const handleDateClick = (date: string) => {
-    handleDateSelect(date)
-  }
-
-  // Handle memo press
   const handleMemoPress = (memo: MemoWithResources) => {
-    router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
+    if (!isArchiveMode) {
+      router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
+    }
   }
 
-  // Handle memo archive
-  const handleMemoArchive = (id: string) => {
-    console.log('Archive memo:', id)
-  }
-
-  // Handle memo delete
   const handleMemoDelete = (id: string) => {
-    console.log('Delete memo:', id)
+    deleteMemo(id)
   }
 
-  // Toggle heat map
-  const toggleHeatMap = () => {
-    setIsHeatMapExpanded(!isHeatMapExpanded)
+  const handleSelectionChange = (id: string) => {
+    setSelectedMemoIds(prev =>
+      prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
+    )
   }
 
-  // Handle time range change
-  const handleTimeRangeChange = (range: string) => {
-    setTimeRange(range as TimeRangeValue)
+  const handleArchivePress = () => {
+    if (isArchiveMode) {
+      if (selectedMemoIds.length > 0) {
+        setShowMoodSelector(true)
+      } else {
+        setIsArchiveMode(false)
+        setSelectedMemoIds([])
+      }
+    } else {
+      setIsArchiveMode(true)
+      setSelectedMemoIds([])
+      if (!selectedDate) {
+        const today = new Date().toISOString().split('T')[0]
+        setSelectedDate(today)
+      }
+    }
+  }
+
+  const handleMoodSubmit = async (moodKey: MoodKey, summary: string) => {
+    if (!canUseNetwork || !selectedDate || isPending) {
+      return
+    }
+
+    try {
+      await createDiary({
+        date: selectedDate,
+        data: {
+          summary: summary || `${selectedMemoIds.length} 条Memo`,
+          moodKey,
+          moodScore: 1,
+        },
+      })
+
+      for (const id of selectedMemoIds) {
+        await archiveMemo(id)
+      }
+
+      toast.success('成功', '已归档')
+      setShowMoodSelector(false)
+      setIsArchiveMode(false)
+      setSelectedMemoIds([])
+    } catch (error) {
+      handleError(error)
+      toast.error('错误', '归档失败')
+    }
   }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <ArchiveDateFilter
+        selectedDate={selectedDate}
+        onDateSelect={setSelectedDate}
+        isArchiveMode={isArchiveMode}
+        hasSelection={selectedMemoIds.length > 0}
+        onArchivePress={handleArchivePress}
+      />
       <MemoFeed
         targetDate={selectedDate}
         onMemoPress={handleMemoPress}
-        onMemoArchive={handleMemoArchive}
         onMemoDelete={handleMemoDelete}
-        headerComponent={
-          <>
-            {/* Heat Map Section */}
-            <View
-              style={[
-                styles.section,
-                {
-                  backgroundColor: theme.card,
-                  borderColor: theme.border,
-                },
-              ]}
-            >
-              <TouchableOpacity
-                onPress={toggleHeatMap}
-                style={[
-                  styles.sectionHeader,
-                  {
-                    borderBottomColor: theme.border,
-                  },
-                ]}
-              >
-                <View style={styles.headerLeft}>
-                  <Text style={[styles.sectionTitle, { color: theme.text }]}>情绪热力图</Text>
-                  <Select
-                    options={Object.values(TimeRanges).map(range => ({
-                      label: range.label,
-                      value: range.value,
-                    }))}
-                    value={timeRange}
-                    onValueChange={handleTimeRangeChange}
-                    size="small"
-                  />
-                </View>
-                {isHeatMapExpanded ? (
-                  <ChevronUp size={20} color={theme.textSecondary} strokeWidth={2} />
-                ) : (
-                  <ChevronDown size={20} color={theme.textSecondary} strokeWidth={2} />
-                )}
-              </TouchableOpacity>
-
-              {isHeatMapExpanded && (
-                <View style={styles.sectionContent}>
-                  <MoodHeatMap
-                    onDateClick={handleDateClick}
-                    timeRange={timeRange}
-                    onTimeRangeChange={handleTimeRangeChange}
-                  />
-                </View>
-              )}
-            </View>
-
-            {/* Calendar Picker Section */}
-            <View
-              style={[
-                styles.section,
-                {
-                  backgroundColor: theme.card,
-                  borderColor: theme.border,
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.sectionHeader,
-                  {
-                    borderBottomColor: theme.border,
-                  },
-                ]}
-              >
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>日历选择</Text>
-              </View>
-              <View style={styles.sectionContent}>
-                <CalendarPicker
-                  selectedDate={selectedDate}
-                  onDateSelect={handleDateSelect}
-                  onMonthChange={(year, month) => {
-                    console.log('Month changed:', year, month)
-                  }}
-                />
-              </View>
-            </View>
-          </>
-        }
+        isSelectionMode={isArchiveMode}
+        selectedIds={selectedMemoIds}
+        onSelectionChange={handleSelectionChange}
+      />
+      <MoodSelector
+        visible={showMoodSelector}
+        onClose={() => setShowMoodSelector(false)}
+        onSubmit={handleMoodSubmit}
+        submitting={isPending}
       />
     </View>
   )
@@ -159,32 +120,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-  },
-  section: {
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  sectionContent: {
-    padding: 16,
   },
 })

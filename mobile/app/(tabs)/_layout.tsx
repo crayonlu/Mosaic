@@ -3,20 +3,20 @@
  * Main app navigation with clean glassmorphism style
  */
 
-import { Colors, Tabs as TabItems } from '@/constants/common'
+import { Tabs as TabItems } from '@/constants/common'
 import { useThemeStore } from '@/stores/theme-store'
 import { Tabs } from 'expo-router'
-import { Book, Files, Settings, TestTubes } from 'lucide-react-native'
+import { Book, Calendar, Files, Search, Settings, TestTubes } from 'lucide-react-native'
 
 export default function TabLayout() {
-  const { theme, isDark } = useThemeStore()
+  const { theme } = useThemeStore()
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.primary.dark,
-        tabBarInactiveTintColor: isDark ? Colors.neutral[500] : Colors.neutral[400],
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.textSecondary,
         tabBarStyle: {
           backgroundColor: theme.background,
           height: 54,
@@ -54,9 +54,27 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="diaries"
         options={{
           title: TabItems.items[2].label,
+          tabBarIcon: ({ focused, color }) => (
+            <Calendar size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: TabItems.items[3].label,
+          tabBarIcon: ({ focused, color }) => (
+            <Search size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: TabItems.items[4].label,
           tabBarIcon: ({ focused, color }) => (
             <Settings size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),

@@ -1,20 +1,19 @@
-export { Colors } from './colors'
 export { DarkTheme, LightTheme, type Theme, type ThemeMode } from './theme'
-// App metadata
+
+export { MOODS, MOOD_INTENSITY_LEVELS, type MoodKey } from '@/lib/utils/mood'
+
 export const APP = {
   NAME: 'Mosaic',
   DESCRIPTION: '重新整合破碎的自我 一次一个像素',
   VERSION: '1.0.0',
 } as const
 
-// Screen names for navigation
 export const Screens = {
-  // Tab screens
-  HOME: 'index', // Home/Memos tab
-  ARCHIVE: 'archive', // Archive/History tab
-  SETTINGS: 'settings', // Settings tab
-
-  // Stack screens
+  HOME: 'index',
+  ARCHIVE: 'archive',
+  DIARIES: 'diaries',
+  SEARCH: 'search',
+  SETTINGS: 'settings',
   MEMO_DETAIL: 'memo/[id]',
 } as const
 
@@ -34,6 +33,20 @@ export const Tabs = {
       screen: Screens.ARCHIVE,
       icon: { focused: 'folder-open-filled', unfocused: 'folder-open' },
       label: '归档',
+    },
+    {
+      name: 'Diaries',
+      key: 'diaries',
+      screen: 'diaries',
+      icon: { focused: 'calendar-filled', unfocused: 'calendar' },
+      label: '日记',
+    },
+    {
+      name: 'Search',
+      key: 'search',
+      screen: 'search',
+      icon: { focused: 'magnifying-glass-filled', unfocused: 'magnifying-glass' },
+      label: '搜索',
     },
     {
       name: 'Settings',
@@ -110,28 +123,6 @@ export const TagColors = [
   'amber',
 ] as const
 
-// Mood/Emotion options
-export const Moods = [
-  { value: 'happy', emoji: '😊', label: '开心' },
-  { value: 'calm', emoji: '😌', label: '平静' },
-  { value: 'sad', emoji: '😢', label: '难过' },
-  { value: 'anxious', emoji: '😰', label: '焦虑' },
-  { value: 'excited', emoji: '🤩', label: '兴奋' },
-  { value: 'tired', emoji: '😴', label: '疲惫' },
-  { value: 'angry', emoji: '😠', label: '愤怒' },
-  { value: 'neutral', emoji: '😐', label: '平淡' },
-] as const
-
-export type MoodKey =
-  | 'happy'
-  | 'sad'
-  | 'angry'
-  | 'anxious'
-  | 'calm'
-  | 'excited'
-  | 'tired'
-  | 'neutral'
-
 // Editor formatting options
 export const EditorFormats = {
   BOLD: 'bold',
@@ -171,11 +162,5 @@ export const SearchFilters = {
   MOOD: 'mood',
 } as const
 
-// Time range options for heat map
-export const TimeRanges = {
-  YEAR: { value: 'year', label: '年', months: 12 },
-  HALF_YEAR: { value: 'half', label: '半年', months: 6 },
-  QUARTER: { value: 'quarter', label: '三个月', months: 3 },
-} as const
 
 export type TimeRangeValue = 'year' | 'half' | 'quarter'

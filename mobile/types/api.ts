@@ -66,6 +66,7 @@ export interface ListMemosQuery {
 export interface CreateMemoRequest {
   content: string
   tags?: string[]
+  resourceIds?: string[]
   diaryDate?: string
 }
 
@@ -141,8 +142,8 @@ export interface ConfirmUploadRequest {
 }
 
 export interface StatsQuery {
-  startDate: string
-  endDate: string
+  start_date: string
+  end_date: string
 }
 
 export interface SummaryQuery {

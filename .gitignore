@@ -71,3 +71,4 @@ unused
 .github/prompts/
 
 __tests__
+.design/
