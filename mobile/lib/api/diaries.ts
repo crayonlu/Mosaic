@@ -23,6 +23,10 @@ export const diariesApi = {
     return apiClient.post<DiaryResponse>(`/api/diaries/${date}`, { ...data, date })
   },
 
+  createOrUpdate(date: string, data: Partial<CreateDiaryRequest>): Promise<DiaryResponse> {
+    return apiClient.post<DiaryResponse>(`/api/diaries/${date}`, { ...data, date })
+  },
+
   update(date: string, data: UpdateDiaryRequest): Promise<DiaryResponse> {
     return apiClient.put<DiaryResponse>(`/api/diaries/${date}`, data)
   },

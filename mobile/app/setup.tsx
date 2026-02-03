@@ -118,7 +118,7 @@ export default function SetupScreen() {
                   setPassword(text)
                   handleInputChange()
                 }}
-                secureTextEntry
+                showPasswordToggle
                 editable={!isLoading}
               />
 

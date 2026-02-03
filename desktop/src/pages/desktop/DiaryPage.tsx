@@ -7,7 +7,7 @@ import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import { toast } from '@/hooks/use-toast'
 import type { Diary, PaginatedResponse } from '@/types'
 import { diaryCommands } from '@/utils/callRust'
-import { MOOD_EMOJIS } from '@/utils/moodEmoji'
+import { getMoodEmoji, getMoodLabel } from '@/utils/mood'
 import dayjs from 'dayjs'
 import { BookOpen, Calendar } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -109,8 +109,7 @@ export default function DiaryPage() {
 
               {mostCommonMood && (
                 <Badge variant="outline" className="text-xs">
-                  常见心情: {MOOD_EMOJIS[mostCommonMood]?.emoji}{' '}
-                  {MOOD_EMOJIS[mostCommonMood]?.label}
+                  常见心情: {getMoodEmoji(mostCommonMood)} {getMoodLabel(mostCommonMood)}
                 </Badge>
               )}
             </div>
@@ -169,8 +168,7 @@ export default function DiaryPage() {
                             </div>
                             {diary.moodKey && (
                               <Badge variant="outline" className="text-sm">
-                                {MOOD_EMOJIS[diary.moodKey]?.emoji}{' '}
-                                {MOOD_EMOJIS[diary.moodKey]?.label}
+                                {getMoodEmoji(diary.moodKey)} {getMoodLabel(diary.moodKey)}
                               </Badge>
                             )}
                           </div>

@@ -1,56 +1,110 @@
+import { TagInput } from '@/components/tag/TagInput'
+import { Button, Loading, toast } from '@/components/ui'
+import { useConnection } from '@/hooks/use-connection'
+import { resourcesApi } from '@/lib/api'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
-import { X } from 'lucide-react-native'
+import * as ImagePicker from 'expo-image-picker'
+import { Image, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Button } from '@/components/ui'
 import { RichTextEditor } from './RichTextEditor'
 
 interface FullScreenEditorProps {
   visible: boolean
   initialContent?: string
+  initialTags?: string[]
   placeholder?: string
+  availableTags?: string[]
   onClose: () => void
-  onSubmit: (content: string) => void
+  onSubmit: (content: string, tags: string[], resources: string[]) => void
 }
 
 export function FullScreenEditor({
   visible,
   initialContent = '',
+  initialTags = [],
   placeholder = '记录你的想法...',
+  availableTags = [],
   onClose,
   onSubmit,
 }: FullScreenEditorProps) {
   const { theme } = useThemeStore()
+  const { canUseNetwork } = useConnection()
   const [content, setContent] = useState(initialContent)
+  const [tags, setTags] = useState<string[]>(initialTags)
+  const [resources, setResources] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (visible) {
       setContent(initialContent)
+      setTags(initialTags)
+      setResources([])
     }
-  }, [visible, initialContent])
+  }, [visible, initialContent, initialTags])
 
   const handleSubmit = () => {
     const textContent = stringUtils.extractTextFromHtml(content)
     if (textContent) {
-      onSubmit(content)
+      onSubmit(content, tags, resources)
       setContent('')
+      setTags([])
+      setResources([])
       onClose()
     }
   }
 
   const handleClose = () => {
     setContent('')
+    setTags([])
+    setResources([])
     onClose()
+  }
+
+  const handleImagePick = async () => {
+    if (!canUseNetwork) {
+      toast.error('错误', '无网络连接')
+      return
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    })
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0]
+      setUploading(true)
+      try {
+        const resource = await resourcesApi.upload(
+          {
+            uri: asset.uri,
+            name: asset.fileName || `image_${Date.now()}.jpg`,
+            type: asset.mimeType || 'image/jpeg',
+          },
+          'new'
+        )
+        setResources(prev => [...prev, resource.id])
+        const imageHtml = `<img src="${resource.url}" alt="uploaded image" style="max-width: 100%; border-radius: 8px; margin: 8px 0;" />`
+        setContent(prev => prev + imageHtml)
+      } catch (error) {
+        console.error('Image upload error:', error)
+        toast.error('错误', '图片上传失败')
+      } finally {
+        setUploading(false)
+      }
+    }
   }
 
   return (
@@ -69,14 +123,7 @@ export function FullScreenEditor({
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-          <View
-            style={[
-              styles.header,
-              {
-                borderBottomColor: theme.border,
-              },
-            ]}
-          >
+          <View style={[styles.header]}>
             <TouchableOpacity
               onPress={handleClose}
               style={styles.closeButton}
@@ -85,20 +132,42 @@ export function FullScreenEditor({
               <X size={24} color={theme.text} strokeWidth={2} />
             </TouchableOpacity>
             <Text style={[styles.headerTitle, { color: theme.text }]}>创建MEMO</Text>
-            <View style={styles.closeButton} />
+            <TouchableOpacity
+              onPress={handleImagePick}
+              style={styles.closeButton}
+              disabled={uploading || !canUseNetwork}
+            >
+              {uploading ? (
+                <Loading size="small" />
+              ) : (
+                <Image size={22} color={theme.text} />
+              )}
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.editorContainer}>
-            <RichTextEditor
-              content={content}
-              onChange={setContent}
-              placeholder={placeholder}
-              editable={true}
-              onSave={handleSubmit}
-              isExpanded={true}
-              showCreateButton={false}
-            />
-          </View>
+          <ScrollView style={styles.contentContainer} keyboardShouldPersistTaps="handled">
+            <View style={styles.editorContainer}>
+              <RichTextEditor
+                content={content}
+                onChange={setContent}
+                placeholder={placeholder}
+                editable={true}
+                onSave={handleSubmit}
+                isExpanded={true}
+                showCreateButton={false}
+              />
+            </View>
+
+            <View style={styles.tagContainer}>
+              <TagInput
+                tags={tags}
+                onTagsChange={setTags}
+                content={stringUtils.extractTextFromHtml(content)}
+                suggestions={availableTags}
+                placeholder="添加标签..."
+              />
+            </View>
+          </ScrollView>
         </KeyboardAvoidingView>
 
         <View style={[styles.createButtonContainer, { backgroundColor: theme.background }]}>
@@ -108,7 +177,7 @@ export function FullScreenEditor({
             variant="primary"
             size="large"
             fullWidth={true}
-            disabled={stringUtils.extractTextFromHtml(content).length === 0}
+            disabled={stringUtils.extractTextFromHtml(content).length === 0 || !canUseNetwork}
           />
         </View>
       </SafeAreaView>
@@ -140,8 +209,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  editorContainer: {
+  contentContainer: {
     flex: 1,
+  },
+  editorContainer: {
+    minHeight: 200,
+  },
+  tagContainer: {
+    padding: 16,
   },
   createButtonContainer: {
     paddingVertical: 16,

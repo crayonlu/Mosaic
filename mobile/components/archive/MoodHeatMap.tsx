@@ -1,5 +1,4 @@
 import { Loading } from '@/components/ui'
-import { type TimeRangeValue } from '@/constants/common'
 import { statsApi } from '@/lib/api'
 import { useThemeStore } from '@/stores/theme-store'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -20,20 +19,13 @@ interface HeatMapData {
 
 interface MoodHeatMapProps {
   onDateClick?: (date: string) => void
-  timeRange?: TimeRangeValue
-  onTimeRangeChange?: (range: TimeRangeValue) => void
 }
 
-export function MoodHeatMap({
-  onDateClick,
-  timeRange = 'quarter',
-  onTimeRangeChange,
-}: MoodHeatMapProps) {
+export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
   const { theme } = useThemeStore()
   const [data, setData] = useState<HeatMapData | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Mood legend with all 8 emotions
   const moodLegend = useMemo(
     () => [
       { key: 'joy', label: '愉悦', color: '#FFD93D' },
@@ -54,25 +46,13 @@ export function MoodHeatMap({
 
       const endDate = new Date()
       const startDate = new Date()
-
-      // Get months based on timeRange value
-      let months = 3 // default to quarter
-      if (timeRange === 'year') {
-        months = 12
-      } else if (timeRange === 'half') {
-        months = 6
-      } else if (timeRange === 'quarter') {
-        months = 3
-      }
-
-      startDate.setMonth(startDate.getMonth() - months)
+      startDate.setMonth(startDate.getMonth() - 6)
 
       const startDateStr = startDate.toISOString().split('T')[0]
       const endDateStr = endDate.toISOString().split('T')[0]
-
       const response = await statsApi.getHeatmap({
-        startDate: startDateStr,
-        endDate: endDateStr,
+        start_date: startDateStr,
+        end_date: endDateStr,
       })
 
       const cells: HeatMapCell[] = response.dates.map((date, index) => ({
@@ -92,12 +72,11 @@ export function MoodHeatMap({
     } finally {
       setLoading(false)
     }
-  }, [timeRange, moodLegend, theme.border])
+  }, [moodLegend, theme.border])
 
   useEffect(() => {
     loadHeatMapData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeRange])
+  }, [loadHeatMapData])
 
   // Group cells by weeks
   const weeks = useMemo(() => {

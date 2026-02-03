@@ -31,16 +31,24 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/mosaic-light.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#FFF9F5",
           "dark": {
-            "backgroundColor": "#000000"
+            "image": "./assets/images/mosaic-dark.png",
+            "backgroundColor": "#1A1A2E"
           }
         }
       ],
-      ["./plugins/withNinjaLongPaths.js"]
+      ["./plugins/withNinjaLongPaths.js"],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you upload images."
+        }
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
