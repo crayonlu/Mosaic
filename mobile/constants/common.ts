@@ -1,5 +1,7 @@
 export { DarkTheme, LightTheme, type Theme, type ThemeMode } from './theme'
 
+export { MOODS, MOOD_INTENSITY_LEVELS, type MoodKey } from '@/lib/utils/mood'
+
 export const APP = {
   NAME: 'Mosaic',
   DESCRIPTION: '重新整合破碎的自我 一次一个像素',
@@ -120,48 +122,6 @@ export const TagColors = [
   'rose',
   'amber',
 ] as const
-
-// Mood/Emotion options
-export const Moods = [
-  { value: 'happy', emoji: '😊', label: '开心' },
-  { value: 'calm', emoji: '😌', label: '平静' },
-  { value: 'sad', emoji: '😢', label: '难过' },
-  { value: 'anxious', emoji: '😰', label: '焦虑' },
-  { value: 'excited', emoji: '🤩', label: '兴奋' },
-  { value: 'tired', emoji: '😴', label: '疲惫' },
-  { value: 'angry', emoji: '😠', label: '愤怒' },
-  { value: 'neutral', emoji: '😐', label: '平淡' },
-] as const
-
-export type MoodKey =
-  | 'happy'
-  | 'sad'
-  | 'angry'
-  | 'anxious'
-  | 'calm'
-  | 'excited'
-  | 'tired'
-  | 'neutral'
-
-export interface MoodOption {
-  value: MoodKey
-  emoji: string
-  label: string
-  intensity: number
-}
-
-export const MOODS: MoodOption[] = [
-  { value: 'happy', emoji: '😊', label: '开心', intensity: 1 },
-  { value: 'calm', emoji: '😌', label: '平静', intensity: 1 },
-  { value: 'sad', emoji: '😢', label: '难过', intensity: 1 },
-  { value: 'anxious', emoji: '😰', label: '焦虑', intensity: 1 },
-  { value: 'excited', emoji: '🤩', label: '兴奋', intensity: 1 },
-  { value: 'tired', emoji: '😴', label: '疲惫', intensity: 1 },
-  { value: 'angry', emoji: '😠', label: '愤怒', intensity: 1 },
-  { value: 'neutral', emoji: '😐', label: '平淡', intensity: 1 },
-]
-
-export const MOOD_INTENSITY_LEVELS = 5
 
 // Editor formatting options
 export const EditorFormats = {

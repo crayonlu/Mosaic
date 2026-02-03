@@ -2,7 +2,7 @@ import { Loading } from '@/components/ui'
 import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
-import { Check } from 'lucide-react-native'
+import { Check, FileX } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
@@ -121,7 +121,7 @@ export function MemoFeed({
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <View style={[styles.emptyIcon, { backgroundColor: `${theme.primary}10` }]}>
-        <Text style={{ fontSize: 32 }}>📝</Text>
+        <FileX size={48} color={theme.primary} strokeWidth={1.5} />
       </View>
       <Text style={[styles.emptyTitle, { color: theme.text }]}>
         {targetDate ? '今天还没有记录' : '暂无Memo'}

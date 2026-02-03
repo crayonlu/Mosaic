@@ -1,43 +1,23 @@
 import { Loading } from '@/components/ui'
 import { useDiaries } from '@/lib/query'
+import { getMoodEmoji, getMoodColor } from '@/lib/utils/mood'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { DiaryResponse } from '@/types/api'
-import { FileX } from 'lucide-react-native'
+import { ChevronRight, FileX } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import {
   FlatList,
+  Image,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native'
 
 interface DiaryFeedProps {
   onDiaryPress?: (diary: DiaryResponse) => void
-}
-
-const MOOD_CONFIG: Record<string, { emoji: string; color: string | ((theme: any) => string); label: string }> = {
-  joy: { emoji: 'joy', color: '#FFD93D', label: '愉悦' },
-  anger: { emoji: 'anger', color: '#FF6B6B', label: '愤怒' },
-  sadness: { emoji: 'sadness', color: '#4ECDC4', label: '悲伤' },
-  calm: { emoji: 'calm', color: '#95E1D3', label: '平静' },
-  anxiety: { emoji: 'anxiety', color: '#FFA07A', label: '焦虑' },
-  focus: { emoji: 'focus', color: '#6C5CE7', label: '专注' },
-  tired: { emoji: 'tired', color: '#A8A8A8', label: '疲惫' },
-  neutral: { emoji: 'neutral', color: 'NEUTRAL_COLOR', label: '中性' },
-}
-
-const MOOD_EMOJIS: Record<string, string> = {
-  joy: '开心的',
-  anger: '生气的',
-  sadness: '悲伤的',
-  calm: '平静的',
-  anxiety: '焦虑的',
-  focus: '专注的',
-  tired: '疲惫的',
-  neutral: '平淡的',
 }
 
 export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
@@ -69,62 +49,55 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
     }
   }, [isLoading, hasNextPage, fetchNextPage])
 
-  const getMoodEmoji = (moodKey?: string): string => {
-    if (!moodKey) return '平淡的'
-    return MOOD_EMOJIS[moodKey] || '平淡的'
-  }
-
-  const getMoodColor = (moodKey?: string): string => {
-    if (!moodKey) return theme.border
-    const config = MOOD_CONFIG[moodKey]
-    if (!config) return theme.border
-    const color = config.color
-    if (typeof color === 'string') {
-      if (color === 'NEUTRAL_COLOR') {
-        return theme.border
-      }
-      return color
-    }
-    if (typeof color === 'function') {
-      return color(theme)
-    }
-    return theme.border
-  }
-
   const renderDiaryCard = ({ item }: { item: DiaryResponse; index: number }) => {
     const moodColor = getMoodColor(item.moodKey)
 
     return (
-      <TouchableOpacity
+      <Pressable
         onPress={() => onDiaryPress?.(item)}
-        activeOpacity={0.8}
-        style={[
+        style={({ pressed }) => [
           styles.diaryCard,
           {
             backgroundColor: theme.card,
             borderColor: theme.border,
+            opacity: pressed ? 0.88 : 1,
+            transform: pressed ? [{ scale: 0.96 }] : [],
           },
         ]}
       >
+        {item.coverImageId && (
+          <View style={styles.coverContainer}>
+            <Image
+              source={{ uri: `https://your-api.com/resources/${item.coverImageId}` }}
+              style={styles.coverImage}
+              resizeMode="cover"
+            />
+            <View style={[styles.coverOverlay, { backgroundColor: `${moodColor}10` }]} />
+          </View>
+        )}
+
         <View style={styles.cardHeader}>
+          <View style={[styles.moodBadge, { backgroundColor: `${moodColor}20` }]}>
+            <Text style={styles.moodEmoji}>{getMoodEmoji(item.moodKey)}</Text>
+          </View>
           <Text style={[styles.date, { color: theme.text }]}>
             {stringUtils.formatDate(item.date)}
           </Text>
-          {item.moodKey && (
-            <View style={[styles.moodBadge, { backgroundColor: `${moodColor}20` }]}>
-              <Text style={styles.moodEmoji}>{getMoodEmoji(item.moodKey)}</Text>
-            </View>
-          )}
         </View>
 
-        <Text style={[styles.summary, { color: theme.textSecondary }]} numberOfLines={4}>
-          {item.summary || '暂无内容'}
+        <Text
+          style={[styles.summary, { color: theme.textSecondary }]}
+          numberOfLines={4}
+          ellipsizeMode="tail"
+        >
+          {item.summary || '今天还没有记录...'}
         </Text>
 
         <View style={styles.cardFooter}>
           <Text style={[styles.viewMore, { color: theme.primary }]}>查看详情</Text>
+          <ChevronRight size={14} color={theme.primary} strokeWidth={2} />
         </View>
-      </TouchableOpacity>
+      </Pressable>
     )
   }
 
@@ -133,9 +106,9 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
       <View style={[styles.emptyIcon, { backgroundColor: `${theme.primary}10` }]}>
         <FileX size={48} color={theme.primary} strokeWidth={1.5} />
       </View>
-      <Text style={[styles.emptyTitle, { color: theme.text }]}>No Diaries</Text>
+      <Text style={[styles.emptyTitle, { color: theme.text }]}>暂无日记</Text>
       <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-        Start recording your daily moments
+        开始记录你的每日心情和生活点滴
       </Text>
     </View>
   )
@@ -144,7 +117,7 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
     if (isFetchingNextPage) {
       return (
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: theme.textSecondary }]}>Loading...</Text>
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>加载更多...</Text>
         </View>
       )
     }
@@ -195,16 +168,43 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
 const styles = StyleSheet.create({
   listContent: {
     padding: 16,
-    paddingTop: 0,
+    paddingTop: 8,
   },
   columnWrapper: {
     justifyContent: 'space-between',
+    gap: 12,
   },
   diaryCard: {
-    borderRadius: 12,
+    flex: 1,
+    borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 16,
     padding: 14,
+    marginBottom: 12,
+    // iOS 阴影
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    // Android 阴影
+    elevation: 3,
+  },
+  coverContainer: {
+    position: 'relative',
+    marginBottom: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+    height: 100,
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
+  },
+  coverOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -212,28 +212,36 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
   },
-  date: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
   moodBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   moodEmoji: {
-    fontSize: 14,
+    fontSize: 20,
+  },
+  date: {
+    fontSize: 13,
+    fontWeight: '500',
+    opacity: 0.7,
   },
   summary: {
     fontSize: 13,
-    lineHeight: 18,
+    lineHeight: 20,
     marginBottom: 12,
+    letterSpacing: 0.2,
   },
   cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     marginTop: 'auto',
+    gap: 4,
   },
   viewMore: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
   },
   emptyContainer: {
@@ -259,12 +267,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     opacity: 0.7,
+    paddingHorizontal: 32,
   },
   footer: {
-    paddingVertical: 20,
+    paddingVertical: 24,
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 12,
+    fontSize: 13,
+    opacity: 0.6,
   },
 })
