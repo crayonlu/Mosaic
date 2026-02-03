@@ -1,6 +1,6 @@
 import type { SummaryData, SummaryQuery } from '@/types/stats'
 import { statsCommands } from '@/utils/callRust'
-import { getMoodColor, getMoodLabel } from '@/utils/moodEmoji'
+import { getMoodColor, getMoodLabel } from '@/utils/mood'
 import { Calendar as CalendarIcon, Hash, PieChart } from 'lucide-react'
 import { useEffect, useState } from 'react'
 

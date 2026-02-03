@@ -15,9 +15,10 @@ import {
 import { Slider } from '@/components/ui/slider'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/hooks/use-toast'
-import type { DiaryWithMemos, MoodKey } from '@/types'
+import type { DiaryWithMemos } from '@/types'
+import type { MoodKey } from '@/utils/mood'
 import { diaryCommands } from '@/utils/callRust'
-import { MOOD_OPTIONS } from '@/utils/moodEmoji'
+import { MOODS } from '@/utils/mood'
 import dayjs from 'dayjs'
 import { ArrowLeft, BookOpen, Edit2, Loader2, Save, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -56,6 +57,7 @@ export default function DiaryDetailPage() {
 
   useEffect(() => {
     fetchDiary()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date])
 
   const handleBack = () => {
@@ -134,7 +136,7 @@ export default function DiaryDetailPage() {
   }
 
   const dateDisplay = dayjs(diary.date).format('YYYY年M月D日 dddd')
-  const moodOption = MOOD_OPTIONS.find(m => m.key === diary.moodKey)
+  const moodOption = MOODS.find(m => m.key === diary.moodKey)
 
   return (
     <DeskTopLayout className="relative">
@@ -251,7 +253,7 @@ export default function DiaryDetailPage() {
                           <SelectValue placeholder="选择心情" />
                         </SelectTrigger>
                         <SelectContent>
-                          {MOOD_OPTIONS.map(mood => (
+                          {MOODS.map(mood => (
                             <SelectItem key={mood.key} value={mood.key}>
                               <div className="flex items-center gap-2">
                                 <span>{mood.emoji}</span>

@@ -1,12 +1,12 @@
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
 import { TagInput } from '@/components/tag/TagInput'
 import { Loading, toast } from '@/components/ui'
+import { MOODS, type MoodKey } from '@/constants/common'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
-import { useMemo, useUpdateMemo, useArchiveMemo, useDeleteMemo, useCreateDiary } from '@/lib/query'
+import { useArchiveMemo, useCreateDiary, useDeleteMemo, useMemo as useQueryMemo, useUpdateMemo } from '@/lib/query'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
-import { MOODS, type MoodKey } from '@/constants/common'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Archive, ArrowLeft, Trash2 } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
@@ -17,7 +17,7 @@ export default function MemoDetailScreen() {
   const { theme } = useThemeStore()
   const { canUseNetwork } = useConnection()
   const handleError = useErrorHandler()
-  const { data: memo, isLoading } = useMemo(id || '')
+  const { data: memo, isLoading } = useQueryMemo(id || '')
   const { mutateAsync: updateMemo, isPending: isUpdating } = useUpdateMemo()
   const { mutateAsync: archiveMemo, isPending: isArchiving } = useArchiveMemo()
   const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
@@ -153,7 +153,7 @@ export default function MemoDetailScreen() {
               isExpanded={true}
               onSave={handleSave}
             />
-            <View style={{ padding: 16 }}>
+            <View style={{ padding: 16, paddingBottom: 0 }}>
               <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>标签</Text>
               <TagInput
                 tags={tags}
@@ -222,12 +222,12 @@ export default function MemoDetailScreen() {
             <View style={styles.moodSelector}>
               {MOODS.map(mood => (
                 <TouchableOpacity
-                  key={mood.value}
+                  key={mood.key}
                   style={[
                     styles.moodOption,
-                    selectedMood === mood.value && { backgroundColor: theme.primary + '20' },
+                    selectedMood === mood.key && { backgroundColor: theme.primary + '20' },
                   ]}
-                  onPress={() => setSelectedMood(mood.value)}
+                  onPress={() => setSelectedMood(mood.key)}
                 >
                   <Text style={styles.moodEmoji}>{mood.emoji}</Text>
                   <Text>{mood.label}</Text>
@@ -322,6 +322,7 @@ const styles = StyleSheet.create({
   },
   metadata: {
     padding: 16,
+    paddingTop: 0,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.05)',
     marginTop: 16,

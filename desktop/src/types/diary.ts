@@ -1,15 +1,5 @@
-import { MemoWithResources } from './memo'
-
-export type MoodKey =
-  | 'happy'
-  | 'sad'
-  | 'angry'
-  | 'anxious'
-  | 'calm'
-  | 'excited'
-  | 'tired'
-  | 'neutral'
-  | ''
+import type { MemoWithResources } from './memo'
+import type { MoodKey } from '@/utils/mood'
 
 export interface Diary {
   date: string

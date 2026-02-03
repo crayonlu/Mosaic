@@ -1,11 +1,11 @@
+import { MoodDragBar } from '@/components/diary/MoodDragBar'
 import { MemoCard } from '@/components/memo/MemoCard'
-import { MoodSlider } from '@/components/diary/MoodSlider'
 import { Button, Loading, toast } from '@/components/ui'
+import { MOODS, type MoodKey } from '@/constants/common'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
 import { useDiary, useUpdateDiaryMood } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
-import { MOODS, type MoodKey } from '@/constants/common'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, Calendar } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
@@ -94,12 +94,12 @@ export default function DiaryDetailScreen() {
           <View style={styles.moodSelector}>
             {MOODS.map(mood => (
               <TouchableOpacity
-                key={mood.value}
+                key={mood.key}
                 style={[
                   styles.moodOption,
-                  selectedMood === mood.value && { backgroundColor: theme.primary + '20' },
+                  selectedMood === mood.key && { backgroundColor: theme.primary + '20' },
                 ]}
-                onPress={() => setSelectedMood(mood.value)}
+                onPress={() => setSelectedMood(mood.key)}
                 disabled={!canUseNetwork}
               >
                 <Text style={styles.moodEmoji}>{mood.emoji}</Text>
@@ -108,9 +108,9 @@ export default function DiaryDetailScreen() {
           </View>
           {selectedMood && (
             <View style={styles.intensitySection}>
-              <MoodSlider value={intensity} onChange={setIntensity} disabled={!canUseNetwork} />
+              <MoodDragBar value={intensity} onChange={setIntensity} disabled={!canUseNetwork} />
               <Button
-                title="Save"
+                title="保存"
                 variant="primary"
                 onPress={handleMoodSave}
                 loading={isSavingMood}
