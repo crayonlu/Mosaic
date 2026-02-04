@@ -19,7 +19,7 @@ export default function DiaryDetailScreen() {
   const { data: diary, isLoading } = useDiary(date || '')
   const { mutateAsync: updateMood, isPending: isSavingMood } = useUpdateDiaryMood()
 
-  const [selectedMood, setSelectedMood] = useState<MoodKey | null>(null)
+  const [selectedMood, setSelectedMood] = useState<MoodKey | null>(diary?.moodKey || null)
   const [intensity, setIntensity] = useState(3)
 
   const handleMemoPress = (memoId: string) => {
@@ -52,7 +52,7 @@ export default function DiaryDetailScreen() {
   if (!diary) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
+        <View style={[styles.header, { borderColor: theme.border }]}>
           <TouchableOpacity onPress={router.back} style={styles.backButton}>
             <ArrowLeft size={24} color={theme.text} />
           </TouchableOpacity>
@@ -90,7 +90,7 @@ export default function DiaryDetailScreen() {
         )}
 
         <View style={[styles.moodCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-          <Text style={[styles.moodLabel, { color: theme.textSecondary }]}>Mood</Text>
+          <Text style={[styles.moodLabel, { color: theme.textSecondary }]}>心情</Text>
           <View style={styles.moodSelector}>
             {MOODS.map(mood => (
               <TouchableOpacity

@@ -73,13 +73,6 @@ export function MemoFeed({
     }
   }, [isLoading, hasMore, targetDate, fetchNextPage])
 
-  const handleDelete = useCallback(
-    (id: string) => {
-      onMemoDelete?.(id)
-    },
-    [onMemoDelete]
-  )
-
   const handleSelectionChange = (id: string) => {
     onSelectionChange?.(id)
   }
@@ -107,7 +100,6 @@ export function MemoFeed({
               onMemoPress?.(item)
             }
           }}
-          onDelete={() => handleDelete(item.id)}
         />
       </View>
       {isSelectionMode && (

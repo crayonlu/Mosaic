@@ -1,6 +1,7 @@
 export { Badge } from './Badge'
 export { Button } from './Button'
-export { Dialog } from './Dialog'
+export { Dialog, DialogButton, DialogType } from './Dialog'
 export { Input } from './Input'
 export { Loading } from './Loading'
-export { ToastContainer, toast, useToastStore } from './Toast'
+export { toast, ToastContainer, useToastStore } from './Toast'
+

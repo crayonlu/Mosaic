@@ -1,6 +1,8 @@
-import { Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import type { Theme } from '@/constants/theme'
+import { DarkTheme } from '@/constants/theme'
 import { useThemeStore } from '@/stores/theme-store'
-import { useEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
+import { Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export type DialogType = 'alert' | 'confirm' | 'info' | 'warning' | 'danger'
 
@@ -45,20 +47,35 @@ const TYPE_STYLES = {
 export function Dialog({ visible, type = 'info', title, message, buttons, onClose }: DialogProps) {
   const theme = useThemeStore().theme
   const fadeAnim = useRef(new Animated.Value(0)).current
-  const scaleAnim = useRef(new Animated.Value(0.9)).current
+  const scaleAnim = useRef(new Animated.Value(0.8)).current
 
   useEffect(() => {
     if (visible) {
+      // Fade in and scale up
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 200,
+          duration: 300,
           useNativeDriver: true,
         }),
         Animated.spring(scaleAnim, {
           toValue: 1,
-          damping: 15,
-          stiffness: 200,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start()
+    } else {
+      // Fade out and scale down
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.8,
+          duration: 300,
           useNativeDriver: true,
         }),
       ]).start()
@@ -66,12 +83,12 @@ export function Dialog({ visible, type = 'info', title, message, buttons, onClos
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
 
-  const handleBackdropPress = () => {
+  const handleBackdropPress = useCallback(() => {
     // Only close if not a critical dialog
     if (type !== 'danger') {
       onClose?.()
     }
-  }
+  }, [type, onClose])
 
   const typeStyle = TYPE_STYLES[type]
 
@@ -139,22 +156,22 @@ export function Dialog({ visible, type = 'info', title, message, buttons, onClos
   )
 }
 
-function getButtonStyle(variant: string, theme: any) {
+function getButtonStyle(variant: string, theme: Theme) {
   switch (variant) {
     case 'danger':
       return {
-        backgroundColor: '#EF4444',
+        backgroundColor: DarkTheme.primary,
         borderColor: 'transparent',
       }
     case 'secondary':
       return {
-        backgroundColor: 'rgba(0, 0, 0, 0.08)',
-        borderColor: 'rgba(0, 0, 0, 0.1)',
+        backgroundColor: DarkTheme.surface,
+        borderColor: DarkTheme.border,
       }
     case 'ghost':
       return {
         backgroundColor: 'transparent',
-        borderColor: 'rgba(0, 0, 0, 0.1)',
+        borderColor: DarkTheme.border,
       }
     default: // primary
       return {
@@ -164,7 +181,7 @@ function getButtonStyle(variant: string, theme: any) {
   }
 }
 
-function getButtonTextStyle(variant: string, theme: any) {
+function getButtonTextStyle(variant: string, theme: Theme) {
   switch (variant) {
     case 'secondary':
       return { color: theme.text }
@@ -173,24 +190,6 @@ function getButtonTextStyle(variant: string, theme: any) {
     default:
       return { color: '#FFFFFF' }
   }
-}
-
-export const dialog = {
-  confirm: (options: {
-    title: string
-    message?: string
-    onConfirm: () => void
-    onCancel?: () => void
-    confirmText?: string
-    cancelText?: string
-    type?: DialogType
-  }) => {
-    // This will be used with a simple implementation for now
-    console.log('dialog.confirm called with:', options)
-  },
-  alert: (options: { title: string; message?: string; buttonText?: string }) => {
-    console.log('dialog.alert called with:', options)
-  },
 }
 
 const styles = StyleSheet.create({
@@ -204,52 +203,55 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   container: {
-    width: '85%',
-    maxWidth: 400,
-    borderRadius: 20,
-    padding: 24,
+    width: '80%',
+    maxWidth: 380,
+    borderRadius: 16,
+    padding: 20,
     elevation: 8,
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   icon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   message: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   buttons: {
-    gap: 12,
+    gap: 8,
+    display: 'flex',
+    flexDirection: 'row',
   },
   button: {
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
   },
   buttonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
 })

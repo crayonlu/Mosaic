@@ -36,12 +36,12 @@ export function MoodSelector({ visible, onClose, onSubmit, submitting }: MoodSel
           <View style={styles.moodGrid}>
             {MOODS.map(mood => (
               <TouchableOpacity
-                key={mood.value}
+                key={mood.key}
                 style={[
                   styles.moodItem,
-                  selectedMood === mood.value && { backgroundColor: theme.primary + '20' },
+                  selectedMood === mood.key && { backgroundColor: theme.primary + '20' },
                 ]}
-                onPress={() => setSelectedMood(mood.value)}
+                onPress={() => setSelectedMood(mood.key)}
               >
                 <Text style={styles.moodEmoji}>{mood.emoji}</Text>
                 <Text style={[styles.moodLabel, { color: theme.text }]}>{mood.label}</Text>

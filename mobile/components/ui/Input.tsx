@@ -52,7 +52,6 @@ export function Input({ label, error, showPasswordToggle, style, ...props }: Inp
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
   },
   label: {
     fontSize: 14,

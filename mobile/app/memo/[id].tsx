@@ -207,7 +207,7 @@ export default function MemoDetailScreen() {
               {memo.isArchived ? '取消归档' : '归档'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleDelete} style={styles.deleteButton} disabled={isPending}>
+          <TouchableOpacity onPress={handleDelete} style={[styles.deleteButton, { backgroundColor: theme.primary }]} disabled={isPending}>
             <Trash2 size={20} color="#FFFFFF" />
             <Text style={styles.deleteButtonText}>删除</Text>
           </TouchableOpacity>
@@ -359,7 +359,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#EF4444',
   },
   deleteButtonText: {
     fontSize: 15,
