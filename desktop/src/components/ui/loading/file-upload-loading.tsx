@@ -1,10 +1,11 @@
+import { cn } from '@/lib/utils'
+import { FileImage, FileVideo } from 'lucide-react'
 import { LoadingSpinner } from './loading-spinner'
 import { Progress } from './progress'
-import { cn } from '@/lib/utils'
 
 interface FileUploadItem {
   name: string
-  type: 'image' | 'video' | 'audio'
+  type: 'image' | 'video'
   size?: number
   progress?: number
 }
@@ -17,13 +18,12 @@ interface FileUploadLoadingProps {
 export function FileUploadLoading({ files, className }: FileUploadLoadingProps) {
   if (files.length === 0) return null
 
-  const getFileIcon = (type: 'image' | 'video' | 'audio') => {
+  const getFileIcon = (type: 'image' | 'video') => {
     const icons = {
-      image: '🖼️',
-      video: '🎥',
-      audio: '🎵',
+      image: <FileImage className="h-5 w-5" />,
+      video: <FileVideo className="h-5 w-5" />,
     }
-    return icons[type] || '📄'
+    return icons[type] || <FileImage className="h-5 w-5" />
   }
 
   const formatSize = (bytes?: number) => {
@@ -38,14 +38,14 @@ export function FileUploadLoading({ files, className }: FileUploadLoadingProps) 
       {files.map((file, index) => (
         <div
           key={`${file.name}-${index}`}
-          className="flex items-center gap-2 rounded-lg border bg-card p-2 min-w-0 flex-shrink-0"
+          className="flex items-center gap-2 rounded-lg border bg-card p-2 min-w-0 shrink-0"
         >
           <div className="flex items-center justify-center h-8 w-8 rounded bg-muted">
             <LoadingSpinner size="sm" className="text-muted-foreground" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-lg">{getFileIcon(file.type)}</span>
+              <div className="text-muted-foreground">{getFileIcon(file.type)}</div>
               <span className="text-sm font-medium truncate">{file.name}</span>
             </div>
             <div className="text-xs text-muted-foreground">{formatSize(file.size)} · 上传中...</div>
