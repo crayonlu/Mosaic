@@ -248,7 +248,7 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
                 multiple
                 className="hidden"
                 onChange={handleFileUpload}
-                accept="image/*,video/*,audio/*,.jpg,.jpeg,.png,.webp,.gif,.mp4,.mov,.mp3,.wav,.m4a,.aac,.webm"
+                accept="image/*,video/*,.jpg,.jpeg,.png,.webp,.gif,.mp4,.mov,.webm"
               />
               <Tooltip>
                 <TooltipTrigger asChild>

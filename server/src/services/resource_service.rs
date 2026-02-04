@@ -64,7 +64,7 @@ impl ResourceService {
         .bind(resource_id)
         .bind(memo_id)
         .bind(&req.filename)
-        .bind("image")
+        .bind(if req.mime_type.starts_with("video/") { "video" } else { "image" })
         .bind(&req.mime_type)
         .bind(req.file_size)
         .bind(match self.config.storage_type {
@@ -311,7 +311,7 @@ impl ResourceService {
         .bind(resource_id)
         .bind(memo_id)
         .bind(&req.filename)
-        .bind("image")
+        .bind(if req.mime_type.starts_with("video/") { "video" } else { "image" })
         .bind(&req.mime_type)
         .bind(req.file_size)
         .bind("r2")

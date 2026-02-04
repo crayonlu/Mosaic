@@ -24,9 +24,9 @@ pub async fn upload_files(
             .map(|m| m.mime_type().to_string())
             .unwrap_or_else(|| "application/octet-stream".to_string());
 
-        if !mime_type.starts_with("image/") {
+        if !mime_type.starts_with("image/") && !mime_type.starts_with("video/") {
             return Err(
-                AppError::UploadError("Only image files are supported".to_string()).to_string(),
+                AppError::UploadError("Only image and video files are supported".to_string()).to_string(),
             );
         }
 
