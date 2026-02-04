@@ -33,7 +33,6 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
   // Separate resources by type
   const images = memo.resources.filter(r => r.resourceType === 'image')
   const videos = memo.resources.filter(r => r.resourceType === 'video')
-  const audios = memo.resources.filter(r => r.resourceType === 'audio')
 
   // Handle image press
   const handleImagePress = (index: number) => {
@@ -125,39 +124,6 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
                 controls={true}
                 paused={true}
               />
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Audio */}
-      {audios.length > 0 && (
-        <View style={styles.section}>
-          {audios.map(audio => (
-            <View
-              key={audio.id}
-              style={[
-                styles.audioContainer,
-                { borderColor: theme.border, backgroundColor: theme.card },
-              ]}
-            >
-              <View style={styles.audioIcon}>
-                <Text style={[styles.audioIconText, { color: theme.primary }]}>🎤</Text>
-              </View>
-              <View style={styles.audioInfo}>
-                <Text style={[styles.audioName, { color: theme.text }]}>
-                  {audio.filename.split('/').pop()}
-                </Text>
-                <Text style={[styles.audioDuration, { color: theme.textSecondary }]}>
-                  {audio.fileSize ? `${(audio.fileSize / 1024).toFixed(1)} KB` : ''}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.audioPlayButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={[styles.audioPlayText, { color: theme.primary }]}>▶</Text>
-              </TouchableOpacity>
             </View>
           ))}
         </View>
@@ -304,47 +270,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
     borderRadius: 8,
-  },
-  audioContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 8,
-  },
-  audioIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  audioIconText: {
-    fontSize: 20,
-  },
-  audioInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  audioName: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  audioDuration: {
-    fontSize: 12,
-  },
-  audioPlayButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  audioPlayText: {
-    fontSize: 16,
   },
   previewContainer: {
     flex: 1,

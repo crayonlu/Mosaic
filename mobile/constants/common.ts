@@ -1,6 +1,6 @@
 export { DarkTheme, LightTheme, type Theme, type ThemeMode } from './theme'
 
-export { MOODS, MOOD_INTENSITY_LEVELS, type MoodKey } from '@/lib/utils/mood'
+export { MOOD_INTENSITY_LEVELS, MOODS, type MoodKey } from '@/lib/utils/mood'
 
 export const APP = {
   NAME: 'Mosaic',
@@ -76,7 +76,6 @@ export const Defaults = {
 export const FileTypes = {
   IMAGES: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'],
   VIDEOS: ['mp4', 'mov', 'avi', 'webm'],
-  AUDIO: ['mp3', 'wav', 'm4a', 'aac'],
   MAX_SIZE_IMAGE: 10 * 1024 * 1024, // 10MB
   MAX_SIZE_VIDEO: 100 * 1024 * 1024, // 100MB
 } as const
@@ -141,9 +140,6 @@ export const EditorFormats = {
 export const ResourceTypes = {
   IMAGE: 'image',
   VIDEO: 'video',
-  AUDIO: 'audio',
-  FILE: 'file',
-  LINK: 'link',
 } as const
 
 // Memo view modes
