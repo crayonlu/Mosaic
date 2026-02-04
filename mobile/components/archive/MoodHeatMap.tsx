@@ -1,6 +1,7 @@
 import { Loading } from '@/components/ui'
 import { statsApi } from '@/lib/api'
 import { useThemeStore } from '@/stores/theme-store'
+import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -9,6 +10,7 @@ interface HeatMapCell {
   color: string
   moodKey?: string
   count?: number
+  isToday?: boolean
 }
 
 interface HeatMapData {
@@ -55,11 +57,41 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
         end_date: endDateStr,
       })
 
-      const cells: HeatMapCell[] = response.dates.map((date, index) => ({
-        date,
-        color: response.counts[index] > 0 ? moodLegend[0].color : theme.border,
-        count: response.counts[index],
-      }))
+      // Build a map of date to count from API response
+      const dateCountMap = new Map<string, number>()
+      response.dates.forEach((date, index) => {
+        dateCountMap.set(date, response.counts[index])
+      })
+
+      // Build complete cells array for each day in the range
+      const cells: HeatMapCell[] = []
+      const start = dayjs(startDateStr)
+      const end = dayjs(endDateStr)
+      const today = dayjs().format('YYYY-MM-DD')
+
+      let current = start
+      while (current.isBefore(end) || current.isSame(end, 'day')) {
+        const dateStr = current.format('YYYY-MM-DD')
+        const count = dateCountMap.get(dateStr) || 0
+
+        // Calculate color intensity based on count
+        let color = theme.border // default empty color
+        if (count > 0) {
+          // Generate color based on count (using primary color with different opacities)
+          const intensity = Math.min(count / 5, 1) // max at 5 records
+          const alpha = 0.2 + intensity * 0.6 // range from 0.2 to 0.8
+          color = `${moodLegend[0].color}` // Using first mood color with alpha
+        }
+
+        cells.push({
+          date: dateStr,
+          count,
+          color,
+          isToday: dateStr === today,
+        })
+
+        current = current.add(1, 'day')
+      }
 
       setData({
         startDate: startDateStr,
@@ -131,14 +163,14 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: 'transparent' }]}>
+      <View style={[styles.container, { backgroundColor: 'transparent', borderColor: theme.border }]}>
         <Loading text="加载中..." />
       </View>
     )
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.surface }]}>
+    <View style={[styles.container, { backgroundColor: theme.surface, borderColor: theme.border }]}>
       {/* Heat map grid */}
       <ScrollView
         horizontal
@@ -193,6 +225,8 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   header: {
     flexDirection: 'row',

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { X } from 'lucide-react-native'
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -180,8 +181,8 @@ function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => vo
           )}
         </View>
       </View>
-      <TouchableOpacity onPress={onHide} style={styles.closeButton}>
-        <Text style={styles.closeText}>✕</Text>
+      <TouchableOpacity onPress={onHide} style={[styles.closeButton, { backgroundColor: getBackgroundColor() }]}>
+        <X color="#FFFFFF" size={14} />
       </TouchableOpacity>
       {toast.actionLabel && toast.onAction && (
         <TouchableOpacity
@@ -242,15 +243,16 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     elevation: 4,
     marginVertical: 6,
-    maxWidth: 160,
+    maxWidth: 240,
     minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
+    position: 'relative',
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    flexShrink: 1,
     gap: 12,
   },
   icon: {
@@ -262,6 +264,7 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
+    minWidth: 120,
   },
   title: {
     fontSize: 14,
@@ -275,11 +278,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeButton: {
-    width: 28,
-    height: 28,
+    width: 20,
+    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    borderRadius: 10,
   },
   closeText: {
     fontSize: 14,
@@ -290,7 +297,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 4,
-    borderWidth: 1,
     alignItems: 'center',
     marginLeft: 8,
   },

@@ -1,14 +1,15 @@
-import { StyleSheet, Text, View } from 'react-native'
 import { useThemeStore } from '@/stores/theme-store'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export interface BadgeProps {
   text: string
   variant?: 'solid' | 'outline' | 'soft'
   size?: 'small' | 'medium'
   style?: any
+  onPress?: () => void
 }
 
-export function Badge({ text, variant = 'outline', size = 'medium', style }: BadgeProps) {
+export function Badge({ text, variant = 'outline', size = 'medium', style, onPress }: BadgeProps) {
   const { theme } = useThemeStore()
 
   const getBackgroundColor = () => {
@@ -54,6 +55,43 @@ export function Badge({ text, variant = 'outline', size = 'medium', style }: Bad
     return size === 'small' ? 11 : 12
   }
 
+  const badgeContent = (
+    <Text
+      style={[
+        styles.text,
+        {
+          color: getTextColor(),
+          fontSize: getFontSize(),
+        },
+      ]}
+      numberOfLines={1}
+    >
+      {text}
+    </Text>
+  )
+
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        style={[
+          styles.badge,
+          {
+            backgroundColor: getBackgroundColor(),
+            borderColor: getBorderColor(),
+            borderWidth: variant === 'outline' ? 1 : 0,
+            paddingVertical: getPaddingVertical(),
+            paddingHorizontal: getPaddingHorizontal(),
+          },
+          style,
+        ]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        {badgeContent}
+      </TouchableOpacity>
+    )
+  }
+
   return (
     <View
       style={[
@@ -68,18 +106,7 @@ export function Badge({ text, variant = 'outline', size = 'medium', style }: Bad
         style,
       ]}
     >
-      <Text
-        style={[
-          styles.text,
-          {
-            color: getTextColor(),
-            fontSize: getFontSize(),
-          },
-        ]}
-        numberOfLines={1}
-      >
-        {text}
-      </Text>
+      {badgeContent}
     </View>
   )
 }

@@ -106,7 +106,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   heatMapSection: {
-    marginBottom: 16,
   },
   sectionHeader: {
     paddingVertical: 12,

@@ -1,14 +1,12 @@
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
-import { Badge, Button } from '@/components/ui'
-import { useUpdateMemo, useArchiveMemo, useDeleteMemo } from '@/lib/query'
-import { stringUtils } from '@/lib/utils/string'
+import { Badge, Dialog, DialogButton } from '@/components/ui'
+import { useArchiveMemo, useDeleteMemo, useUpdateMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { ArrowLeft, Check, Plus } from 'lucide-react-native'
+import { ArrowLeft, Check } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Alert,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -42,6 +40,12 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
+  // Dialog state
+  const [showDialog, setShowDialog] = useState(false)
+  const [dialogTitle, setDialogTitle] = useState('')
+  const [dialogMessage, setDialogMessage] = useState('')
+  const [dialogButtons, setDialogButtons] = useState<DialogButton[]>([])
+
   const isPending = isUpdating || isArchiving || isDeleting
 
   useEffect(() => {
@@ -63,6 +67,17 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
     }
   }, [content, tags, diaryDate, memo])
 
+  const showCustomDialog = useCallback((title: string, message: string, buttons: DialogButton[]) => {
+    setDialogTitle(title)
+    setDialogMessage(message)
+    setDialogButtons(buttons)
+    setShowDialog(true)
+  }, [])
+
+  const handleCloseDialog = useCallback(() => {
+    setShowDialog(false)
+  }, [])
+
   const handleSave = useCallback(async () => {
     if (!memo || !hasChanges || isPending) return
 
@@ -78,8 +93,15 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
       onClose()
     } catch (error) {
       console.error('Failed to update memo:', error)
-      Alert.alert('错误', '更新Memo失败')
+      showCustomDialog('错误', '更新Memo失败', [
+        {
+          label: '确定',
+          onPress: handleCloseDialog,
+          variant: 'primary',
+        },
+      ])
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memo, content, tags, hasChanges, isPending, updateMemo, onClose])
 
   const handleArchive = useCallback(async () => {
@@ -94,18 +116,28 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
       onClose()
     } catch (error) {
       console.error('Failed to archive memo:', error)
-      Alert.alert('错误', memo.isArchived ? '取消归档失败' : '归档失败')
+      showCustomDialog('错误', memo.isArchived ? '取消归档失败' : '归档失败', [
+        {
+          label: '确定',
+          onPress: handleCloseDialog,
+          variant: 'primary',
+        },
+      ])
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memo, isPending, archiveMemo, onClose])
 
   const handleDelete = useCallback(() => {
     if (!memo) return
 
-    Alert.alert('删除Memo', '确定要删除这条Memo吗？删除后无法恢复。', [
-      { text: '取消', style: 'cancel' },
+    showCustomDialog('删除Memo', '确定要删除这条Memo吗？删除后无法恢复。', [
       {
-        text: '删除',
-        style: 'destructive',
+        label: '取消',
+        onPress: handleCloseDialog,
+        variant: 'secondary',
+      },
+      {
+        label: '删除',
         onPress: async () => {
           try {
             await deleteMemo(memo.id)
@@ -113,13 +145,21 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
             onClose()
           } catch (error) {
             console.error('Failed to delete memo:', error)
-            Alert.alert('错误', '删除失败')
+            showCustomDialog('错误', '删除失败', [
+              {
+                label: '确定',
+                onPress: handleCloseDialog,
+                variant: 'primary',
+              },
+            ])
           }
         },
+        variant: 'danger',
       },
     ])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memo, isPending, deleteMemo, onDelete, onClose])
-
+  
   const handleAddTag = useCallback(() => {
     const trimmedTag = tagInput.trim()
     if (trimmedTag && !tags.includes(trimmedTag)) {
@@ -130,9 +170,23 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
 
   const handleRemoveTag = useCallback(
     (tagToRemove: string) => {
-      setTags(tags.filter(tag => tag !== tagToRemove))
+      showCustomDialog('删除标签', `确定要删除标签 "${tagToRemove}" 吗？`, [
+        {
+          label: '取消',
+          onPress: () => setShowDialog(false),
+          variant: 'secondary',
+        },
+        {
+          label: '删除',
+          onPress: () => {
+            setShowDialog(false)
+            setTags(tags.filter(tag => tag !== tagToRemove))
+          },
+          variant: 'danger',
+        },
+      ])
     },
-    [tags]
+    [tags, showCustomDialog]
   )
 
   const handleDateChange = useCallback((event: any, selectedDate?: Date) => {
@@ -144,17 +198,25 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
 
   const handleClose = useCallback(() => {
     if (hasChanges) {
-      Alert.alert('未保存的更改', '您有未保存的更改，确定要关闭吗？', [
-        { text: '继续编辑', style: 'cancel' },
+      showCustomDialog('未保存的更改', '您有未保存的更改，确定要关闭吗？', [
         {
-          text: '放弃更改',
-          style: 'destructive',
-          onPress: onClose,
+          label: '继续编辑',
+          onPress: handleCloseDialog,
+          variant: 'secondary',
+        },
+        {
+          label: '放弃更改',
+          onPress: () => {
+            handleCloseDialog()
+            onClose()
+          },
+          variant: 'danger',
         },
       ])
     } else {
       onClose()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasChanges, onClose])
 
   if (!memo) {
@@ -199,30 +261,36 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               disabled={!hasChanges || isPending}
             >
-              <Check
-                size={24}
-                color={hasChanges && !isPending ? theme.primary : theme.textSecondary}
-                strokeWidth={2}
-              />
+              <Check size={24} color={theme.primary} strokeWidth={2} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.scrollView}>
-            <View style={styles.tagsSection}>
-              <View style={styles.tagsRow}>
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            <View style={styles.content}>
+              <RichTextEditor
+                content={content}
+                onChange={setContent}
+                placeholder="输入Memo内容..."
+                editable={!isPending}
+              />
+            </View>
+
+            <View style={[styles.section, { marginTop: 16 }]}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>标签</Text>
+              <View style={styles.tagContainer}>
                 {tags.map(tag => (
-                  <TouchableOpacity
+                  <Badge
                     key={tag}
+                    text={tag}
+                    variant="outline"
+                    size="small"
                     onPress={() => handleRemoveTag(tag)}
-                    style={styles.tagContainer}
-                  >
-                    <Badge text={tag} variant="solid" />
-                  </TouchableOpacity>
+                  />
                 ))}
               </View>
-              <View style={styles.tagInputRow}>
+              <View style={styles.addTagContainer}>
                 <TextInput
-                  style={[styles.tagInput, { color: theme.text, borderColor: theme.border }]}
+                  style={[styles.addTagInput, { color: theme.text, borderColor: theme.border }]}
                   value={tagInput}
                   onChangeText={setTagInput}
                   placeholder="添加标签..."
@@ -230,121 +298,92 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
                   onSubmitEditing={handleAddTag}
                   returnKeyType="done"
                 />
-                <TouchableOpacity
-                  onPress={handleAddTag}
-                  style={[styles.addTagButton, { backgroundColor: theme.primary }]}
-                  disabled={!tagInput.trim()}
-                >
-                  <Plus size={18} color="#fff" strokeWidth={2} />
-                </TouchableOpacity>
               </View>
             </View>
 
-            {diaryDate && (
-              <View style={styles.dateSection}>
-                <Text style={[styles.dateLabel, { color: theme.textSecondary }]}>
-                  📅 日记日期: {stringUtils.formatDate(diaryDate.toISOString().split('T')[0] || '')}
+            <View style={[styles.section, { marginTop: 16 }]}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>日期</Text>
+              <TouchableOpacity
+                style={[styles.datePicker, { borderColor: theme.border }]}
+                onPress={() => setShowDatePicker(true)}
+                disabled={isPending}
+              >
+                <Text style={[styles.dateText, { color: theme.text }]}>
+                  {diaryDate
+                    ? diaryDate.toLocaleDateString('zh-CN', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })
+                    : '未设置'}
                 </Text>
-              </View>
-            )}
-
-            <View style={styles.contentSection}>
-              <RichTextEditor
-                content={content}
-                onChange={setContent}
-                placeholder="编辑内容..."
-                editable={true}
-                isExpanded={true}
-              />
-            </View>
-
-            {memo.resources.length > 0 && (
-              <View style={styles.resourcesSection}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                  附件 ({memo.resources.length})
-                </Text>
-
-                {imageResources.length > 0 && (
-                  <View style={styles.imagesGrid}>
-                    {imageResources.map(resource => (
-                      <Image
-                        key={resource.id}
-                        source={{ uri: `file://${resource.filename}` }}
-                        style={styles.resourceImage}
-                        resizeMode="cover"
-                      />
-                    ))}
-                  </View>
-                )}
-
-                {otherResources.length > 0 && (
-                  <View style={styles.otherResources}>
-                    {otherResources.map(resource => (
-                      <View
-                        key={resource.id}
-                        style={[
-                          styles.otherResourceItem,
-                          { backgroundColor: theme.card, borderColor: theme.border },
-                        ]}
-                      >
-                        <Text style={[styles.otherResourceName, { color: theme.text }]}>
-                          {resource.filename}
-                        </Text>
-                        <Text style={[styles.otherResourceSize, { color: theme.textSecondary }]}>
-                          {stringUtils.formatFileSize(resource.fileSize)}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
-
-            <View style={styles.timestampSection}>
-              <Text style={[styles.timestampText, { color: theme.textSecondary }]}>
-                创建于 {stringUtils.formatDateTime(memo.createdAt)}
-              </Text>
-              {memo.updatedAt > memo.createdAt && (
-                <Text style={[styles.timestampText, { color: theme.textSecondary }]}>
-                  更新于 {stringUtils.formatDateTime(memo.updatedAt)}
-                </Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={diaryDate || new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                />
               )}
             </View>
+
+            {imageResources.length > 0 && (
+              <View style={[styles.section, { marginTop: 16 }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>图片</Text>
+                <View style={styles.imageGallery}>
+                  {imageResources.map(resource => (
+                    <Image
+                      key={resource.id}
+                      source={{ uri: resource.url }}
+                      style={styles.image}
+                      resizeMode="cover"
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {otherResources.length > 0 && (
+              <View style={[styles.section, { marginTop: 16 }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>附件</Text>
+                <View style={styles.resourceList}>
+                  {otherResources.map(resource => (
+                    <TouchableOpacity
+                      key={resource.id}
+                      style={[styles.resourceItem, { borderColor: theme.border }]}
+                    >
+                      <Text style={[styles.resourceName, { color: theme.text }]}>
+                        {resource.filename}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
           </ScrollView>
+
+          <View style={[styles.footer, { borderTopColor: theme.border }]}>
+            <TouchableOpacity
+              style={[styles.footerButton, styles.footerButtonDanger]}
+              onPress={memo.isArchived ? handleDelete : handleArchive}
+              disabled={isPending}
+            >
+              <Text style={[styles.footerButtonText, { color: '#EF4444' }]}>
+                {memo.isArchived ? '删除' : '归档'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </KeyboardAvoidingView>
 
-        <View
-          style={[
-            styles.footer,
-            { borderTopColor: theme.border, backgroundColor: theme.background },
-          ]}
-        >
-          <Button
-            title={memo.isArchived ? '取消归档' : '归档'}
-            onPress={handleArchive}
-            variant="secondary"
-            size="medium"
-            style={styles.footerButton}
-            disabled={isPending}
-          />
-          <Button
-            title="删除"
-            onPress={handleDelete}
-            variant="danger"
-            size="medium"
-            style={styles.footerButton}
-            disabled={isPending}
-          />
-        </View>
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={diaryDate || new Date()}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-          />
-        )}
+        <Dialog
+          visible={showDialog}
+          type="confirm"
+          title={dialogTitle}
+          message={dialogMessage}
+          buttons={dialogButtons}
+          onClose={handleCloseDialog}
+        />
       </SafeAreaView>
     </Modal>
   )
@@ -361,126 +400,111 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    padding: 16,
     borderBottomWidth: 1,
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 8,
   },
   headerButtonDisabled: {
-    opacity: 0.3,
+    opacity: 0.5,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
   scrollView: {
     flex: 1,
   },
-  tagsSection: {
+  content: {
+    padding: 16,
+  },
+  section: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  tagContainer: {
-    marginRight: -8,
-  },
-  tagInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  tagInput: {
-    flex: 1,
-    height: 36,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 14,
-  },
-  addTagButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateSection: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-  dateLabel: {
-    fontSize: 12,
-  },
-  contentSection: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  resourcesSection: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: 8,
+    textTransform: 'uppercase',
   },
-  imagesGrid: {
+  tagContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  resourceImage: {
-    width: '48%',
-    aspectRatio: 1,
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  tagText: {
+    fontSize: 13,
+  },
+  removeTagButton: {
+    padding: 2,
+  },
+  addTagContainer: {
+    marginTop: 8,
+  },
+  addTagInput: {
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    fontSize: 14,
+  },
+  datePicker: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  dateText: {
+    fontSize: 14,
+  },
+  imageGallery: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  image: {
+    width: 100,
+    height: 100,
     borderRadius: 8,
   },
-  otherResources: {
-    marginTop: 12,
+  resourceList: {
+    marginTop: 8,
   },
-  otherResourceItem: {
+  resourceItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  otherResourceName: {
+  resourceName: {
     fontSize: 14,
     flex: 1,
   },
-  otherResourceSize: {
-    fontSize: 12,
-    marginLeft: 8,
-  },
-  timestampSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 24,
-  },
-  timestampText: {
-    fontSize: 12,
-    opacity: 0.7,
-  },
   footer: {
     flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    padding: 16,
     borderTopWidth: 1,
   },
   footerButton: {
-    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  footerButtonDanger: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+  },
+  footerButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 })

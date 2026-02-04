@@ -180,13 +180,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
     marginBottom: 12,
-    // iOS 阴影
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    // Android 阴影
-    elevation: 3,
   },
   coverContainer: {
     position: 'relative',
