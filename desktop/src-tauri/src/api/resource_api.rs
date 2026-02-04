@@ -55,9 +55,9 @@ impl ResourceApi {
         data: Vec<u8>,
         mime_type: String,
     ) -> AppResult<serde_json::Value> {
-        if !mime_type.starts_with("image/") {
+        if !mime_type.starts_with("image/") && !mime_type.starts_with("video/") {
             return Err(crate::error::AppError::UploadError(
-                "Only image uploads are supported".to_string(),
+                "Only image and video uploads are supported".to_string(),
             ));
         }
 
@@ -117,9 +117,9 @@ impl ResourceApi {
         data: Vec<u8>,
         mime_type: String,
     ) -> AppResult<ResourceResponse> {
-        if !mime_type.starts_with("image/") {
+        if !mime_type.starts_with("image/") && !mime_type.starts_with("video/") {
             return Err(AppError::UploadError(
-                "Only image uploads are supported".to_string(),
+                "Only image and video uploads are supported".to_string(),
             ));
         }
 
