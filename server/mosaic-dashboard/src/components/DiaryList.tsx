@@ -23,7 +23,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { apiClient } from '../lib/api-client'
 import type { Diary } from '../types/api'
-import { moodLabels, moodColors, type MoodKey } from '../types/api'
+import { moodColors, moodLabels, type MoodKey } from '../types/api'
 
 export function DiaryList() {
   const [diaries, setDiaries] = useState<Diary[]>([])
@@ -115,8 +115,7 @@ export function DiaryList() {
                     >
                       心情: {moodLabels[(diary.moodKey as MoodKey) || 'neutral']}
                     </Badge>
-                    <Badge variant="secondary">评分: {diary.moodScore || 0}/100</Badge>
-                    <Badge variant="outline">{diary.memoCount} 条 memo</Badge>
+                    <Badge variant="secondary">评分: {diary.moodScore || 0}/10</Badge>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -151,7 +150,7 @@ export function DiaryList() {
               >
                 心情: {moodLabels[(viewingDiary?.moodKey as MoodKey) || 'neutral']}
               </Badge>
-              <Badge variant="secondary">评分: {viewingDiary?.moodScore || 0}/100</Badge>
+              <Badge variant="secondary">评分: {viewingDiary?.moodScore || 0}/10</Badge>
             </div>
             <div className="p-4 bg-stone-50 dark:bg-stone-900 rounded-lg">
               <p className="whitespace-pre-wrap">{viewingDiary?.summary || '无摘要'}</p>
@@ -206,8 +205,8 @@ export function DiaryList() {
               <Slider
                 value={[editForm.moodScore]}
                 onValueChange={([value]) => setEditForm({ ...editForm, moodScore: value })}
-                min={0}
-                max={100}
+                min={1}
+                max={10}
                 step={1}
               />
             </div>

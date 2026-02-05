@@ -92,12 +92,12 @@ export function MoodHeatMap({
     }
 
     const moodLabels: Record<string, string> = {
-      happy: '愉悦',
-      angry: '愤怒',
-      sad: '悲伤',
+      joy: '愉悦',
+      anger: '愤怒',
+      sadness: '悲伤',
       calm: '平静',
-      anxious: '焦虑',
-      excited: '兴奋',
+      anxiety: '焦虑',
+      focus: '专注',
       tired: '疲惫',
       neutral: '中性',
     }

@@ -79,6 +79,7 @@ pub struct MemoListQuery {
     pub page_size: Option<u32>,
     pub archived: Option<bool>,
     pub diary_date: Option<chrono::NaiveDate>,
+    pub search: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

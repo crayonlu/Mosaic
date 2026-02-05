@@ -3,17 +3,17 @@ import LightMosaicIcon from '@/assets/mosaic-light.svg'
 import { SidebarHeatMap } from '@/components/desktop/SidebarHeatMap'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarGroupLabel,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    SidebarRail,
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
 } from '@/components/ui/sidebar'
 import { useTheme } from '@/hooks/use-theme'
 import { useStatsStore } from '@/stores/stats-store'

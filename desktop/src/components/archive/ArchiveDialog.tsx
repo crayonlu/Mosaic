@@ -1,11 +1,7 @@
-import { useState } from 'react'
-import dayjs from 'dayjs'
-import { Archive, Loader2, Sparkles } from 'lucide-react'
+import { AILoadingIndicator } from '@/components/common/AILoadingIndicator'
 import { Button } from '@/components/ui/button'
-import { StandardDialog } from '@/components/ui/standard-dialog'
-import { DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -14,9 +10,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { MOODS } from '@/utils/mood'
+import { StandardDialog } from '@/components/ui/standard-dialog'
+import { Textarea } from '@/components/ui/textarea'
 import { useAI } from '@/hooks/use-ai'
-import { AILoadingIndicator } from '@/components/common/AILoadingIndicator'
+import { MOODS } from '@/utils/mood'
+import dayjs from 'dayjs'
+import { Archive, Loader2, Sparkles } from 'lucide-react'
+import { useState } from 'react'
 
 interface ArchiveDialogProps {
   open: boolean

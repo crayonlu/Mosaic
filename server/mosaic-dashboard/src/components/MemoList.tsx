@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -12,11 +12,12 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Archive, Edit2, Plus, Search, Trash2 } from 'lucide-react'
+import { Edit2, Plus, Search, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { apiClient } from '../lib/api-client'
 import type { CreateMemoRequest, Memo } from '../types/api'
+import { RichTextEditor } from './common/RichTextEditor'
 
 export function MemoList() {
   const [memos, setMemos] = useState<Memo[]>([])
@@ -102,17 +103,6 @@ export function MemoList() {
     }
   }
 
-  const handleArchive = async (id: string) => {
-    try {
-      const updatedMemo = await apiClient.toggleArchiveMemo(id)
-      setMemos(memos.map(m => (m.id === updatedMemo.id ? updatedMemo : m)))
-      toast.success('归档状态已更新')
-    } catch (error: unknown) {
-      console.error('更新归档状态失败', error)
-      toast.error('更新归档状态失败')
-    }
-  }
-
   const openEditDialog = (memo: Memo) => {
     setEditingMemo(memo)
     setFormData({
@@ -151,11 +141,11 @@ export function MemoList() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="content">内容</Label>
-                <textarea
-                  id="content"
-                  className="flex min-h-25 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-stone-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-stone-800 dark:bg-stone-950 dark:ring-offset-stone-950 dark:placeholder:text-stone-400 dark:focus-visible:ring-stone-300"
-                  value={formData.content}
-                  onChange={e => setFormData({ ...formData, content: e.target.value })}
+                <RichTextEditor
+                  content={formData.content}
+                  onChange={content => setFormData({ ...formData, content })}
+                  placeholder="输入 memo 内容..."
+                  className="min-h-50"
                 />
               </div>
               <div className="space-y-2">
@@ -198,7 +188,10 @@ export function MemoList() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-base mb-2">{memo.content}</CardTitle>
+                    <div
+                      className="text-base mb-2 prose dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: memo.content }}
+                    />
                     <CardDescription className="flex items-center gap-2 flex-wrap">
                       {memo.tags.map((tag, index) => (
                         <Badge key={index} variant="secondary">
@@ -211,9 +204,6 @@ export function MemoList() {
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(memo)}>
                       <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleArchive(memo.id)}>
-                      <Archive className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => handleDelete(memo.id)}>
                       <Trash2 className="h-4 w-4" />
@@ -234,11 +224,11 @@ export function MemoList() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="editContent">内容</Label>
-              <textarea
-                id="editContent"
-                className="flex min-h-25 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-stone-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-stone-800 dark:bg-stone-950 dark:ring-offset-stone-950 dark:placeholder:text-stone-400 dark:focus-visible:ring-stone-300"
-                value={formData.content}
-                onChange={e => setFormData({ ...formData, content: e.target.value })}
+              <RichTextEditor
+                content={formData.content}
+                onChange={content => setFormData({ ...formData, content })}
+                placeholder="输入 memo 内容..."
+                className="min-h-50"
               />
             </div>
             <div className="space-y-2">

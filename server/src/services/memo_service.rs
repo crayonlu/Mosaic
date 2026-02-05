@@ -100,11 +100,30 @@ impl MemoService {
         page_size: u32,
         archived: Option<bool>,
         diary_date: Option<chrono::NaiveDate>,
+        search: Option<String>,
     ) -> Result<PaginatedResponse<MemoWithResources>, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let offset = (page - 1) * page_size;
 
-        let memos = if let Some(diary_date) = diary_date {
+        let search_pattern = search.map(|s| format!("%{}%", s));
+
+        let memos = if let Some(ref search_pattern) = search_pattern {
+            // Search mode: search in content and tags
+            sqlx::query_as::<_, Memo>(
+                "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+                 FROM memos 
+                 WHERE user_id = $1 
+                   AND is_deleted = false 
+                   AND (content ILIKE $2 OR tags::text ILIKE $2)
+                 ORDER BY created_at DESC LIMIT $3 OFFSET $4",
+            )
+            .bind(user_uuid)
+            .bind(search_pattern)
+            .bind(page_size as i64)
+            .bind(offset as i64)
+            .fetch_all(&self.pool)
+            .await?
+        } else if let Some(diary_date) = diary_date {
             sqlx::query_as::<_, Memo>(
                 "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
                  FROM memos WHERE user_id = $1 AND is_deleted = false AND diary_date = $2
@@ -157,7 +176,20 @@ impl MemoService {
             }
         };
 
-        let total = if let Some(diary_date) = diary_date {
+        let total = if let Some(ref search_pattern) = search_pattern {
+            let row = sqlx::query_as::<_, (i64,)>(
+                "SELECT COUNT(*) as total
+                 FROM memos 
+                 WHERE user_id = $1 
+                   AND is_deleted = false 
+                   AND (content ILIKE $2 OR tags::text ILIKE $2)",
+            )
+            .bind(user_uuid)
+            .bind(search_pattern)
+            .fetch_one(&self.pool)
+            .await?;
+            row.0
+        } else if let Some(diary_date) = diary_date {
             let row = sqlx::query_as::<_, (i64,)>(
                 "SELECT COUNT(*) as total
                  FROM memos WHERE user_id = $1 AND is_deleted = false AND diary_date = $2",

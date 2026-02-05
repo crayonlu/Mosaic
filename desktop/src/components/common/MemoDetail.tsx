@@ -459,7 +459,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 onChange={setEditedContent}
                 placeholder="输入内容..."
                 editable={true}
-                className='border border-t-0'
+                className="border border-t-0"
               />
 
               <div className="border rounded-lg p-4">

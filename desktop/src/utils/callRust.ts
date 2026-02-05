@@ -130,7 +130,8 @@ export const userCommands = {
     // Read file data using asset commands
     const filename = sourcePath.split(/[\\/]/).pop() || 'avatar'
     const ext = filename.split('.').pop()?.toLowerCase() || 'png'
-    const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'png' ? 'image/png' : 'image/webp'
+    const mimeType =
+      ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'png' ? 'image/png' : 'image/webp'
     const data = await callRust<number[]>('read_image_file', { filename: sourcePath })
     return callRust<User>('upload_avatar', { sourcePath, data, filename, mimeType })
   },
