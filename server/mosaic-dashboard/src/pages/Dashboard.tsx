@@ -1,11 +1,8 @@
 import { DiaryList } from '@/components/DiaryList'
+import { Sidebar } from '@/components/layout/Sidebar'
 import { MemoList } from '@/components/MemoList'
-import { ResourceList } from '@/components/ResourceList'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
+import { SearchPage } from '@/components/search/SearchPage'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { apiClient } from '../lib/api-client'
@@ -17,6 +14,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ user, onLogout }: DashboardProps) {
+  const [activeTab, setActiveTab] = useState('memos')
   const [stats, setStats] = useState({
     memoCount: 0,
     diaryCount: 0,
@@ -46,74 +44,56 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     toast.success('已退出登录')
   }
 
-  return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
-      <header className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold">Mosaic Dashboard</h1>
-            <Separator orientation="vertical" className="h-6" />
-            <span className="text-sm text-stone-600 dark:text-stone-400">{user?.username}</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Avatar>
-              <AvatarFallback>{user?.username?.[0].toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <Button variant="outline" onClick={handleLogout}>
-              退出登录
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Memo 数量</CardTitle>
-              <CardDescription>总共有 {stats.memoCount} 条记录</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold">{stats.memoCount}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>日记数量</CardTitle>
-              <CardDescription>总共 {stats.diaryCount} 天记录</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold">{stats.diaryCount}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>资源数量</CardTitle>
-              <CardDescription>总共 {stats.resourceCount} 个文件</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold">{stats.resourceCount}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="memos" className="w-full">
-          <TabsList>
-            <TabsTrigger value="memos">Memos</TabsTrigger>
-            <TabsTrigger value="diaries">Diaries</TabsTrigger>
-            <TabsTrigger value="resources">Resources</TabsTrigger>
-          </TabsList>
-          <TabsContent value="memos" className="mt-6">
-            <MemoList />
-          </TabsContent>
-          <TabsContent value="diaries" className="mt-6">
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'memos':
+        return <MemoList />
+      case 'archive':
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Memo 数量</CardTitle>
+                  <CardDescription>总共有 {stats.memoCount} 条记录</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold">{stats.memoCount}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>日记数量</CardTitle>
+                  <CardDescription>总共 {stats.diaryCount} 天记录</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold">{stats.diaryCount}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>资源数量</CardTitle>
+                  <CardDescription>总共 {stats.resourceCount} 个文件</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold">{stats.resourceCount}</div>
+                </CardContent>
+              </Card>
+            </div>
             <DiaryList />
-          </TabsContent>
-          <TabsContent value="resources" className="mt-6">
-            <ResourceList />
-          </TabsContent>
-        </Tabs>
-      </main>
+          </div>
+        )
+      case 'search':
+        return <SearchPage />
+      default:
+        return <MemoList />
+    }
+  }
+
+  return (
+    <div className="flex h-screen bg-background">
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} />
+      <main className="flex-1 overflow-auto p-8">{renderContent()}</main>
     </div>
   )
 }

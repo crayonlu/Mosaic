@@ -64,7 +64,6 @@ export interface Diary {
   moodKey: string
   moodScore: number
   coverImageId?: string
-  memoCount: number
   createdAt: number
   updatedAt: number
 }
@@ -85,33 +84,33 @@ export interface PaginatedResponse<T> {
 }
 
 export type MoodKey =
-  | 'happy'
-  | 'sad'
-  | 'angry'
-  | 'anxious'
+  | 'joy'
+  | 'anger'
+  | 'sadness'
   | 'calm'
-  | 'excited'
+  | 'anxiety'
+  | 'focus'
   | 'tired'
   | 'neutral'
 
 export const moodLabels: Record<MoodKey, string> = {
-  happy: '愉悦',
-  sad: '悲伤',
-  angry: '愤怒',
+  joy: '愉悦',
+  anger: '愤怒',
+  sadness: '悲伤',
   calm: '平静',
-  anxious: '焦虑',
-  excited: '兴奋',
+  anxiety: '焦虑',
+  focus: '专注',
   tired: '疲惫',
   neutral: '中性',
 }
 
 export const moodColors: Record<MoodKey, string> = {
-  happy: '#FFD93D',
-  excited: '#FF6B6B',
-  calm: '#6BCB77',
-  neutral: '#95A5A6',
-  tired: '#9B59B6',
-  anxious: '#E67E22',
-  sad: '#3498DB',
-  angry: '#E74C3C',
+  joy: '#FFD93D',
+  anger: '#FF6B6B',
+  sadness: '#4ECDC4',
+  calm: '#95E1D3',
+  anxiety: '#FFA07A',
+  focus: '#6C5CE7',
+  tired: '#A8A8A8',
+  neutral: '#B8B8B8',
 }

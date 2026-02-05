@@ -1,5 +1,5 @@
-import type { User } from '@/types/user'
-import { userCommands } from '@/utils/callRust'
+import { apiClient } from '@/lib/api-client'
+import type { User } from '@/types/api'
 import { create } from 'zustand'
 
 interface UserState {
@@ -15,8 +15,7 @@ export const useUserStore = create<UserState>(set => ({
   loadUser: async () => {
     set({ loading: true })
     try {
-      const user = await userCommands.getUser()
-      console.log('Loaded user:', user)
+      const user = await apiClient.getCurrentUser()
       set({ user: user || null })
     } catch (error) {
       console.error('Failed to load user:', error)

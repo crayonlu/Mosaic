@@ -1,15 +1,15 @@
 export const MOOD_KEYS = [
-  'joy',       // 愉悦
-  'anger',     // 愤怒
-  'sadness',   // 悲伤
-  'calm',      // 平静
-  'anxiety',   // 焦虑
-  'focus',     // 专注
-  'tired',     // 疲惫
-  'neutral',   // 中性
+  'joy', // 愉悦
+  'anger', // 愤怒
+  'sadness', // 悲伤
+  'calm', // 平静
+  'anxiety', // 焦虑
+  'focus', // 专注
+  'tired', // 疲惫
+  'neutral', // 中性
 ] as const
 
-export type MoodKey = typeof MOOD_KEYS[number]
+export type MoodKey = (typeof MOOD_KEYS)[number]
 
 /**
  * Mood configuration with emoji and labels
@@ -38,7 +38,6 @@ export const MOODS: MoodConfig[] = [
   { key: 'tired', emoji: '😴', label: '疲惫', color: '#A8A8A8' },
   { key: 'neutral', emoji: '😐', label: '中性', color: '#B8B8B8' },
 ] as const
-
 
 /** Mood emoji lookup by key */
 export const MOOD_EMOJI_MAP: Record<MoodKey, string> = {

@@ -187,7 +187,7 @@ export default function MemoDetailScreen() {
           <RichTextEditor content={memo.content} editable={false} onChange={() => {}} />
         )}
 
-        {memo.tags && memo.tags.length > 0 && (
+        {!editing && memo.tags && memo.tags.length > 0 && (
           <View style={styles.tagsContainer}>
             {memo.tags.map((tag, index) => (
               <View
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   tag: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 8,
     borderWidth: 1,
   },
   tagText: {

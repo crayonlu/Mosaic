@@ -52,9 +52,10 @@ pub async fn list_memos(
     let page_size = query.page_size.unwrap_or(20);
     let archived = query.archived;
     let diary_date = query.diary_date;
+    let search = query.search.clone();
 
     match memo_service
-        .list_memos(&user_id, page, page_size, archived, diary_date)
+        .list_memos(&user_id, page, page_size, archived, diary_date, search)
         .await
     {
         Ok(memos) => HttpResponse::Ok().json(memos),

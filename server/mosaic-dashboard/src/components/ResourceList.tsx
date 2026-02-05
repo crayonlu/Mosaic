@@ -10,8 +10,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Download, Eye, Search, Trash2, Upload } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Download, Eye, Search, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { apiClient } from '../lib/api-client'
 import type { Resource } from '../types/api'
@@ -22,7 +22,6 @@ export function ResourceList() {
   const [searchQuery, setSearchQuery] = useState('')
   const [viewingResource, setViewingResource] = useState<Resource | null>(null)
   const [deletingResource, setDeletingResource] = useState<Resource | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     loadResources()
@@ -50,20 +49,6 @@ export function ResourceList() {
       r.filename.toLowerCase().includes(searchQuery.toLowerCase())
     )
     setResources(filtered)
-  }
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    try {
-      await apiClient.uploadResource(file)
-      toast.success('上传成功')
-      loadResources()
-    } catch (error: unknown) {
-      console.error('上传失败', error)
-      toast.error('上传失败')
-    }
   }
 
   const handleDelete = async () => {
@@ -95,8 +80,6 @@ export function ResourceList() {
   const getResourceIcon = (mimeType: string) => {
     if (mimeType.startsWith('image/')) return '🖼️'
     if (mimeType.startsWith('video/')) return '🎬'
-    if (mimeType.startsWith('audio/')) return '🎵'
-    if (mimeType.includes('pdf')) return '📄'
     return '📎'
   }
 
@@ -117,13 +100,6 @@ export function ResourceList() {
           />
           <Button onClick={handleSearch} size="icon" variant="outline">
             <Search className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <input type="file" ref={fileInputRef} onChange={handleUpload} className="hidden" />
-          <Button onClick={() => fileInputRef.current?.click()}>
-            <Upload className="h-4 w-4 mr-2" />
-            上传资源
           </Button>
         </div>
       </div>
@@ -168,7 +144,6 @@ export function ResourceList() {
         </div>
       )}
 
-      {/* 查看资源对话框 */}
       <Dialog open={viewingResource !== null} onOpenChange={() => setViewingResource(null)}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -200,7 +175,6 @@ export function ResourceList() {
         </DialogContent>
       </Dialog>
 
-      {/* 删除确认对话框 */}
       <Dialog open={deletingResource !== null} onOpenChange={() => setDeletingResource(null)}>
         <DialogContent>
           <DialogHeader>

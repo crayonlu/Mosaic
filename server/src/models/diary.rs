@@ -4,6 +4,7 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct Diary {
     pub date: NaiveDate,
     pub user_id: Uuid,

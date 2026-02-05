@@ -132,9 +132,7 @@ export const MemoCard = memo<MemoCardProps>(
         className={cn(
           'group relative rounded-lg border bg-card text-sm text-card-foreground transition-all',
           mode === 'select' && !isArchived && 'hover:border-primary/30 cursor-pointer',
-          mode === 'view' &&
-            !isArchived &&
-            'hover:border-primary/50 cursor-pointer',
+          mode === 'view' && !isArchived && 'hover:border-primary/50 cursor-pointer',
           selected && 'ring-2 ring-primary/50 border-primary',
           isArchived && 'opacity-60 cursor-pointer hover:opacity-80 transition-all'
         )}

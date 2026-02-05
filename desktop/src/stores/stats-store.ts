@@ -57,7 +57,10 @@ export const useStatsStore = create<StatsState>((set, get) => ({
       const dateInfoMap = new Map<string, { count: number; moodKey?: string }>()
       rawData.dates.forEach((date, index) => {
         const moodKey = rawData.moods?.[index] ?? undefined
-        dateInfoMap.set(date, { count: rawData.counts[index], moodKey: moodKey as string | undefined })
+        dateInfoMap.set(date, {
+          count: rawData.counts[index],
+          moodKey: moodKey as string | undefined,
+        })
       })
 
       const cells: HeatMapData['cells'] = []
@@ -84,7 +87,10 @@ export const useStatsStore = create<StatsState>((set, get) => ({
           color,
           isToday: dateStr === today,
           moodKey,
-          moodScore: rawData.moodScores?.[dateInfoMap.get(dateStr)?.count ? rawData.dates.indexOf(dateStr) : 0] ?? undefined,
+          moodScore:
+            rawData.moodScores?.[
+              dateInfoMap.get(dateStr)?.count ? rawData.dates.indexOf(dateStr) : 0
+            ] ?? undefined,
         })
 
         current = current.add(1, 'day')
