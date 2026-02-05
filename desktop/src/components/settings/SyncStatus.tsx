@@ -47,10 +47,6 @@ export function SyncStatusDisplay() {
               <span className="text-muted-foreground">用户名</span>
               <span>{config.username}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">AI 提供商</span>
-              <span className="capitalize">{config.aiProvider}</span>
-            </div>
           </div>
         ) : (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -58,7 +54,7 @@ export function SyncStatusDisplay() {
             <span>请先完成服务器配置向导</span>
           </div>
         )}
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex gap-2 justify-end">
           <Button variant="outline" size="sm" onClick={checkConfig} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             刷新状态
