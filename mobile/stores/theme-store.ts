@@ -19,7 +19,7 @@ interface ThemeState {
 
 export const useThemeStore = create<ThemeState>()(
   persist(
-    (set) => ({
+    set => ({
       themeMode: null,
       theme: LightTheme,
       isDark: false,
@@ -62,6 +62,6 @@ export function useThemeInit() {
 
     const systemMode = colorScheme === 'dark' ? 'dark' : 'light'
     setThemeMode(systemMode)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [colorScheme])
 }

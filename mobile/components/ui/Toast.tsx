@@ -181,7 +181,10 @@ function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => vo
           )}
         </View>
       </View>
-      <TouchableOpacity onPress={onHide} style={[styles.closeButton, { backgroundColor: getBackgroundColor() }]}>
+      <TouchableOpacity
+        onPress={onHide}
+        style={[styles.closeButton, { backgroundColor: getBackgroundColor() }]}
+      >
         <X color="#FFFFFF" size={14} />
       </TouchableOpacity>
       {toast.actionLabel && toast.onAction && (

@@ -12,12 +12,7 @@ interface MemoCardProps {
   showActions?: boolean
 }
 
-export function MemoCard({
-  memo,
-  onPress,
-  onDelete,
-  showActions = true,
-}: MemoCardProps) {
+export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCardProps) {
   const { theme } = useThemeStore()
 
   // Extract plain text from HTML for preview

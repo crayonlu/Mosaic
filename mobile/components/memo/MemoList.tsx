@@ -68,7 +68,10 @@ export function MemoList({
   )
 
   const groupedMemos = useMemo(() => {
-    const groups: Record<string, { date: string; displayDate: string; memos: MemoWithResources[] }> = {}
+    const groups: Record<
+      string,
+      { date: string; displayDate: string; memos: MemoWithResources[] }
+    > = {}
 
     if (date) {
       const displayDate = stringUtils.formatDate(date)

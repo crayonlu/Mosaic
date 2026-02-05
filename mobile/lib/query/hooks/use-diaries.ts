@@ -7,7 +7,7 @@ export function useDiaries(query: ListDiariesQuery = {}) {
     queryKey: ['diaries', query],
     queryFn: ({ pageParam = 1 }) => diariesApi.list({ ...query, page: pageParam }),
     initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
+    getNextPageParam: lastPage => {
       if (lastPage.page < lastPage.totalPages) {
         return lastPage.page + 1
       }

@@ -1,5 +1,11 @@
 import { useThemeStore } from '@/stores/theme-store'
-import { CoreBridge, RichText, TenTapStartKit, useEditorBridge, useEditorContent } from '@10play/tentap-editor'
+import {
+  CoreBridge,
+  RichText,
+  TenTapStartKit,
+  useEditorBridge,
+  useEditorContent,
+} from '@10play/tentap-editor'
 import { useEffect, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { EditorToolbar } from './EditorToolbar'
@@ -39,10 +45,7 @@ export function RichTextEditor({
     autofocus: false,
     avoidIosKeyboard: true,
     initialContent: content || '',
-    bridgeExtensions: [
-      ...TenTapStartKit,
-      CoreBridge.configureCSS(customTextCSS),
-    ],
+    bridgeExtensions: [...TenTapStartKit, CoreBridge.configureCSS(customTextCSS)],
   })
 
   // Sync content changes from parent

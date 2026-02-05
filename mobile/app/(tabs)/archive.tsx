@@ -16,7 +16,9 @@ export default function ArchiveScreen() {
   const { theme } = useThemeStore()
   const { canUseNetwork } = useConnection()
   const handleError = useErrorHandler()
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(new Date().toISOString().split('T')[0])
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(
+    new Date().toISOString().split('T')[0]
+  )
   const [isArchiveMode, setIsArchiveMode] = useState(false)
   const [selectedMemoIds, setSelectedMemoIds] = useState<string[]>([])
   const [showMoodSelector, setShowMoodSelector] = useState(false)
@@ -37,9 +39,7 @@ export default function ArchiveScreen() {
   }
 
   const handleSelectionChange = (id: string) => {
-    setSelectedMemoIds(prev =>
-      prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
-    )
+    setSelectedMemoIds(prev => (prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]))
   }
 
   const handleArchivePress = () => {

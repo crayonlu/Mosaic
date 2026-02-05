@@ -1,15 +1,15 @@
 export const MOOD_KEYS = [
-  'joy',       // 愉悦
-  'anger',     // 愤怒
-  'sadness',   // 悲伤
-  'calm',      // 平静
-  'anxiety',   // 焦虑
-  'focus',     // 专注
-  'tired',     // 疲惫
-  'neutral',   // 中性
+  'joy', // 愉悦
+  'anger', // 愤怒
+  'sadness', // 悲伤
+  'calm', // 平静
+  'anxiety', // 焦虑
+  'focus', // 专注
+  'tired', // 疲惫
+  'neutral', // 中性
 ] as const
 
-export type MoodKey = typeof MOOD_KEYS[number]
+export type MoodKey = (typeof MOOD_KEYS)[number]
 
 /**
  * Mood configuration with emoji and labels

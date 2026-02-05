@@ -8,31 +8,34 @@ export function useAITags() {
   const [error, setError] = useState<string | null>(null)
   const { isConnected } = useConnectionStore()
 
-  const suggest = useCallback(async (content: string) => {
-    if (!content.trim()) {
-      setSuggestions([])
-      return
-    }
+  const suggest = useCallback(
+    async (content: string) => {
+      if (!content.trim()) {
+        setSuggestions([])
+        return
+      }
 
-    if (!isConnected) {
-      setError('无网络连接')
-      return
-    }
+      if (!isConnected) {
+        setError('无网络连接')
+        return
+      }
 
-    setLoading(true)
-    setError(null)
+      setLoading(true)
+      setError(null)
 
-    try {
-      const client = await createAIClient()
-      const response = await client.suggestTags(content)
-      setSuggestions(response.data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'AI 服务错误')
-      setSuggestions([])
-    } finally {
-      setLoading(false)
-    }
-  }, [isConnected])
+      try {
+        const client = await createAIClient()
+        const response = await client.suggestTags(content)
+        setSuggestions(response.data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'AI 服务错误')
+        setSuggestions([])
+      } finally {
+        setLoading(false)
+      }
+    },
+    [isConnected]
+  )
 
   const clear = useCallback(() => {
     setSuggestions([])

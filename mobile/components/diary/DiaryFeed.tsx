@@ -6,15 +6,7 @@ import { useThemeStore } from '@/stores/theme-store'
 import type { DiaryResponse } from '@/types/api'
 import { ChevronRight, FileX } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
-import {
-  FlatList,
-  Image,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 
 interface DiaryFeedProps {
   onDiaryPress?: (diary: DiaryResponse) => void

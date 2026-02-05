@@ -154,6 +154,8 @@ export interface SummaryQuery {
 export interface HeatMapData {
   dates: string[]
   counts: number[]
+  moods: (string | null)[]
+  moodScores: (number | null)[]
 }
 
 export interface TimelineEntry {

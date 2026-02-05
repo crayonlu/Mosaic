@@ -14,7 +14,7 @@ export function useInfiniteMemos(query: ListMemosQuery = {}) {
     queryKey: ['memos', 'infinite', query],
     queryFn: ({ pageParam = 1 }) => memosApi.list({ ...query, page: pageParam }),
     initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
+    getNextPageParam: lastPage => {
       if (lastPage.page < lastPage.totalPages) {
         return lastPage.page + 1
       }

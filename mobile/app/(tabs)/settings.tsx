@@ -10,10 +10,19 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 
 export default function SettingsScreen() {
   const { theme, themeMode, setThemeMode } = useThemeStore()
-  const { user, serverUrl, logout } = useAuthStore()
+  const { user, serverUrl, logout, refreshUser } = useAuthStore()
   const [aiConfig, setLocalAIConfig] = useState<AIConfig | null>(null)
   const [showAISettings, setShowAISettings] = useState(true)
   const [savingAI, setSavingAI] = useState(false)
+
+  // Get full avatar URL
+  const getAvatarUrl = () => {
+    if (!user?.avatarUrl) return null
+    // If avatarUrl is already a full URL (starts with http), return as is
+    if (user.avatarUrl.startsWith('http')) return user.avatarUrl
+    // Otherwise, prepend the server URL
+    return serverUrl ? `${serverUrl}${user.avatarUrl}` : null
+  }
 
   // Dialog state
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
@@ -82,6 +91,18 @@ export default function SettingsScreen() {
           name: asset.fileName || 'avatar.jpg',
           type: asset.mimeType || 'image/jpeg',
         })
+        // Update local user state with new avatar URL
+        await refreshUser()
+        setDialogTitle('上传成功')
+        setDialogMessage('头像已更新')
+        setDialogButtons([
+          {
+            label: '确定',
+            onPress: () => setShowSuccessDialog(false),
+            variant: 'primary',
+          },
+        ])
+        setShowSuccessDialog(true)
       } catch (error) {
         console.error('Upload avatar error:', error)
         setDialogTitle('上传失败')
@@ -98,29 +119,32 @@ export default function SettingsScreen() {
     }
   }
 
-  const renderAccountSection = () => (
-    <View style={[styles.section, { marginBottom: 12 }]}>
-      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-        <TouchableOpacity style={styles.row} onPress={handleAvatarPress}>
-          <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-            {user?.avatar ? (
-              <Text style={styles.avatarText}>{user.username?.charAt(0).toUpperCase()}</Text>
-            ) : (
-              <User size={20} color="#FFFFFF" />
-            )}
-          </View>
-          <View style={styles.userInfo}>
-            <Text style={[styles.username, { color: theme.text }]}>
-              {user?.username || '未登录'}
-            </Text>
-            <Text style={[styles.serverUrl, { color: theme.textSecondary }]}>
-              {serverUrl || '未配置服务器'}
-            </Text>
-          </View>
-        </TouchableOpacity>
+  const renderAccountSection = () => {
+    const avatarUrl = getAvatarUrl()
+    return (
+      <View style={[styles.section, { marginBottom: 12 }]}>
+        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <TouchableOpacity style={styles.row} onPress={handleAvatarPress}>
+            <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+              {avatarUrl ? (
+                <Text style={styles.avatarText}>{user?.username?.charAt(0).toUpperCase()}</Text>
+              ) : (
+                <User size={20} color="#FFFFFF" />
+              )}
+            </View>
+            <View style={styles.userInfo}>
+              <Text style={[styles.username, { color: theme.text }]}>
+                {user?.username || '未登录'}
+              </Text>
+              <Text style={[styles.serverUrl, { color: theme.textSecondary }]}>
+                {serverUrl || '未配置服务器'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  )
+    )
+  }
 
   const renderAppearanceSection = () => (
     <View style={[styles.section, { marginBottom: 12 }]}>
@@ -160,77 +184,77 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
         {showAISettings && aiConfig && (
-           <View style={styles.aiSettings}>
-             <View style={styles.settingRow}>
-               <View style={styles.providerButtons}>
-                 <TouchableOpacity
-                   style={[
-                     styles.providerButton,
-                     aiConfig.provider === 'openai' && { backgroundColor: theme.primary },
-                   ]}
-                   onPress={() => setLocalAIConfig({ ...aiConfig, provider: 'openai' })}
-                 >
-                   <Text
-                     style={[
-                       styles.providerButtonText,
-                       aiConfig.provider === 'openai' && { color: '#FFFFFF' },
-                     ]}
-                   >
-                     OpenAI
-                   </Text>
-                 </TouchableOpacity>
-                 <TouchableOpacity
-                   style={[
-                     styles.providerButton,
-                     aiConfig.provider === 'anthropic' && { backgroundColor: theme.primary },
-                   ]}
-                   onPress={() => setLocalAIConfig({ ...aiConfig, provider: 'anthropic' })}
-                 >
-                   <Text
-                     style={[
-                       styles.providerButtonText,
-                       {color: theme.text },
-                       aiConfig.provider === 'anthropic' && { color: '#FFFFFF' },
-                     ]}
-                   >
-                     Anthropic
-                   </Text>
-                 </TouchableOpacity>
-               </View>
-             </View>
-             <View style={styles.settingRow}>
-               <Text style={[styles.label, { color: theme.textSecondary }]}>API URL</Text>
-               <Input
-                 value={aiConfig.baseUrl}
-                 onChangeText={text => setLocalAIConfig({ ...aiConfig, baseUrl: text })}
-                 placeholder="https://api.openai.com/v1"
-               />
-             </View>
-             <View style={styles.settingRow}>
-               <Text style={[styles.label, { color: theme.textSecondary }]}>API Key</Text>
-               <Input
-                 value={aiConfig.apiKey}
-                 onChangeText={text => setLocalAIConfig({ ...aiConfig, apiKey: text })}
-                 placeholder="sk-..."
-                 secureTextEntry
-               />
-             </View>
-             <View style={styles.settingRow}>
-               <Text style={[styles.label, { color: theme.textSecondary }]}>模型</Text>
-               <Input
-                 value={aiConfig.model}
-                 onChangeText={text => setLocalAIConfig({ ...aiConfig, model: text })}
-                 placeholder={aiConfig.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'}
-               />
-             </View>
-             <Button
-               title="保存"
-               variant="primary"
-               onPress={handleSaveAIConfig}
-               loading={savingAI}
-             />
-           </View>
-         )}
+          <View style={styles.aiSettings}>
+            <View style={styles.settingRow}>
+              <View style={styles.providerButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.providerButton,
+                    aiConfig.provider === 'openai' && { backgroundColor: theme.primary },
+                  ]}
+                  onPress={() => setLocalAIConfig({ ...aiConfig, provider: 'openai' })}
+                >
+                  <Text
+                    style={[
+                      styles.providerButtonText,
+                      aiConfig.provider === 'openai' && { color: '#FFFFFF' },
+                    ]}
+                  >
+                    OpenAI
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.providerButton,
+                    aiConfig.provider === 'anthropic' && { backgroundColor: theme.primary },
+                  ]}
+                  onPress={() => setLocalAIConfig({ ...aiConfig, provider: 'anthropic' })}
+                >
+                  <Text
+                    style={[
+                      styles.providerButtonText,
+                      { color: theme.text },
+                      aiConfig.provider === 'anthropic' && { color: '#FFFFFF' },
+                    ]}
+                  >
+                    Anthropic
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.settingRow}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>API URL</Text>
+              <Input
+                value={aiConfig.baseUrl}
+                onChangeText={text => setLocalAIConfig({ ...aiConfig, baseUrl: text })}
+                placeholder="https://api.openai.com/v1"
+              />
+            </View>
+            <View style={styles.settingRow}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>API Key</Text>
+              <Input
+                value={aiConfig.apiKey}
+                onChangeText={text => setLocalAIConfig({ ...aiConfig, apiKey: text })}
+                placeholder="sk-..."
+                secureTextEntry
+              />
+            </View>
+            <View style={styles.settingRow}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>模型</Text>
+              <Input
+                value={aiConfig.model}
+                onChangeText={text => setLocalAIConfig({ ...aiConfig, model: text })}
+                placeholder={aiConfig.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'}
+              />
+            </View>
+            <Button
+              title="保存"
+              variant="primary"
+              onPress={handleSaveAIConfig}
+              loading={savingAI}
+            />
+          </View>
+        )}
       </View>
     </View>
   )
@@ -399,20 +423,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-   providerButton: {
-     flex: 1,
-     paddingVertical: 6,
-     paddingHorizontal: 10,
-     borderRadius: 6,
-     backgroundColor: 'rgba(0, 0, 0, 0.05)',
-     alignItems: 'center',
-   },
-   providerButtonText: {
-     fontSize: 13,
-     fontWeight: '500',
-   },
-   label: {
-     fontSize: 13,
-     fontWeight: '500',
-   },
- })
+  providerButton: {
+    flex: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    alignItems: 'center',
+  },
+  providerButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+})

@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 pub struct HeatMapData {
     pub dates: Vec<String>,
     pub counts: Vec<i32>,
+    pub moods: Vec<Option<String>>,
+    pub mood_scores: Vec<Option<i32>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
