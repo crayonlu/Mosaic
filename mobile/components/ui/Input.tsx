@@ -51,8 +51,7 @@ export function Input({ label, error, showPasswordToggle, style, ...props }: Inp
 }
 
 const styles = StyleSheet.create({
-  container: {
-  },
+  container: {},
   label: {
     fontSize: 14,
     fontWeight: '500',

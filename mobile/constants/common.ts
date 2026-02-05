@@ -158,5 +158,4 @@ export const SearchFilters = {
   MOOD: 'mood',
 } as const
 
-
 export type TimeRangeValue = 'year' | 'half' | 'quarter'

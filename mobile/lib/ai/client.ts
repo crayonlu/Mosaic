@@ -29,7 +29,10 @@ class OpenAIAgent implements AIAgent {
 ${content}`
 
     const response = await this.callAPI(prompt, 100)
-    const tags = response.data.split(',').map(t => t.trim()).filter(Boolean)
+    const tags = response.data
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean)
 
     return {
       data: tags.map(name => ({ name, confidence: 0.8 })),
@@ -50,12 +53,12 @@ ${text}`
 
   private async callAPI(prompt: string, maxTokens: number): Promise<AIResponse<string>> {
     const url = `${this.config.baseUrl}/chat/completions`
-    
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.apiKey}`,
+        Authorization: `Bearer ${this.config.apiKey}`,
       },
       signal: AbortSignal.timeout(this.config.timeout),
       body: JSON.stringify({
@@ -72,7 +75,7 @@ ${text}`
     }
 
     const data = await response.json()
-    
+
     return {
       data: data.choices[0].message.content,
       usage: {
@@ -96,7 +99,10 @@ class AnthropicAgent implements AIAgent {
 ${content}`
 
     const response = await this.callAPI(prompt, 100)
-    const tags = response.data.split(',').map(t => t.trim()).filter(Boolean)
+    const tags = response.data
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean)
 
     return {
       data: tags.map(name => ({ name, confidence: 0.8 })),
@@ -117,7 +123,7 @@ ${text}`
 
   private async callAPI(prompt: string, maxTokens: number): Promise<AIResponse<string>> {
     const url = `${this.config.baseUrl}/messages`
-    
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -140,7 +146,7 @@ ${text}`
     }
 
     const data = await response.json()
-    
+
     return {
       data: data.content[0].text,
       usage: {

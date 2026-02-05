@@ -72,9 +72,7 @@ export function MoodSelector({ visible, onClose, onSubmit, submitting }: MoodSel
               onPress={handleSubmit}
               disabled={!selectedMood || submitting}
             >
-              <Text style={styles.confirmButtonText}>
-                {submitting ? '提交中...' : '确认归档'}
-              </Text>
+              <Text style={styles.confirmButtonText}>{submitting ? '提交中...' : '确认归档'}</Text>
             </TouchableOpacity>
           </View>
         </View>

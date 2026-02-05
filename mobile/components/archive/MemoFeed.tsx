@@ -36,7 +36,11 @@ export function MemoFeed({
   const { theme } = useThemeStore()
   const [refreshing, setRefreshing] = useState(false)
 
-  const { data: memosByDate, isLoading: loadingByDate, refetch: refetchByDate } = useMemosByDate(targetDate || '')
+  const {
+    data: memosByDate,
+    isLoading: loadingByDate,
+    refetch: refetchByDate,
+  } = useMemosByDate(targetDate || '')
 
   const {
     data: paginatedData,
@@ -88,9 +92,7 @@ export function MemoFeed({
           onMemoPress?.(item)
         }
       }}
-      style={({ pressed }) => [
-        styles.cardContainer,
-      ]}
+      style={({ pressed }) => [styles.cardContainer]}
     >
       <View style={styles.cardContent}>
         <MemoCard

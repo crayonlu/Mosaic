@@ -5,6 +5,7 @@ import type {
   PaginatedResponse,
   PresignedUploadResponse,
   ResourceResponse,
+  UserResponse,
 } from '@/types/api'
 import { apiClient } from './client'
 
@@ -32,8 +33,8 @@ export const resourcesApi = {
     return apiClient.post<ResourceResponse>('/api/resources/confirm-upload', data)
   },
 
-  uploadAvatar(file: { uri: string; name: string; type: string }): Promise<ResourceResponse> {
-    return apiClient.uploadFile<ResourceResponse>('/api/resources/upload-avatar', file)
+  uploadAvatar(file: { uri: string; name: string; type: string }): Promise<UserResponse> {
+    return apiClient.uploadFile<UserResponse>('/api/resources/upload-avatar', file)
   },
 
   delete(id: string): Promise<void> {

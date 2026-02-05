@@ -23,14 +23,14 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
   lastConnectedAt: null,
   checkInterval: 30000,
 
-  setConnected: (connected) => {
+  setConnected: connected => {
     set({ isConnected: connected })
     if (connected) {
       get().updateLastConnectedAt()
     }
   },
 
-  setServerReachable: (reachable) => {
+  setServerReachable: reachable => {
     set({ isServerReachable: reachable })
     if (reachable) {
       get().updateLastConnectedAt()

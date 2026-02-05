@@ -32,10 +32,7 @@ export function TagInput({
   const [inputValue, setInputValue] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
 
-  const allSuggestions: SuggestionItem[] = [
-    ...suggestions,
-    ...aiSuggestions.map(s => s.name),
-  ]
+  const allSuggestions: SuggestionItem[] = [...suggestions, ...aiSuggestions.map(s => s.name)]
 
   const filteredSuggestions = allSuggestions.filter(s => {
     const matchInput = s.toLowerCase().includes(inputValue.toLowerCase())

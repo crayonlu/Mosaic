@@ -28,19 +28,40 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
   const [data, setData] = useState<HeatMapData | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const moodColors: Record<string, string> = {
+    joy: '#FFD93D',
+    anger: '#FF6B6B',
+    sadness: '#4ECDC4',
+    calm: '#95E1D3',
+    anxiety: '#FFA07A',
+    focus: '#6C5CE7',
+    tired: '#A8A8A8',
+    neutral: theme.border,
+    happy: '#FFD93D',
+    sad: '#4ECDC4',
+    angry: '#FF6B6B',
+    anxious: '#FFA07A',
+    excited: '#FFA500',
+  }
+
   const moodLegend = useMemo(
     () => [
-      { key: 'joy', label: '愉悦', color: '#FFD93D' },
-      { key: 'anger', label: '愤怒', color: '#FF6B6B' },
-      { key: 'sadness', label: '悲伤', color: '#4ECDC4' },
-      { key: 'calm', label: '平静', color: '#95E1D3' },
-      { key: 'anxiety', label: '焦虑', color: '#FFA07A' },
-      { key: 'focus', label: '专注', color: '#6C5CE7' },
-      { key: 'tired', label: '疲惫', color: '#A8A8A8' },
+      { key: 'joy', label: '愉悦', color: moodColors.joy || '#FFD93D' },
+      { key: 'anger', label: '愤怒', color: moodColors.anger || '#FF6B6B' },
+      { key: 'sadness', label: '悲伤', color: moodColors.sadness || '#4ECDC4' },
+      { key: 'calm', label: '平静', color: moodColors.calm || '#95E1D3' },
+      { key: 'anxiety', label: '焦虑', color: moodColors.anxiety || '#FFA07A' },
+      { key: 'focus', label: '专注', color: moodColors.focus || '#6C5CE7' },
+      { key: 'tired', label: '疲惫', color: moodColors.tired || '#A8A8A8' },
       { key: 'neutral', label: '中性', color: theme.border },
     ],
     [theme.border]
   )
+
+  const getMoodColor = (moodKey?: string | null) => {
+    if (!moodKey) return theme.border
+    return moodColors[moodKey] || theme.border
+  }
 
   const loadHeatMapData = useCallback(async () => {
     try {
@@ -57,10 +78,17 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
         end_date: endDateStr,
       })
 
-      // Build a map of date to count from API response
-      const dateCountMap = new Map<string, number>()
+      // Build a map of date to count and mood from API response
+      const dateInfoMap = new Map<string, { count: number; moodKey?: string }>()
       response.dates.forEach((date, index) => {
-        dateCountMap.set(date, response.counts[index])
+        const moodKey =
+          (response.moods?.[index] ?? response.moodScores?.[index] !== undefined)
+            ? (response.moods?.[index] ?? undefined)
+            : undefined
+        dateInfoMap.set(date, {
+          count: response.counts[index],
+          moodKey: moodKey as string | undefined,
+        })
       })
 
       // Build complete cells array for each day in the range
@@ -72,21 +100,21 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
       let current = start
       while (current.isBefore(end) || current.isSame(end, 'day')) {
         const dateStr = current.format('YYYY-MM-DD')
-        const count = dateCountMap.get(dateStr) || 0
+        const info = dateInfoMap.get(dateStr)
+        const count = info?.count || 0
+        const moodKey = info?.moodKey
 
-        // Calculate color intensity based on count
+        // Calculate color based on mood
         let color = theme.border // default empty color
         if (count > 0) {
-          // Generate color based on count (using primary color with different opacities)
-          const intensity = Math.min(count / 5, 1) // max at 5 records
-          const alpha = 0.2 + intensity * 0.6 // range from 0.2 to 0.8
-          color = `${moodLegend[0].color}` // Using first mood color with alpha
+          color = getMoodColor(moodKey)
         }
 
         cells.push({
           date: dateStr,
           count,
           color,
+          moodKey,
           isToday: dateStr === today,
         })
 
@@ -163,7 +191,9 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: 'transparent', borderColor: theme.border }]}>
+      <View
+        style={[styles.container, { backgroundColor: 'transparent', borderColor: theme.border }]}
+      >
         <Loading text="加载中..." />
       </View>
     )

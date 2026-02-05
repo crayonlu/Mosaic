@@ -15,6 +15,8 @@ export interface HeatMapCell {
 export interface HeatMapData {
   dates: string[]
   counts: number[]
+  moods?: (string | null)[]
+  moodScores?: (number | null)[]
   cells?: HeatMapCell[]
   startDate?: string
   endDate?: string

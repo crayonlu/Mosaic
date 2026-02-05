@@ -67,12 +67,15 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
     }
   }, [content, tags, diaryDate, memo])
 
-  const showCustomDialog = useCallback((title: string, message: string, buttons: DialogButton[]) => {
-    setDialogTitle(title)
-    setDialogMessage(message)
-    setDialogButtons(buttons)
-    setShowDialog(true)
-  }, [])
+  const showCustomDialog = useCallback(
+    (title: string, message: string, buttons: DialogButton[]) => {
+      setDialogTitle(title)
+      setDialogMessage(message)
+      setDialogButtons(buttons)
+      setShowDialog(true)
+    },
+    []
+  )
 
   const handleCloseDialog = useCallback(() => {
     setShowDialog(false)
@@ -159,7 +162,7 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
     ])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memo, isPending, deleteMemo, onDelete, onClose])
-  
+
   const handleAddTag = useCallback(() => {
     const trimmedTag = tagInput.trim()
     if (trimmedTag && !tags.includes(trimmedTag)) {
@@ -257,7 +260,10 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
 
             <TouchableOpacity
               onPress={handleSave}
-              style={[styles.headerButton, (!hasChanges || isPending) && styles.headerButtonDisabled]}
+              style={[
+                styles.headerButton,
+                (!hasChanges || isPending) && styles.headerButtonDisabled,
+              ]}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               disabled={!hasChanges || isPending}
             >

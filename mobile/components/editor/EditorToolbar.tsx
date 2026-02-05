@@ -94,7 +94,7 @@ export function EditorToolbar({ editor, onSave, onInsertLink }: EditorToolbarPro
       label: '行内代码',
       onPress: () => editor.toggleCode(),
       isActive: isMarkActive('code'),
-    }
+    },
   ]
 
   // Structure buttons

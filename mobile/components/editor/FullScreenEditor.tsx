@@ -137,11 +137,7 @@ export function FullScreenEditor({
               style={styles.closeButton}
               disabled={uploading || !canUseNetwork}
             >
-              {uploading ? (
-                <Loading size="small" />
-              ) : (
-                <Image size={22} color={theme.text} />
-              )}
+              {uploading ? <Loading size="small" /> : <Image size={22} color={theme.text} />}
             </TouchableOpacity>
           </View>
 

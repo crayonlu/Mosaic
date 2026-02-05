@@ -4,7 +4,13 @@ import { Loading, toast } from '@/components/ui'
 import { MOODS, type MoodKey } from '@/constants/common'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
-import { useArchiveMemo, useCreateDiary, useDeleteMemo, useMemo as useQueryMemo, useUpdateMemo } from '@/lib/query'
+import {
+  useArchiveMemo,
+  useCreateDiary,
+  useDeleteMemo,
+  useMemo as useQueryMemo,
+  useUpdateMemo,
+} from '@/lib/query'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -127,7 +133,14 @@ export default function MemoDetailScreen() {
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Memo详情</Text>
         {!editing ? (
-          <TouchableOpacity onPress={() => { setEditing(true); setContent(memo.content); setTags(memo.tags || []); }} style={styles.headerButton}>
+          <TouchableOpacity
+            onPress={() => {
+              setEditing(true)
+              setContent(memo.content)
+              setTags(memo.tags || [])
+            }}
+            style={styles.headerButton}
+          >
             <Text style={[styles.editButtonText, { color: theme.primary }]}>编辑</Text>
           </TouchableOpacity>
         ) : (
@@ -136,7 +149,14 @@ export default function MemoDetailScreen() {
               <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>取消</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleSave} style={styles.headerButton} disabled={isPending}>
-              <Text style={[styles.cancelButtonText, { color: isPending ? theme.textSecondary : theme.primary }]}>保存</Text>
+              <Text
+                style={[
+                  styles.cancelButtonText,
+                  { color: isPending ? theme.textSecondary : theme.primary },
+                ]}
+              >
+                保存
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -172,10 +192,7 @@ export default function MemoDetailScreen() {
             {memo.tags.map((tag, index) => (
               <View
                 key={index}
-                style={[
-                  styles.tag,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                ]}
+                style={[styles.tag, { backgroundColor: theme.surface, borderColor: theme.border }]}
               >
                 <Text style={[styles.tagText, { color: theme.textSecondary }]}>#{tag}</Text>
               </View>
@@ -207,7 +224,11 @@ export default function MemoDetailScreen() {
               {memo.isArchived ? '取消归档' : '归档'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleDelete} style={[styles.deleteButton, { backgroundColor: theme.primary }]} disabled={isPending}>
+          <TouchableOpacity
+            onPress={handleDelete}
+            style={[styles.deleteButton, { backgroundColor: theme.primary }]}
+            disabled={isPending}
+          >
             <Trash2 size={20} color="#FFFFFF" />
             <Text style={styles.deleteButtonText}>删除</Text>
           </TouchableOpacity>

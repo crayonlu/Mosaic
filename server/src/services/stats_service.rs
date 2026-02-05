@@ -23,7 +23,31 @@ impl StatsService {
         start_date: NaiveDate,
         end_date: NaiveDate,
     ) -> Result<HeatMapData, AppError> {
-        let rows = sqlx::query_as::<_, (chrono::NaiveDate, Option<i64>)>(
+        let diary_rows = sqlx::query_as::<_, (chrono::NaiveDate, String, i32)>(
+            r#"
+            SELECT
+                date,
+                mood_key,
+                mood_score
+            FROM diaries
+            WHERE user_id = $1
+                AND date BETWEEN $2 AND $3
+            ORDER BY date
+            "#,
+        )
+        .bind(user_id)
+        .bind(start_date)
+        .bind(end_date)
+        .fetch_all(&self.pool)
+        .await?;
+
+        use std::collections::HashMap;
+        let mut mood_map: HashMap<String, (String, i32)> = HashMap::new();
+        for row in diary_rows {
+            mood_map.insert(row.0.to_string(), (row.1, row.2));
+        }
+
+        let memo_rows = sqlx::query_as::<_, (chrono::NaiveDate, i64)>(
             r#"
             SELECT
                 to_timestamp(created_at / 1000)::date as date,
@@ -42,15 +66,34 @@ impl StatsService {
         .fetch_all(&self.pool)
         .await?;
 
+        // Build complete data arrays
         let mut dates = Vec::new();
         let mut counts = Vec::new();
+        let mut moods = Vec::new();
+        let mut mood_scores = Vec::new();
 
-        for row in rows {
-            dates.push(row.0.to_string());
-            counts.push(row.1.unwrap_or(0) as i32);
+        for row in memo_rows {
+            let date_str = row.0.to_string();
+            let count = row.1 as i32;
+
+            // Get mood info for this date
+            let (mood_key, mood_score) = mood_map
+                .get(&date_str)
+                .map(|(m, s)| (Some(m.clone()), Some(*s)))
+                .unwrap_or((None, None));
+
+            dates.push(date_str);
+            counts.push(count);
+            moods.push(mood_key);
+            mood_scores.push(mood_score);
         }
 
-        Ok(HeatMapData { dates, counts })
+        Ok(HeatMapData {
+            dates,
+            counts,
+            moods,
+            mood_scores,
+        })
     }
 
     /// Get timeline data for a date range

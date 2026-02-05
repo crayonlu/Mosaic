@@ -7,7 +7,7 @@ export function useSearchMemos(query: SearchMemosQuery) {
     queryKey: ['memos', 'search', query],
     queryFn: ({ pageParam = 1 }) => memosApi.search({ ...query, page: pageParam }),
     initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
+    getNextPageParam: lastPage => {
       if (lastPage.page < lastPage.totalPages) {
         return lastPage.page + 1
       }

@@ -12,6 +12,22 @@ interface StatsState {
   resetHeatmap: () => void
 }
 
+const moodColors: Record<string, string> = {
+  joy: '#FFD93D',
+  anger: '#FF6B6B',
+  sadness: '#4ECDC4',
+  calm: '#95E1D3',
+  anxiety: '#FFA07A',
+  focus: '#6C5CE7',
+  tired: '#A8A8A8',
+  neutral: '#ebedf0',
+  happy: '#FFD93D',
+  sad: '#4ECDC4',
+  angry: '#FF6B6B',
+  anxious: '#FFA07A',
+  excited: '#FFA500',
+}
+
 export const useStatsStore = create<StatsState>((set, get) => ({
   heatmapData: null,
   heatmapLoading: false,
@@ -37,9 +53,11 @@ export const useStatsStore = create<StatsState>((set, get) => ({
 
       const rawData = await statsCommands.getHeatmap(query)
 
-      const dateCountMap = new Map<string, number>()
+      // Build a map of date to count and mood from API response
+      const dateInfoMap = new Map<string, { count: number; moodKey?: string }>()
       rawData.dates.forEach((date, index) => {
-        dateCountMap.set(date, rawData.counts[index])
+        const moodKey = rawData.moods?.[index] ?? undefined
+        dateInfoMap.set(date, { count: rawData.counts[index], moodKey: moodKey as string | undefined })
       })
 
       const cells: HeatMapData['cells'] = []
@@ -50,15 +68,14 @@ export const useStatsStore = create<StatsState>((set, get) => ({
       let current = start
       while (current.isBefore(end) || current.isSame(end, 'day')) {
         const dateStr = current.format('YYYY-MM-DD')
-        const count = dateCountMap.get(dateStr) || 0
+        const info = dateInfoMap.get(dateStr)
+        const count = info?.count || 0
+        const moodKey = info?.moodKey
 
-        // Calculate color intensity based on count
+        // Calculate color based on mood
         let color = '#ebedf0' // default empty color
-        if (count > 0) {
-          // Generate color based on count (using primary color with different opacities)
-          const intensity = Math.min(count / 5, 1) // max at 5 records
-          const alpha = 0.2 + intensity * 0.6 // range from 0.2 to 0.8
-          color = `hsl(var(--primary) / ${alpha})`
+        if (count > 0 && moodKey) {
+          color = moodColors[moodKey] || '#ebedf0'
         }
 
         cells.push({
@@ -66,6 +83,8 @@ export const useStatsStore = create<StatsState>((set, get) => ({
           count,
           color,
           isToday: dateStr === today,
+          moodKey,
+          moodScore: rawData.moodScores?.[dateInfoMap.get(dateStr)?.count ? rawData.dates.indexOf(dateStr) : 0] ?? undefined,
         })
 
         current = current.add(1, 'day')
@@ -74,6 +93,8 @@ export const useStatsStore = create<StatsState>((set, get) => ({
       const data: HeatMapData = {
         dates: rawData.dates,
         counts: rawData.counts,
+        moods: rawData.moods,
+        moodScores: rawData.moodScores,
         cells,
         startDate,
         endDate,

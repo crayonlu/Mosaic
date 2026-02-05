@@ -48,7 +48,10 @@ export function ArchiveDateFilter({
         <TouchableOpacity
           style={[
             styles.filterButton,
-            { backgroundColor: theme.surface, borderColor: selectedDate ? theme.primary : theme.border },
+            {
+              backgroundColor: theme.surface,
+              borderColor: selectedDate ? theme.primary : theme.border,
+            },
           ]}
           onPress={() => setShowDatePicker(true)}
         >
@@ -62,7 +65,10 @@ export function ArchiveDateFilter({
             {formatDate(selectedDate) || '选择日期'}
           </Text>
           {selectedDate && (
-            <TouchableOpacity onPress={handleClearDate} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity
+              onPress={handleClearDate}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
               <X size={16} color={theme.textSecondary} />
             </TouchableOpacity>
           )}

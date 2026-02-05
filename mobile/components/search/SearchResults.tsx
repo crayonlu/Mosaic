@@ -94,11 +94,7 @@ export function SearchResults({
     <FlatList
       data={results}
       renderItem={({ item }) => (
-        <MemoCard
-          memo={item}
-          onPress={() => onMemoPress(item)}
-          onDelete={onMemoDelete}
-        />
+        <MemoCard memo={item} onPress={() => onMemoPress(item)} onDelete={onMemoDelete} />
       )}
       keyExtractor={item => item.id}
       contentContainerStyle={styles.listContent}

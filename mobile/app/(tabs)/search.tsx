@@ -26,14 +26,17 @@ export default function SearchScreen() {
     )
   }, [query, selectedTags, isArchived, startDate, endDate])
 
-  const searchParams = useMemo(() => ({
-    query: query.trim(),
-    tags: selectedTags.length > 0 ? selectedTags : undefined,
-    isArchived,
-    startDate,
-    endDate,
-    pageSize: 20,
-  }), [query, selectedTags, isArchived, startDate, endDate])
+  const searchParams = useMemo(
+    () => ({
+      query: query.trim(),
+      tags: selectedTags.length > 0 ? selectedTags : undefined,
+      isArchived,
+      startDate,
+      endDate,
+      pageSize: 20,
+    }),
+    [query, selectedTags, isArchived, startDate, endDate]
+  )
 
   const {
     data: paginatedData,

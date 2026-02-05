@@ -49,9 +49,7 @@ export function MoodDragBar({
       />
 
       <View style={styles.valueContainer}>
-        <Text style={[styles.valueText, { color: theme.textSecondary }]}>
-          强度: {value}
-        </Text>
+        <Text style={[styles.valueText, { color: theme.textSecondary }]}>强度: {value}</Text>
       </View>
     </View>
   )
