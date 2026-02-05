@@ -1,4 +1,5 @@
-import { Button, Dialog, DialogButton, Input } from '@/components/ui'
+import { Button, Input } from '@/components/ui'
+import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
 import { resourcesApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
@@ -24,14 +25,6 @@ export default function SettingsScreen() {
     return serverUrl ? `${serverUrl}${user.avatarUrl}` : null
   }
 
-  // Dialog state
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
-  const [showErrorDialog, setShowErrorDialog] = useState(false)
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
-  const [dialogTitle, setDialogTitle] = useState('')
-  const [dialogMessage, setDialogMessage] = useState('')
-  const [dialogButtons, setDialogButtons] = useState<DialogButton[]>([])
-
   useEffect(() => {
     loadAIConfig()
   }, [])
@@ -51,28 +44,18 @@ export default function SettingsScreen() {
     try {
       await setAIConfig(aiConfig)
       setShowAISettings(false)
-      setDialogTitle('保存成功')
-      setDialogMessage('AI 配置已保存')
-      setDialogButtons([
-        {
-          label: '确定',
-          onPress: () => setShowSuccessDialog(false),
-          variant: 'primary',
-        },
-      ])
-      setShowSuccessDialog(true)
+      toast.show({
+        type: 'success',
+        title: '保存成功',
+        message: 'AI 配置已保存',
+      })
     } catch (error) {
       console.error('Save AI config error:', error)
-      setDialogTitle('保存失败')
-      setDialogMessage('保存 AI 配置时出错，请检查网络连接')
-      setDialogButtons([
-        {
-          label: '确定',
-          onPress: () => setShowErrorDialog(false),
-          variant: 'primary',
-        },
-      ])
-      setShowErrorDialog(true)
+      toast.show({
+        type: 'error',
+        title: '保存失败',
+        message: '保存 AI 配置时出错，请检查网络连接',
+      })
     } finally {
       setSavingAI(false)
     }
@@ -93,28 +76,18 @@ export default function SettingsScreen() {
         })
         // Update local user state with new avatar URL
         await refreshUser()
-        setDialogTitle('上传成功')
-        setDialogMessage('头像已更新')
-        setDialogButtons([
-          {
-            label: '确定',
-            onPress: () => setShowSuccessDialog(false),
-            variant: 'primary',
-          },
-        ])
-        setShowSuccessDialog(true)
+        toast.show({
+          type: 'success',
+          title: '上传成功',
+          message: '头像已更新',
+        })
       } catch (error) {
         console.error('Upload avatar error:', error)
-        setDialogTitle('上传失败')
-        setDialogMessage('上传头像时出错')
-        setDialogButtons([
-          {
-            label: '确定',
-            onPress: () => setShowErrorDialog(false),
-            variant: 'primary',
-          },
-        ])
-        setShowErrorDialog(true)
+        toast.show({
+          type: 'error',
+          title: '上传失败',
+          message: '上传头像时出错',
+        })
       }
     }
   }
@@ -275,64 +248,29 @@ export default function SettingsScreen() {
     </View>
   )
 
+  const handleLogout = async () => {
+    await logout()
+  }
+
   const renderLogoutSection = () => (
     <View style={[styles.section, { marginBottom: 24 }]}>
       <Button
         title="退出登录"
         variant="danger"
         onPress={() => {
-          setDialogTitle('确认登出')
-          setDialogMessage('确定要退出登录吗？')
-          setDialogButtons([
-            {
-              label: '取消',
-              onPress: () => setShowLogoutDialog(false),
-              variant: 'secondary',
-            },
-            {
-              label: '确定',
-              onPress: async () => {
-                setShowLogoutDialog(false)
-                await logout()
-              },
-              variant: 'danger',
-            },
-          ])
-          setShowLogoutDialog(true)
+          toast.show({
+            type: 'warning',
+            title: '确认登出',
+            message: '确定要退出登录吗？',
+            actionLabel: '确定',
+            onAction: handleLogout,
+            duration: 10000,
+          })
         }}
         fullWidth
         leftIcon={<LogOut size={18} color="#FFFFFF" />}
       />
     </View>
-  )
-
-  const renderDialogs = () => (
-    <>
-      <Dialog
-        visible={showLogoutDialog}
-        type="confirm"
-        title={dialogTitle}
-        message={dialogMessage}
-        buttons={dialogButtons}
-        onClose={() => setShowLogoutDialog(false)}
-      />
-      <Dialog
-        visible={showErrorDialog}
-        type="danger"
-        title={dialogTitle}
-        message={dialogMessage}
-        buttons={dialogButtons}
-        onClose={() => setShowErrorDialog(false)}
-      />
-      <Dialog
-        visible={showSuccessDialog}
-        type="info"
-        title={dialogTitle}
-        message={dialogMessage}
-        buttons={dialogButtons}
-        onClose={() => setShowSuccessDialog(false)}
-      />
-    </>
   )
 
   return (
@@ -344,7 +282,6 @@ export default function SettingsScreen() {
         {renderAboutSection()}
         {renderLogoutSection()}
       </View>
-      {renderDialogs()}
     </ScrollView>
   )
 }

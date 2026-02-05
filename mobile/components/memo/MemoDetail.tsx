@@ -1,5 +1,6 @@
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
-import { Badge, Dialog, DialogButton } from '@/components/ui'
+import { Badge } from '@/components/ui'
+import { useToastConfirm } from '@/hooks/useToastConfirm'
 import { useArchiveMemo, useDeleteMemo, useUpdateMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
@@ -40,11 +41,7 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
-  // Dialog state
-  const [showDialog, setShowDialog] = useState(false)
-  const [dialogTitle, setDialogTitle] = useState('')
-  const [dialogMessage, setDialogMessage] = useState('')
-  const [dialogButtons, setDialogButtons] = useState<DialogButton[]>([])
+  const { confirm } = useToastConfirm()
 
   const isPending = isUpdating || isArchiving || isDeleting
 
@@ -67,20 +64,6 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
     }
   }, [content, tags, diaryDate, memo])
 
-  const showCustomDialog = useCallback(
-    (title: string, message: string, buttons: DialogButton[]) => {
-      setDialogTitle(title)
-      setDialogMessage(message)
-      setDialogButtons(buttons)
-      setShowDialog(true)
-    },
-    []
-  )
-
-  const handleCloseDialog = useCallback(() => {
-    setShowDialog(false)
-  }, [])
-
   const handleSave = useCallback(async () => {
     if (!memo || !hasChanges || isPending) return
 
@@ -96,15 +79,9 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
       onClose()
     } catch (error) {
       console.error('Failed to update memo:', error)
-      showCustomDialog('错误', '更新Memo失败', [
-        {
-          label: '确定',
-          onPress: handleCloseDialog,
-          variant: 'primary',
-        },
-      ])
+      // Toast 会自动处理错误提示
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [memo, content, tags, hasChanges, isPending, updateMemo, onClose])
 
   const handleArchive = useCallback(async () => {
@@ -119,49 +96,21 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
       onClose()
     } catch (error) {
       console.error('Failed to archive memo:', error)
-      showCustomDialog('错误', memo.isArchived ? '取消归档失败' : '归档失败', [
-        {
-          label: '确定',
-          onPress: handleCloseDialog,
-          variant: 'primary',
-        },
-      ])
+      // Toast 会自动处理错误提示
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [memo, isPending, archiveMemo, onClose])
 
   const handleDelete = useCallback(() => {
     if (!memo) return
 
-    showCustomDialog('删除Memo', '确定要删除这条Memo吗？删除后无法恢复。', [
-      {
-        label: '取消',
-        onPress: handleCloseDialog,
-        variant: 'secondary',
-      },
-      {
-        label: '删除',
-        onPress: async () => {
-          try {
-            await deleteMemo(memo.id)
-            onDelete?.(memo.id)
-            onClose()
-          } catch (error) {
-            console.error('Failed to delete memo:', error)
-            showCustomDialog('错误', '删除失败', [
-              {
-                label: '确定',
-                onPress: handleCloseDialog,
-                variant: 'primary',
-              },
-            ])
-          }
-        },
-        variant: 'danger',
-      },
-    ])
+    confirm('确定删除这条 Memo 吗？', async () => {
+      await deleteMemo(memo.id)
+      onDelete?.(memo.id)
+      onClose()
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [memo, isPending, deleteMemo, onDelete, onClose])
+  }, [memo, isPending, deleteMemo, onDelete, onClose, confirm])
 
   const handleAddTag = useCallback(() => {
     const trimmedTag = tagInput.trim()
@@ -173,23 +122,11 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
 
   const handleRemoveTag = useCallback(
     (tagToRemove: string) => {
-      showCustomDialog('删除标签', `确定要删除标签 "${tagToRemove}" 吗？`, [
-        {
-          label: '取消',
-          onPress: () => setShowDialog(false),
-          variant: 'secondary',
-        },
-        {
-          label: '删除',
-          onPress: () => {
-            setShowDialog(false)
-            setTags(tags.filter(tag => tag !== tagToRemove))
-          },
-          variant: 'danger',
-        },
-      ])
+      confirm(`确定删除标签 "${tagToRemove}" 吗？`, () => {
+        setTags(tags.filter(tag => tag !== tagToRemove))
+      })
     },
-    [tags, showCustomDialog]
+    [tags, confirm]
   )
 
   const handleDateChange = useCallback((event: any, selectedDate?: Date) => {
@@ -201,26 +138,14 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
 
   const handleClose = useCallback(() => {
     if (hasChanges) {
-      showCustomDialog('未保存的更改', '您有未保存的更改，确定要关闭吗？', [
-        {
-          label: '继续编辑',
-          onPress: handleCloseDialog,
-          variant: 'secondary',
-        },
-        {
-          label: '放弃更改',
-          onPress: () => {
-            handleCloseDialog()
-            onClose()
-          },
-          variant: 'danger',
-        },
-      ])
+      confirm('您有未保存的更改，确定要关闭吗？', () => {
+        onClose()
+      })
     } else {
       onClose()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasChanges, onClose])
+      
+  }, [hasChanges, onClose, confirm])
 
   if (!memo) {
     return null
@@ -381,15 +306,6 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
-
-        <Dialog
-          visible={showDialog}
-          type="confirm"
-          title={dialogTitle}
-          message={dialogMessage}
-          buttons={dialogButtons}
-          onClose={handleCloseDialog}
-        />
       </SafeAreaView>
     </Modal>
   )
