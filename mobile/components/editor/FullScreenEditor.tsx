@@ -1,8 +1,6 @@
-import { TagInput } from '@/components/tag/TagInput'
+import { resourcesApi } from '@/lib/api/resources'
 import { Button, Loading, toast } from '@/components/ui'
 import { useConnection } from '@/hooks/use-connection'
-import { resourcesApi } from '@/lib/api'
-import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import * as ImagePicker from 'expo-image-picker'
 import { Image, X } from 'lucide-react-native'
@@ -19,6 +17,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { RichTextEditor } from './RichTextEditor'
+import { TagInput } from '../tag/TagInput'
 
 interface FullScreenEditorProps {
   visible: boolean
@@ -45,17 +44,19 @@ export function FullScreenEditor({
   const [tags, setTags] = useState<string[]>(initialTags)
   const [resources, setResources] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  const [resourceUrls, setResourceUrls] = useState<Map<string, string>>(new Map())
 
   useEffect(() => {
     if (visible) {
       setContent(initialContent)
       setTags(initialTags)
       setResources([])
+      setResourceUrls(new Map())
     }
   }, [visible, initialContent, initialTags])
 
   const handleSubmit = () => {
-    const textContent = stringUtils.extractTextFromHtml(content)
+    const textContent = extractTextFromHtml(content)
     if (textContent) {
       onSubmit(content, tags, resources)
       setContent('')
@@ -70,6 +71,12 @@ export function FullScreenEditor({
     setTags([])
     setResources([])
     onClose()
+  }
+
+  const extractTextFromHtml = (html: string) => {
+    const tmp = document.createElement('DIV')
+    tmp.innerHTML = html
+    return tmp.textContent || tmp.innerText || ''
   }
 
   const handleImagePick = async () => {
@@ -96,7 +103,9 @@ export function FullScreenEditor({
           'new'
         )
         setResources(prev => [...prev, resource.id])
-        const imageHtml = `<img src="${resource.url}" alt="uploaded image" style="max-width: 100%; border-radius: 8px; margin: 8px 0;" />`
+        const imageUrl = await resourcesApi.getDownloadUrl(resource.id)
+        setResourceUrls(prev => new Map(prev).set(resource.id, imageUrl))
+        const imageHtml = `<img src="${imageUrl}" alt="uploaded image" style="max-width: 100%; border-radius: 8px; margin: 8px 0;" />`
         setContent(prev => prev + imageHtml)
       } catch (error) {
         console.error('Image upload error:', error)
@@ -132,13 +141,13 @@ export function FullScreenEditor({
               <X size={24} color={theme.text} strokeWidth={2} />
             </TouchableOpacity>
             <Text style={[styles.headerTitle, { color: theme.text }]}>创建MEMO</Text>
-            <TouchableOpacity
-              onPress={handleImagePick}
-              style={styles.closeButton}
-              disabled={uploading || !canUseNetwork}
-            >
-              {uploading ? <Loading size="small" /> : <Image size={22} color={theme.text} />}
-            </TouchableOpacity>
+            <Button
+              title="创建"
+              onPress={handleSubmit}
+              variant="ghost"
+              size="large"
+              disabled={extractTextFromHtml(content).length === 0 || !canUseNetwork}
+            />
           </View>
 
           <ScrollView style={styles.contentContainer} keyboardShouldPersistTaps="handled">
@@ -158,24 +167,13 @@ export function FullScreenEditor({
               <TagInput
                 tags={tags}
                 onTagsChange={setTags}
-                content={stringUtils.extractTextFromHtml(content)}
+                content={extractTextFromHtml(content)}
                 suggestions={availableTags}
                 placeholder="添加标签..."
               />
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
-
-        <View style={[styles.createButtonContainer, { backgroundColor: theme.background }]}>
-          <Button
-            title="创建"
-            onPress={handleSubmit}
-            variant="primary"
-            size="large"
-            fullWidth={true}
-            disabled={stringUtils.extractTextFromHtml(content).length === 0 || !canUseNetwork}
-          />
-        </View>
       </SafeAreaView>
     </Modal>
   )

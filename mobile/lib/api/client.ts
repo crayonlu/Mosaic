@@ -19,7 +19,7 @@ export class ApiClient {
     return this.baseUrl
   }
 
-  private async getHeaders(includeAuth: boolean = true): Promise<HeadersInit> {
+  async getHeaders(includeAuth: boolean = true): Promise<HeadersInit> {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     }
@@ -130,6 +130,82 @@ export class ApiClient {
         const refreshed = await this.refreshTokenIfNeeded()
         if (refreshed) {
           return this.request<T>(method, path, { ...options, retry: false })
+        }
+        throw { error: 'Unauthorized', status: 401 } as ApiError
+      }
+
+      if (!response.ok) {
+        let errorData: ApiError
+        try {
+          errorData = await response.json()
+        } catch {
+          errorData = { error: response.statusText, status: response.status }
+        }
+        throw errorData
+      }
+
+      if (response.status === 204 || response.headers.get('content-length') === '0') {
+        return undefined as T
+      }
+
+      return response.json()
+    } catch (error) {
+      clearTimeout(timeoutId)
+
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw { error: '请求超时', status: 408 } as ApiError
+      }
+
+      if ((error as ApiError).error) {
+        throw error
+      }
+
+      throw { error: '网络错误', status: 0 } as ApiError
+    }
+  }
+
+  async requestWithoutAuth<T>(
+    method: string,
+    path: string,
+    options: {
+      body?: unknown
+      query?: Record<string, string | number | boolean | undefined>
+      retry?: boolean
+    } = {}
+  ): Promise<T> {
+    const { body, query, retry = true } = options
+
+    let url = `${this.baseUrl}${path}`
+
+    if (query) {
+      const params = new URLSearchParams()
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined) {
+          params.append(key, String(value))
+        }
+      })
+      const queryString = params.toString()
+      if (queryString) {
+        url += `?${queryString}`
+      }
+    }
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
+
+    try {
+      const response = await fetch(url, {
+        method,
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      if (response.status === 401 && retry) {
+        const refreshed = await this.refreshTokenIfNeeded()
+        if (refreshed) {
+          return this.requestWithoutAuth<T>(method, path, { ...options, retry: false })
         }
         throw { error: 'Unauthorized', status: 401 } as ApiError
       }

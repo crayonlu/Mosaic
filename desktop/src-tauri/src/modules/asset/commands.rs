@@ -131,3 +131,13 @@ pub async fn get_resource(
     let resource_api = ResourceApi::new(api_client.inner().clone());
     resource_api.get(&id).await.map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub async fn get_presigned_image_url(
+    api_client: tauri::State<'_, crate::api::ApiClient>,
+    id: String,
+) -> Result<String, String> {
+    let resource_api = ResourceApi::new(api_client.inner().clone());
+    let response = resource_api.get_presigned_url(&id).await.map_err(|e| e.to_string())?;
+    Ok(response.url)
+}

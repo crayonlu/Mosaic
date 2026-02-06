@@ -1,6 +1,7 @@
 import { Loading } from '@/components/ui'
 import { useDiaries } from '@/lib/query'
-import { getMoodEmoji, getMoodColor } from '@/lib/utils/mood'
+import { getMoodColor, getMoodEmoji } from '@/lib/utils/mood'
+import { resourcesApi } from '@/lib/api/resources'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { DiaryResponse } from '@/types/api'
@@ -15,6 +16,12 @@ interface DiaryFeedProps {
 export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
   const { theme } = useThemeStore()
   const [refreshing, setRefreshing] = useState(false)
+  const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
+
+  const getFullResourceUrl = async (resourceId: string): Promise<string> => {
+    const baseUrl = resourcesApi.getDownloadUrl(resourceId)
+    return baseUrl
+  }
 
   const {
     data: paginatedData,
@@ -41,8 +48,18 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
     }
   }, [isLoading, hasNextPage, fetchNextPage])
 
-  const renderDiaryCard = ({ item }: { item: DiaryResponse; index: number }) => {
+  const renderDiaryCard = async ({ item }: { item: DiaryResponse; index: number }) => {
+    if (item.coverImageId && !imageUrls.has(item.coverImageId)) {
+      try {
+        const url = await getFullResourceUrl(item.coverImageId)
+        setImageUrls(prev => new Map(prev).set(item.coverImageId, url))
+      } catch (error) {
+        console.error('Failed to load cover image:', error)
+      }
+    }
+
     const moodColor = getMoodColor(item.moodKey)
+    const imageUrl = imageUrls.get(item.coverImageId || '')
 
     return (
       <Pressable
@@ -60,7 +77,7 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
         {item.coverImageId && (
           <View style={styles.coverContainer}>
             <Image
-              source={{ uri: `https://your-api.com/resources/${item.coverImageId}` }}
+              source={{ uri: imageUrl }}
               style={styles.coverImage}
               resizeMode="cover"
             />

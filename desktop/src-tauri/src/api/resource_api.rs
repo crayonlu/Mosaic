@@ -40,6 +40,12 @@ pub struct ConfirmUploadRequest {
     pub resource_id: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresignedUrlResponse {
+    pub url: String,
+}
+
 pub struct ResourceApi {
     client: ApiClient,
 }
@@ -98,6 +104,16 @@ impl ResourceApi {
     pub async fn get(&self, id: &str) -> AppResult<ResourceResponse> {
         self.client
             .request::<ResourceResponse>(
+                reqwest::Method::GET,
+                &format!("/api/resources/{}", id),
+                None,
+            )
+            .await
+    }
+
+    pub async fn get_presigned_url(&self, id: &str) -> AppResult<PresignedUrlResponse> {
+        self.client
+            .request::<PresignedUrlResponse>(
                 reqwest::Method::GET,
                 &format!("/api/resources/{}", id),
                 None,
