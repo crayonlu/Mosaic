@@ -1,7 +1,7 @@
+import { Image as ImageIcon, Video as VideoIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { apiClient } from '../../lib/api-client'
 import type { Resource } from '../../types/api'
-import { Image as ImageIcon, Video as VideoIcon } from 'lucide-react'
 
 export function ResourceThumbnails({
   resources,
@@ -72,7 +72,7 @@ export function ResourceThumbnails({
   return (
     <div className={className}>
       <div className="flex flex-wrap gap-2">
-        {displayImages.map((resource, index) => {
+        {displayImages.map((resource) => {
           const imageUrl = imageUrls.get(resource.id)
           return (
             <div

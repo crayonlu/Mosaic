@@ -31,9 +31,7 @@ interface ToolbarProps {
   className?: string
   onToggleMarkdown?: () => void
   markdownMode?: boolean
-  onOpenLinkDialog?: () => void
   onSave?: () => void
-  isExpanded?: boolean
 }
 
 export function Toolbar({
@@ -41,9 +39,7 @@ export function Toolbar({
   className,
   onToggleMarkdown,
   markdownMode,
-  onOpenLinkDialog,
   onSave,
-  isExpanded,
 }: ToolbarProps) {
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
 
