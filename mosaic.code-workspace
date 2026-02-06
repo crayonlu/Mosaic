@@ -9,6 +9,10 @@
       "path": "./mobile"
     },
     {
+      "name": "👂🏻 Server (Rust)",
+      "path": "./server"
+    },
+    {
       "name": "📚 Docs",
       "path": "./docs"
     }

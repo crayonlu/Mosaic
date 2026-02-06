@@ -189,6 +189,8 @@ export const assetCommands = {
 
   readImageFile: (filename: string) => callRust<number[]>('read_image_file', { filename }),
 
+  getPresignedImageUrl: (id: string) => callRust<string>('get_presigned_image_url', { id }),
+
   deleteAssetFile: (filename: string) => callRust<void>('delete_asset_file', { filename }),
 }
 

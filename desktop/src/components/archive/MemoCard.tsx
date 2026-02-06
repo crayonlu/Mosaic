@@ -28,13 +28,10 @@ export const MemoCard = memo<MemoCardProps>(
         for (const resource of memo.resources) {
           if (resource.resourceType === 'image') {
             try {
-              const fileData = await assetCommands.readImageFile(resource.filename)
-              const uint8Array = new Uint8Array(fileData)
-              const blob = new Blob([uint8Array], { type: resource.mimeType })
-              const url = URL.createObjectURL(blob)
+              const url = await assetCommands.getPresignedImageUrl(resource.id)
               newImageUrls.set(resource.id, url)
             } catch (error) {
-              console.error(`加载图片失败 ${resource.filename}:`, error)
+              console.error(`加载图片失败 ${resource.id}:`, error)
             }
           }
         }
@@ -45,7 +42,11 @@ export const MemoCard = memo<MemoCardProps>(
       loadImages()
 
       return () => {
-        imageUrls.forEach(url => URL.revokeObjectURL(url))
+        imageUrls.forEach(url => {
+          if (url.startsWith('blob:')) {
+            URL.revokeObjectURL(url)
+          }
+        })
       }
     }, [memo.resources])
 
