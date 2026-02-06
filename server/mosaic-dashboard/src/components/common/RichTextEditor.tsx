@@ -72,7 +72,6 @@ interface RichTextEditorProps {
   className?: string
   editable?: boolean
   onSave?: () => void
-  isExpanded?: boolean
 }
 
 export function RichTextEditor({
@@ -82,7 +81,6 @@ export function RichTextEditor({
   className,
   editable = true,
   onSave,
-  isExpanded = false,
 }: RichTextEditorProps) {
   const [, setRenderCounter] = useState(0)
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
