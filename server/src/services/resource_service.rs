@@ -1,14 +1,25 @@
 use crate::config::Config;
 use crate::error::AppError;
-use crate::models::{ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse, Resource, ResourceResponse};
+use crate::models::{
+    ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse, Resource,
+    ResourceResponse,
+};
 use crate::storage::traits::Storage;
 use bytes::Bytes;
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::sync::Arc;
 use uuid::Uuid;
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ResourceTokenClaims {
+    sub: String,
+    resource_id: String,
+    exp: usize,
+    iat: usize,
+}
 
 #[derive(Clone)]
 pub struct ResourceService {
@@ -19,7 +30,12 @@ pub struct ResourceService {
 }
 
 impl ResourceService {
-    pub fn new(pool: PgPool, storage: Arc<dyn Storage>, config: Config, jwt_secret: String) -> Self {
+    pub fn new(
+        pool: PgPool,
+        storage: Arc<dyn Storage>,
+        config: Config,
+        jwt_secret: String,
+    ) -> Self {
         Self {
             pool,
             storage,
@@ -28,39 +44,42 @@ impl ResourceService {
         }
     }
 
-    fn generate_resource_token(&self, user_id: &str, resource_id: Uuid, expires_secs: u64) -> Result<String, AppError> {
+    fn generate_resource_token(
+        &self,
+        user_id: &str,
+        resource_id: Uuid,
+        expires_secs: u64,
+    ) -> Result<String, AppError> {
         let now = Utc::now().timestamp() as usize;
         let exp = now + expires_secs as usize;
 
-        let claims = Value::Object(vec![
-            ("sub".to_string(), Value::String(user_id.to_string())),
-            ("resource_id".to_string(), Value::String(resource_id.to_string())),
-            ("exp".to_string(), Value::Number(exp.try_into().unwrap())),
-            ("iat".to_string(), Value::Number(now.try_into().unwrap())),
-        ].into_iter().collect());
+        let claims = ResourceTokenClaims {
+            sub: user_id.to_string(),
+            resource_id: resource_id.to_string(),
+            exp,
+            iat: now,
+        };
 
         let token = encode(
             &Header::default(),
             &claims,
             &EncodingKey::from_secret(self.jwt_secret.as_ref()),
-        ).map_err(|_| AppError::Internal("Token generation failed".to_string()))?;
+        )
+        .map_err(|_| AppError::Internal("Token generation failed".to_string()))?;
 
         Ok(token)
     }
 
     pub async fn validate_resource_token(&self, token: &str) -> Result<Uuid, AppError> {
-        let token_data: Value = decode::<Value>(
+        let token_data: ResourceTokenClaims = decode::<ResourceTokenClaims>(
             token,
             &DecodingKey::from_secret(self.jwt_secret.as_ref()),
             &Validation::default(),
-        ).map_err(|_| AppError::InvalidToken)?.claims;
+        )
+        .map_err(|_| AppError::InvalidToken)?
+        .claims;
 
-        let resource_id = token_data
-            .get("resource_id")
-            .and_then(|v| v.as_str())
-            .ok_or(AppError::InvalidToken)?;
-
-        Uuid::parse_str(resource_id).map_err(|_| AppError::InvalidToken)
+        Uuid::parse_str(&token_data.resource_id).map_err(|_| AppError::InvalidToken)
     }
 
     pub async fn upload_resource(
@@ -164,7 +183,7 @@ impl ResourceService {
         expires_secs: u64,
     ) -> Result<String, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
-        
+
         let resource = sqlx::query_as::<_, Resource>(
             "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.created_at
              FROM resources r
@@ -178,12 +197,11 @@ impl ResourceService {
         .ok_or(AppError::ResourceNotFound)?;
 
         let url = match self.config.storage_type {
-            crate::config::StorageType::R2 => {
-                self.storage
-                    .get_presigned_url(&resource.storage_path, expires_secs)
-                    .await
-                    .map_err(|e| AppError::Storage(e.to_string()))?
-            }
+            crate::config::StorageType::R2 => self
+                .storage
+                .get_presigned_url(&resource.storage_path, expires_secs)
+                .await
+                .map_err(|e| AppError::Storage(e.to_string()))?,
             crate::config::StorageType::Local => {
                 let token = self.generate_resource_token(user_id, resource_id, expires_secs)?;
                 format!("/api/resources/{}/download?token={}", resource_id, token)
@@ -339,7 +357,10 @@ impl ResourceService {
         }
     }
 
-    pub async fn download_avatar_proxy(&self, avatar_id: Uuid) -> Result<(Bytes, String), AppError> {
+    pub async fn download_avatar_proxy(
+        &self,
+        avatar_id: Uuid,
+    ) -> Result<(Bytes, String), AppError> {
         match self.config.storage_type {
             crate::config::StorageType::Local => {
                 let base_path = &self.config.local_storage_path;
@@ -361,7 +382,10 @@ impl ResourceService {
                                                 .map_err(|e| {
                                                 AppError::Storage(e.to_string())
                                             })?;
-                                            return Ok((Bytes::from(data), "image/jpeg".to_string()));
+                                            return Ok((
+                                                Bytes::from(data),
+                                                "image/jpeg".to_string(),
+                                            ));
                                         }
                                     }
                                 }
