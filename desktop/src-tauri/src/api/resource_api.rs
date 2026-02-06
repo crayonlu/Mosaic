@@ -54,6 +54,7 @@ impl ResourceApi {
         filename: String,
         data: Vec<u8>,
         mime_type: String,
+        memo_id: Option<String>,
     ) -> AppResult<serde_json::Value> {
         if !mime_type.starts_with("image/") && !mime_type.starts_with("video/") {
             return Err(crate::error::AppError::UploadError(
@@ -63,12 +64,16 @@ impl ResourceApi {
 
         let url = format!("{}/api/resources/upload", self.client.base_url());
 
-        let form = reqwest::multipart::Form::new().part(
+        let mut form = reqwest::multipart::Form::new().part(
             "file",
             reqwest::multipart::Part::bytes(data)
                 .file_name(filename)
                 .mime_str(&mime_type)?,
         );
+
+        if let Some(id) = memo_id {
+            form = form.text("memoId", id);
+        }
 
         let mut request = self.client.inner().post(&url);
 

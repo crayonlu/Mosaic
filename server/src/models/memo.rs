@@ -31,7 +31,7 @@ pub struct MemoResponse {
 #[serde(rename_all = "camelCase")]
 pub struct ResourceResponse {
     pub id: Uuid,
-    pub memo_id: Uuid,
+    pub memo_id: Option<Uuid>,
     pub filename: String,
     pub resource_type: String,
     pub mime_type: String,

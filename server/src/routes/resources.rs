@@ -57,11 +57,6 @@ pub async fn upload_resource(
         }
     }
 
-    let memo_id = match memo_id {
-        Some(id) => id,
-        None => return HttpResponse::BadRequest().json("Missing memo_id"),
-    };
-
     if filename.is_empty() {
         filename = "unnamed".to_string();
     }

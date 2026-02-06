@@ -182,7 +182,7 @@ export const diaryCommands = {
 }
 
 export const assetCommands = {
-  uploadFiles: (filePaths: string[]) => callRust<UploadedResource[]>('upload_files', { filePaths }),
+  uploadFiles: (filePaths: string[], memoId?: string) => callRust<UploadedResource[]>('upload_files', { filePaths, memoId }),
 
   saveTempFile: (filename: string, data: number[]) =>
     callRust<string>('save_temp_file', { filename, data }),
