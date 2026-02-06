@@ -6,14 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { apiClient } from '../lib/api-client'
-import type { User } from '../types/api'
 
 interface DashboardProps {
-  user: User | null
   onLogout: () => void
 }
 
-export function Dashboard({ user, onLogout }: DashboardProps) {
+export function Dashboard({ onLogout }: DashboardProps) {
   const [activeTab, setActiveTab] = useState('memos')
   const [stats, setStats] = useState({
     memoCount: 0,
