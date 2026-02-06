@@ -1,12 +1,14 @@
-import { useState, useCallback } from 'react'
-import { useConnectionStore } from '../stores/connection-store'
+import { useCallback, useState } from 'react'
 import { createAIClient, type TagSuggestion } from '../lib/ai'
+import { useConnectionStore } from '../stores/connection-store'
+import { useAIConfig } from './use-ai-config'
 
 export function useAITags() {
   const [suggestions, setSuggestions] = useState<TagSuggestion[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { isConnected } = useConnectionStore()
+  const { isAIEnabled } = useAIConfig()
 
   const suggest = useCallback(
     async (content: string) => {
@@ -17,6 +19,11 @@ export function useAITags() {
 
       if (!isConnected) {
         setError('无网络连接')
+        return
+      }
+
+      if (!isAIEnabled) {
+        setError('请先在设置中配置 AI')
         return
       }
 
@@ -34,7 +41,7 @@ export function useAITags() {
         setLoading(false)
       }
     },
-    [isConnected]
+    [isConnected, isAIEnabled]
   )
 
   const clear = useCallback(() => {
@@ -48,6 +55,6 @@ export function useAITags() {
     error,
     suggest,
     clear,
-    disabled: !isConnected,
+    disabled: !isConnected || !isAIEnabled,
   }
 }

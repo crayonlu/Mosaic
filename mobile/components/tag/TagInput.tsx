@@ -1,5 +1,6 @@
+import { Loading } from '@/components/ui'
 import { Badge } from '@/components/ui/Badge'
-import { Button, Loading } from '@/components/ui'
+import { useAIConfig } from '@/hooks/use-ai-config'
 import { useAITags } from '@/hooks/use-ai-tags'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useThemeStore } from '@/stores/theme-store'
@@ -28,6 +29,7 @@ export function TagInput({
 }: TagInputProps) {
   const { theme } = useThemeStore()
   const { isConnected } = useConnectionStore()
+  const { isAIEnabled } = useAIConfig()
   const { suggestions: aiSuggestions, loading: aiLoading, suggest: getAISuggestions } = useAITags()
   const [inputValue, setInputValue] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -60,7 +62,7 @@ export function TagInput({
   }
 
   const handleAISuggest = () => {
-    if (content && isConnected) {
+    if (content && isConnected && isAIEnabled) {
       getAISuggestions(content)
       setShowSuggestions(true)
     }
@@ -112,7 +114,7 @@ export function TagInput({
           )}
         </View>
 
-        {content && isConnected && (
+        {content && isConnected && isAIEnabled && (
           <TouchableOpacity
             style={[styles.aiButton, { backgroundColor: theme.primary + '15' }]}
             onPress={handleAISuggest}

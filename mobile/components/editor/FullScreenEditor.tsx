@@ -1,9 +1,10 @@
-import { resourcesApi } from '@/lib/api/resources'
-import { Button, Loading, toast } from '@/components/ui'
+import { Button, toast } from '@/components/ui'
 import { useConnection } from '@/hooks/use-connection'
+import { resourcesApi } from '@/lib/api/resources'
 import { useThemeStore } from '@/stores/theme-store'
 import * as ImagePicker from 'expo-image-picker'
-import { Image, X } from 'lucide-react-native'
+import { Parser } from 'htmlparser2'
+import { X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import {
   KeyboardAvoidingView,
@@ -16,8 +17,8 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { RichTextEditor } from './RichTextEditor'
 import { TagInput } from '../tag/TagInput'
+import { RichTextEditor } from './RichTextEditor'
 
 interface FullScreenEditorProps {
   visible: boolean
@@ -45,6 +46,7 @@ export function FullScreenEditor({
   const [resources, setResources] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [resourceUrls, setResourceUrls] = useState<Map<string, string>>(new Map())
+  const [textContent, setTextContent] = useState('')
 
   useEffect(() => {
     if (visible) {
@@ -52,16 +54,21 @@ export function FullScreenEditor({
       setTags(initialTags)
       setResources([])
       setResourceUrls(new Map())
+      extractTextFromHtml(initialContent).then(setTextContent)
     }
   }, [visible, initialContent, initialTags])
 
-  const handleSubmit = () => {
-    const textContent = extractTextFromHtml(content)
+  useEffect(() => {
+    extractTextFromHtml(content).then(setTextContent)
+  }, [content])
+
+  const handleSubmit = async () => {
     if (textContent) {
       onSubmit(content, tags, resources)
       setContent('')
       setTags([])
       setResources([])
+      setTextContent('')
       onClose()
     }
   }
@@ -70,13 +77,32 @@ export function FullScreenEditor({
     setContent('')
     setTags([])
     setResources([])
+    setTextContent('')
     onClose()
   }
 
   const extractTextFromHtml = (html: string) => {
-    const tmp = document.createElement('DIV')
-    tmp.innerHTML = html
-    return tmp.textContent || tmp.innerText || ''
+    return new Promise<string>((resolve) => {
+      let text = ''
+      const parser = new Parser({
+        ontext: (chunk) => {
+          text += chunk
+        },
+        onend: () => {
+          text = text
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&nbsp;/g, ' ')
+          text = text.replace(/\s+/g, ' ').trim()
+          resolve(text)
+        },
+      })
+      parser.write(html)
+      parser.end()
+    })
   }
 
   const handleImagePick = async () => {
@@ -146,7 +172,7 @@ export function FullScreenEditor({
               onPress={handleSubmit}
               variant="ghost"
               size="large"
-              disabled={extractTextFromHtml(content).length === 0 || !canUseNetwork}
+              disabled={textContent.length === 0 || !canUseNetwork}
             />
           </View>
 
@@ -167,7 +193,7 @@ export function FullScreenEditor({
               <TagInput
                 tags={tags}
                 onTagsChange={setTags}
-                content={extractTextFromHtml(content)}
+                content={textContent}
                 suggestions={availableTags}
                 placeholder="添加标签..."
               />

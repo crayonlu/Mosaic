@@ -129,6 +129,5 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 4,
   },
 })
