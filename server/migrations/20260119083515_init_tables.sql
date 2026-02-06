@@ -27,7 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_memos_diary_date ON memos(diary_date);
 
 CREATE TABLE IF NOT EXISTS resources (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  memo_id UUID NOT NULL REFERENCES memos(id) ON DELETE CASCADE,
+  memo_id UUID REFERENCES memos(id) ON DELETE CASCADE,
   filename VARCHAR(255) NOT NULL,
   resource_type VARCHAR(20) NOT NULL DEFAULT 'image' CHECK(resource_type IN ('image', 'video')),
   mime_type VARCHAR(100) NOT NULL,

@@ -36,14 +36,16 @@ impl ResourceService {
         let memo_id = req.memo_id;
         let user_uuid = Uuid::parse_str(user_id)?;
 
-        let memo_exists = sqlx::query("SELECT id FROM memos WHERE id = $1 AND user_id = $2")
-            .bind(memo_id)
-            .bind(user_uuid)
-            .fetch_optional(&self.pool)
-            .await?;
+        if let Some(id) = memo_id {
+            let memo_exists = sqlx::query("SELECT id FROM memos WHERE id = $1 AND user_id = $2")
+                .bind(id)
+                .bind(user_uuid)
+                .fetch_optional(&self.pool)
+                .await?;
 
-        if memo_exists.is_none() {
-            return Err(AppError::MemoNotFound);
+            if memo_exists.is_none() {
+                return Err(AppError::MemoNotFound);
+            }
         }
 
         let resource_id = Uuid::new_v4();
@@ -109,11 +111,9 @@ impl ResourceService {
         let resource = sqlx::query_as::<_, Resource>(
             "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.created_at
              FROM resources r
-             JOIN memos m ON r.memo_id = m.id
-             WHERE r.id = $1 AND m.user_id = $2",
+             WHERE r.id = $1",
         )
         .bind(resource_id)
-        .bind(user_uuid)
         .fetch_optional(&self.pool)
         .await?
         .ok_or(AppError::ResourceNotFound)?;
@@ -151,11 +151,9 @@ impl ResourceService {
         let resource = sqlx::query_as::<_, Resource>(
             "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.created_at
              FROM resources r
-             JOIN memos m ON r.memo_id = m.id
-             WHERE r.id = $1 AND m.user_id = $2",
+             WHERE r.id = $1",
         )
         .bind(resource_id)
-        .bind(user_uuid)
         .fetch_optional(&self.pool)
         .await?
         .ok_or(AppError::ResourceNotFound)?;
@@ -171,11 +169,9 @@ impl ResourceService {
         let resource = sqlx::query_as::<_, Resource>(
             "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.created_at
              FROM resources r
-             JOIN memos m ON r.memo_id = m.id
-             WHERE r.id = $1 AND m.user_id = $2",
+             WHERE r.id = $1",
         )
         .bind(resource_id)
-        .bind(user_uuid)
         .fetch_optional(&self.pool)
         .await?
         .ok_or(AppError::ResourceNotFound)?;

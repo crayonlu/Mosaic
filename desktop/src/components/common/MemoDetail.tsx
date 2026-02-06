@@ -268,7 +268,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
         const uint8Array = Array.from(new Uint8Array(arrayBuffer))
 
         const tempFilePath = await assetCommands.saveTempFile(file.name, uint8Array)
-        const uploadedResources = await assetCommands.uploadFiles([tempFilePath])
+        const uploadedResources = await assetCommands.uploadFiles([tempFilePath], memo.id)
 
         if (uploadedResources.length > 0) {
           uploadedFiles.push(uploadedResources[0].filename)

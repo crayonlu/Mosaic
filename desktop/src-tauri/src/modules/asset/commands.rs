@@ -7,6 +7,7 @@ use tauri::Manager;
 pub async fn upload_files(
     api_client: tauri::State<'_, crate::api::ApiClient>,
     file_paths: Vec<String>,
+    memo_id: Option<String>,
 ) -> Result<Vec<UploadedResource>, String> {
     let resource_api = ResourceApi::new(api_client.inner().clone());
     let mut results = Vec::new();
@@ -31,7 +32,7 @@ pub async fn upload_files(
         }
 
         let response = resource_api
-            .upload(filename.clone(), data, mime_type)
+            .upload(filename.clone(), data, mime_type, memo_id.clone())
             .await
             .map_err(|e| e.to_string())?;
 
