@@ -3,11 +3,9 @@ import { useEffect, useState } from 'react'
 import { Toaster } from './components/ui/toaster'
 import { apiClient } from './lib/api-client'
 import { Login } from './pages/Login'
-import type { User } from './types/api'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -15,8 +13,7 @@ function App() {
       const token = localStorage.getItem('accessToken')
       if (token) {
         try {
-          const user = await apiClient.getCurrentUser()
-          setUser(user)
+          await apiClient.getCurrentUser()
           setIsAuthenticated(true)
         } catch (error) {
           console.error('auth: ', error)
@@ -32,14 +29,12 @@ function App() {
   }, [])
 
   const handleLogin = async (serverUrl: string, username: string, password: string) => {
-    const response = await apiClient.login(serverUrl, username, password)
-    setUser(response.user)
+    await apiClient.login(serverUrl, username, password)
     setIsAuthenticated(true)
   }
 
   const handleLogout = () => {
     apiClient.clearAuth()
-    setUser(null)
     setIsAuthenticated(false)
   }
 
