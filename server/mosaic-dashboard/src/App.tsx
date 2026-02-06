@@ -62,7 +62,7 @@ function App() {
 
   return (
     <>
-      <Dashboard user={user} onLogout={handleLogout} />
+      <Dashboard onLogout={handleLogout} />
       <Toaster />
     </>
   )

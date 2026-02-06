@@ -199,9 +199,7 @@ export function RichTextEditor({
         editor={editor}
         onToggleMarkdown={() => setMarkdownMode(!markdownMode)}
         markdownMode={markdownMode}
-        onOpenLinkDialog={() => setIsLinkDialogOpen(true)}
         onSave={handleSave}
-        isExpanded={isExpanded}
       />
       <div className="relative flex-1 flex">
         <EditorContent
