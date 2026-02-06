@@ -54,9 +54,10 @@ export function useFileUpload() {
           const uploadedResources = await assetCommands.uploadFiles([tempFilePath])
 
           if (uploadedResources.length > 0) {
+            const presignedUrl = await assetCommands.getPresignedImageUrl(uploadedResources[0].id)
             uploadedFiles.push({
               filename: uploadedResources[0].filename,
-              previewUrl,
+              previewUrl: presignedUrl,
               type: fileType,
               size: file.size,
             })

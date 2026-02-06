@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
 import { useArchiveMemo, useDeleteMemo, useUpdateMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
+import { resourcesApi } from '@/lib/api/resources'
 import type { MemoWithResources } from '@/types/memo'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { ArrowLeft, Check } from 'lucide-react-native'
@@ -40,6 +41,7 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
   const [diaryDate, setDiaryDate] = useState<Date | null>(null)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
 
   const { confirm } = useToastConfirm()
 
@@ -51,6 +53,26 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
       setTags(memo.tags)
       setDiaryDate(memo.diaryDate ? new Date(memo.diaryDate) : null)
       setHasChanges(false)
+    }
+  }, [memo])
+
+  useEffect(() => {
+    if (memo && memo.resources.length > 0) {
+      const loadImages = async () => {
+        const newImageUrls = new Map<string, string>()
+        for (const resource of memo.resources) {
+          if (resource.resourceType === 'image') {
+            try {
+              const url = await resourcesApi.getDownloadUrl(resource.id)
+              newImageUrls.set(resource.id, url)
+            } catch (error) {
+              console.error(`Failed to load image ${resource.id}:`, error)
+            }
+          }
+        }
+        setImageUrls(newImageUrls)
+      }
+      loadImages()
     }
   }, [memo])
 
@@ -81,7 +103,6 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
       console.error('Failed to update memo:', error)
       // Toast 会自动处理错误提示
     }
-     
   }, [memo, content, tags, hasChanges, isPending, updateMemo, onClose])
 
   const handleArchive = useCallback(async () => {
@@ -98,7 +119,6 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
       console.error('Failed to archive memo:', error)
       // Toast 会自动处理错误提示
     }
-     
   }, [memo, isPending, archiveMemo, onClose])
 
   const handleDelete = useCallback(() => {
@@ -144,7 +164,6 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
     } else {
       onClose()
     }
-      
   }, [hasChanges, onClose, confirm])
 
   if (!memo) {
@@ -266,7 +285,7 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
                   {imageResources.map(resource => (
                     <Image
                       key={resource.id}
-                      source={{ uri: resource.url }}
+                      source={{ uri: imageUrls.get(resource.id) }}
                       style={styles.image}
                       resizeMode="cover"
                     />
