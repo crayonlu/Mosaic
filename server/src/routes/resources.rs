@@ -104,7 +104,7 @@ pub async fn download_resource_proxy(
     resource_service: web::Data<ResourceService>,
 ) -> HttpResponse {
     let path_id = path.into_inner();
-    
+
     let token = req
         .query_string()
         .split('&')
@@ -343,11 +343,9 @@ pub fn configure_resource_routes(cfg: &mut web::ServiceConfig) {
                 .route(web::delete().to(delete_resource)),
         )
         .service(
-            web::resource("/resources/{id}/download")
-                .route(web::get().to(download_resource_proxy)),
+            web::resource("/resources/{id}/download").route(web::get().to(download_resource_proxy)),
         )
         .service(
-            web::resource("/avatars/{id}/download")
-                .route(web::get().to(download_avatar_proxy)),
+            web::resource("/avatars/{id}/download").route(web::get().to(download_avatar_proxy)),
         );
 }
