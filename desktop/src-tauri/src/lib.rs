@@ -123,6 +123,7 @@ pub fn run() {
             read_image_file,
             delete_asset_file,
             get_resource,
+            get_presigned_image_url,
             get_setting,
             get_settings,
             set_setting,

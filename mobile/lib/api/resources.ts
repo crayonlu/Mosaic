@@ -4,6 +4,7 @@ import type {
   ListResourcesQuery,
   PaginatedResponse,
   PresignedUploadResponse,
+  PresignedUrlResponse,
   ResourceResponse,
   UserResponse,
 } from '@/types/api'
@@ -41,11 +42,13 @@ export const resourcesApi = {
     return apiClient.delete<void>(`/api/resources/${id}`)
   },
 
-  getDownloadUrl(id: string): string {
-    return `${apiClient.getBaseUrl()}/api/resources/${id}/download`
+  getPresignedUrl(id: string): Promise<PresignedUrlResponse> {
+    return apiClient.get<PresignedUrlResponse>(`/api/resources/${id}`)
   },
 
-  getAvatarUrl(filename: string): string {
-    return `${apiClient.getBaseUrl()}/api/resources/avatars/${filename}`
+  async getDownloadUrl(id: string, baseUrl?: string): Promise<string> {
+    const response = await this.getPresignedUrl(id)
+    const cleanBaseUrl = (baseUrl || apiClient.getBaseUrl())?.replace(/\/$/, '') || ''
+    return `${cleanBaseUrl}${response.url}`
   },
 }

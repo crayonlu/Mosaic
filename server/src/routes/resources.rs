@@ -90,12 +90,47 @@ pub async fn get_resource(
     };
 
     match resource_service
-        .get_resource(&user_id, path.into_inner())
+        .create_presigned_download_url(&user_id, path.into_inner(), 300)
         .await
     {
-        Ok(resource) => HttpResponse::Ok().json(resource),
+        Ok(url) => HttpResponse::Ok().json(serde_json::json!({ "url": url })),
         Err(e) => HttpResponse::from_error(e),
     }
+}
+
+pub async fn download_resource_proxy(
+    path: web::Path<uuid::Uuid>,
+    req: HttpRequest,
+    resource_service: web::Data<ResourceService>,
+) -> HttpResponse {
+    let path_id = path.into_inner();
+    
+    let token = req
+        .query_string()
+        .split('&')
+        .find(|s| s.starts_with("token="))
+        .and_then(|s| s.strip_prefix("token="));
+
+    if let Some(token) = token {
+        match resource_service.validate_resource_token(token).await {
+            Ok(resource_id) => {
+                if resource_id != path_id {
+                    return HttpResponse::Unauthorized().finish();
+                }
+                match resource_service.download_resource_proxy(resource_id).await {
+                    Ok((data, mime_type)) => {
+                        let mut response = HttpResponse::Ok();
+                        response.insert_header(("Content-Type", mime_type));
+                        return response.body(data);
+                    }
+                    Err(e) => return HttpResponse::from_error(e),
+                }
+            }
+            Err(e) => return HttpResponse::from_error(e),
+        }
+    }
+
+    HttpResponse::Unauthorized().finish()
 }
 
 pub async fn download_resource(
@@ -115,6 +150,41 @@ pub async fn download_resource(
         Ok(data) => HttpResponse::Ok().body(data),
         Err(e) => HttpResponse::from_error(e),
     }
+}
+
+pub async fn download_avatar_proxy(
+    path: web::Path<uuid::Uuid>,
+    req: HttpRequest,
+    resource_service: web::Data<ResourceService>,
+) -> HttpResponse {
+    let path_id = path.into_inner();
+
+    let token = req
+        .query_string()
+        .split('&')
+        .find(|s| s.starts_with("token="))
+        .and_then(|s| s.strip_prefix("token="));
+
+    if let Some(token) = token {
+        match resource_service.validate_resource_token(token).await {
+            Ok(avatar_id) => {
+                if avatar_id != path_id {
+                    return HttpResponse::Unauthorized().finish();
+                }
+                match resource_service.download_avatar_proxy(avatar_id).await {
+                    Ok((data, mime_type)) => {
+                        let mut response = HttpResponse::Ok();
+                        response.insert_header(("Content-Type", mime_type));
+                        return response.body(data);
+                    }
+                    Err(e) => return HttpResponse::from_error(e),
+                }
+            }
+            Err(e) => return HttpResponse::from_error(e),
+        }
+    }
+
+    HttpResponse::Unauthorized().finish()
 }
 
 pub async fn delete_resource(
@@ -225,18 +295,6 @@ pub async fn upload_avatar(
     }
 }
 
-pub async fn download_avatar(
-    path: web::Path<uuid::Uuid>,
-    resource_service: web::Data<ResourceService>,
-) -> HttpResponse {
-    let avatar_id = path.into_inner();
-
-    match resource_service.download_avatar(avatar_id).await {
-        Ok(data) => HttpResponse::Ok().body(data),
-        Err(_) => HttpResponse::NotFound().finish(),
-    }
-}
-
 #[derive(serde::Deserialize)]
 pub struct ListResourcesQuery {
     pub page: Option<i64>,
@@ -284,6 +342,12 @@ pub fn configure_resource_routes(cfg: &mut web::ServiceConfig) {
                 .route(web::get().to(get_resource))
                 .route(web::delete().to(delete_resource)),
         )
-        .service(web::resource("/resources/{id}/download").route(web::get().to(download_resource)))
-        .service(web::resource("/avatars/{id}").route(web::get().to(download_avatar)));
+        .service(
+            web::resource("/resources/{id}/download")
+                .route(web::get().to(download_resource_proxy)),
+        )
+        .service(
+            web::resource("/avatars/{id}/download")
+                .route(web::get().to(download_avatar_proxy)),
+        );
 }
