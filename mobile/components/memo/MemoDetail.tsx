@@ -41,7 +41,7 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
   const [diaryDate, setDiaryDate] = useState<Date | null>(null)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
-  const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
   const { confirm } = useToastConfirm()
 
@@ -57,24 +57,12 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
   }, [memo])
 
   useEffect(() => {
-    if (memo && memo.resources.length > 0) {
-      const loadImages = async () => {
-        const newImageUrls = new Map<string, string>()
-        for (const resource of memo.resources) {
-          if (resource.resourceType === 'image') {
-            try {
-              const url = await resourcesApi.getDownloadUrl(resource.id)
-              newImageUrls.set(resource.id, url)
-            } catch (error) {
-              console.error(`Failed to load image ${resource.id}:`, error)
-            }
-          }
-        }
-        setImageUrls(newImageUrls)
-      }
-      loadImages()
+    const loadAuthHeaders = async () => {
+      const headers = await resourcesApi.getAuthHeaders()
+      setAuthHeaders(headers)
     }
-  }, [memo])
+    loadAuthHeaders()
+  }, [])
 
   useEffect(() => {
     if (memo) {
@@ -282,7 +270,10 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
               <View style={[styles.section, { marginTop: 16 }]}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>图片</Text>
                 <ImageGrid
-                  images={imageResources.map(r => imageUrls.get(r.id) || '')}
+                  images={imageResources.map(r => ({
+                    uri: resourcesApi.getDirectDownloadUrl(r.id),
+                    headers: authHeaders
+                  }))}
                   mode="view"
                   onImagePress={(index) => {
                     // TODO: 实现全屏预览

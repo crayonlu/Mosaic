@@ -1,10 +1,10 @@
 import { resourcesApi } from '@/lib/api/resources'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
-import { useState } from 'react'
+import { Image } from 'expo-image'
+import { useEffect, useState } from 'react'
 import {
   Dimensions,
-  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -13,7 +13,6 @@ import {
   View,
 } from 'react-native'
 import { ResizeMode, Video } from 'react-native-video'
-
 interface ResourceGalleryProps {
   memo: MemoWithResources
   onImagePress?: (index: number) => void
@@ -21,7 +20,7 @@ interface ResourceGalleryProps {
 
 interface ImagePreviewProps {
   visible: boolean
-  images: string[]
+  images: { uri: string; headers: Record<string, string> }[]
   initialIndex: number
   onClose: () => void
 }
@@ -30,11 +29,19 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
   const { theme } = useThemeStore()
   const [previewVisible, setPreviewVisible] = useState(false)
   const [previewIndex, setPreviewIndex] = useState(0)
-  const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
-  const getFullResourceUrl = async (resourceId: string): Promise<string> => {
-    const url = await resourcesApi.getDownloadUrl(resourceId)
-    return url
+  // Load auth headers on mount
+  useEffect(() => {
+    const loadAuthHeaders = async () => {
+      const headers = await resourcesApi.getAuthHeaders()
+      setAuthHeaders(headers)
+    }
+    loadAuthHeaders()
+  }, [])
+
+  const getResourceUrl = (resourceId: string): string => {
+    return resourcesApi.getDirectDownloadUrl(resourceId)
   }
 
   // Separate resources by type
@@ -59,17 +66,6 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
 
   const layout = getImageLayout()
 
-  const handleImageLoad = async (resourceId: string) => {
-    if (!imageUrls.has(resourceId)) {
-      try {
-        const url = await getFullResourceUrl(resourceId)
-        setImageUrls(prev => new Map(prev).set(resourceId, url))
-      } catch (error) {
-        console.error(`Failed to load image ${resourceId}:`, error)
-      }
-    }
-  }
-
   return (
     <View style={styles.container}>
       {/* Images */}
@@ -78,10 +74,12 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
           {layout === 'single' && (
             <TouchableOpacity onPress={() => handleImagePress(0)} activeOpacity={0.8}>
               <Image
-                source={{ uri: imageUrls.get(images[0].id) }}
+                source={{ 
+                  uri: getResourceUrl(images[0].id),
+                  headers: authHeaders
+                }}
                 style={styles.singleImage}
-                resizeMode="cover"
-                onLoad={() => handleImageLoad(images[0].id)}
+                contentFit="cover"
               />
             </TouchableOpacity>
           )}
@@ -96,10 +94,12 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
                   style={styles.gridItem}
                 >
                   <Image
-                    source={{ uri: imageUrls.get(img.id) }}
+                    source={{ 
+                      uri: getResourceUrl(img.id),
+                      headers: authHeaders
+                    }}
                     style={styles.gridImage}
-                    resizeMode="cover"
-                    onLoad={() => handleImageLoad(img.id)}
+                    contentFit="cover"
                   />
                 </TouchableOpacity>
               ))}
@@ -116,10 +116,12 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
                   style={styles.gridItem}
                 >
                   <Image
-                    source={{ uri: imageUrls.get(img.id) }}
+                    source={{ 
+                      uri: getResourceUrl(img.id),
+                      headers: authHeaders
+                    }}
                     style={styles.gridImage}
-                    resizeMode="cover"
-                    onLoad={() => handleImageLoad(img.id)}
+                    contentFit="cover"
                   />
                 </TouchableOpacity>
               ))}
@@ -139,7 +141,10 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
           {videos.map(video => (
             <View key={video.id} style={styles.videoContainer}>
               <Video
-                source={{ uri: await resourcesApi.getDownloadUrl(video.id) }}
+                source={{ 
+                  uri: getResourceUrl(video.id),
+                  headers: authHeaders
+                }}
                 style={styles.video}
                 resizeMode={ResizeMode.CONTAIN}
                 controls={true}
@@ -153,7 +158,10 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
       {/* Image Preview Modal */}
       <ImagePreview
         visible={previewVisible}
-        images={images.map(img => imageUrls.get(img.id) || '')}
+        images={images.map(img => ({
+          uri: getResourceUrl(img.id),
+          headers: authHeaders
+        }))}
         initialIndex={previewIndex}
         onClose={() => setPreviewVisible(false)}
       />
@@ -203,9 +211,9 @@ function ImagePreview({ visible, images, initialIndex, onClose }: ImagePreviewPr
             contentContainerStyle={styles.previewContent}
           >
             <Image
-              source={{ uri: images[currentIndex] }}
+              source={images[currentIndex]}
               style={[styles.previewImage, { width: screenWidth - 40 }]}
-              resizeMode="contain"
+              contentFit="contain"
             />
           </ScrollView>
 

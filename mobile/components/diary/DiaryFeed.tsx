@@ -1,13 +1,14 @@
 import { Loading } from '@/components/ui'
+import { resourcesApi } from '@/lib/api/resources'
 import { useDiaries } from '@/lib/query'
 import { getMoodColor, getMoodEmoji } from '@/lib/utils/mood'
-import { resourcesApi } from '@/lib/api/resources'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { DiaryResponse } from '@/types/api'
+import { Image } from 'expo-image'
 import { ChevronRight, FileX } from 'lucide-react-native'
-import { useCallback, useMemo, useState } from 'react'
-import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 
 interface DiaryFeedProps {
   onDiaryPress?: (diary: DiaryResponse) => void
@@ -16,11 +17,19 @@ interface DiaryFeedProps {
 export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
   const { theme } = useThemeStore()
   const [refreshing, setRefreshing] = useState(false)
-  const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
-  const getFullResourceUrl = async (resourceId: string): Promise<string> => {
-    const baseUrl = resourcesApi.getDownloadUrl(resourceId)
-    return baseUrl
+  // Load auth headers on mount
+  useEffect(() => {
+    const loadAuthHeaders = async () => {
+      const headers = await resourcesApi.getAuthHeaders()
+      setAuthHeaders(headers)
+    }
+    loadAuthHeaders()
+  }, [])
+
+  const getResourceUrl = (resourceId: string): string => {
+    return resourcesApi.getDirectDownloadUrl(resourceId)
   }
 
   const {
@@ -48,18 +57,8 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
     }
   }, [isLoading, hasNextPage, fetchNextPage])
 
-  const renderDiaryCard = async ({ item }: { item: DiaryResponse; index: number }) => {
-    if (item.coverImageId && !imageUrls.has(item.coverImageId)) {
-      try {
-        const url = await getFullResourceUrl(item.coverImageId)
-        setImageUrls(prev => new Map(prev).set(item.coverImageId, url))
-      } catch (error) {
-        console.error('Failed to load cover image:', error)
-      }
-    }
-
+  const renderDiaryCard = ({ item }: { item: DiaryResponse; index: number }) => {
     const moodColor = getMoodColor(item.moodKey)
-    const imageUrl = imageUrls.get(item.coverImageId || '')
 
     return (
       <Pressable
@@ -76,7 +75,14 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
       >
         {item.coverImageId && (
           <View style={styles.coverContainer}>
-            <Image source={{ uri: imageUrl }} style={styles.coverImage} resizeMode="cover" />
+            <Image 
+              source={{ 
+                uri: getResourceUrl(item.coverImageId),
+                headers: authHeaders
+              }} 
+              style={styles.coverImage} 
+              contentFit="cover" 
+            />
             <View style={[styles.coverOverlay, { backgroundColor: `${moodColor}10` }]} />
           </View>
         )}

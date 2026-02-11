@@ -79,75 +79,25 @@ pub async fn upload_resource(
     }
 }
 
-pub async fn get_resource(
-    req: HttpRequest,
-    path: web::Path<uuid::Uuid>,
-    resource_service: web::Data<ResourceService>,
-) -> HttpResponse {
-    let user_id = match get_user_id(&req) {
-        Ok(id) => id,
-        Err(e) => return HttpResponse::from_error(e),
-    };
-
-    match resource_service
-        .create_presigned_download_url(&user_id, path.into_inner(), 300)
-        .await
-    {
-        Ok(url) => HttpResponse::Ok().json(serde_json::json!({ "url": url })),
-        Err(e) => HttpResponse::from_error(e),
-    }
-}
-
 pub async fn download_resource_proxy(
     path: web::Path<uuid::Uuid>,
     req: HttpRequest,
     resource_service: web::Data<ResourceService>,
 ) -> HttpResponse {
-    let path_id = path.into_inner();
-
-    let token = req
-        .query_string()
-        .split('&')
-        .find(|s| s.starts_with("token="))
-        .and_then(|s| s.strip_prefix("token="));
-
-    if let Some(token) = token {
-        match resource_service.validate_resource_token(token).await {
-            Ok(resource_id) => {
-                if resource_id != path_id {
-                    return HttpResponse::Unauthorized().finish();
-                }
-                match resource_service.download_resource_proxy(resource_id).await {
-                    Ok((data, mime_type)) => {
-                        let mut response = HttpResponse::Ok();
-                        response.insert_header(("Content-Type", mime_type));
-                        return response.body(data);
-                    }
-                    Err(e) => return HttpResponse::from_error(e),
-                }
-            }
-            Err(e) => return HttpResponse::from_error(e),
-        }
+    if let Err(e) = get_user_id(&req) {
+        return HttpResponse::from_error(e);
     }
 
-    HttpResponse::Unauthorized().finish()
-}
-
-pub async fn download_resource(
-    req: HttpRequest,
-    path: web::Path<uuid::Uuid>,
-    resource_service: web::Data<ResourceService>,
-) -> HttpResponse {
-    let user_id = match get_user_id(&req) {
-        Ok(id) => id,
-        Err(e) => return HttpResponse::from_error(e),
-    };
-
     match resource_service
-        .download_resource(&user_id, path.into_inner())
+        .download_resource_proxy(path.into_inner())
         .await
     {
-        Ok(data) => HttpResponse::Ok().body(data),
+        Ok((data, mime_type)) => {
+            let mut response = HttpResponse::Ok();
+            response.insert_header(("Content-Type", mime_type));
+            response.insert_header(("Cache-Control", "private, max-age=3600"));
+            response.body(data)
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }
@@ -157,34 +107,19 @@ pub async fn download_avatar_proxy(
     req: HttpRequest,
     resource_service: web::Data<ResourceService>,
 ) -> HttpResponse {
-    let path_id = path.into_inner();
-
-    let token = req
-        .query_string()
-        .split('&')
-        .find(|s| s.starts_with("token="))
-        .and_then(|s| s.strip_prefix("token="));
-
-    if let Some(token) = token {
-        match resource_service.validate_resource_token(token).await {
-            Ok(avatar_id) => {
-                if avatar_id != path_id {
-                    return HttpResponse::Unauthorized().finish();
-                }
-                match resource_service.download_avatar_proxy(avatar_id).await {
-                    Ok((data, mime_type)) => {
-                        let mut response = HttpResponse::Ok();
-                        response.insert_header(("Content-Type", mime_type));
-                        return response.body(data);
-                    }
-                    Err(e) => return HttpResponse::from_error(e),
-                }
-            }
-            Err(e) => return HttpResponse::from_error(e),
-        }
+    if let Err(e) = get_user_id(&req) {
+        return HttpResponse::from_error(e);
     }
 
-    HttpResponse::Unauthorized().finish()
+    match resource_service.download_avatar(path.into_inner()).await {
+        Ok(data) => {
+            let mut response = HttpResponse::Ok();
+            response.insert_header(("Content-Type", "image/jpeg"));
+            response.insert_header(("Cache-Control", "private, max-age=3600"));
+            response.body(data)
+        }
+        Err(e) => HttpResponse::from_error(e),
+    }
 }
 
 pub async fn delete_resource(
@@ -337,11 +272,7 @@ pub fn configure_resource_routes(cfg: &mut web::ServiceConfig) {
         )
         .service(web::resource("/resources/confirm-upload").route(web::post().to(confirm_upload)))
         .service(web::resource("/resources/upload-avatar").route(web::post().to(upload_avatar)))
-        .service(
-            web::resource("/resources/{id}")
-                .route(web::get().to(get_resource))
-                .route(web::delete().to(delete_resource)),
-        )
+        .service(web::resource("/resources/{id}").route(web::delete().to(delete_resource)))
         .service(
             web::resource("/resources/{id}/download").route(web::get().to(download_resource_proxy)),
         )
