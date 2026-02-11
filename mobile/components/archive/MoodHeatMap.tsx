@@ -2,7 +2,7 @@ import { Loading } from '@/components/ui'
 import { statsApi } from '@/lib/api'
 import { useThemeStore } from '@/stores/theme-store'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface HeatMapCell {
@@ -27,6 +27,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
   const { theme } = useThemeStore()
   const [data, setData] = useState<HeatMapData | null>(null)
   const [loading, setLoading] = useState(true)
+  const scrollViewRef = useRef<ScrollView>(null)
 
   const moodColors: Record<string, string> = {
     joy: '#FFD93D',
@@ -138,6 +139,15 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
     loadHeatMapData()
   }, [loadHeatMapData])
 
+  // Scroll to end (today) after data loads
+  useEffect(() => {
+    if (data && scrollViewRef.current) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: false })
+      }, 100)
+    }
+  }, [data])
+
   // Group cells by weeks
   const weeks = useMemo(() => {
     if (!data) return []
@@ -203,6 +213,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
     <View style={[styles.container, { backgroundColor: theme.surface, borderColor: theme.border }]}>
       {/* Heat map grid */}
       <ScrollView
+        ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}

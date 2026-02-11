@@ -82,10 +82,10 @@ export function FullScreenEditor({
   }
 
   const extractTextFromHtml = (html: string) => {
-    return new Promise<string>((resolve) => {
+    return new Promise<string>(resolve => {
       let text = ''
       const parser = new Parser({
-        ontext: (chunk) => {
+        ontext: chunk => {
           text += chunk
         },
         onend: () => {

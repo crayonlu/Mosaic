@@ -76,11 +76,7 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
       >
         {item.coverImageId && (
           <View style={styles.coverContainer}>
-            <Image
-              source={{ uri: imageUrl }}
-              style={styles.coverImage}
-              resizeMode="cover"
-            />
+            <Image source={{ uri: imageUrl }} style={styles.coverImage} resizeMode="cover" />
             <View style={[styles.coverOverlay, { backgroundColor: `${moodColor}10` }]} />
           </View>
         )}

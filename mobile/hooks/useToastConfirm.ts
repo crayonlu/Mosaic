@@ -10,6 +10,6 @@ export function useToastConfirm() {
       duration: 10000,
     })
   }
-  
+
   return { confirm }
 }

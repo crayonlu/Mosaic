@@ -161,6 +161,7 @@ export function MemoList({
   )
 
   const renderFooter = () => {
+    if (memos.length === 0) return null
     if (!hasMore) {
       return (
         <View style={styles.footer}>
@@ -184,10 +185,6 @@ export function MemoList({
     return <Loading text="加载中..." fullScreen />
   }
 
-  if (memos.length === 0) {
-    return renderEmptyState()
-  }
-
   return (
     <FlatList
       ref={flatListRef}
@@ -196,6 +193,7 @@ export function MemoList({
       keyExtractor={item => item.date}
       contentContainerStyle={styles.listContent}
       ListHeaderComponent={headerComponent}
+      ListEmptyComponent={renderEmptyState}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
