@@ -162,7 +162,7 @@ export default function MemoDetailScreen() {
         )}
       </View>
 
-      <ScrollView style={styles.content}>
+      <View style={styles.content}>
         {editing ? (
           <>
             <RichTextEditor
@@ -210,7 +210,7 @@ export default function MemoDetailScreen() {
             </Text>
           )}
         </View>
-      </ScrollView>
+      </View>
 
       {!editing && (
         <View style={[styles.footer, { borderTopColor: theme.border }]}>

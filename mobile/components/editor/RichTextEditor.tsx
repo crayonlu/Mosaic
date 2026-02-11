@@ -38,7 +38,6 @@ export function RichTextEditor({
   const customTextCSS = `
     body {
       color: ${theme.text};
-      background-color: ${theme.background};
     }
   `
 
@@ -112,15 +111,11 @@ export function RichTextEditor({
   }
 
   return (
-    <>
+    <View style={[styles.CT]}>
       <View style={[styles.container]}>
         <View
           style={[
             styles.editorContainer,
-            {
-              minHeight: editable ? 120 : 60,
-              maxHeight: isExpanded ? undefined : 400,
-            },
           ]}
         >
           <RichText
@@ -142,14 +137,17 @@ export function RichTextEditor({
         onClose={() => setIsLinkDialogOpen(false)}
         onInsert={handleInsertLink}
       />
-    </>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  CT: {
     flex: 1,
+  },
+  container: {
     overflow: 'hidden',
+    flex: 1,
   },
   editorContainer: {
     flex: 1,
