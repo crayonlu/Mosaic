@@ -1,6 +1,7 @@
 import { useThemeStore } from '@/stores/theme-store'
 import {
   CoreBridge,
+  PlaceholderBridge,
   RichText,
   TenTapStartKit,
   useEditorBridge,
@@ -45,7 +46,13 @@ export function RichTextEditor({
     autofocus: false,
     avoidIosKeyboard: true,
     initialContent: content || '',
-    bridgeExtensions: [...TenTapStartKit, CoreBridge.configureCSS(customTextCSS)],
+    bridgeExtensions: [
+      ...TenTapStartKit,
+      PlaceholderBridge.configureExtension({
+        placeholder: placeholder,
+      }),
+      CoreBridge.configureCSS(customTextCSS),
+    ],
   })
 
   // Sync content changes from parent

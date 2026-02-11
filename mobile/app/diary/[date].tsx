@@ -8,7 +8,7 @@ import { useDiary, useUpdateDiaryMood } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, Calendar } from 'lucide-react-native'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function DiaryDetailScreen() {
@@ -18,13 +18,25 @@ export default function DiaryDetailScreen() {
   const handleError = useErrorHandler()
   const { data: diary, isLoading } = useDiary(date || '')
   const { mutateAsync: updateMood, isPending: isSavingMood } = useUpdateDiaryMood()
-
-  const [selectedMood, setSelectedMood] = useState<MoodKey | null>(diary?.moodKey || null)
+  const [selectedMood, setSelectedMood] = useState<MoodKey | null>(null)
   const [intensity, setIntensity] = useState(3)
+
+  useEffect(() => {
+    if (diary?.moodKey) {
+      setSelectedMood(diary.moodKey)
+    }
+    if (diary?.moodScore !== undefined && diary?.moodScore !== null) {
+      setIntensity(diary.moodScore)
+    }
+  }, [diary])
 
   const handleMemoPress = (memoId: string) => {
     router.push({ pathname: '/memo/[id]', params: { id: memoId } })
   }
+
+  const handleIntensityChange = useCallback((value: number) => {
+    setIntensity(value)
+  }, [])
 
   const handleMoodSave = useCallback(async () => {
     if (!selectedMood || !date || !canUseNetwork) return
@@ -108,7 +120,11 @@ export default function DiaryDetailScreen() {
           </View>
           {selectedMood && (
             <View style={styles.intensitySection}>
-              <MoodDragBar value={intensity} onChange={setIntensity} disabled={!canUseNetwork} />
+              <MoodDragBar
+                value={intensity}
+                onChange={handleIntensityChange}
+                disabled={!canUseNetwork}
+              />
               <Button
                 title="保存"
                 variant="primary"
