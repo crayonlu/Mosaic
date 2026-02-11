@@ -43,12 +43,17 @@ export const resourcesApi = {
   },
 
   getPresignedUrl(id: string): Promise<PresignedUrlResponse> {
+    console.log('[ResourcesAPI] getPresignedUrl', { id })
     return apiClient.get<PresignedUrlResponse>(`/api/resources/${id}`)
   },
 
   async getDownloadUrl(id: string, baseUrl?: string): Promise<string> {
+    console.log('[ResourcesAPI] getDownloadUrl', { id, baseUrl })
     const response = await this.getPresignedUrl(id)
+    console.log('[ResourcesAPI] getDownloadUrl response', { response })
     const cleanBaseUrl = (baseUrl || apiClient.getBaseUrl())?.replace(/\/$/, '') || ''
-    return `${cleanBaseUrl}${response.url}`
+    const url = `${cleanBaseUrl}${response.url}`
+    console.log('[ResourcesAPI] getDownloadUrl final url', { url })
+    return url
   },
 }

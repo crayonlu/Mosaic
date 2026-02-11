@@ -1,8 +1,8 @@
-import { useThemeStore } from '@/stores/theme-store'
 import { MOOD_INTENSITY_LEVELS } from '@/constants/common'
+import { useThemeStore } from '@/stores/theme-store'
+import Slider from '@react-native-community/slider'
 import { useCallback } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import Slider from '@react-native-community/slider'
 
 interface MoodDragBarProps {
   value: number
@@ -23,9 +23,10 @@ export function MoodDragBar({
 
   const handleValueChange = useCallback(
     (newValue: number) => {
-      onChange(Math.round(newValue))
+      const clampedValue = Math.max(min, Math.min(max, Math.round(newValue)))
+      onChange(clampedValue)
     },
-    [onChange]
+    [onChange, min, max]
   )
 
   return (

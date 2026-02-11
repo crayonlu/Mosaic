@@ -1,19 +1,21 @@
+import { MoodHeatMap } from '@/components/archive/MoodHeatMap'
 import { MemoInput } from '@/components/editor/MemoInput'
 import { MemoList } from '@/components/memo/MemoList'
-import { MoodHeatMap } from '@/components/archive/MoodHeatMap'
 import { toast } from '@/components/ui'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
-import { useCreateMemo, useArchiveMemo, useDeleteMemo } from '@/lib/query'
+import { useToastConfirm } from '@/hooks/useToastConfirm'
+import { useArchiveMemo, useCreateMemo, useDeleteMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@/types/memo'
 import { router } from 'expo-router'
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 
 export default function HomeScreen() {
   const { theme } = useThemeStore()
   const { canUseNetwork } = useConnection()
   const handleError = useErrorHandler()
+  const { confirm } = useToastConfirm()
   const { mutateAsync: createMemo, isPending: isCreating } = useCreateMemo()
   const { mutateAsync: archiveMemo, isPending: isArchiving } = useArchiveMemo()
   const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
@@ -37,13 +39,16 @@ export default function HomeScreen() {
 
   const handleDelete = async (id: string) => {
     if (!canUseNetwork || isPending) return
-    try {
-      await deleteMemo(id)
-      toast.success('成功', '已删除')
-    } catch (error) {
-      handleError(error)
-      toast.error('错误', '删除失败')
-    }
+
+    confirm('确定要删除这条 Memo 吗？', async () => {
+      try {
+        await deleteMemo(id)
+        toast.success('成功', '已删除')
+      } catch (error) {
+        handleError(error)
+        toast.error('错误', '删除失败')
+      }
+    })
   }
 
   const handleSubmit = async (content: string, tags: string[], resources: string[]) => {
@@ -81,9 +86,6 @@ export default function HomeScreen() {
           onMemoDelete={handleDelete}
           headerComponent={
             <View style={styles.heatMapSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>情绪热力图</Text>
-              </View>
               <MoodHeatMap onDateClick={handleDateClick} />
             </View>
           }

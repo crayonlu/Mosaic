@@ -1,9 +1,10 @@
 import { Badge } from '@/components/ui'
+import { ImageGrid } from '@/components/ui/ImageGrid'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import { Trash2 } from 'lucide-react-native'
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 interface MemoCardProps {
   memo: MemoWithResources
@@ -26,8 +27,16 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
   const hasImages = memo.resources.some(r => r.resourceType === 'image')
   const hasOtherResources = memo.resources.some(r => r.resourceType !== 'image')
 
-  // Get image preview
-  const imageResource = memo.resources.find(r => r.resourceType === 'image')
+  // Get all image resources
+  const imageResources = memo.resources.filter(r => r.resourceType === 'image')
+  const imageUrls = imageResources.map(r => r.url)
+
+  console.log('[MemoCard] rendering memo', {
+    id: memo.id,
+    hasResources: hasResources,
+    imageCount: imageUrls.length,
+    resourceIds: memo.resources.map(r => r.id),
+  })
 
   const handleDelete = () => {
     onDelete?.(memo.id)
@@ -46,19 +55,27 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
       ]}
     >
       <View style={styles.contentContainer}>
-        {imageResource && (
-          <Image
-            source={{ uri: imageResource.url }}
-            style={styles.imagePreview}
-            resizeMode="cover"
-          />
+        {imageUrls.length > 0 && (
+          <View style={styles.imageGridContainer}>
+            <ImageGrid
+              images={imageUrls}
+              mode="card"
+              onImagePress={() => {}}
+            />
+          </View>
         )}
 
         {/* Text content */}
-        <View style={[styles.textContent, !imageResource && styles.textContentFull]}>
-          <Text style={[styles.text, { color: theme.text }]} numberOfLines={4} ellipsizeMode="tail">
-            {plainText || '无文字内容'}
-          </Text>
+        <View style={[styles.textContent, imageUrls.length === 0 && styles.textContentFull]}>
+          {plainText ? (
+            plainText.split('\n').slice(0, 4).map((line, index) => (
+              <Text key={index} style={[styles.text, { color: theme.text }]} numberOfLines={3} ellipsizeMode="tail">
+                {line || ' '}
+              </Text>
+            ))
+          ) : (
+            <Text style={[styles.text, { color: theme.text }]}>无文字内容</Text>
+          )}
         </View>
       </View>
 
@@ -82,9 +99,9 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
           {/* Resource indicators */}
           {hasResources && (
             <View style={styles.resourceIndicators}>
-              {hasImages && imageResource && (
+              {hasImages && imageUrls.length > 0 && (
                 <Text style={[styles.resourceText, { color: theme.textSecondary }]}>
-                  🖼️ {memo.resources.filter(r => r.resourceType === 'image').length}
+                  🖼️ {imageUrls.length}
                 </Text>
               )}
               {hasOtherResources && (
@@ -127,6 +144,11 @@ const styles = StyleSheet.create({
   contentContainer: {
     flexDirection: 'row',
     minHeight: 80,
+  },
+  imageGridContainer: {
+    width: 100,
+    height: 100,
+    marginRight: 12,
   },
   imagePreview: {
     width: 100,

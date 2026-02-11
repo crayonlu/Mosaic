@@ -40,9 +40,12 @@ export function MemoList({
 
   const memos = useMemo(() => {
     if (date) {
+      console.log('[MemoList] memosByDate', memosByDate?.map(m => ({ id: m.id, resources: m.resources.length })))
       return memosByDate || []
     }
-    return paginatedData?.pages.flatMap(page => page.items) || []
+    const items = paginatedData?.pages.flatMap(page => page.items) || []
+    console.log('[MemoList] paginatedData items', items.map(m => ({ id: m.id, resources: m.resources.length })))
+    return items
   }, [date, memosByDate, paginatedData])
 
   const isLoading = date ? loadingByDate : loadingList
@@ -161,6 +164,7 @@ export function MemoList({
   )
 
   const renderFooter = () => {
+    if (memos.length === 0) return null
     if (!hasMore) {
       return (
         <View style={styles.footer}>
@@ -184,10 +188,6 @@ export function MemoList({
     return <Loading text="加载中..." fullScreen />
   }
 
-  if (memos.length === 0) {
-    return renderEmptyState()
-  }
-
   return (
     <FlatList
       ref={flatListRef}
@@ -196,6 +196,7 @@ export function MemoList({
       keyExtractor={item => item.date}
       contentContainerStyle={styles.listContent}
       ListHeaderComponent={headerComponent}
+      ListEmptyComponent={renderEmptyState}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

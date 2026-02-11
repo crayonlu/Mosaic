@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
+import { Image } from 'expo-image'
 import { CheckCircle, XCircle } from 'lucide-react-native'
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -10,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error'
 
 export default function SetupScreen() {
-  const { theme } = useThemeStore()
+  const { theme, themeMode } = useThemeStore()
   const { login, testConnection, isLoading } = useAuthStore()
 
   const [serverUrl, setServerUrl] = useState('')
@@ -70,7 +71,15 @@ export default function SetupScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.text }]}>Mosaic</Text>
+            <Image
+              source={
+                themeMode === 'dark'
+                  ? require('@/assets/images/mosaic-dark.svg')
+                  : require('@/assets/images/mosaic-light.svg')
+              }
+              style={styles.logo}
+              contentFit="contain"
+            />
             <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
               完成初始化配置，开始您的智能笔记之旅
             </Text>
@@ -186,10 +195,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
-  title: {
-    fontSize: 48,
-    fontWeight: '700',
-    marginBottom: 12,
+  logo: {
+    width: 180,
+    height: 100,
   },
   subtitle: {
     fontSize: 16,
