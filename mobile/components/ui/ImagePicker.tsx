@@ -2,8 +2,9 @@ import { useThemeStore } from '@/stores/theme-store'
 import * as ExpoImagePicker from 'expo-image-picker'
 import { ImagePlus, Upload, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
-import { Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Button } from './Button'
+import { Image } from 'expo-image'
 
 interface ImagePickerProps {
   images: string[]

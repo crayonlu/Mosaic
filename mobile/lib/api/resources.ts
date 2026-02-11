@@ -1,10 +1,10 @@
+import { tokenStorage } from '@/lib/services/token-storage'
 import type {
   ConfirmUploadRequest,
   CreateResourceRequest,
   ListResourcesQuery,
   PaginatedResponse,
   PresignedUploadResponse,
-  PresignedUrlResponse,
   ResourceResponse,
   UserResponse,
 } from '@/types/api'
@@ -42,18 +42,26 @@ export const resourcesApi = {
     return apiClient.delete<void>(`/api/resources/${id}`)
   },
 
-  getPresignedUrl(id: string): Promise<PresignedUrlResponse> {
-    console.log('[ResourcesAPI] getPresignedUrl', { id })
-    return apiClient.get<PresignedUrlResponse>(`/api/resources/${id}`)
+  /**
+   * Get resource download URL for Bearer token authentication
+   * Use with expo-image's source.uri prop
+   */
+  getDirectDownloadUrl(id: string): string {
+    const baseUrl = apiClient.getBaseUrl()
+    return `${baseUrl}/api/resources/${id}/download`
   },
 
-  async getDownloadUrl(id: string, baseUrl?: string): Promise<string> {
-    console.log('[ResourcesAPI] getDownloadUrl', { id, baseUrl })
-    const response = await this.getPresignedUrl(id)
-    console.log('[ResourcesAPI] getDownloadUrl response', { response })
-    const cleanBaseUrl = (baseUrl || apiClient.getBaseUrl())?.replace(/\/$/, '') || ''
-    const url = `${cleanBaseUrl}${response.url}`
-    console.log('[ResourcesAPI] getDownloadUrl final url', { url })
-    return url
+  /**
+   * Get auth headers for image requests (without Content-Type)
+   * Use with expo-image's source.headers prop
+   */
+  async getAuthHeaders(): Promise<Record<string, string>> {
+    const token = await tokenStorage.getAccessToken()
+    if (!token) {
+      return {}
+    }
+    return {
+      Authorization: `Bearer ${token}`,
+    }
   },
 }

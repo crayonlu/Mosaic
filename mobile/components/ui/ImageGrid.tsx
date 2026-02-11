@@ -1,10 +1,13 @@
 import { useThemeStore } from '@/stores/theme-store'
+import { Image } from 'expo-image'
 import { Maximize2, X } from 'lucide-react-native'
 import { useState } from 'react'
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+
+type ImageSource = string | { uri: string; headers?: Record<string, string> }
 
 interface ImageGridProps {
-  images: string[]
+  images: ImageSource[]
   onRemove?: (index: number) => void
   showRemoveButton?: boolean
   maxImages?: number
@@ -22,6 +25,19 @@ export function ImageGrid({
 }: ImageGridProps) {
   const { theme } = useThemeStore()
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
+
+  const normalizeSource = (img: ImageSource): { uri: string; headers?: Record<string, string> } => {
+    if (typeof img === 'string') return { uri: img }
+    if (img.headers && img.headers.Authorization) {
+      return {
+        uri: img.uri,
+        headers: {
+          Authorization: img.headers.Authorization,
+        },
+      }
+    }
+    return img
+  }
 
   const getGridLayout = (count: number) => {
     if (count === 0) return { columns: 0, size: 0 }
@@ -51,7 +67,7 @@ export function ImageGrid({
           style={styles.editContainer}
           contentContainerStyle={styles.editGrid}
         >
-          {images.map((uri, index) => (
+          {images.map((img, index) => (
             <View
               key={index}
               style={[
@@ -66,9 +82,9 @@ export function ImageGrid({
                 onPress={() => onImagePress && onImagePress(index)}
               >
                 <Image
-                  source={{ uri }}
+                  source={normalizeSource(img)}
                   style={styles.editImage}
-                  resizeMode="cover"
+                  contentFit="cover"
                 />
               </Pressable>
               {showRemoveButton && onRemove && (
@@ -121,7 +137,7 @@ export function ImageGrid({
           },
         ]}
       >
-        {images.map((uri, index) => (
+        {images.map((img, index) => (
           <Pressable
             key={index}
             style={[
@@ -135,9 +151,9 @@ export function ImageGrid({
             onPress={() => onImagePress && onImagePress(index)}
           >
             <Image
-              source={{ uri }}
+              source={normalizeSource(img)}
               style={styles.viewImage}
-              resizeMode="cover"
+              contentFit="cover"
             />
             {showDeleteInCard && onRemove && (
               <TouchableOpacity
@@ -168,9 +184,9 @@ export function ImageGrid({
               onPress={() => setPreviewIndex(null)}
             >
               <Image
-                source={{ uri: images[previewIndex] }}
+                source={normalizeSource(images[previewIndex])}
                 style={styles.previewImage}
-                resizeMode="contain"
+                contentFit="contain"
               />
             </Pressable>
             <TouchableOpacity

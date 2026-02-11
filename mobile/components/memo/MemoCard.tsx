@@ -1,9 +1,11 @@
 import { Badge } from '@/components/ui'
 import { ImageGrid } from '@/components/ui/ImageGrid'
+import { resourcesApi } from '@/lib/api/resources'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import { Trash2 } from 'lucide-react-native'
+import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 interface MemoCardProps {
@@ -15,6 +17,15 @@ interface MemoCardProps {
 
 export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCardProps) {
   const { theme } = useThemeStore()
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    const loadAuthHeaders = async () => {
+      const headers = await resourcesApi.getAuthHeaders()
+      setAuthHeaders(headers)
+    }
+    loadAuthHeaders()
+  }, [])
 
   // Extract plain text from HTML for preview
   const plainText = stringUtils.extractTextFromHtml(memo.content)
@@ -26,7 +37,10 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
   const hasResources = memo.resources.length > 0
   // Get all image resources
   const imageResources = memo.resources.filter(r => r.resourceType === 'image')
-  const imageUrls = imageResources.map(r => r.url)
+  const imageUrls = imageResources.map(r => ({
+    uri: resourcesApi.getDirectDownloadUrl(r.id),
+    headers: authHeaders
+  }))
 
   console.log('[MemoCard] rendering memo', {
     id: memo.id,

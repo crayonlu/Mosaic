@@ -1,5 +1,6 @@
 import { useThemeStore } from '@/stores/theme-store'
-import { Image, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
+import { Image } from 'expo-image'
 
 export default function ThemeAwareSplash() {
   const { themeMode, theme } = useThemeStore()
