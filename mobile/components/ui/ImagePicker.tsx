@@ -2,7 +2,7 @@ import { useThemeStore } from '@/stores/theme-store'
 import * as ExpoImagePicker from 'expo-image-picker'
 import { ImagePlus, Upload, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
-import { Dimensions, Image, Modal, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Button } from './Button'
 
 interface ImagePickerProps {
@@ -102,23 +102,25 @@ export function ImagePicker({
           />
         </View>
       )}
-      
-      <View style={[styles.grid, { gap: 8 }]}>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={[styles.editContainer, images.length > 0 && { marginTop: 16 }]}
+        contentContainerStyle={styles.editGrid}
+      >
         {images.map((uri, index) => (
           <View
             key={index}
             style={[
-              styles.imageContainer,
+              styles.editImageContainer,
               {
                 backgroundColor: theme.card,
-                width: size,
-                height: size,
-                aspectRatio: isLarge && images.length === 1 ? 4 / 3 : 1,
               },
             ]}
           >
             <TouchableOpacity
-              style={styles.imageWrapper}
+              style={styles.editImageWrapper}
               onPress={() => setPreviewIndex(index)}
               onLongPress={() => {
                 // Future: implement drag-and-drop reordering
@@ -126,15 +128,15 @@ export function ImagePicker({
             >
               <Image
                 source={{ uri }}
-                style={styles.image}
-                resizeMode={isLarge && images.length === 1 ? 'contain' : 'cover'}
+                style={styles.editImage}
+                resizeMode="cover"
               />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.removeButton, { backgroundColor: theme.background }]}
+              style={[styles.editRemoveButton, { backgroundColor: theme.background }]}
               onPress={() => removeImage(index)}
             >
-              <X size={16} color={theme.text} />
+              <X size={14} color={theme.text} />
             </TouchableOpacity>
           </View>
         ))}
@@ -142,20 +144,23 @@ export function ImagePicker({
         {images.length < maxImages && images.length > 0 && (
           <TouchableOpacity
             style={[
-              styles.addButton,
+              styles.editAddButton,
               {
                 backgroundColor: theme.card,
                 borderColor: theme.border,
-                width: size,
-                height: size,
               },
             ]}
             onPress={pickImage}
           >
-            <ImagePlus size={24} color={theme.textSecondary} />
+            <ImagePlus size={20} color={theme.textSecondary} />
           </TouchableOpacity>
         )}
-      </View>
+      </ScrollView>
+      {images.length > 0 && (
+        <Text style={[styles.editCount, { color: theme.textSecondary }]}>
+          {images.length}/{maxImages}
+        </Text>
+      )}
 
       {/* Full-screen image preview modal */}
       <Modal
@@ -259,10 +264,51 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+  },
+  editContainer: {
+  },
+  editGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editImageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  editImageWrapper: {
+    width: '100%',
+    height: '100%',
+  },
+  editImage: {
+    width: '100%',
+    height: '100%',
+  },
+  editRemoveButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  editAddButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editCount: {
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
 })

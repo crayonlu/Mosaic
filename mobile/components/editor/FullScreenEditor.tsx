@@ -70,6 +70,7 @@ export function FullScreenEditor({
         setUploading(true)
         try {
           for (const uri of imageUris) {
+            console.log('[FullScreenEditor] Uploading image', { uri })
             const resource = await resourcesApi.upload(
               {
                 uri,
@@ -78,6 +79,7 @@ export function FullScreenEditor({
               },
               'new'
             )
+            console.log('[FullScreenEditor] Image uploaded', { resource })
             uploadedResources.push(resource.id)
           }
         } catch (error) {
@@ -87,6 +89,7 @@ export function FullScreenEditor({
           return
         }
         setUploading(false)
+        console.log('[FullScreenEditor] All images uploaded, resourceIds:', uploadedResources)
       }
       
       onSubmit(content, tags, uploadedResources)

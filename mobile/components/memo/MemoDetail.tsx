@@ -1,15 +1,15 @@
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
 import { Badge } from '@/components/ui'
+import { ImageGrid } from '@/components/ui/ImageGrid'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
+import { resourcesApi } from '@/lib/api/resources'
 import { useArchiveMemo, useDeleteMemo, useUpdateMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
-import { resourcesApi } from '@/lib/api/resources'
 import type { MemoWithResources } from '@/types/memo'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { ArrowLeft, Check } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -281,16 +281,13 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
             {imageResources.length > 0 && (
               <View style={[styles.section, { marginTop: 16 }]}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>图片</Text>
-                <View style={styles.imageGallery}>
-                  {imageResources.map(resource => (
-                    <Image
-                      key={resource.id}
-                      source={{ uri: imageUrls.get(resource.id) }}
-                      style={styles.image}
-                      resizeMode="cover"
-                    />
-                  ))}
-                </View>
+                <ImageGrid
+                  images={imageResources.map(r => imageUrls.get(r.id) || '')}
+                  mode="view"
+                  onImagePress={(index) => {
+                    // TODO: 实现全屏预览
+                  }}
+                />
               </View>
             )}
 
