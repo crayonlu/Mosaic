@@ -23,7 +23,20 @@ impl MemoService {
         user_id: &str,
         req: CreateMemoRequest,
     ) -> Result<MemoWithResources, AppError> {
-        let user_uuid = Uuid::parse_str(user_id)?;
+        log::info!(
+            "[MemoService] Creating memo for user: {}, content: {}, tags: {:?}, resource_ids: {:?}",
+            user_id,
+            &req.content[..req.content.len().min(50)],
+            req.tags,
+            req.resource_ids
+        );
+
+        let user_uuid = Uuid::parse_str(user_id).map_err(|e| {
+            log::error!("[MemoService] Invalid user_id format: {}", e);
+            AppError::InvalidInput(format!("Invalid user_id format: {}", e))
+        })?;
+        log::debug!("[MemoService] User UUID: {}", user_uuid);
+
         let tags_json = json!(req.tags);
         let now = Utc::now().timestamp_millis();
 
@@ -42,37 +55,92 @@ impl MemoService {
         .bind(now)
         .bind(now)
         .fetch_one(&self.pool)
-        .await?;
+        .await
+        .map_err(|e| {
+            log::error!("[MemoService] Failed to insert memo: {}", e);
+            AppError::Database(e)
+        })?;
+        log::info!("[MemoService] Memo created with ID: {}", memo.id);
 
         // Update resources with the new memo_id if resource_ids are provided
         if !req.resource_ids.is_empty() {
+            log::info!(
+                "[MemoService] Associating {} resources with memo {}",
+                req.resource_ids.len(),
+                memo.id
+            );
             for resource_id_str in &req.resource_ids {
-                let resource_uuid = Uuid::parse_str(resource_id_str).ok();
-                if let Some(resource_uuid) = resource_uuid {
-                    let _ = sqlx::query(
-                        "UPDATE resources SET memo_id = $1 WHERE id = $2 AND memo_id IS NULL",
-                    )
-                    .bind(memo.id)
-                    .bind(resource_uuid)
-                    .execute(&self.pool)
-                    .await;
+                let resource_uuid = match Uuid::parse_str(resource_id_str) {
+                    Ok(uuid) => uuid,
+                    Err(e) => {
+                        log::warn!(
+                            "[MemoService] Invalid resource_id format: {} - {}",
+                            resource_id_str,
+                            e
+                        );
+                        continue;
+                    }
+                };
+                log::debug!(
+                    "[MemoService] Updating resource {} with memo_id {}",
+                    resource_uuid,
+                    memo.id
+                );
+                if let Err(e) = sqlx::query(
+                    "UPDATE resources SET memo_id = $1 WHERE id = $2 AND memo_id IS NULL",
+                )
+                .bind(memo.id)
+                .bind(resource_uuid)
+                .execute(&self.pool)
+                .await
+                {
+                    log::warn!(
+                        "[MemoService] Failed to update resource {} with memo_id {}: {}",
+                        resource_uuid,
+                        memo.id,
+                        e
+                    );
+                } else {
+                    log::info!(
+                        "[MemoService] Successfully associated resource {} with memo {}",
+                        resource_uuid,
+                        memo.id
+                    );
                 }
             }
+        } else {
+            log::debug!("[MemoService] No resource_ids to associate");
         }
 
         let resources = self.get_memo_resources(memo.id).await?;
+        log::info!(
+            "[MemoService] Memo {} has {} resources",
+            memo.id,
+            resources.len()
+        );
+
         Ok(MemoWithResources::from_memo(memo, resources))
     }
 
     async fn get_memo_resources(&self, memo_id: Uuid) -> Result<Vec<ResourceResponse>, AppError> {
+        log::debug!("[MemoService] Getting resources for memo {}", memo_id);
         let resources = sqlx::query_as::<_, Resource>(
             "SELECT id, memo_id, filename, resource_type, mime_type, file_size as size, storage_type, storage_path, created_at
              FROM resources WHERE memo_id = $1 ORDER BY created_at ASC",
         )
         .bind(memo_id)
         .fetch_all(&self.pool)
-        .await?;
+        .await
+        .map_err(|e| {
+            log::error!("[MemoService] Failed to get resources for memo {}: {}", memo_id, e);
+            e
+        })?;
 
+        log::debug!(
+            "[MemoService] Found {} resources for memo {}",
+            resources.len(),
+            memo_id
+        );
         Ok(resources
             .into_iter()
             .map(|r| ResourceResponse {
@@ -94,7 +162,11 @@ impl MemoService {
         user_id: &str,
         memo_id: Uuid,
     ) -> Result<MemoWithResources, AppError> {
-        let user_uuid = Uuid::parse_str(user_id)?;
+        log::info!("[MemoService] Getting memo {} for user {}", memo_id, user_id);
+        let user_uuid = Uuid::parse_str(user_id).map_err(|e| {
+            log::error!("[MemoService] Invalid user_id format: {}", e);
+            e
+        })?;
         let memo = sqlx::query_as::<_, Memo>(
             "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
              FROM memos WHERE id = $1 AND user_id = $2 AND is_deleted = false",
@@ -102,10 +174,20 @@ impl MemoService {
         .bind(memo_id)
         .bind(user_uuid)
         .fetch_optional(&self.pool)
-        .await?
+        .await
+        .map_err(|e| {
+            log::error!("[MemoService] Failed to get memo: {}", e);
+            e
+        })?
         .ok_or(AppError::MemoNotFound)?;
+        log::info!("[MemoService] Memo {} found", memo.id);
 
         let resources = self.get_memo_resources(memo.id).await?;
+        log::debug!(
+            "[MemoService] Memo {} has {} resources",
+            memo.id,
+            resources.len()
+        );
         Ok(MemoWithResources::from_memo(memo, resources))
     }
 
