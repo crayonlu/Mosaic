@@ -1,44 +1,40 @@
+import { MemoImageGrid } from '@/components/common/MemoImageGrid'
 import { RichTextEditor } from '@/components/common/RichTextEditor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
 } from '@/components/ui/sheet'
 import { useAI } from '@/hooks/use-ai'
 import { toast } from '@/hooks/use-toast'
-import type { MemoWithResources } from '@/types/memo'
+import type { MemoWithResources, Resource } from '@/types/memo'
 import { assetCommands, memoCommands } from '@/utils/callRust'
-import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core'
-import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
-  ArrowLeft,
-  Calendar,
-  Edit2,
-  Image as ImageIcon,
-  Loader2,
-  Plus,
-  Save,
-  Sparkles,
-  Tag,
-  Trash2,
-  Upload,
-  X,
+    ArrowLeft,
+    Calendar,
+    Edit2,
+    Image as ImageIcon,
+    Loader2,
+    Save,
+    Sparkles,
+    Tag,
+    Trash2,
+    X,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 dayjs.extend(utc)
 
@@ -63,12 +59,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleteResourceDialogOpen, setIsDeleteResourceDialogOpen] = useState(false)
   const [resourceToDelete, setResourceToDelete] = useState<string | null>(null)
-  const [isDragOver, setIsDragOver] = useState(false)
-  const [reorderedImageResources, setReorderedImageResources] = useState<any[]>([])
+  const [reorderedImageResources, setReorderedImageResources] = useState<Resource[]>([])
   const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const { suggestTags, loading: aiLoading } = useAI()
 
   const imageResources = memo?.resources.filter(r => r.resourceType === 'image') || []
@@ -287,107 +279,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     }
   }
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    const oldIndex = reorderedImageResources.findIndex(r => r.id === active.id)
-    const newIndex = reorderedImageResources.findIndex(r => r.id === over.id)
-
-    if (oldIndex !== -1 && newIndex !== -1) {
-      const reordered = arrayMove(reorderedImageResources, oldIndex, newIndex)
-      setReorderedImageResources(reordered)
-    }
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(true)
-  }
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-    const files = e.dataTransfer.files
-    if (files.length > 0) {
-      handleUploadResources(files)
-    }
-  }
-
-  const SortableImage = ({ resource, index }: { resource: any; index: number }) => {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-      id: resource.id,
-    })
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-    }
-
-    const url = imageUrls.get(resource.id)
-    if (!url) return null
-
-    return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        {...attributes}
-        {...listeners}
-        className={`group relative rounded-lg border bg-card overflow-hidden cursor-pointer ${
-          isDragging ? 'opacity-50' : ''
-        } ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''}`}
-        onClick={() => !isDragging && openImageModal(index)}
-      >
-        <img src={url} alt={resource.filename} className="w-full aspect-square object-cover" />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-        {isEditing && (
-          <Button
-            variant="destructive"
-            size="icon"
-            className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={e => {
-              e.stopPropagation()
-              setResourceToDelete(resource.id)
-              setIsDeleteResourceDialogOpen(true)
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        )}
-        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="text-xs text-white">{resource.filename}</div>
-          <div className="text-[10px] text-white/80 mt-1">{formatSize(resource.size)}</div>
-        </div>
-      </div>
-    )
-  }
-
-  const handleFileSelect = () => {
-    fileInputRef.current?.click()
-  }
-
-  const openImageModal = (index: number) => {
-    setCurrentImageIndex(index)
-    setIsImageModalOpen(true)
-  }
-
-  const getImageGridClass = (count: number) => {
-    if (count === 1) return 'grid-cols-1'
-    if (count === 2) return 'grid-cols-2'
-    if (count === 3) return 'grid-cols-3'
-    if (count === 4) return 'grid-cols-2'
-    return 'grid-cols-3'
-  }
-
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  const handleReorder = (reordered: Resource[]) => {
+    setReorderedImageResources(reordered)
   }
 
   if (!memo) return null
@@ -586,96 +479,33 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 <ImageIcon className="h-4 w-4" />
                 <span>图片 ({imageResources.length})</span>
               </div>
-              {isEditing ? (
-                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <SortableContext
-                    items={reorderedImageResources.map(r => r.id)}
-                    strategy={rectSortingStrategy}
-                  >
-                    <div
-                      className={`grid ${getImageGridClass(reorderedImageResources.length)} gap-3`}
-                    >
-                      {reorderedImageResources.map((resource, index) => (
-                        <SortableImage key={resource.id} resource={resource} index={index} />
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-              ) : (
-                <div className={`grid ${getImageGridClass(imageResources.length)} gap-3`}>
-                  {imageResources.map((resource, index) => {
-                    const url = imageUrls.get(resource.id)
-                    if (!url) return null
-                    return (
-                      <div
-                        key={resource.id}
-                        className="group relative rounded-lg border bg-card overflow-hidden cursor-pointer"
-                        onClick={() => openImageModal(index)}
-                      >
-                        <img
-                          src={url}
-                          alt={resource.filename}
-                          className="w-full aspect-square object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="text-xs text-white">{resource.filename}</div>
-                          <div className="text-[10px] text-white/80 mt-1">
-                            {formatSize(resource.size)}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
+              <MemoImageGrid
+                resources={imageResources}
+                imageUrls={imageUrls}
+                isEditing={isEditing}
+                isUploading={isUploading}
+                onReorder={handleReorder}
+                onDelete={resourceId => {
+                  setResourceToDelete(resourceId)
+                  setIsDeleteResourceDialogOpen(true)
+                }}
+                onUpload={handleUploadResources}
+              />
             </div>
           )}
 
-          {isEditing && (
+          {isEditing && imageResources.length === 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Plus className="h-4 w-4" />
-                <span>添加资源</span>
+                <ImageIcon className="h-4 w-4" />
+                <span>图片</span>
               </div>
-              <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                  isDragOver
-                    ? 'border-primary bg-primary/5'
-                    : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-                }`}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                <div className="space-y-2">
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                  <div className="text-sm text-muted-foreground">
-                    拖拽文件到此处或{' '}
-                    <button
-                      type="button"
-                      onClick={handleFileSelect}
-                      className="text-primary hover:underline"
-                      disabled={isUploading}
-                    >
-                      选择文件
-                    </button>
-                  </div>
-                  {isUploading && <div className="text-xs text-muted-foreground">上传中...</div>}
-                </div>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*,video/*,.pdf,.doc,.docx,.txt"
-                onChange={e => {
-                  if (e.target.files) {
-                    handleUploadResources(e.target.files)
-                    e.target.value = ''
-                  }
-                }}
-                className="hidden"
+              <MemoImageGrid
+                resources={[]}
+                imageUrls={imageUrls}
+                isEditing={isEditing}
+                isUploading={isUploading}
+                onUpload={handleUploadResources}
               />
             </div>
           )}
@@ -699,55 +529,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
             </div>
           )}
         </div>
-
-        {isImageModalOpen && reorderedImageResources.length > 0 && (
-          <div
-            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
-            onClick={() => setIsImageModalOpen(false)}
-          >
-            <div className="relative max-w-5xl max-h-[90vh]">
-              <img
-                src={imageUrls.get(reorderedImageResources[currentImageIndex]?.id) || ''}
-                alt={reorderedImageResources[currentImageIndex]?.filename}
-                className="max-w-full max-h-[90vh] object-contain"
-                onClick={e => e.stopPropagation()}
-              />
-              {reorderedImageResources.length > 1 && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white"
-                    onClick={e => {
-                      e.stopPropagation()
-                      setCurrentImageIndex(prev =>
-                        prev > 0 ? prev - 1 : reorderedImageResources.length - 1
-                      )
-                    }}
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white"
-                    onClick={e => {
-                      e.stopPropagation()
-                      setCurrentImageIndex(prev =>
-                        prev < reorderedImageResources.length - 1 ? prev + 1 : 0
-                      )
-                    }}
-                  >
-                    <ArrowLeft className="h-5 w-5 rotate-180" />
-                  </Button>
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                    {currentImageIndex + 1} / {reorderedImageResources.length}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </SheetContent>
       <Dialog
         open={isDeleteDialogOpen}

@@ -1,5 +1,5 @@
-import { Parser } from 'htmlparser2'
 import dayjs from 'dayjs'
+import { Parser } from 'htmlparser2'
 
 export const stringUtils = {
   generateId: (): string => {
@@ -36,11 +36,22 @@ export const stringUtils = {
           if (['script', 'style', 'noscript'].includes(tagName)) {
             skipTag = true
           }
+          if (['p', 'div', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'].includes(tagName)) {
+            if (text && !text.endsWith('\n')) {
+              text += '\n'
+            }
+          }
         },
         onclosetag: name => {
           const tagName = name.toLowerCase()
           if (['script', 'style', 'noscript'].includes(tagName)) {
             skipTag = false
+          }
+          // Add line breaks after closing block-level elements
+          if (['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'].includes(tagName)) {
+            if (text && !text.endsWith('\n')) {
+              text += '\n'
+            }
           }
         },
       })
@@ -48,10 +59,11 @@ export const stringUtils = {
       parser.write(html)
       parser.end()
 
-      return text.trim()
+      // Clean up multiple consecutive newlines and trim
+      return text.replace(/\n{3,}/g, '\n\n').trim()
     } catch (error) {
       console.warn('HTML parsing failed, falling back to regex:', error)
-      return html.replace(/<[^>]*>/g, '').trim()
+      return html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim()
     }
   },
   extractHashtags: (text: string): string[] => {

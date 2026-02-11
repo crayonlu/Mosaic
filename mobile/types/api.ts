@@ -141,6 +141,10 @@ export interface ConfirmUploadRequest {
   resourceId: string
 }
 
+export interface PresignedUrlResponse {
+  url: string
+}
+
 export interface StatsQuery {
   start_date: string
   end_date: string

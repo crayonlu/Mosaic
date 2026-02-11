@@ -44,6 +44,22 @@ impl MemoService {
         .fetch_one(&self.pool)
         .await?;
 
+        // Update resources with the new memo_id if resource_ids are provided
+        if !req.resource_ids.is_empty() {
+            for resource_id_str in &req.resource_ids {
+                let resource_uuid = Uuid::parse_str(resource_id_str).ok();
+                if let Some(resource_uuid) = resource_uuid {
+                    let _ = sqlx::query(
+                        "UPDATE resources SET memo_id = $1 WHERE id = $2 AND memo_id IS NULL",
+                    )
+                    .bind(memo.id)
+                    .bind(resource_uuid)
+                    .execute(&self.pool)
+                    .await;
+                }
+            }
+        }
+
         let resources = self.get_memo_resources(memo.id).await?;
         Ok(MemoWithResources::from_memo(memo, resources))
     }

@@ -62,6 +62,8 @@ pub struct CreateMemoRequest {
     pub tags: Vec<String>,
     #[serde(default)]
     pub diary_date: Option<chrono::NaiveDate>,
+    #[serde(default)]
+    pub resource_ids: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]

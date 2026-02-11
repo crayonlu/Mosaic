@@ -39,7 +39,7 @@ export function Login({ onLogin }: LoginProps) {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-stone-50 dark:bg-stone-950 p-4">
+    <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Mosaic Dashboard</CardTitle>
