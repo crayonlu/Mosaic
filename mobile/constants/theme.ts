@@ -15,15 +15,15 @@ export interface Theme {
 }
 
 export const LightTheme: Theme = {
-  background: '#FFF9F5',
-  surface: '#FFF5EB',
+  background: '#FFF5EB',
+  surface: '#FFF7EF',
   text: '#2D2D2D',
   textSecondary: '#757575',
   border: 'rgba(0, 0, 0, 0.08)',
   borderRadius: 20,
   spacing: 16,
   primary: '#B2794C',
-  card: '#FFF5EB',
+  card: '#FFF7EF',
   link: '#FFB5A7',
   mark: '#FFD93D',
 }
