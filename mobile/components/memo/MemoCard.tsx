@@ -24,9 +24,6 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
 
   // Check if memo has resources
   const hasResources = memo.resources.length > 0
-  const hasImages = memo.resources.some(r => r.resourceType === 'image')
-  const hasOtherResources = memo.resources.some(r => r.resourceType !== 'image')
-
   // Get all image resources
   const imageResources = memo.resources.filter(r => r.resourceType === 'image')
   const imageUrls = imageResources.map(r => r.url)
@@ -36,6 +33,13 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
     hasResources: hasResources,
     imageCount: imageUrls.length,
     resourceIds: memo.resources.map(r => r.id),
+    resources: memo.resources.map(r => ({
+      id: r.id,
+      memoId: r.memoId,
+      filename: r.filename,
+      resourceType: r.resourceType,
+      url: r.url,
+    })),
   })
 
   const handleDelete = () => {
@@ -55,16 +59,6 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
       ]}
     >
       <View style={styles.contentContainer}>
-        {imageUrls.length > 0 && (
-          <View style={styles.imageGridContainer}>
-            <ImageGrid
-              images={imageUrls}
-              mode="card"
-              onImagePress={() => {}}
-            />
-          </View>
-        )}
-
         {/* Text content */}
         <View style={[styles.textContent, imageUrls.length === 0 && styles.textContentFull]}>
           {plainText ? (
@@ -77,6 +71,15 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
             <Text style={[styles.text, { color: theme.text }]}>无文字内容</Text>
           )}
         </View>
+        {imageUrls.length > 0 && (
+          <View style={styles.imageGridContainer}>
+            <ImageGrid
+              images={imageUrls}
+              mode="card"
+              onImagePress={() => {}}
+            />
+          </View>
+        )}
       </View>
 
       {/* Tags and metadata */}
@@ -95,23 +98,6 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
               )}
             </View>
           )}
-
-          {/* Resource indicators */}
-          {hasResources && (
-            <View style={styles.resourceIndicators}>
-              {hasImages && imageUrls.length > 0 && (
-                <Text style={[styles.resourceText, { color: theme.textSecondary }]}>
-                  🖼️ {imageUrls.length}
-                </Text>
-              )}
-              {hasOtherResources && (
-                <Text style={[styles.resourceText, { color: theme.textSecondary }]}>
-                  📎 {memo.resources.filter(r => r.resourceType !== 'image').length}
-                </Text>
-              )}
-            </View>
-          )}
-
           {/* Timestamp */}
           <Text style={[styles.timestamp, { color: theme.textSecondary }]}>{formattedTime}</Text>
           {/* Actions */}
@@ -142,7 +128,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   contentContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     minHeight: 80,
   },
   imageGridContainer: {

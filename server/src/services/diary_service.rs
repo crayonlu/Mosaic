@@ -190,6 +190,7 @@ impl DiaryService {
                 size: r.file_size,
                 storage_type: Some(r.storage_type),
                 storage_path: Some(r.storage_path),
+                url: format!("/api/resources/{}/download", r.id),
                 created_at: r.created_at,
             })
             .collect())
