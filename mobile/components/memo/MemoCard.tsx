@@ -31,6 +31,13 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
   const imageResources = memo.resources.filter(r => r.resourceType === 'image')
   const imageUrls = imageResources.map(r => r.url)
 
+  console.log('[MemoCard] rendering memo', {
+    id: memo.id,
+    hasResources: hasResources,
+    imageCount: imageUrls.length,
+    resourceIds: memo.resources.map(r => r.id),
+  })
+
   const handleDelete = () => {
     onDelete?.(memo.id)
   }
