@@ -125,7 +125,7 @@ impl MemoService {
     async fn get_memo_resources(&self, memo_id: Uuid) -> Result<Vec<ResourceResponse>, AppError> {
         log::debug!("[MemoService] Getting resources for memo {}", memo_id);
         let resources = sqlx::query_as::<_, Resource>(
-            "SELECT id, memo_id, filename, resource_type, mime_type, file_size as size, storage_type, storage_path, created_at
+            "SELECT id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, created_at
              FROM resources WHERE memo_id = $1 ORDER BY created_at ASC",
         )
         .bind(memo_id)
