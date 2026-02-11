@@ -56,9 +56,15 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
 
         {/* Text content */}
         <View style={[styles.textContent, !imageResource && styles.textContentFull]}>
-          <Text style={[styles.text, { color: theme.text }]} numberOfLines={4} ellipsizeMode="tail">
-            {plainText || '无文字内容'}
-          </Text>
+          {plainText ? (
+            plainText.split('\n').slice(0, 4).map((line, index) => (
+              <Text key={index} style={[styles.text, { color: theme.text }]} numberOfLines={3} ellipsizeMode="tail">
+                {line || ' '}
+              </Text>
+            ))
+          ) : (
+            <Text style={[styles.text, { color: theme.text }]}>无文字内容</Text>
+          )}
         </View>
       </View>
 
