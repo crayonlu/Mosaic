@@ -176,7 +176,7 @@ export function FullScreenEditor({
             />
           </View>
 
-          <ScrollView style={styles.contentContainer} keyboardShouldPersistTaps="handled">
+          <View style={styles.contentContainer}>
             <View style={styles.editorContainer}>
               <RichTextEditor
                 content={content}
@@ -198,7 +198,7 @@ export function FullScreenEditor({
                 placeholder="添加标签..."
               />
             </View>
-          </ScrollView>
+          </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   editorContainer: {
-    minHeight: 200,
+    flex: 1,
   },
   tagContainer: {
     padding: 16,
