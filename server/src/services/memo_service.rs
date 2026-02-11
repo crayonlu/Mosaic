@@ -143,16 +143,20 @@ impl MemoService {
         );
         Ok(resources
             .into_iter()
-            .map(|r| ResourceResponse {
-                id: r.id,
-                memo_id: r.memo_id,
-                filename: r.filename,
-                resource_type: r.resource_type,
-                mime_type: r.mime_type,
-                size: r.file_size,
-                storage_type: Some(r.storage_type),
-                storage_path: Some(r.storage_path),
-                created_at: r.created_at,
+            .map(|r| {
+                let url = format!("/api/resources/{}/download", r.id);
+                ResourceResponse {
+                    id: r.id,
+                    memo_id: r.memo_id,
+                    filename: r.filename,
+                    resource_type: r.resource_type,
+                    mime_type: r.mime_type,
+                    size: r.file_size,
+                    storage_type: Some(r.storage_type),
+                    storage_path: Some(r.storage_path),
+                    url,
+                    created_at: r.created_at,
+                }
             })
             .collect())
     }

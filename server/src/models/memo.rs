@@ -38,6 +38,7 @@ pub struct ResourceResponse {
     pub size: i64,
     pub storage_type: Option<String>,
     pub storage_path: Option<String>,
+    pub url: String,
     pub created_at: i64,
 }
 
