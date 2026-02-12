@@ -1,11 +1,19 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useServerConfig } from '@/hooks/use-server-config'
-import { Cloud, CloudOff, RefreshCw, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useServerConfig } from '@/hooks/use-server-config'
+import { AlertCircle, Cloud, CloudOff, LogOutIcon, RefreshCw } from 'lucide-react'
 
 export function SyncStatusDisplay() {
-  const { isConfigured, loading, config, checkConfig } = useServerConfig()
+  const { isConfigured, loading, config, checkConfig, Logout } = useServerConfig()
+  const handleLogout = async () => {
+    try {
+      await Logout()
+    } catch (error) {
+      console.error('Failed to logout:', error)
+    }
+    window.location.reload()
+  }
 
   const getStatus = () => {
     if (loading) {
@@ -58,6 +66,10 @@ export function SyncStatusDisplay() {
           <Button variant="outline" size="sm" onClick={checkConfig} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             刷新状态
+          </Button>
+          <Button variant="default" size="sm" onClick={handleLogout} disabled={loading}>
+            <LogOutIcon className="h-4 w-4 mr-2" />
+            退出登录
           </Button>
         </div>
       </CardContent>

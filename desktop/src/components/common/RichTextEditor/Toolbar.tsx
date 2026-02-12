@@ -52,7 +52,10 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
       shortcut: 'Ctrl+B',
       onClick: () => editor.chain().focus().toggleBold().run(),
       isActive: () => editor.isActive('bold'),
-      canExecute: () => editor?.can()?.chain()?.focus()?.toggleBold()?.run() ?? false,
+      canExecute: () => {
+        if (!editor || !editor.view || editor.isDestroyed) return false
+        return editor?.can()?.chain()?.focus()?.toggleBold()?.run() ?? false
+      },
     },
     {
       icon: Italic,
@@ -60,7 +63,10 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
       shortcut: 'Ctrl+I',
       onClick: () => editor.chain().focus().toggleItalic().run(),
       isActive: () => editor.isActive('italic'),
-      canExecute: () => editor?.can()?.chain()?.focus()?.toggleItalic()?.run() ?? false,
+      canExecute: () => {
+        if (!editor || !editor.view || editor.isDestroyed) return false
+        return editor?.can()?.chain()?.focus()?.toggleItalic()?.run() ?? false
+      },
     },
     {
       icon: Strikethrough,
@@ -68,7 +74,10 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
       shortcut: 'Ctrl+Shift+X',
       onClick: () => editor.chain().focus().toggleStrike().run(),
       isActive: () => editor.isActive('strike'),
-      canExecute: () => editor?.can()?.chain()?.focus()?.toggleStrike()?.run() ?? false,
+      canExecute: () => {
+        if (!editor || !editor.view || editor.isDestroyed) return false
+        return editor?.can()?.chain()?.focus()?.toggleStrike()?.run() ?? false
+      },
     },
     {
       icon: Underline,
@@ -76,7 +85,10 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
       shortcut: 'Ctrl+U',
       onClick: () => editor.chain().focus().toggleUnderline().run(),
       isActive: () => editor.isActive('underline'),
-      canExecute: () => editor?.can()?.chain()?.focus()?.toggleUnderline()?.run() ?? false,
+      canExecute: () => {
+        if (!editor || !editor.view || editor.isDestroyed) return false
+        return editor?.can()?.chain()?.focus()?.toggleUnderline()?.run() ?? false
+      },
     },
     {
       icon: Code,
@@ -84,7 +96,10 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
       shortcut: 'Ctrl+`',
       onClick: () => editor.chain().focus().toggleCode().run(),
       isActive: () => editor.isActive('code'),
-      canExecute: () => editor?.can()?.chain()?.focus()?.toggleCode()?.run() ?? false,
+      canExecute: () => {
+        if (!editor || !editor.view || editor.isDestroyed) return false
+        return editor?.can()?.chain()?.focus()?.toggleCode()?.run() ?? false
+      },
     },
     {
       icon: Highlighter,
@@ -92,7 +107,10 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
       shortcut: 'Ctrl+Shift+H',
       onClick: () => editor.chain().focus().toggleHighlight().run(),
       isActive: () => editor.isActive('highlight'),
-      canExecute: () => editor?.can()?.chain()?.focus()?.toggleHighlight()?.run() ?? false,
+      canExecute: () => {
+        if (!editor || !editor.view || editor.isDestroyed) return false
+        return editor?.can()?.chain()?.focus()?.toggleHighlight()?.run() ?? false
+      },
     },
   ]
 
@@ -227,14 +245,20 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
       label: '撤销',
       shortcut: 'Ctrl+Z',
       onClick: () => editor.chain().focus().undo().run(),
-      canExecute: () => editor?.can()?.chain()?.focus()?.undo()?.run() ?? false,
+      canExecute: () => {
+        if (!editor || !editor.view || editor.isDestroyed) return false
+        return editor?.can()?.chain()?.focus()?.undo()?.run() ?? false
+      },
     },
     {
       icon: Redo2,
       label: '重做',
       shortcut: 'Ctrl+Y',
       onClick: () => editor.chain().focus().redo().run(),
-      canExecute: () => editor?.can()?.chain()?.focus()?.redo()?.run() ?? false,
+      canExecute: () => {
+        if (!editor || !editor.view || editor.isDestroyed) return false
+        return editor?.can()?.chain()?.focus()?.redo()?.run() ?? false
+      },
     },
   ]
 
