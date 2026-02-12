@@ -119,6 +119,5 @@ export default function ArchiveScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
   },
 })

@@ -468,7 +468,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                   className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1 border"
                 />
               ) : (
-                <span className="text-muted-foreground italic">无文字内容</span>
+                <></>
               )}
             </div>
           )}

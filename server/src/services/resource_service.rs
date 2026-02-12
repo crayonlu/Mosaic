@@ -7,26 +7,15 @@ use crate::models::{
 use crate::storage::traits::Storage;
 use bytes::Bytes;
 use chrono::Utc;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::sync::Arc;
 use uuid::Uuid;
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ResourceTokenClaims {
-    sub: String,
-    resource_id: String,
-    exp: usize,
-    iat: usize,
-}
 
 #[derive(Clone)]
 pub struct ResourceService {
     pool: PgPool,
     storage: Arc<dyn Storage>,
     config: Config,
-    jwt_secret: String,
 }
 
 impl ResourceService {
@@ -34,52 +23,12 @@ impl ResourceService {
         pool: PgPool,
         storage: Arc<dyn Storage>,
         config: Config,
-        jwt_secret: String,
     ) -> Self {
         Self {
             pool,
             storage,
             config,
-            jwt_secret,
         }
-    }
-
-    fn generate_resource_token(
-        &self,
-        user_id: &str,
-        resource_id: Uuid,
-        expires_secs: u64,
-    ) -> Result<String, AppError> {
-        let now = Utc::now().timestamp() as usize;
-        let exp = now + expires_secs as usize;
-
-        let claims = ResourceTokenClaims {
-            sub: user_id.to_string(),
-            resource_id: resource_id.to_string(),
-            exp,
-            iat: now,
-        };
-
-        let token = encode(
-            &Header::default(),
-            &claims,
-            &EncodingKey::from_secret(self.jwt_secret.as_ref()),
-        )
-        .map_err(|_| AppError::Internal("Token generation failed".to_string()))?;
-
-        Ok(token)
-    }
-
-    pub async fn validate_resource_token(&self, token: &str) -> Result<Uuid, AppError> {
-        let token_data: ResourceTokenClaims = decode::<ResourceTokenClaims>(
-            token,
-            &DecodingKey::from_secret(self.jwt_secret.as_ref()),
-            &Validation::default(),
-        )
-        .map_err(|_| AppError::InvalidToken)?
-        .claims;
-
-        Uuid::parse_str(&token_data.resource_id).map_err(|_| AppError::InvalidToken)
     }
 
     pub async fn upload_resource(
@@ -140,8 +89,7 @@ impl ResourceService {
                 .await
                 .map_err(|e| AppError::Storage(e.to_string()))?,
             crate::config::StorageType::Local => {
-                let token = self.generate_resource_token(user_id, resource_id, 300)?;
-                format!("/api/resources/{}/download?token={}", resource_id, token)
+                format!("/api/resources/{}/download", resource_id)
             }
         };
 
@@ -156,59 +104,6 @@ impl ResourceService {
             url,
             created_at: resource.created_at,
         })
-    }
-
-    async fn get_resource_for_user(
-        &self,
-        user_uuid: Uuid,
-        resource_id: Uuid,
-    ) -> Result<Resource, AppError> {
-        sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.created_at
-             FROM resources r
-             JOIN memos m ON r.memo_id = m.id
-             WHERE r.id = $1 AND m.user_id = $2",
-        )
-        .bind(resource_id)
-        .bind(user_uuid)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or(AppError::ResourceNotFound)
-    }
-
-    pub async fn create_presigned_download_url(
-        &self,
-        user_id: &str,
-        resource_id: Uuid,
-        expires_secs: u64,
-    ) -> Result<String, AppError> {
-        let user_uuid = Uuid::parse_str(user_id)?;
-
-        let resource = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.created_at
-             FROM resources r
-             JOIN memos m ON r.memo_id = m.id
-             WHERE r.id = $1 AND m.user_id = $2",
-        )
-        .bind(resource_id)
-        .bind(user_uuid)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or(AppError::ResourceNotFound)?;
-
-        let url = match self.config.storage_type {
-            crate::config::StorageType::R2 => self
-                .storage
-                .get_presigned_url(&resource.storage_path, expires_secs)
-                .await
-                .map_err(|e| AppError::Storage(e.to_string()))?,
-            crate::config::StorageType::Local => {
-                let token = self.generate_resource_token(user_id, resource_id, expires_secs)?;
-                format!("/api/resources/{}/download?token={}", resource_id, token)
-            }
-        };
-
-        Ok(url)
     }
 
     pub async fn download_resource_proxy(
@@ -232,27 +127,6 @@ impl ResourceService {
             .map_err(|e| AppError::Storage(e.to_string()))?;
 
         Ok((data, resource.mime_type))
-    }
-
-    pub async fn download_resource(
-        &self,
-        _user_id: &str,
-        resource_id: Uuid,
-    ) -> Result<Bytes, AppError> {
-        let resource = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.created_at
-             FROM resources r
-             WHERE r.id = $1",
-        )
-        .bind(resource_id)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or(AppError::ResourceNotFound)?;
-
-        self.storage
-            .download(&resource.storage_path)
-            .await
-            .map_err(|e| AppError::Storage(e.to_string()))
     }
 
     pub async fn delete_resource(&self, user_id: &str, resource_id: Uuid) -> Result<(), AppError> {
@@ -304,8 +178,7 @@ impl ResourceService {
                 .await
                 .map_err(|e| AppError::Storage(e.to_string()))?,
             crate::config::StorageType::Local => {
-                let token = self.generate_resource_token(user_id, avatar_id, 86400 * 365)?;
-                format!("/api/avatars/{}/download?token={}", avatar_id, token)
+                format!("/api/avatars/{}/download", avatar_id)
             }
         };
 
@@ -343,49 +216,6 @@ impl ResourceService {
                                                 AppError::Storage(e.to_string())
                                             })?;
                                             return Ok(Bytes::from(data));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Err(AppError::ResourceNotFound)
-            }
-            crate::config::StorageType::R2 => Err(AppError::ResourceNotFound),
-        }
-    }
-
-    pub async fn download_avatar_proxy(
-        &self,
-        avatar_id: Uuid,
-    ) -> Result<(Bytes, String), AppError> {
-        match self.config.storage_type {
-            crate::config::StorageType::Local => {
-                let base_path = &self.config.local_storage_path;
-                let base = std::path::Path::new(base_path).join("avatars");
-
-                if let Ok(entries) = tokio::fs::read_dir(&base).await {
-                    let mut entries = entries;
-                    while let Ok(Some(user_entry)) = entries.next_entry().await {
-                        if user_entry.path().is_dir() {
-                            if let Ok(avatar_entries) = tokio::fs::read_dir(user_entry.path()).await
-                            {
-                                let mut avatar_entries = avatar_entries;
-                                while let Ok(Some(avatar_entry)) = avatar_entries.next_entry().await
-                                {
-                                    if let Some(filename) = avatar_entry.file_name().to_str() {
-                                        if filename == avatar_id.to_string() {
-                                            let data = tokio::fs::read(avatar_entry.path())
-                                                .await
-                                                .map_err(|e| {
-                                                AppError::Storage(e.to_string())
-                                            })?;
-                                            return Ok((
-                                                Bytes::from(data),
-                                                "image/jpeg".to_string(),
-                                            ));
                                         }
                                     }
                                 }
@@ -500,8 +330,7 @@ impl ResourceService {
                     .await
                     .map_err(|e| AppError::Storage(e.to_string()))?,
                 crate::config::StorageType::Local => {
-                    let token = self.generate_resource_token(user_id, resource.id, 300)?;
-                    format!("/api/resources/{}/download?token={}", resource.id, token)
+                    format!("/api/resources/{}/download", resource.id)
                 }
             };
 
@@ -545,10 +374,9 @@ impl ResourceService {
                 .get_presigned_url(&resource.storage_path, 300)
                 .await
                 .map_err(|e| AppError::Storage(e.to_string()))?,
-            crate::config::StorageType::Local => {
-                let token = self.generate_resource_token(user_id, resource.id, 300)?;
-                format!("/api/resources/{}/download?token={}", resource.id, token)
-            }
+                crate::config::StorageType::Local => {
+                    format!("/api/resources/{}/download", resource.id)
+                }
         };
 
         Ok(ResourceResponse {

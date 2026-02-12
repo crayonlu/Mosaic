@@ -189,7 +189,7 @@ export const MemoCard = memo<MemoCardProps>(
                   />
                 </div>
               ) : (
-                <div className="text-muted-foreground italic">无文字内容</div>
+                <></>
               )}
 
               {renderMediaGrid()}

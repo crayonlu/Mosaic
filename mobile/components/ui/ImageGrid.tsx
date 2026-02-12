@@ -253,7 +253,6 @@ const styles = StyleSheet.create({
   viewGrid: {
   },
   viewImageContainer: {
-    borderRadius: 8,
     overflow: 'hidden',
     position: 'relative',
   },

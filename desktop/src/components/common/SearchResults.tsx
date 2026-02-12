@@ -187,7 +187,7 @@ function SearchResultItem({ memo, searchWords, onMemoClick }: SearchResultItemPr
             className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1"
           />
         ) : (
-          <div className="text-muted-foreground italic">无文字内容</div>
+          <></>
         )}
       </div>
 

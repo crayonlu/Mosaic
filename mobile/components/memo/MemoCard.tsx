@@ -42,20 +42,6 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
     headers: authHeaders
   }))
 
-  console.log('[MemoCard] rendering memo', {
-    id: memo.id,
-    hasResources: hasResources,
-    imageCount: imageUrls.length,
-    resourceIds: memo.resources.map(r => r.id),
-    resources: memo.resources.map(r => ({
-      id: r.id,
-      memoId: r.memoId,
-      filename: r.filename,
-      resourceType: r.resourceType,
-      url: r.url,
-    })),
-  })
-
   const handleDelete = () => {
     onDelete?.(memo.id)
   }
@@ -63,18 +49,17 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
+      style={() => [
         styles.container,
         {
-          backgroundColor: theme.card,
-          borderColor: theme.border,
-          opacity: pressed ? 0.8 : 1,
+          backgroundColor: theme.background,
+          borderColor: theme.border,          
         },
       ]}
     >
       <View style={styles.contentContainer}>
         {/* Text content */}
-        <View style={[styles.textContent, imageUrls.length === 0 && styles.textContentFull]}>
+        <View style={[styles.textContent, imageUrls.length === 0 && styles.textContentFull, plainText ? { padding: 8 } : {}]}>
           {plainText ? (
             plainText.split('\n').slice(0, 4).map((line, index) => (
               <Text key={index} style={[styles.text, { color: theme.text }]} numberOfLines={3} ellipsizeMode="tail">
@@ -82,7 +67,7 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
               </Text>
             ))
           ) : (
-            <Text style={[styles.text, { color: theme.text }]}>无文字内容</Text>
+            <></>
           )}
         </View>
         {imageUrls.length > 0 && (
@@ -98,7 +83,7 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
 
       {/* Tags and metadata */}
       {(memo.tags.length > 0 || hasResources || showActions) && (
-        <View style={[styles.metadataContainer, { borderTopColor: theme.border }]}>
+        <View style={[styles.metadataContainer, { borderColor: theme.border }]}>
           {/* Tags */}
           {memo.tags.length > 0 && (
             <View style={styles.tagsRow}>
@@ -136,10 +121,10 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
-    borderWidth: 1,
+    borderBottomWidth: 1,
     overflow: 'hidden',
     marginBottom: 12,
+    paddingHorizontal: 12,
   },
   contentContainer: {
     flexDirection: 'column',
@@ -148,7 +133,6 @@ const styles = StyleSheet.create({
   imageGridContainer: {
     width: 100,
     height: 100,
-    marginRight: 12,
   },
   imagePreview: {
     width: 100,
@@ -156,7 +140,6 @@ const styles = StyleSheet.create({
   },
   textContent: {
     flex: 1,
-    padding: 12,
     justifyContent: 'center',
   },
   textContentFull: {
@@ -170,9 +153,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderTopWidth: 1,
     flexWrap: 'wrap',
     gap: 8,
   },

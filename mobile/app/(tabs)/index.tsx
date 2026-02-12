@@ -105,7 +105,6 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   heatMapSection: {},
   sectionHeader: {
