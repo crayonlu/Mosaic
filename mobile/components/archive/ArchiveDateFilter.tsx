@@ -117,6 +117,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     marginBottom: 12,
+    paddingHorizontal: 16,
   },
   filterButton: {
     flexDirection: 'row',

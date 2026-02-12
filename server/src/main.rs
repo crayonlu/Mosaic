@@ -70,12 +70,7 @@ async fn main() -> anyhow::Result<()> {
     log::info!("[OK] Auth service initialized");
 
     let memo_service = MemoService::new(pool.clone());
-    let resource_service = ResourceService::new(
-        pool.clone(),
-        storage.clone(),
-        config.clone(),
-        config.jwt_secret.clone(),
-    );
+    let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone());
     let diary_service = DiaryService::new(pool.clone());
     let stats_service = StatsService::new(pool.clone());
     log::info!("[OK] Business services initialized");

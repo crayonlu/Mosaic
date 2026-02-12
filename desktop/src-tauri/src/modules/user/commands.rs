@@ -16,7 +16,10 @@ pub struct UserAppState {
 pub async fn get_user(state: State<'_, UserAppState>) -> Result<Option<User>, String> {
     match state.user_api.get().await {
         Ok(user) => Ok(Some(user)),
-        Err(_) => Ok(None),
+        Err(e) => {
+            eprintln!("Failed to get user: {:?}", e);
+            Ok(None)
+        }
     }
 }
 

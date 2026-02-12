@@ -1,9 +1,11 @@
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
 import { TagInput } from '@/components/tag/TagInput'
 import { Loading, toast } from '@/components/ui'
+import { ImageGrid } from '@/components/ui/ImageGrid'
 import { MOODS, type MoodKey } from '@/constants/common'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
+import { resourcesApi } from '@/lib/api/resources'
 import {
   useArchiveMemo,
   useCreateDiary,
@@ -15,8 +17,8 @@ import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Archive, ArrowLeft, Trash2 } from 'lucide-react-native'
-import { useCallback, useState } from 'react'
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useCallback, useEffect, useState } from 'react'
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -34,8 +36,17 @@ export default function MemoDetailScreen() {
   const [tags, setTags] = useState<string[]>([])
   const [showArchiveModal, setShowArchiveModal] = useState(false)
   const [selectedMood, setSelectedMood] = useState<MoodKey | null>(null)
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
   const isPending = isUpdating || isArchiving || isDeleting || isCreatingDiary
+
+  useEffect(() => {
+    const loadAuthHeaders = async () => {
+      const headers = await resourcesApi.getAuthHeaders()
+      setAuthHeaders(headers)
+    }
+    loadAuthHeaders()
+  }, [])
 
   const handleSave = useCallback(async () => {
     if (!memo || !canUseNetwork || isPending) return
@@ -184,7 +195,24 @@ export default function MemoDetailScreen() {
             </View>
           </>
         ) : (
-          <RichTextEditor content={memo.content} editable={false} onChange={() => {}} />
+          <>
+            <RichTextEditor content={memo.content} editable={false} onChange={() => {}} />
+            {memo.resources && memo.resources.length > 0 && (
+              <View style={styles.resourcesContainer}>
+                <ImageGrid
+                  images={memo.resources
+                    .filter(r => r.resourceType === 'image')
+                    .map(r => ({
+                      uri: resourcesApi.getDirectDownloadUrl(r.id),
+                      headers: authHeaders,
+                    }))}
+                  mode="view"
+                  showRemoveButton={false}
+                  onImagePress={() => {}}
+                />
+              </View>
+            )}
+          </>
         )}
 
         {!editing && memo.tags && memo.tags.length > 0 && (
@@ -340,6 +368,10 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 13,
+  },
+  resourcesContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   metadata: {
     padding: 16,

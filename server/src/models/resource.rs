@@ -45,12 +45,6 @@ pub struct ResourceResponse {
     pub created_at: i64,
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PresignedUrlResponse {
-    pub url: String,
-}
-
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateResourceRequest {

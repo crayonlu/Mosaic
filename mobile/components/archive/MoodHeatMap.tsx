@@ -210,7 +210,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Heat map grid */}
       <ScrollView
         ref={scrollViewRef}
@@ -240,7 +240,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
       </ScrollView>
 
       {/* Legend */}
-      <View style={[styles.legend, { borderTopColor: theme.border }]}>
+      <View style={[styles.legend]}>
         <Text style={[styles.legendText, { color: theme.textSecondary }]}>情绪热力图</Text>
         <ScrollView
           horizontal
@@ -266,8 +266,6 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 8,
-    borderRadius: 12,
-    borderWidth: 1,
   },
   header: {
     flexDirection: 'row',
@@ -281,11 +279,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   scrollContent: {
-    paddingVertical: 10,
+    paddingVertical: 4,
   },
   heatMapGrid: {
     flexDirection: 'row',
     gap: 4,
+    paddingHorizontal: 8,
   },
   weekRow: {
     gap: 4,
@@ -302,8 +301,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
-    borderTopWidth: 1,
-    marginTop: 8,
+    paddingHorizontal: 4,
   },
   legendText: {
     fontSize: 12,

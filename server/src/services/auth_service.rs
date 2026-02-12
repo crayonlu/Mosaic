@@ -252,16 +252,6 @@ impl AuthService {
         })
     }
 
-    pub fn verify_token(&self, token: &str) -> Result<String, AppError> {
-        let token_data = decode::<Claims>(
-            token,
-            &DecodingKey::from_secret(self.jwt_secret.as_ref()),
-            &Validation::default(),
-        )?;
-
-        Ok(token_data.claims.sub)
-    }
-
     fn generate_token(&self, user_id: &str, exp_seconds: i64) -> Result<String, AppError> {
         let now = Utc::now().timestamp() as usize;
         let exp = now + exp_seconds as usize;

@@ -82,7 +82,7 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
                     className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1"
                   />
                 ) : (
-                  <div className="text-muted-foreground italic p-4">无文字内容</div>
+                  <></>
                 )}
               </div>
               {(memo.resources.length > 0 || (memo.tags && memo.tags.length > 0)) && (

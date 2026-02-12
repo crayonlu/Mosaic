@@ -63,13 +63,11 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
     return (
       <Pressable
         onPress={() => onDiaryPress?.(item)}
-        style={({ pressed }) => [
+        style={() => [
           styles.diaryCard,
           {
-            backgroundColor: theme.card,
+            backgroundColor: theme.background,
             borderColor: theme.border,
-            opacity: pressed ? 0.88 : 1,
-            transform: pressed ? [{ scale: 0.96 }] : [],
           },
         ]}
       >
@@ -178,7 +176,6 @@ export function DiaryFeed({ onDiaryPress }: DiaryFeedProps) {
 
 const styles = StyleSheet.create({
   listContent: {
-    padding: 16,
     paddingTop: 8,
   },
   columnWrapper: {
@@ -187,10 +184,10 @@ const styles = StyleSheet.create({
   },
   diaryCard: {
     flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 14,
     marginBottom: 12,
+    borderBottomWidth: 1,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
   },
   coverContainer: {
     position: 'relative',
