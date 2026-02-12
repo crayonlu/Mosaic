@@ -14,8 +14,9 @@ export function useServerConfig() {
   const checkConfig = async () => {
     try {
       const serverConfig = await configCommands.getServerConfig()
+      const configured = !!serverConfig.url && !!serverConfig.username && !!serverConfig.password
       setConfig(serverConfig)
-      setIsConfigured(!!serverConfig.url && !!serverConfig.username && !!serverConfig.password)
+      setIsConfigured(configured)
     } catch (error) {
       console.error('Failed to check server config:', error)
       setIsConfigured(false)
@@ -24,5 +25,15 @@ export function useServerConfig() {
     }
   }
 
-  return { isConfigured, loading, config, checkConfig }
+  const Logout = async () => {
+    try {
+      await configCommands.logout()
+      setIsConfigured(false)
+      setConfig(null)
+    } catch (error) {
+      console.error('Failed to logout:', error)
+    }
+  }
+
+  return { isConfigured, loading, config, checkConfig, Logout }
 }
