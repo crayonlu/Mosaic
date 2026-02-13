@@ -10,7 +10,7 @@ export { ResourceType } from './resource'
 export type { Resource, ResourcePreview } from './resource'
 
 // Diary Types
-export { MoodKey } from './diary'
+export { MoodKey } from '@/lib/utils/mood'
 export type { Diary, DiaryWithMemos } from './diary'
 
 // User Types

@@ -1,5 +1,4 @@
-import { Badge } from '@/components/ui'
-import { ImageGrid } from '@/components/ui/ImageGrid'
+import { Badge, DraggableImageGrid } from '@/components/ui'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
 import { resourcesApi } from '@/lib/api/resources'
 import { useArchiveMemo, useDeleteMemo, useUpdateMemo } from '@/lib/query'
@@ -268,13 +267,10 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
             {imageResources.length > 0 && (
               <View style={[styles.section, { marginTop: 16 }]}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>图片</Text>
-                <ImageGrid
-                  images={imageResources.map(r => ({
-                    uri: resourcesApi.getDirectDownloadUrl(r.id),
-                    headers: authHeaders
-                  }))}
-                  mode="view"
-                  onImagePress={(index) => {
+                <DraggableImageGrid
+                  images={imageResources.map(r => resourcesApi.getDirectDownloadUrl(r.id))}
+                  draggable={false}
+                  onImagePress={(index: number) => {
                     // TODO: 实现全屏预览
                   }}
                 />

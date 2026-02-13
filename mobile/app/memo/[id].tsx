@@ -1,8 +1,7 @@
 import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
 import { TextEditor } from '@/components/editor/TextEditor'
 import { TagInput } from '@/components/tag/TagInput'
-import { Loading, toast } from '@/components/ui'
-import { ImageGrid } from '@/components/ui/ImageGrid'
+import { Button, DraggableImageGrid, Loading, toast } from '@/components/ui'
 import { MOODS, type MoodKey } from '@/constants/common'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
@@ -17,7 +16,7 @@ import {
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
 import { router, useLocalSearchParams } from 'expo-router'
-import { Archive, ArrowLeft, Trash2 } from 'lucide-react-native'
+import { Archive, ArrowLeft, Image, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -38,8 +37,10 @@ export default function MemoDetailScreen() {
   const [showArchiveModal, setShowArchiveModal] = useState(false)
   const [selectedMood, setSelectedMood] = useState<MoodKey | null>(null)
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
+  const [imageUris, setImageUris] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
 
-  const isPending = isUpdating || isArchiving || isDeleting || isCreatingDiary
+  const isPending = isUpdating || isArchiving || isDeleting || isCreatingDiary || uploading
 
   useEffect(() => {
     const loadAuthHeaders = async () => {
@@ -49,13 +50,64 @@ export default function MemoDetailScreen() {
     loadAuthHeaders()
   }, [])
 
+  useEffect(() => {
+    if (editing && memo?.resources) {
+      const existingImages = memo.resources
+        .filter(r => r.resourceType === 'image')
+        .map(r => resourcesApi.getDirectDownloadUrl(r.id))
+      setImageUris(existingImages)
+    }
+  }, [editing, memo])
+
+  const selectImages = async () => {
+    const { launchImageLibraryAsync } = await import('expo-image-picker')
+    const result = await launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      quality: 0.8,
+    })
+
+    if (!result.canceled) {
+      const newUris = result.assets.map(asset => asset.uri)
+      setImageUris([...imageUris, ...newUris].slice(0, 9))
+    }
+  }
+
   const handleSave = useCallback(async () => {
     if (!memo || !canUseNetwork || isPending) return
 
     try {
+      let uploadedResourceIds: string[] = []
+
+      const newImageUris = imageUris.filter(
+        uri => !memo.resources?.some(r => resourcesApi.getDirectDownloadUrl(r.id) === uri)
+      )
+
+      if (newImageUris.length > 0) {
+        setUploading(true)
+        for (const uri of newImageUris) {
+          const resource = await resourcesApi.upload(
+            {
+              uri,
+              name: `image_${Date.now()}.jpg`,
+              type: 'image/jpeg',
+            },
+            memo.id
+          )
+          uploadedResourceIds.push(resource.id)
+        }
+        setUploading(false)
+      }
+
+      const existingResourceIds = memo.resources
+        ?.filter(r => r.resourceType === 'image')
+        .map(r => r.id) || []
+
+      const allResourceIds = [...existingResourceIds, ...uploadedResourceIds]
+
       await updateMemo({
         id: memo.id,
-        data: { content: content.trim(), tags },
+        data: { content: content.trim(), tags, resourceFilenames: allResourceIds },
       })
       setEditing(false)
       toast.success('成功', '已更新')
@@ -63,7 +115,7 @@ export default function MemoDetailScreen() {
       handleError(error)
       toast.error('错误', '更新失败')
     }
-  }, [memo, content, tags, canUseNetwork, isPending, updateMemo, handleError])
+  }, [memo, content, tags, imageUris, canUseNetwork, isPending, updateMemo, handleError])
 
   const handleArchive = useCallback(async () => {
     if (!memo || !canUseNetwork || isPending) return
@@ -177,7 +229,7 @@ export default function MemoDetailScreen() {
       <View style={styles.content}>
         {editing ? (
           <>
-            <View style={{ flex: 1 }}>
+            <View style={{ minHeight: 150 }}>
               <TextEditor
                 value={content}
                 onChange={setContent}
@@ -186,31 +238,48 @@ export default function MemoDetailScreen() {
               />
             </View>
             <View style={{ padding: 16, paddingBottom: 0 }}>
-              <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>Tags</Text>
+              <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>标签</Text>
               <TagInput
                 tags={tags}
                 onTagsChange={setTags}
                 content={content}
-                placeholder="Add tags..."
+                placeholder="添加标签..."
               />
+            </View>
+            <View style={styles.imageUploadContainer}>
+              <View style={styles.imageUploadHeader}>
+                <Text style={{ color: theme.textSecondary }}>图片</Text>
+                <Button
+                  title="添加图片"
+                  onPress={selectImages}
+                  variant="ghost"
+                  size="small"
+                  leftIcon={<Image size={16} color={theme.text} />}
+                  disabled={!canUseNetwork || imageUris.length >= 9}
+                />
+              </View>
+              {imageUris.length > 0 && (
+                <DraggableImageGrid
+                  images={imageUris}
+                  onImagesChange={setImageUris}
+                  maxImages={9}
+                  onAddImage={selectImages}
+                />
+              )}
             </View>
           </>
         ) : (
           <>
-            <View style={{ flex: 1, padding: 16 }}>
+            <View style={{ minHeight: 150, padding: 16 }}>
               <MarkdownRenderer content={memo.content} />
             </View>
             {memo.resources && memo.resources.length > 0 && (
               <View style={styles.resourcesContainer}>
-                <ImageGrid
+                <DraggableImageGrid
                   images={memo.resources
                     .filter(r => r.resourceType === 'image')
-                    .map(r => ({
-                      uri: resourcesApi.getDirectDownloadUrl(r.id),
-                      headers: authHeaders,
-                    }))}
-                  mode="view"
-                  showRemoveButton={false}
+                    .map(r => resourcesApi.getDirectDownloadUrl(r.id))}
+                  draggable={false}
                   onImagePress={() => {}}
                 />
               </View>
@@ -231,16 +300,18 @@ export default function MemoDetailScreen() {
           </View>
         )}
 
-        <View style={styles.metadata}>
-          <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
-            创建于 {stringUtils.formatDateTime(memo.createdAt)}
-          </Text>
-          {memo.updatedAt > memo.createdAt && (
+        {!editing && (
+          <View style={styles.metadata}>
             <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
-              更新于 {stringUtils.formatDateTime(memo.updatedAt)}
+              创建于 {stringUtils.formatDateTime(memo.createdAt)}
             </Text>
-          )}
-        </View>
+            {memo.updatedAt > memo.createdAt && (
+              <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
+                更新于 {stringUtils.formatDateTime(memo.updatedAt)}
+              </Text>
+            )}
+          </View>
+        )}
       </View>
 
       {!editing && (
@@ -359,7 +430,7 @@ const styles = StyleSheet.create({
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingBottom: 8,
     gap: 8,
   },
@@ -373,7 +444,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   resourcesContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
   },
   metadata: {
@@ -470,5 +541,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: '#FFFFFF',
+  },
+  imageUploadContainer: {
+    padding: 16,
+    paddingTop: 8,
+    minHeight: 100,
+  },
+  imageUploadHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
 })
