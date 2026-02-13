@@ -62,8 +62,8 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
           <View style={styles.imageGridContainer}>
             <DraggableImageGrid
               images={imageUrls}
+              authHeaders={authHeaders}
               draggable={false}
-              onImagePress={() => {}}
             />
           </View>
         )}

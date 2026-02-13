@@ -73,7 +73,7 @@ export interface CreateMemoRequest {
 export interface UpdateMemoRequest {
   content?: string
   tags?: string[]
-  resourceFilenames?: string[]
+  resourceIds?: string[]
   isArchived?: boolean
   diaryDate?: string | null
 }

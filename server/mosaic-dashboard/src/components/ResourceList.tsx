@@ -44,7 +44,6 @@ export function ResourceList() {
       loadResources()
       return
     }
-    // 客户端过滤
     const filtered = resources.filter(r =>
       r.filename.toLowerCase().includes(searchQuery.toLowerCase())
     )

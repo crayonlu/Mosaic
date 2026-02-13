@@ -59,6 +59,10 @@ export default function MemoDetailScreen() {
     }
   }, [editing, memo])
 
+  const handleImagesChange = useCallback((nextImageUris: string[]) => {
+    setImageUris(nextImageUris)
+  }, [imageUris])
+
   const selectImages = async () => {
     const { launchImageLibraryAsync } = await import('expo-image-picker')
     const result = await launchImageLibraryAsync({
@@ -77,11 +81,13 @@ export default function MemoDetailScreen() {
     if (!memo || !canUseNetwork || isPending) return
 
     try {
-      let uploadedResourceIds: string[] = []
-
-      const newImageUris = imageUris.filter(
-        uri => !memo.resources?.some(r => resourcesApi.getDirectDownloadUrl(r.id) === uri)
+      const existingImageResources = (memo.resources || []).filter(r => r.resourceType === 'image')
+      const existingUriToId = new Map(
+        existingImageResources.map(resource => [resourcesApi.getDirectDownloadUrl(resource.id), resource.id]),
       )
+
+      const newImageUris = imageUris.filter(uri => !existingUriToId.has(uri))
+      const uploadedUriToId = new Map<string, string>()
 
       if (newImageUris.length > 0) {
         setUploading(true)
@@ -92,22 +98,20 @@ export default function MemoDetailScreen() {
               name: `image_${Date.now()}.jpg`,
               type: 'image/jpeg',
             },
-            memo.id
+            memo.id,
           )
-          uploadedResourceIds.push(resource.id)
+          uploadedUriToId.set(uri, resource.id)
         }
         setUploading(false)
       }
 
-      const existingResourceIds = memo.resources
-        ?.filter(r => r.resourceType === 'image')
-        .map(r => r.id) || []
-
-      const allResourceIds = [...existingResourceIds, ...uploadedResourceIds]
+      const allResourceIds = imageUris
+        .map(uri => existingUriToId.get(uri) || uploadedUriToId.get(uri))
+        .filter((id): id is string => Boolean(id))
 
       await updateMemo({
         id: memo.id,
-        data: { content: content.trim(), tags, resourceFilenames: allResourceIds },
+        data: { content: content.trim(), tags, resourceIds: allResourceIds },
       })
       setEditing(false)
       toast.success('成功', '已更新')
@@ -261,7 +265,8 @@ export default function MemoDetailScreen() {
               {imageUris.length > 0 && (
                 <DraggableImageGrid
                   images={imageUris}
-                  onImagesChange={setImageUris}
+                  authHeaders={authHeaders}
+                  onImagesChange={handleImagesChange}
                   maxImages={9}
                   onAddImage={selectImages}
                 />
@@ -279,8 +284,8 @@ export default function MemoDetailScreen() {
                   images={memo.resources
                     .filter(r => r.resourceType === 'image')
                     .map(r => resourcesApi.getDirectDownloadUrl(r.id))}
+                  authHeaders={authHeaders}
                   draggable={false}
-                  onImagePress={() => {}}
                 />
               </View>
             )}
