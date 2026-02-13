@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -138,7 +139,7 @@ export function FullScreenEditor({
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <X size={24} color={theme.text} strokeWidth={2} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>创建Memo</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>Memo</Text>
             <View style={styles.headerActions}>
               <Button
                 onPress={handlePickImage}
@@ -163,7 +164,17 @@ export function FullScreenEditor({
             </View>
           </View>
 
-          <View style={styles.contentContainer}>
+          <ScrollView style={styles.contentContainer}>
+            <View style={styles.tagContainer}>
+              <TagInput
+                tags={tags}
+                onTagsChange={setTags}
+                content={content}
+                suggestions={availableTags}
+                placeholder="添加标签..."
+              />
+            </View>
+
             <View style={styles.editorContainer}>
               <TextEditor
                 value={content}
@@ -182,17 +193,7 @@ export function FullScreenEditor({
                 />
               </View>
             )}
-
-            <View style={styles.tagContainer}>
-              <TagInput
-                tags={tags}
-                onTagsChange={setTags}
-                content={content}
-                suggestions={availableTags}
-                placeholder="添加标签..."
-              />
-            </View>
-          </View>
+          </ScrollView>
         </KeyboardAvoidingView>
 
         <PostPreview
@@ -240,18 +241,18 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    display: 'flex',
     flexDirection: 'column',
   },
+  tagContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
   editorContainer: {
-    flex: 1,
+    flexShrink: 0,
     minHeight: 150,
   },
   imageContainer: {
-    maxHeight: 300,
-  },
-  tagContainer: {
-    padding: 16,
+    padding: 8,
   },
   footer: {
     flexDirection: 'row',

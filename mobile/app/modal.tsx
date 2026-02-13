@@ -41,7 +41,6 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '85%',
     maxWidth: 400,
-    borderRadius: 16,
     overflow: 'hidden',
   },
   header: {

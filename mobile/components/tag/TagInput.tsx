@@ -74,7 +74,7 @@ export function TagInput({
         style={[
           styles.container,
           {
-            backgroundColor: theme.card,
+            backgroundColor: theme.background,
             borderColor: theme.border,
             borderWidth: 1,
             minHeight: 48,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   tagsRow: {
     flexDirection: 'row',
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 8,
     alignSelf: 'flex-end',
   },
   aiButtonText: {
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   suggestionsContainer: {
     marginTop: 8,
-    borderRadius: 12,
+    borderRadius: 8,
     maxHeight: 150,
   },
   suggestionItem: {

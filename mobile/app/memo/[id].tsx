@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
   },
   actionButtonText: {
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   deleteButtonText: {
     fontSize: 15,
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   modalContent: {
-    borderRadius: 16,
+    borderRadius: 8,
     padding: 20,
     width: '100%',
   },

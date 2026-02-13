@@ -113,7 +113,7 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
 
 const styles = StyleSheet.create({
   badge: {
-    borderRadius: 6,
+    borderRadius: 8,
     alignSelf: 'flex-start',
   },
   text: {

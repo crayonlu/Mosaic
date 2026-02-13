@@ -6,7 +6,6 @@ export interface Theme {
   text: string
   textSecondary: string
   border: string
-  borderRadius: number
   spacing: number
   primary: string
   card: string
@@ -20,7 +19,6 @@ export const LightTheme: Theme = {
   text: '#2D2D2D',
   textSecondary: '#757575',
   border: 'rgba(0, 0, 0, 0.08)',
-  borderRadius: 20,
   spacing: 16,
   primary: '#B2794C',
   card: '#FFF7EF',
@@ -34,7 +32,6 @@ export const DarkTheme: Theme = {
   text: '#F5F5F5',
   textSecondary: '#A0AEC0',
   border: 'rgba(255, 255, 255, 0.1)',
-  borderRadius: 20,
   spacing: 16,
   primary: '#64A9E9',
   card: '#1F2937',

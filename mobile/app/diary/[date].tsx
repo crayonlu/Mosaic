@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     marginBottom: 12,
   },
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   moodCard: {
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     marginBottom: 12,
   },

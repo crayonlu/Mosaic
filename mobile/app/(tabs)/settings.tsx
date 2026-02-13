@@ -2,12 +2,35 @@ import { Button, Input } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
 import { resourcesApi } from '@/lib/api'
+import { tokenStorage } from '@/lib/services/token-storage'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
+import { Image } from 'expo-image'
 import * as ImagePicker from 'expo-image-picker'
-import { Info, LogOut, Moon, Sparkles, Sun, User } from 'lucide-react-native'
+import { Info, LogOut, Moon, Sparkles, Sun } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+
+function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
+  const [token, setToken] = useState<string | null>(null)
+
+  useEffect(() => {
+    tokenStorage.getAccessToken().then(setToken)
+  }, [])
+
+  if (!token) return null
+  return (
+    <Image
+      source={{
+        uri: avatarUrl,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }}
+      style={styles.avatarImage}
+    />
+  )
+}
 
 export default function SettingsScreen() {
   const { theme, themeMode, setThemeMode } = useThemeStore()
@@ -15,16 +38,6 @@ export default function SettingsScreen() {
   const [aiConfig, setLocalAIConfig] = useState<AIConfig | null>(null)
   const [showAISettings, setShowAISettings] = useState(true)
   const [savingAI, setSavingAI] = useState(false)
-
-  // Get full avatar URL
-  const getAvatarUrl = () => {
-    if (!user?.avatarUrl) return null
-    // If avatarUrl is already a full URL (starts with http), return as is
-    if (user.avatarUrl.startsWith('http')) return user.avatarUrl
-    // Otherwise, prepend the server URL
-    return serverUrl ? `${serverUrl}${user.avatarUrl}` : null
-  }
-
   useEffect(() => {
     loadAIConfig()
   }, [])
@@ -93,16 +106,16 @@ export default function SettingsScreen() {
   }
 
   const renderAccountSection = () => {
-    const avatarUrl = getAvatarUrl()
+    const avatarUrl = `${serverUrl}${user?.avatarUrl}`
     return (
-      <View style={[styles.section, { marginBottom: 12 }]}>
+      <View style={[styles.section]}>
         <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <TouchableOpacity style={styles.row} onPress={handleAvatarPress}>
             <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-              {avatarUrl ? (
-                <Text style={styles.avatarText}>{user?.username?.charAt(0).toUpperCase()}</Text>
+              {user?.avatarUrl ? (
+                <AvatarImageWithAuth avatarUrl={avatarUrl} />
               ) : (
-                <User size={20} color="#FFFFFF" />
+                <Text style={styles.avatarText}>{user?.username?.charAt(0).toUpperCase()}</Text>
               )}
             </View>
             <View style={styles.userInfo}>
@@ -113,6 +126,20 @@ export default function SettingsScreen() {
                 {serverUrl || '未配置服务器'}
               </Text>
             </View>
+            <Button
+              variant="ghost"
+              onPress={() => {
+                toast.show({
+                  type: 'warning',
+                  title: '确认登出',
+                  message: '确定要退出登录吗？',
+                  actionLabel: '确定',
+                  onAction: handleLogout,
+                  duration: 10000,
+                })
+              }}
+              leftIcon={<LogOut size={18} color="#FFFFFF" />}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -120,7 +147,7 @@ export default function SettingsScreen() {
   }
 
   const renderAppearanceSection = () => (
-    <View style={[styles.section, { marginBottom: 12 }]}>
+    <View style={[styles.section]}>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <TouchableOpacity style={styles.menuItem} onPress={toggleTheme}>
           {themeMode === 'light' ? (
@@ -142,7 +169,7 @@ export default function SettingsScreen() {
   )
 
   const renderAISettings = () => (
-    <View style={[styles.section, { marginBottom: 12 }]}>
+    <View style={[styles.section]}>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <TouchableOpacity
           style={[styles.menuItem, showAISettings && { borderBottomColor: theme.border }]}
@@ -233,7 +260,7 @@ export default function SettingsScreen() {
   )
 
   const renderAboutSection = () => (
-    <View style={[styles.section, { marginBottom: 12 }]}>
+    <View style={[styles.section]}>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <TouchableOpacity style={styles.menuItem}>
           <Info size={18} color={theme.text} />
@@ -252,27 +279,6 @@ export default function SettingsScreen() {
     await logout()
   }
 
-  const renderLogoutSection = () => (
-    <View style={[styles.section, { marginBottom: 24 }]}>
-      <Button
-        title="退出登录"
-        variant="danger"
-        onPress={() => {
-          toast.show({
-            type: 'warning',
-            title: '确认登出',
-            message: '确定要退出登录吗？',
-            actionLabel: '确定',
-            onAction: handleLogout,
-            duration: 10000,
-          })
-        }}
-        fullWidth
-        leftIcon={<LogOut size={18} color="#FFFFFF" />}
-      />
-    </View>
-  )
-
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.content}>
@@ -280,7 +286,6 @@ export default function SettingsScreen() {
         {renderAppearanceSection()}
         {renderAISettings()}
         {renderAboutSection()}
-        {renderLogoutSection()}
       </View>
     </ScrollView>
   )
@@ -292,12 +297,13 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
+    flexDirection: 'column',
+    gap: 8,
   },
   section: {
-    marginBottom: 12,
   },
   card: {
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -309,7 +315,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -318,6 +324,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
   },
   userInfo: {
     flex: 1,
@@ -363,7 +374,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 6,
+    borderRadius: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
     alignItems: 'center',
   },

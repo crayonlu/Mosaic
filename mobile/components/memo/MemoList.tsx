@@ -40,11 +40,9 @@ export function MemoList({
 
   const memos = useMemo(() => {
     if (date) {
-      console.log('[MemoList] memosByDate', memosByDate?.map(m => ({ id: m.id, resources: m.resources.length })))
       return memosByDate || []
     }
     const items = paginatedData?.pages.flatMap(page => page.items) || []
-    console.log('[MemoList] paginatedData items', items.map(m => ({ id: m.id, resources: m.resources.length })))
     return items
   }, [date, memosByDate, paginatedData])
 

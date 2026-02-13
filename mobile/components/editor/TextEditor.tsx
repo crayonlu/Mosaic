@@ -44,14 +44,14 @@ export function TextEditor({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 0,
   },
   input: {
-    flex: 1,
     fontSize: 16,
     lineHeight: 24,
     padding: 12,
-    minHeight: 120,
+    minHeight: 150,
   },
 })
 
