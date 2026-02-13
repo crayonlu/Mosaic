@@ -1,10 +1,10 @@
 import { useThemeStore } from '@/stores/theme-store'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { X } from 'lucide-react-native'
 import { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { X } from 'lucide-react-native'
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   },
   toastContainer: {
     padding: 14,
-    borderRadius: 4,
+    borderRadius: 8,
     elevation: 4,
     marginVertical: 6,
     maxWidth: 240,
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   actionButton: {
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 4,
+    borderRadius: 8,
     alignItems: 'center',
     marginLeft: 8,
   },

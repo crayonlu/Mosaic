@@ -3,6 +3,7 @@ import { useThemeStore } from '@/stores/theme-store'
 import { Image } from 'expo-image'
 import { X } from 'lucide-react-native'
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { MarkdownRenderer } from './MarkdownRenderer'
 
 interface PostPreviewProps {
@@ -31,12 +32,12 @@ export function PostPreview({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <TouchableOpacity onPress={onClose} style={styles.headerButton}>
             <X size={24} color={theme.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Preview</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>预览</Text>
           <View style={styles.headerButton} />
         </View>
 
@@ -45,7 +46,7 @@ export function PostPreview({
             <MarkdownRenderer content={content} />
           ) : (
             <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              No content
+              无内容
             </Text>
           )}
 
@@ -70,22 +71,7 @@ export function PostPreview({
             </View>
           )}
         </View>
-
-        <View style={[styles.footer, { borderTopColor: theme.border }]}>
-          <TouchableOpacity
-            style={[styles.footerButton, { borderColor: theme.border }]}
-            onPress={onClose}
-          >
-            <Text style={[styles.cancelText, { color: theme.text }]}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.footerButton, styles.postButton, { backgroundColor: theme.primary }]}
-            onPress={onPost}
-          >
-            <Text style={[styles.postText, { color: '#fff' }]}>Post</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   )
 }
@@ -133,29 +119,5 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginTop: 16,
-  },
-  footer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-    borderTopWidth: 1,
-  },
-  footerButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  postButton: {
-    borderWidth: 0,
-  },
-  cancelText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  postText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 })

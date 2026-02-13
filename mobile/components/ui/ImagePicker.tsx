@@ -1,10 +1,10 @@
 import { useThemeStore } from '@/stores/theme-store'
+import { Image } from 'expo-image'
 import * as ExpoImagePicker from 'expo-image-picker'
 import { ImagePlus, Upload, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Button } from './Button'
-import { Image } from 'expo-image'
 
 interface ImagePickerProps {
   images: string[]
@@ -206,7 +206,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   imageContainer: {
-    borderRadius: 8,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -289,7 +288,7 @@ const styles = StyleSheet.create({
     right: 4,
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,

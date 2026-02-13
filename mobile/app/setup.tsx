@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
-    borderRadius: 20,
+    borderRadius: 8,
     padding: 24,
   },
   cardTitle: {
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   form: {
-    gap: 0,
+    gap: 8,
   },
   errorContainer: {
     flexDirection: 'row',

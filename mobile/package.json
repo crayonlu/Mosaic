@@ -48,6 +48,7 @@
     "react-native": "0.81.5",
     "react-native-audio-recorder-player": "^4.5.0",
     "react-native-gesture-handler": "~2.28.0",
+    "react-native-image-viewing": "^0.2.2",
     "react-native-keyboard-aware-scroll-view": "^0.9.5",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",

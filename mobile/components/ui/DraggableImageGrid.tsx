@@ -4,17 +4,28 @@ import { X } from 'lucide-react-native'
 import { useState } from 'react'
 import {
   Dimensions,
-  Modal,
-  Pressable,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native'
+import ImageViewing from 'react-native-image-viewing'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const GRID_GAP = 8
-const IMAGE_SIZE = (SCREEN_WIDTH - 32 - GRID_GAP * 2) / 3
+
+const getImageSize = (count: number) => {
+  const containerWidth = SCREEN_WIDTH - 32
+  if (count === 1) {
+    return { width: containerWidth, height: 300, columns: 1 }
+  }
+  if (count === 2) {
+    const size = (containerWidth - GRID_GAP) / 2
+    return { width: size, height: 150, columns: 2 }
+  }
+  const size = (containerWidth - GRID_GAP * 2) / 3
+  return { width: size, height: size, columns: 3 }
+}
 
 interface DraggableImageGridProps {
   images: string[]
@@ -43,16 +54,19 @@ export function DraggableImageGrid({
     onImagesChange(newImages)
   }
 
+  const imageSize = getImageSize(images.length)
+  const imageImages = images.map(uri => ({ uri }))
+
   const renderImages = () => {
     const rows: React.ReactNode[] = []
-    for (let i = 0; i < images.length; i += 3) {
-      const rowImages = images.slice(i, i + 3)
+    for (let i = 0; i < images.length; i += imageSize.columns) {
+      const rowImages = images.slice(i, i + imageSize.columns)
       rows.push(
         <View key={i} style={styles.row}>
           {rowImages.map((uri, index) => {
             const actualIndex = i + index
             return (
-              <View key={actualIndex} style={styles.imageWrapper}>
+              <View key={actualIndex} style={[styles.imageWrapper, { width: imageSize.width, height: imageSize.height }]}>
                 <TouchableOpacity
                   style={styles.imageContainer}
                   onPress={() => setPreviewIndex(actualIndex)}
@@ -72,8 +86,8 @@ export function DraggableImageGrid({
               </View>
             )
           })}
-          {rowImages.length < 3 && Array.from({ length: 3 - rowImages.length }).map((_, idx) => (
-            <View key={`empty-${idx}`} style={styles.imageWrapper} />
+          {rowImages.length < imageSize.columns && Array.from({ length: imageSize.columns - rowImages.length }).map((_, idx) => (
+            <View key={`empty-${idx}`} style={[styles.imageWrapper, { width: imageSize.width, height: imageSize.height }]} />
           ))}
         </View>
       )
@@ -85,39 +99,25 @@ export function DraggableImageGrid({
     <View style={styles.container}>
       {renderImages()}
 
-      {images.length < maxImages && (
-        <TouchableOpacity
-          style={[styles.addButton, { borderColor: theme.border }]}
-          onPress={onAddImage}
-        >
-          <Text style={[styles.addButtonText, { color: theme.textSecondary }]}>+</Text>
-        </TouchableOpacity>
+      {previewIndex !== null && (
+        <SafeAreaView style={StyleSheet.absoluteFill} edges={['top', 'bottom']}>
+          <ImageViewing
+            images={imageImages}
+            imageIndex={previewIndex}
+            visible={true}
+            onRequestClose={() => setPreviewIndex(null)}
+            presentationStyle="fullScreen"
+          />
+          <View style={styles.closeButtonContainer}>
+            <TouchableOpacity
+              style={[styles.previewCloseButton, { backgroundColor: theme.background }]}
+              onPress={() => setPreviewIndex(null)}
+            >
+              <X size={24} color={theme.text} />
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
       )}
-
-      <Modal
-        visible={previewIndex !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setPreviewIndex(null)}
-      >
-        <View style={styles.modalContainer}>
-          <Pressable style={styles.modalOverlay} onPress={() => setPreviewIndex(null)}>
-            {previewIndex !== null && (
-              <Image
-                source={{ uri: images[previewIndex] }}
-                style={styles.previewImage}
-                contentFit="contain"
-              />
-            )}
-          </Pressable>
-          <TouchableOpacity
-            style={[styles.closeButton, { backgroundColor: theme.background }]}
-            onPress={() => setPreviewIndex(null)}
-          >
-            <X size={24} color={theme.text} />
-          </TouchableOpacity>
-        </View>
-      </Modal>
     </View>
   )
 }
@@ -126,21 +126,18 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 8,
+    paddingHorizontal: 16,
   },
   row: {
     flexDirection: 'row',
     width: '100%',
   },
   imageWrapper: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
     margin: GRID_GAP / 2,
     position: 'relative',
   },
   imageContainer: {
     flex: 1,
-    borderRadius: 8,
     overflow: 'hidden',
   },
   image: {
@@ -157,40 +154,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addButton: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
-    margin: GRID_GAP / 2,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addButtonText: {
-    fontSize: 32,
-    fontWeight: '300',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-  },
-  closeButton: {
+  closeButtonContainer: {
     position: 'absolute',
-    top: 40,
     right: 20,
+    zIndex: 100,
+  },
+  previewCloseButton: {
     width: 40,
     height: 40,
     borderRadius: 20,

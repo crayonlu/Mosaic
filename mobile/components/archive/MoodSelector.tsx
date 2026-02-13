@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   content: {
     width: '100%',
     maxWidth: 360,
-    borderRadius: 16,
+    borderRadius: 8,
     padding: 20,
   },
   title: {
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   moodItem: {
     width: '22%',
     aspectRatio: 1,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 8,

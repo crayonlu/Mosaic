@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   coverContainer: {
     position: 'relative',
     marginBottom: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     overflow: 'hidden',
     height: 100,
   },
