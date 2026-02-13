@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 
 export interface ButtonProps {
-  title: string
+  title?: string
   onPress: () => void
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
   size?: 'small' | 'medium' | 'large'
@@ -134,18 +134,22 @@ export function Button({
       ) : (
         <View style={styles.contentContainer}>
           {leftIcon}
-          <Text
-            style={[
-              styles.text,
-              {
-                color: getTextColor(),
-                fontSize: getFontSize(),
-              },
-            ]}
-            numberOfLines={1}
-          >
-            {title}
-          </Text>
+          { 
+            title && (
+              <Text
+                style={[
+                  styles.text,
+                  {
+                    color: getTextColor(),
+                    fontSize: getFontSize(),
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {title}
+              </Text>
+            )
+          }
           {rightIcon}
         </View>
       )}

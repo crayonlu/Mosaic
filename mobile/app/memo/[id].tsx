@@ -1,4 +1,5 @@
-import { RichTextEditor } from '@/components/editor/RichTextEditor'
+import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
+import { TextEditor } from '@/components/editor/TextEditor'
 import { TagInput } from '@/components/tag/TagInput'
 import { Loading, toast } from '@/components/ui'
 import { ImageGrid } from '@/components/ui/ImageGrid'
@@ -176,27 +177,29 @@ export default function MemoDetailScreen() {
       <View style={styles.content}>
         {editing ? (
           <>
-            <RichTextEditor
-              content={content}
-              onChange={setContent}
-              editable={true}
-              placeholder="编辑你的Memo内容..."
-              isExpanded={true}
-              onSave={handleSave}
-            />
+            <View style={{ flex: 1 }}>
+              <TextEditor
+                value={content}
+                onChange={setContent}
+                placeholder="What's on your mind?"
+                editable={true}
+              />
+            </View>
             <View style={{ padding: 16, paddingBottom: 0 }}>
-              <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>标签</Text>
+              <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>Tags</Text>
               <TagInput
                 tags={tags}
                 onTagsChange={setTags}
                 content={content}
-                placeholder="添加标签..."
+                placeholder="Add tags..."
               />
             </View>
           </>
         ) : (
           <>
-            <RichTextEditor content={memo.content} editable={false} onChange={() => {}} />
+            <View style={{ flex: 1, padding: 16 }}>
+              <MarkdownRenderer content={memo.content} />
+            </View>
             {memo.resources && memo.resources.length > 0 && (
               <View style={styles.resourcesContainer}>
                 <ImageGrid

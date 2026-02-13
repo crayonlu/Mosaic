@@ -1,4 +1,3 @@
-import { RichTextEditor } from '@/components/editor/RichTextEditor'
 import { Badge } from '@/components/ui'
 import { ImageGrid } from '@/components/ui/ImageGrid'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
@@ -21,7 +20,7 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-
+import { TextEditor } from '../editor/TextEditor'
 interface MemoDetailProps {
   visible: boolean
   memo: MemoWithResources | null
@@ -205,10 +204,10 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
 
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
             <View style={styles.content}>
-              <RichTextEditor
-                content={content}
+              <TextEditor
+                value={content}
                 onChange={setContent}
-                placeholder="输入Memo内容..."
+                placeholder="What's on your mind?"
                 editable={!isPending}
               />
             </View>
