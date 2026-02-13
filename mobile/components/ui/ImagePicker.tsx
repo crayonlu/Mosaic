@@ -130,7 +130,7 @@ export function ImagePicker({
               <Image
                 source={{ uri }}
                 style={styles.editImage}
-                resizeMode="cover"
+                contentFit="cover"
               />
             </TouchableOpacity>
             <TouchableOpacity
@@ -180,7 +180,7 @@ export function ImagePicker({
               <Image
                 source={{ uri: images[previewIndex] }}
                 style={styles.previewImage}
-                resizeMode="contain"
+                contentFit="contain"
               />
             )}
           </TouchableOpacity>

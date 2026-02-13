@@ -14,7 +14,7 @@ export default function ThemeAwareSplash() {
             : require('@/assets/images/mosaic-light.png')
         }
         style={styles.logo}
-        resizeMode="contain"
+        contentFit="contain"
       />
     </View>
   )

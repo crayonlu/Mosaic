@@ -1,14 +1,13 @@
 import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
-import { Badge } from '@/components/ui'
-import { ImageGrid } from '@/components/ui/ImageGrid'
+import { Badge, DraggableImageGrid } from '@/components/ui'
 import { resourcesApi } from '@/lib/api/resources'
+import { normalizeContent } from '@/lib/utils/content'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import { Trash2 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { normalizeContent } from '@/lib/utils/content'
 
 interface MemoCardProps {
   memo: MemoWithResources
@@ -32,10 +31,7 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
   const displayContent = normalizeContent(memo.content || '')
   const formattedTime = stringUtils.formatRelativeTime(memo.createdAt)
   const imageResources = memo.resources.filter(r => r.resourceType === 'image')
-  const imageUrls = imageResources.map(r => ({
-    uri: resourcesApi.getDirectDownloadUrl(r.id),
-    headers: authHeaders
-  }))
+  const imageUrls = imageResources.map(r => resourcesApi.getDirectDownloadUrl(r.id))
 
   const handleDelete = () => {
     onDelete?.(memo.id)
@@ -64,9 +60,9 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
 
         {imageUrls.length > 0 && (
           <View style={styles.imageGridContainer}>
-            <ImageGrid
+            <DraggableImageGrid
               images={imageUrls}
-              mode="card"
+              draggable={false}
               onImagePress={() => {}}
             />
           </View>
