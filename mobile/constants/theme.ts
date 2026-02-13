@@ -8,7 +8,6 @@ export interface Theme {
   border: string
   spacing: number
   primary: string
-  card: string
   link: string
   mark: string
 }
@@ -21,7 +20,6 @@ export const LightTheme: Theme = {
   border: 'rgba(0, 0, 0, 0.08)',
   spacing: 16,
   primary: '#B2794C',
-  card: '#FFF7EF',
   link: '#FFB5A7',
   mark: '#FFD93D',
 }
@@ -34,7 +32,6 @@ export const DarkTheme: Theme = {
   border: 'rgba(255, 255, 255, 0.1)',
   spacing: 16,
   primary: '#64A9E9',
-  card: '#1F2937',
   link: '#FFB5A7',
   mark: '#FFD93D',
 }

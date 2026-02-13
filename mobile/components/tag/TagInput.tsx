@@ -137,7 +137,7 @@ export function TagInput({
           style={[
             styles.suggestionsContainer,
             {
-              backgroundColor: theme.card,
+              backgroundColor: theme.surface,
               borderColor: theme.border,
               borderWidth: 1,
             },

@@ -1,4 +1,5 @@
 import { Button, Input } from '@/components/ui'
+import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
 import { resourcesApi } from '@/lib/api'
@@ -6,7 +7,6 @@ import { tokenStorage } from '@/lib/services/token-storage'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
 import { Image } from 'expo-image'
-import * as ImagePicker from 'expo-image-picker'
 import { Info, LogOut, Moon, Sparkles, Sun } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
@@ -75,17 +75,13 @@ export default function SettingsScreen() {
   }
 
   const handleAvatarPress = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    })
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0]
-      try {
+    try {
+      const croppedUri = await pickAndCropAvatar()
+      if (croppedUri) {
         await resourcesApi.uploadAvatar({
-          uri: asset.uri,
-          name: asset.fileName || 'avatar.jpg',
-          type: asset.mimeType || 'image/jpeg',
+          uri: croppedUri,
+          name: 'avatar.jpg',
+          type: 'image/jpeg',
         })
         // Update local user state with new avatar URL
         await refreshUser()
@@ -94,14 +90,14 @@ export default function SettingsScreen() {
           title: '上传成功',
           message: '头像已更新',
         })
-      } catch (error) {
-        console.error('Upload avatar error:', error)
-        toast.show({
-          type: 'error',
-          title: '上传失败',
-          message: '上传头像时出错',
-        })
       }
+    } catch (error) {
+      console.error('Upload avatar error:', error)
+      toast.show({
+        type: 'error',
+        title: '上传失败',
+        message: '上传头像时出错',
+      })
     }
   }
 

@@ -268,7 +268,7 @@ export default function MemoDetailScreen() {
 
       <Modal visible={showArchiveModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
             <Text style={[styles.modalTitle, { color: theme.text }]}>归档到日记</Text>
             <Text style={[styles.modalLabel, { color: theme.textSecondary }]}>选择心情</Text>
             <View style={styles.moodSelector}>
