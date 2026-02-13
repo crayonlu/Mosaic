@@ -116,7 +116,7 @@ export function ImagePicker({
             style={[
               styles.editImageContainer,
               {
-                backgroundColor: theme.card,
+                backgroundColor: theme.surface,
               },
             ]}
           >
@@ -147,7 +147,7 @@ export function ImagePicker({
             style={[
               styles.editAddButton,
               {
-                backgroundColor: theme.card,
+                backgroundColor: theme.surface,
                 borderColor: theme.border,
               },
             ]}

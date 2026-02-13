@@ -94,14 +94,14 @@ export default function DiaryDetailScreen() {
       <ScrollView style={styles.content}>
         {diary.summary && (
           <View
-            style={[styles.summaryCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+            style={[styles.summaryCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
           >
             <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>今日总结</Text>
             <Text style={[styles.summaryText, { color: theme.text }]}>{diary.summary}</Text>
           </View>
         )}
 
-        <View style={[styles.moodCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <View style={[styles.moodCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.moodLabel, { color: theme.textSecondary }]}>心情</Text>
           <View style={styles.moodSelector}>
             {MOODS.map(mood => (

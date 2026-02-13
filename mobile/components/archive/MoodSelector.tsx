@@ -31,7 +31,7 @@ export function MoodSelector({ visible, onClose, onSubmit, submitting }: MoodSel
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <View style={[styles.content, { backgroundColor: theme.card }]}>
+        <View style={[styles.content, { backgroundColor: theme.surface }]}>
           <Text style={[styles.title, { color: theme.text }]}>选择心情</Text>
           <View style={styles.moodGrid}>
             {MOODS.map(mood => (

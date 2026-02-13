@@ -245,7 +245,6 @@ export class ApiClient {
     file: { uri: string; name: string; type: string },
     additionalFields?: Record<string, string>
   ): Promise<T> {
-    console.log('[API] uploadFile started', { path, file, additionalFields })
     
     const formData = new FormData()
     formData.append('file', {
@@ -266,9 +265,6 @@ export class ApiClient {
       headers['Authorization'] = `Bearer ${token}`
     }
 
-    console.log('[API] uploadFile headers', headers)
-    console.log('[API] uploadFile formData', formData)
-
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT * 2)
 
@@ -278,12 +274,6 @@ export class ApiClient {
         headers,
         body: formData,
         signal: controller.signal,
-      })
-
-      console.log('[API] uploadFile response', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
       })
 
       clearTimeout(timeoutId)
@@ -300,7 +290,6 @@ export class ApiClient {
       }
 
       const result = await response.json()
-      console.log('[API] uploadFile success', result)
       return result
     } catch (error) {
       clearTimeout(timeoutId)

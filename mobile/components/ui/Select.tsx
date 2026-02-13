@@ -98,7 +98,7 @@ export function Select({
                 style={[
                   styles.dropdown,
                   {
-                    backgroundColor: theme.card,
+                    backgroundColor: theme.surface,
                     borderColor: theme.border,
                   },
                 ]}

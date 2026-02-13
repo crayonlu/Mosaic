@@ -73,7 +73,7 @@ export function ImageGrid({
               style={[
                 styles.editImageContainer,
                 {
-                  backgroundColor: theme.card,
+                  backgroundColor: theme.surface,
                 },
               ]}
             >
@@ -102,7 +102,7 @@ export function ImageGrid({
               style={[
                 styles.editAddButton,
                 {
-                  backgroundColor: theme.card,
+                  backgroundColor: theme.surface,
                   borderColor: theme.border,
                 },
               ]}
@@ -143,7 +143,7 @@ export function ImageGrid({
             style={[
               styles.viewImageContainer,
               {
-                backgroundColor: theme.card,
+                backgroundColor: theme.surface,
                 width: layout.size,
                 height: layout.size,
               },
