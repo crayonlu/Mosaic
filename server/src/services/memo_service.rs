@@ -447,6 +447,42 @@ impl MemoService {
             .await?
             .ok_or(AppError::MemoNotFound)?;
 
+        if let Some(resource_ids) = &req.resource_ids {
+            let parsed_resource_ids: Vec<Uuid> = resource_ids
+                .iter()
+                .filter_map(|resource_id| Uuid::parse_str(resource_id).ok())
+                .collect();
+
+            if parsed_resource_ids.is_empty() {
+                sqlx::query("UPDATE resources SET memo_id = NULL WHERE memo_id = $1")
+                    .bind(memo.id)
+                    .execute(&self.pool)
+                    .await?;
+            } else {
+                sqlx::query(
+                    "UPDATE resources SET memo_id = NULL WHERE memo_id = $1 AND NOT (id = ANY($2))",
+                )
+                .bind(memo.id)
+                .bind(&parsed_resource_ids)
+                .execute(&self.pool)
+                .await?;
+
+                for (index, resource_id) in parsed_resource_ids.iter().enumerate() {
+                    let ordered_created_at = now + index as i64;
+                    sqlx::query(
+                        "UPDATE resources
+                         SET memo_id = $1, created_at = $2
+                         WHERE id = $3 AND (memo_id IS NULL OR memo_id = $1)",
+                    )
+                    .bind(memo.id)
+                    .bind(ordered_created_at)
+                    .bind(resource_id)
+                    .execute(&self.pool)
+                    .await?;
+                }
+            }
+        }
+
         let resources = self.get_memo_resources(memo.id).await?;
         Ok(MemoWithResources::from_memo(memo, resources))
     }

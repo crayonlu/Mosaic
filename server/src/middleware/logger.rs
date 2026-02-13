@@ -62,14 +62,12 @@ where
         let query_string = req.query_string().to_string();
         let start_time = Instant::now();
 
-        // 获取客户端 IP
         let client_ip = req
             .connection_info()
             .peer_addr()
             .map(|addr| addr.to_string())
             .unwrap_or_else(|| "unknown".to_string());
 
-        // 获取 User-Agent
         let user_agent = req
             .headers()
             .get("user-agent")
@@ -85,7 +83,6 @@ where
                     let elapsed_ms = elapsed.as_millis();
 
                     if status >= 400 {
-                        // 错误状态码，记录详细日志
                         log::error!(
                             "[{}] {} {}{} - {} - {}ms - IP: {} - User-Agent: {}",
                             chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ"),
@@ -102,7 +99,6 @@ where
                             user_agent
                         );
                     } else {
-                        // 成功状态码，记录普通日志
                         log::info!(
                             "[{}] {} {}{} - {} - {}ms - IP: {}",
                             chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ"),
@@ -125,7 +121,6 @@ where
                     let elapsed = start_time.elapsed();
                     let elapsed_ms = elapsed.as_millis();
 
-                    // 记录错误详情
                     log::error!(
                         "[{}] {} {}{} - ERROR - {}ms - IP: {} - User-Agent: {}",
                         chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ"),

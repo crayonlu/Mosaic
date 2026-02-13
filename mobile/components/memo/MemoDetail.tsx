@@ -81,13 +81,12 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
         data: {
           content,
           tags,
-          resourceFilenames: memo.resources.map(r => r.filename),
+          resourceIds: memo.resources.map(r => r.id),
         },
       })
       onClose()
     } catch (error) {
       console.error('Failed to update memo:', error)
-      // Toast 会自动处理错误提示
     }
   }, [memo, content, tags, hasChanges, isPending, updateMemo, onClose])
 
@@ -103,7 +102,6 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
       onClose()
     } catch (error) {
       console.error('Failed to archive memo:', error)
-      // Toast 会自动处理错误提示
     }
   }, [memo, isPending, archiveMemo, onClose])
 
@@ -269,10 +267,8 @@ export function MemoDetail({ visible, memo, onClose, onDelete }: MemoDetailProps
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>图片</Text>
                 <DraggableImageGrid
                   images={imageResources.map(r => resourcesApi.getDirectDownloadUrl(r.id))}
+                  authHeaders={authHeaders}
                   draggable={false}
-                  onImagePress={(index: number) => {
-                    // TODO: 实现全屏预览
-                  }}
                 />
               </View>
             )}

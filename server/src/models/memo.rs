@@ -60,6 +60,8 @@ pub struct CreateMemoRequest {
 pub struct UpdateMemoRequest {
     pub content: Option<String>,
     pub tags: Option<Vec<String>>,
+    #[serde(default)]
+    pub resource_ids: Option<Vec<String>>,
     pub is_archived: Option<bool>,
     pub diary_date: Option<Option<chrono::NaiveDate>>,
 }

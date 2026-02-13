@@ -1,7 +1,7 @@
 import { useThemeStore } from '@/stores/theme-store'
 import { Image } from 'expo-image'
 import { X } from 'lucide-react-native'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { DraggableGrid } from 'react-native-draggable-grid'
 import ImageViewing from 'react-native-image-viewing'
@@ -30,6 +30,7 @@ interface GridItem {
 
 interface DraggableImageGridProps {
   images: string[]
+  authHeaders?: Record<string, string>
   onImagesChange?: (images: string[]) => void
   maxImages?: number
   onAddImage?: () => void
@@ -40,6 +41,7 @@ interface DraggableImageGridProps {
 
 export function DraggableImageGrid({
   images,
+  authHeaders,
   onImagesChange,
   maxImages = 9,
   onAddImage,
@@ -50,13 +52,20 @@ export function DraggableImageGrid({
   const { theme } = useThemeStore()
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   
-  const gridData: GridItem[] = images.map((uri, index) => ({
-    key: `img_${index}_${uri}`,
-    uri,
-  }))
+  const gridData: GridItem[] = useMemo(
+    () =>
+      images.map(uri => ({
+        key: `img_${uri}`,
+        uri,
+      })),
+    [images],
+  )
 
   const imageSize = getImageSize(images.length)
-  const imageImages = images.map(uri => ({ uri }))
+  const imageImages = useMemo(
+    () => images.map(uri => ({ uri, headers: authHeaders })),
+    [images, authHeaders],
+  )
 
   const handleDragRelease = useCallback((data: GridItem[]) => {
     if (!onImagesChange) return
@@ -84,13 +93,9 @@ export function DraggableImageGrid({
     const index = order
     return (
       <View style={[styles.imageWrapper, { width: imageSize.width, height: imageSize.height }]}>
-        <TouchableOpacity
-          style={styles.imageContainer}
-          onPress={() => handleImagePress(index)}
-          activeOpacity={0.9}
-        >
-          <Image source={{ uri: item.uri }} style={styles.image} contentFit="cover" />
-        </TouchableOpacity>
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: item.uri, headers: authHeaders }} style={styles.image} contentFit="cover" />
+        </View>
         {(onRemove || onImagesChange) && (
           <TouchableOpacity
             style={[styles.removeButton, { backgroundColor: theme.background }]}
@@ -101,7 +106,7 @@ export function DraggableImageGrid({
         )}
       </View>
     )
-  }, [imageSize, theme, handleImagePress, handleRemove, onRemove, onImagesChange])
+  }, [imageSize, theme, authHeaders, handleRemove, onRemove, onImagesChange])
 
   if (!draggable) {
     return (
@@ -114,7 +119,7 @@ export function DraggableImageGrid({
                 onPress={() => handleImagePress(index)}
                 activeOpacity={0.9}
               >
-                <Image source={{ uri }} style={styles.image} contentFit="cover" />
+                <Image source={{ uri, headers: authHeaders }} style={styles.image} contentFit="cover" />
               </TouchableOpacity>
               {onRemove && (
                 <TouchableOpacity
@@ -129,7 +134,7 @@ export function DraggableImageGrid({
         </View>
 
         {previewIndex !== null && (
-          <SafeAreaView style={StyleSheet.absoluteFill} edges={['top', 'bottom']}>
+          <SafeAreaView style={StyleSheet.absoluteFill} edges={['top', 'right', 'bottom', 'left']}>
             <ImageViewing
               images={imageImages}
               imageIndex={previewIndex}
@@ -137,14 +142,6 @@ export function DraggableImageGrid({
               onRequestClose={() => setPreviewIndex(null)}
               presentationStyle="fullScreen"
             />
-            <View style={styles.closeButtonContainer}>
-              <TouchableOpacity
-                style={[styles.previewCloseButton, { backgroundColor: theme.background }]}
-                onPress={() => setPreviewIndex(null)}
-              >
-                <X size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
           </SafeAreaView>
         )}
       </View>
@@ -157,12 +154,18 @@ export function DraggableImageGrid({
         numColumns={images.length <= 2 ? images.length : 3}
         data={gridData}
         renderItem={renderItem}
+        onItemPress={(item: GridItem) => {
+          const index = images.findIndex(uri => uri === item.uri)
+          if (index >= 0) {
+            handleImagePress(index)
+          }
+        }}
         onDragRelease={handleDragRelease}
         style={styles.grid}
       />
 
       {previewIndex !== null && (
-        <SafeAreaView style={StyleSheet.absoluteFill} edges={['top', 'bottom']}>
+        <SafeAreaView style={StyleSheet.absoluteFill} edges={['top', 'right', 'bottom', 'left']}>
           <ImageViewing
             images={imageImages}
             imageIndex={previewIndex}
@@ -170,14 +173,6 @@ export function DraggableImageGrid({
             onRequestClose={() => setPreviewIndex(null)}
             presentationStyle="fullScreen"
           />
-          <View style={styles.closeButtonContainer}>
-            <TouchableOpacity
-              style={[styles.previewCloseButton, { backgroundColor: theme.background }]}
-              onPress={() => setPreviewIndex(null)}
-            >
-              <X size={24} color={theme.text} />
-            </TouchableOpacity>
-          </View>
         </SafeAreaView>
       )}
     </View>
@@ -214,19 +209,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeButtonContainer: {
-    position: 'absolute',
-    right: 20,
-    top: 50,
-    zIndex: 100,
-  },
-  previewCloseButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
