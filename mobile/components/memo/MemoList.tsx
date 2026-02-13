@@ -219,10 +219,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginTop: 8,
-    borderTopWidth: 1,
+    paddingTop: 8,
+    paddingHorizontal: 12,
   },
   dateHeaderText: {
     fontSize: 14,

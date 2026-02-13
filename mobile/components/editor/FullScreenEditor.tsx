@@ -1,10 +1,9 @@
 import { Button, toast } from '@/components/ui'
-import { ImagePicker as CustomImagePicker } from '@/components/ui/ImagePicker'
+import { DraggableImageGrid } from '@/components/ui/DraggableImageGrid'
 import { useConnection } from '@/hooks/use-connection'
 import { resourcesApi } from '@/lib/api/resources'
 import { useThemeStore } from '@/stores/theme-store'
-import { Parser } from 'htmlparser2'
-import { Upload, X } from 'lucide-react-native'
+import { Image, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import {
   KeyboardAvoidingView,
@@ -13,12 +12,12 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { TagInput } from '../tag/TagInput'
-import { RichTextEditor } from './RichTextEditor'
-
+import { PostPreview } from './PostPreview'
+import { TextEditor } from './TextEditor'
 interface FullScreenEditorProps {
   visible: boolean
   initialContent?: string
@@ -33,7 +32,7 @@ export function FullScreenEditor({
   visible,
   initialContent = '',
   initialTags = [],
-  placeholder = '记录你的想法...',
+  placeholder = 'What\'s on your mind?',
   availableTags = [],
   onClose,
   onSubmit,
@@ -43,10 +42,9 @@ export function FullScreenEditor({
   const [content, setContent] = useState(initialContent)
   const [tags, setTags] = useState<string[]>(initialTags)
   const [resources, setResources] = useState<string[]>([])
-  const [uploading, setUploading] = useState(false)
-  const [textContent, setTextContent] = useState('')
   const [imageUris, setImageUris] = useState<string[]>([])
-  const [triggerUpload, setTriggerUpload] = useState(0)
+  const [uploading, setUploading] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
 
   useEffect(() => {
     if (visible) {
@@ -54,52 +52,43 @@ export function FullScreenEditor({
       setTags(initialTags)
       setResources([])
       setImageUris([])
-      extractTextFromHtml(initialContent).then(setTextContent)
     }
   }, [visible, initialContent, initialTags])
 
-  useEffect(() => {
-    extractTextFromHtml(content).then(setTextContent)
-  }, [content])
+  const handlePickImage = async () => {
+    const result = await selectImages()
+    if (result.length > 0) {
+      setImageUris([...imageUris, ...result].slice(0, 9))
+    }
+  }
 
   const handleSubmit = async () => {
-    if (textContent || imageUris.length > 0) {
-      // Upload all images before submitting
-      const uploadedResources = [...resources]
-      if (imageUris.length > 0 && canUseNetwork) {
-        setUploading(true)
-        try {
-          for (const uri of imageUris) {
-            console.log('[FullScreenEditor] Uploading image', { uri })
-            const resource = await resourcesApi.upload(
-              {
-                uri,
-                name: `image_${Date.now()}.jpg`,
-                type: 'image/jpeg',
-              },
-              'new'
-            )
-            console.log('[FullScreenEditor] Image uploaded', { resource })
-            uploadedResources.push(resource.id)
-          }
-        } catch (error) {
-          console.error('Image upload error:', error)
-          toast.error('错误', '图片上传失败')
-          setUploading(false)
-          return
+    const uploadedResources = [...resources]
+    if (imageUris.length > 0 && canUseNetwork) {
+      setUploading(true)
+      try {
+        for (const uri of imageUris) {
+          const resource = await resourcesApi.upload(
+            {
+              uri,
+              name: `image_${Date.now()}.jpg`,
+              type: 'image/jpeg',
+            },
+            'new'
+          )
+          uploadedResources.push(resource.id)
         }
+      } catch (error) {
+        console.error('Image upload failed:', error)
+        toast.error('Error', 'Image upload failed')
         setUploading(false)
-        console.log('[FullScreenEditor] All images uploaded, resourceIds:', uploadedResources)
+        return
       }
-      
-      onSubmit(content, tags, uploadedResources)
-      setContent('')
-      setTags([])
-      setResources([])
-      setImageUris([])
-      setTextContent('')
-      onClose()
+      setUploading(false)
     }
+
+    onSubmit(content, tags, uploadedResources)
+    handleClose()
   }
 
   const handleClose = () => {
@@ -107,40 +96,26 @@ export function FullScreenEditor({
     setTags([])
     setResources([])
     setImageUris([])
-    setTextContent('')
     onClose()
   }
 
-  const extractTextFromHtml = (html: string) => {
-    return new Promise<string>(resolve => {
-      let text = ''
-      const parser = new Parser({
-        ontext: chunk => {
-          text += chunk
-        },
-        onend: () => {
-          text = text
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;/g, "'")
-            .replace(/&nbsp;/g, ' ')
-          text = text.replace(/\s+/g, ' ').trim()
-          resolve(text)
-        },
-      })
-      parser.write(html)
-      parser.end()
+  const handlePost = async () => {
+    setShowPreview(false)
+    await handleSubmit()
+  }
+
+  const selectImages = async () => {
+    const { launchImageLibraryAsync } = await import('expo-image-picker')
+    const result = await launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      quality: 0.8,
     })
-  }
 
-  const handleImagesChange = (newImages: string[]) => {
-    setImageUris(newImages)
-  }
-
-  const handleUploadClick = () => {
-    setTriggerUpload(prev => prev + 1)
+    if (!result.canceled) {
+      return result.assets.map(asset => asset.uri)
+    }
+    return []
   }
 
   return (
@@ -160,66 +135,74 @@ export function FullScreenEditor({
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
           <View style={[styles.header]}>
-            <TouchableOpacity
-              onPress={handleClose}
-              style={styles.closeButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <X size={24} color={theme.text} strokeWidth={2} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>创建MEMO</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>创建Memo</Text>
             <View style={styles.headerActions}>
-              <TouchableOpacity
-                onPress={handleUploadClick}
-                style={styles.uploadButton}
-                disabled={uploading}
-              >
-                <Upload size={20} color={theme.primary} />
-              </TouchableOpacity>
+              <Button
+                onPress={handlePickImage}
+                variant="ghost"
+                size="medium"
+                leftIcon={<Image size={16} color={theme.text} />}
+              />
+              <Button
+                title="预览"
+                onPress={() => setShowPreview(true)}
+                variant="ghost"
+                size="medium"
+                disabled={!content.trim() && imageUris.length === 0}
+              />
               <Button
                 title="创建"
                 onPress={handleSubmit}
                 variant="ghost"
                 size="medium"
-                disabled={(textContent.length === 0 && imageUris.length === 0) || !canUseNetwork || uploading}
+                disabled={(!content.trim() && imageUris.length === 0) || !canUseNetwork || uploading}
               />
             </View>
           </View>
 
           <View style={styles.contentContainer}>
             <View style={styles.editorContainer}>
-              <RichTextEditor
-                content={content}
+              <TextEditor
+                value={content}
                 onChange={setContent}
                 placeholder={placeholder}
-                editable={true}
-                onSave={handleSubmit}
-                isExpanded={true}
-                showCreateButton={false}
               />
             </View>
 
-            <View style={styles.imageContainer}>
-              <CustomImagePicker
-                images={imageUris}
-                onImagesChange={handleImagesChange}
-                maxImages={9}
-                showUploadButton={false}
-                triggerUpload={triggerUpload}
-              />
-            </View>
+            {imageUris.length > 0 && (
+              <View style={styles.imageContainer}>
+                <DraggableImageGrid
+                  images={imageUris}
+                  onImagesChange={setImageUris}
+                  maxImages={9}
+                  onAddImage={handlePickImage}
+                />
+              </View>
+            )}
 
             <View style={styles.tagContainer}>
               <TagInput
                 tags={tags}
                 onTagsChange={setTags}
-                content={textContent}
+                content={content}
                 suggestions={availableTags}
                 placeholder="添加标签..."
               />
             </View>
           </View>
         </KeyboardAvoidingView>
+
+        <PostPreview
+          visible={showPreview}
+          content={content}
+          images={imageUris}
+          tags={tags}
+          onClose={() => setShowPreview(false)}
+          onPost={handlePost}
+        />
       </SafeAreaView>
     </Modal>
   )
@@ -255,12 +238,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  uploadButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   contentContainer: {
     flex: 1,
     display: 'flex',
@@ -268,16 +245,21 @@ const styles = StyleSheet.create({
   },
   editorContainer: {
     flex: 1,
+    minHeight: 150,
   },
   imageContainer: {
-    paddingHorizontal: 16,
+    maxHeight: 300,
   },
   tagContainer: {
     padding: 16,
   },
-  createButtonContainer: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    flexShrink: 1,
+  footer: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+  },
+  footerButton: {
+    padding: 8,
   },
 })

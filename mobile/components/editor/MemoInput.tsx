@@ -1,8 +1,7 @@
 import { Button } from '@/components/ui'
-import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import { Maximize2 } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
 import { FullScreenEditor } from './FullScreenEditor'
 
@@ -22,27 +21,17 @@ export function MemoInput({
   const { theme } = useThemeStore()
   const [isFullScreenVisible, setIsFullScreenVisible] = useState(false)
   const [text, setText] = useState('')
-  const [textContent, setTextContent] = useState('')
-  const [tags, setTags] = useState<string[]>([])
-
-  useEffect(() => {
-    if (text) setTextContent(stringUtils.extractTextFromHtml(text))
-  }, [text])
 
   const handleSubmit = () => {
     if (!text.trim() || disabled) return
-    if (textContent) {
-      onSubmit?.(textContent, tags, [])
-      setText('')
-      setTags([])
-    }
+    onSubmit?.(text, [], [])
+    setText('')
   }
 
   const handleFullScreenSubmit = (content: string, submitTags: string[], resources: string[]) => {
     onSubmit?.(content, submitTags, resources)
     setIsFullScreenVisible(false)
     setText('')
-    setTags([])
   }
 
   return (
@@ -82,9 +71,9 @@ export function MemoInput({
         <View style={styles.buttonContainer}>
           <Button
             title="创建"
-            variant={textContent ? 'primary' : 'secondary'}
+            variant={text ? 'primary' : 'secondary'}
             onPress={handleSubmit}
-            disabled={disabled || !textContent}
+            disabled={disabled || !text}
           />
         </View>
       </View>
@@ -92,7 +81,7 @@ export function MemoInput({
       <FullScreenEditor
         visible={isFullScreenVisible}
         initialContent={text}
-        initialTags={tags}
+        initialTags={[]}
         placeholder={placeholder}
         availableTags={availableTags}
         onClose={() => setIsFullScreenVisible(false)}
