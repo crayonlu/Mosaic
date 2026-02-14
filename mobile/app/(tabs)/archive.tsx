@@ -1,7 +1,6 @@
 import { ArchiveDateFilter } from '@/components/archive/ArchiveDateFilter'
 import { MemoFeed } from '@/components/archive/MemoFeed'
-import { MoodSelector } from '@/components/archive/MoodSelector'
-import { toast } from '@/components/ui'
+import { MoodDialog, toast } from '@/components/ui'
 import type { MoodKey } from '@/constants/common'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
@@ -21,7 +20,7 @@ export default function ArchiveScreen() {
   )
   const [isArchiveMode, setIsArchiveMode] = useState(false)
   const [selectedMemoIds, setSelectedMemoIds] = useState<string[]>([])
-  const [showMoodSelector, setShowMoodSelector] = useState(false)
+  const [showMoodDialog, setShowMoodDialog] = useState(false)
   const { mutateAsync: createDiary, isPending: isCreatingDiary } = useCreateDiary()
   const { mutateAsync: archiveMemo, isPending: isArchiving } = useArchiveMemo()
   const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
@@ -43,7 +42,7 @@ export default function ArchiveScreen() {
   const handleArchivePress = () => {
     if (isArchiveMode) {
       if (selectedMemoIds.length > 0) {
-        setShowMoodSelector(true)
+        setShowMoodDialog(true)
       } else {
         setIsArchiveMode(false)
         setSelectedMemoIds([])
@@ -58,7 +57,7 @@ export default function ArchiveScreen() {
     }
   }
 
-  const handleMoodSubmit = async (moodKey: MoodKey, summary: string) => {
+  const handleMoodSubmit = async (moodKey: MoodKey, intensity: number) => {
     if (!canUseNetwork || !selectedDate || isPending) {
       return
     }
@@ -67,9 +66,9 @@ export default function ArchiveScreen() {
       await createDiary({
         date: selectedDate,
         data: {
-          summary: summary || `${selectedMemoIds.length} 条Memo`,
+          summary: `${selectedMemoIds.length} 条Memo`,
           moodKey,
-          moodScore: 1,
+          moodScore: intensity,
         },
       })
 
@@ -78,7 +77,7 @@ export default function ArchiveScreen() {
       }
 
       toast.success('成功', '已归档')
-      setShowMoodSelector(false)
+      setShowMoodDialog(false)
       setIsArchiveMode(false)
       setSelectedMemoIds([])
     } catch (error) {
@@ -104,11 +103,13 @@ export default function ArchiveScreen() {
         selectedIds={selectedMemoIds}
         onSelectionChange={handleSelectionChange}
       />
-      <MoodSelector
-        visible={showMoodSelector}
-        onClose={() => setShowMoodSelector(false)}
+      <MoodDialog
+        visible={showMoodDialog}
+        onClose={() => setShowMoodDialog(false)}
         onSubmit={handleMoodSubmit}
         submitting={isPending}
+        title="归档日记"
+        showIntensity={true}
       />
     </View>
   )
