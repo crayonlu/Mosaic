@@ -9,9 +9,15 @@ import { useThemeInit, useThemeStore } from '@/stores/theme-store'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 
 export default function RootLayout() {
@@ -46,6 +52,30 @@ export default function RootLayout() {
   const isDiariesTab = segments[0] === '(tabs)' && segments[1] === 'diaries'
   
   const moodColor = getMoodColorWithIntensity(currentMood, currentMoodIntensity)
+  const [baseMoodColor, setBaseMoodColor] = useState(moodColor)
+  const [overlayMoodColor, setOverlayMoodColor] = useState(moodColor)
+  const overlayOpacity = useSharedValue(0)
+
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.value,
+  }))
+
+  const completeGradientTransition = (nextColor: string) => {
+    setBaseMoodColor(nextColor)
+    overlayOpacity.value = 0
+  }
+
+  useEffect(() => {
+    if (moodColor === baseMoodColor) return
+
+    setOverlayMoodColor(moodColor)
+    overlayOpacity.value = 0
+    overlayOpacity.value = withTiming(1, { duration: 200 }, (finished) => {
+      if (finished) {
+        runOnJS(completeGradientTransition)(moodColor)
+      }
+    })
+  }, [baseMoodColor, moodColor, overlayOpacity])
 
   if (!isInitialized || isLoading) {
     return (
@@ -60,49 +90,61 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <SafeAreaView
-          style={{
-            flex: 1,
-            backgroundColor: isDiariesTab ? 'transparent' : theme.background,
-          }}
-        >
-          {isDiariesTab && (
-            <LinearGradient
-              colors={[moodColor, 'transparent']}
-              style={StyleSheet.absoluteFill}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-            />
-          )}
-          <StatusBar style="auto" />
-          <QueryProvider>
-            {isAuthenticated && !isServerReachable && (
-              <View style={[styles.offlineBanner, { backgroundColor: '#EF4444' }]}>
-                <Text style={styles.offlineText}>无法连接到服务器</Text>
-              </View>
+        <View style={{ flex: 1, backgroundColor: theme.background }}>
+          <SafeAreaView
+            style={{
+              flex: 1,
+              backgroundColor: isDiariesTab ? 'transparent' : theme.background,
+            }}
+          >
+            {isDiariesTab && (
+              <>
+                <LinearGradient
+                  colors={[baseMoodColor, 'transparent']}
+                  style={StyleSheet.absoluteFill}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                />
+                <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, overlayStyle]}>
+                  <LinearGradient
+                    colors={[overlayMoodColor, 'transparent']}
+                    style={StyleSheet.absoluteFill}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                  />
+                </Animated.View>
+              </>
             )}
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: {
-                  backgroundColor: isDiariesTab ? 'transparent' : theme.background,
-                },
-              }}
-            >
-              <Stack.Screen name="setup" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="modal"
-                options={{
-                  presentation: 'modal',
-                  animation: 'slide_from_bottom',
+            <StatusBar style="auto" />
+            <QueryProvider>
+              {isAuthenticated && !isServerReachable && (
+                <View style={[styles.offlineBanner, { backgroundColor: '#EF4444' }]}>
+                  <Text style={styles.offlineText}>无法连接到服务器</Text>
+                </View>
+              )}
+              <Stack
+                screenOptions={{
                   headerShown: false,
+                  contentStyle: {
+                    backgroundColor: isDiariesTab ? 'transparent' : theme.background,
+                  },
                 }}
-              />
-            </Stack>
-            <ToastContainer />
-          </QueryProvider>
-        </SafeAreaView>
+              >
+                <Stack.Screen name="setup" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="modal"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                    headerShown: false,
+                  }}
+                />
+              </Stack>
+              <ToastContainer />
+            </QueryProvider>
+          </SafeAreaView>
+        </View>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )

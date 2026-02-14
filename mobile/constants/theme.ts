@@ -31,7 +31,7 @@ export const DarkTheme: Theme = {
   textSecondary: '#A0AEC0',
   border: 'rgba(255, 255, 255, 0.1)',
   spacing: 16,
-  primary: '#64A9E9',
-  link: '#FFB5A7',
+  primary: '#8A9B8F',
+  link: '#B8A9A9',
   mark: '#FFD93D',
 }

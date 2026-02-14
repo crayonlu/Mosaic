@@ -146,7 +146,7 @@ export const DEFAULT_MOOD: MoodKey = 'neutral'
  * intensity: 1-10, higher = more intense/darker
  */
 export function getMoodColorWithIntensity(moodKey?: MoodKey, intensity?: number): string {
-  if (!moodKey) return 'transparent'
+  if (!moodKey) return 'rgba(184, 184, 184, 0.5)'
   const baseColor = MOOD_COLOR_MAP[moodKey] || MOOD_COLOR_MAP.neutral
   // Convert hex to RGBA with opacity based on intensity
   // intensity 1 = 30% opacity, intensity 10 = 100% opacity
