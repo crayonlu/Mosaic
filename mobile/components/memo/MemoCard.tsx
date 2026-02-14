@@ -14,9 +14,10 @@ interface MemoCardProps {
   onPress: () => void
   onDelete?: (id: string) => void
   showActions?: boolean
+  isSelected?: boolean
 }
 
-export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCardProps) {
+export function MemoCard({ memo, onPress, onDelete, showActions = true, isSelected = false }: MemoCardProps) {
   const { theme } = useThemeStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
@@ -40,11 +41,11 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true }: MemoCa
   return (
     <Pressable
       onPress={onPress}
-      style={() => [
+      style={({ pressed }) => [
         styles.container,
         {
-          backgroundColor: theme.background,
-          borderColor: theme.border,          
+          backgroundColor: isSelected ? theme.surface : (pressed ? `${theme.surface}80` : theme.background),
+          borderColor: theme.border,
         },
       ]}
     >

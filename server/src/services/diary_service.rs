@@ -144,7 +144,7 @@ impl DiaryService {
 
         let memos = sqlx::query_as::<_, crate::models::Memo>(
             "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
-             FROM memos WHERE user_id = $1 AND diary_date = $2 AND is_deleted = false
+             FROM memos WHERE user_id = $1 AND diary_date = $2 AND is_deleted = false AND is_archived = true
              ORDER BY created_at ASC",
         )
         .bind(user_uuid)

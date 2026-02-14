@@ -11,7 +11,6 @@ import { MemoCard } from './MemoCard'
 interface MemoListProps {
   date?: string
   onMemoPress: (memo: MemoWithResources) => void
-  onMemoArchive?: (id: string) => void
   onMemoDelete?: (id: string) => void
   headerComponent?: React.ComponentType<any> | React.ReactElement | null | undefined
 }
@@ -19,7 +18,6 @@ interface MemoListProps {
 export function MemoList({
   date,
   onMemoPress,
-  onMemoArchive,
   onMemoDelete,
   headerComponent,
 }: MemoListProps) {

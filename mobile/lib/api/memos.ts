@@ -17,8 +17,8 @@ export const memosApi = {
     return apiClient.get<MemoWithResourcesResponse>(`/api/memos/${id}`)
   },
 
-  getByDate(date: string): Promise<MemoWithResourcesResponse[]> {
-    return apiClient.get<MemoWithResourcesResponse[]>(`/api/memos/date/${date}`)
+  getByDate(date: string, query: ListMemosQuery = {}): Promise<MemoWithResourcesResponse[]> {
+    return apiClient.get<MemoWithResourcesResponse[]>(`/api/memos/date/${date}`, query as any)
   },
 
   create(data: CreateMemoRequest): Promise<MemoWithResourcesResponse> {
@@ -33,8 +33,8 @@ export const memosApi = {
     return apiClient.delete<void>(`/api/memos/${id}`)
   },
 
-  archive(id: string): Promise<void> {
-    return apiClient.put<void>(`/api/memos/${id}/archive`)
+  archive(id: string, diaryDate?: string): Promise<void> {
+    return apiClient.put<void>(`/api/memos/${id}/archive`, { diaryDate })
   },
 
   unarchive(id: string): Promise<void> {

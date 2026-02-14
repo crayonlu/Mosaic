@@ -131,7 +131,6 @@ export const useAuthStore = create<AuthStore>()(
       refreshUser: async () => {
         try {
           const user = await authApi.me()
-          console.log('Refreshed user:', user)
           set({ user })
         } catch (error) {
           const apiError = error as ApiError

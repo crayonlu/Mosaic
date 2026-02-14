@@ -3,7 +3,7 @@ import type { DiaryWithMemosResponse } from '@/types/api'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-
+import { MoodKey } from '@/types'
 interface UseDiaryPagerOptions {
   initialDate?: string
   prefetchDays?: number
@@ -11,6 +11,8 @@ interface UseDiaryPagerOptions {
 
 interface UseDiaryPagerReturn {
   currentDate: string
+  currentMood: MoodKey | undefined
+  currentMoodIntensity: number
   setCurrentDate: (date: string) => void
   goToPreviousDay: () => void
   goToNextDay: () => void
@@ -95,6 +97,8 @@ export function useDiaryPager(options: UseDiaryPagerOptions = {}): UseDiaryPager
 
   return {
     currentDate,
+    currentMood: diaryQuery.data?.moodKey ?? undefined,
+    currentMoodIntensity: diaryQuery.data?.moodScore ?? 5,
     setCurrentDate: handleSetCurrentDate,
     goToPreviousDay,
     goToNextDay,

@@ -57,6 +57,9 @@ export default function TabLayout() {
         name="diaries"
         options={{
           title: TabItems.items[2].label,
+          sceneStyle: {
+            backgroundColor: 'transparent',
+          },
           tabBarIcon: ({ focused, color }) => (
             <Calendar size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),

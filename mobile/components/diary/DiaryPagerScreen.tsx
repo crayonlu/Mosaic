@@ -1,9 +1,10 @@
 import { useDiaryPager } from '@/hooks/use-diary-pager'
+import { useMoodStore } from '@/stores/mood-store'
 import { useThemeStore } from '@/stores/theme-store'
 import dayjs from 'dayjs'
 import { router } from 'expo-router'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react-native'
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import PagerView from 'react-native-pager-view'
 import { DayPageView } from './DayPageView'
@@ -13,6 +14,7 @@ const TOTAL_PAGES = PREFETCH_DAYS * 2 + 1
 
 export function DiaryPagerScreen() {
   const { theme } = useThemeStore()
+  const { setCurrentMood } = useMoodStore()
   const pagerRef = useRef<PagerView>(null)
   const currentPageRef = useRef(PREFETCH_DAYS)
   const skipNextPageSelectedRef = useRef(false)
@@ -20,9 +22,19 @@ export function DiaryPagerScreen() {
   const {
     currentDate,
     setCurrentDate,
+    diaryQuery,
   } = useDiaryPager({
     prefetchDays: PREFETCH_DAYS,
   })
+
+  useEffect(() => {
+    if (diaryQuery.status === 'success' && diaryQuery.data?.date === currentDate) {
+      setCurrentMood(diaryQuery.data.moodKey, diaryQuery.data.moodScore ?? 5)
+      return
+    }
+
+    setCurrentMood(undefined, 5)
+  }, [currentDate, diaryQuery.status, diaryQuery.dataUpdatedAt, setCurrentMood])
 
   const todayIndex = PREFETCH_DAYS
   const today = useMemo(() => dayjs().startOf('day'), [])
@@ -31,11 +43,27 @@ export function DiaryPagerScreen() {
     [currentDate, today]
   )
 
+  const currentPageIndex = isToday ? PREFETCH_DAYS : todayIndex
+
   const displayDates = useMemo(() => {
+    if (isToday) {
+      return Array.from({ length: PREFETCH_DAYS + 1 }, (_, index) =>
+        dayjs(currentDate)
+          .subtract(PREFETCH_DAYS - index, 'day')
+          .format('YYYY-MM-DD')
+      )
+    }
+
     return Array.from({ length: TOTAL_PAGES }, (_, index) =>
-      dayjs(currentDate).add(index - todayIndex, 'day').format('YYYY-MM-DD')
+      dayjs(currentDate).add(index - currentPageIndex, 'day').format('YYYY-MM-DD')
     )
-  }, [currentDate, todayIndex])
+  }, [currentDate, currentPageIndex, isToday])
+
+  useEffect(() => {
+    skipNextPageSelectedRef.current = true
+    pagerRef.current?.setPageWithoutAnimation(currentPageIndex)
+    currentPageRef.current = currentPageIndex
+  }, [currentDate, currentPageIndex])
 
   const handleMemoPress = useCallback((memoId: string) => {
     router.push({ pathname: '/memo/[id]', params: { id: memoId } })
@@ -54,12 +82,12 @@ export function DiaryPagerScreen() {
     if (safeDate === currentDate) return
     setCurrentDate(safeDate)
 
-    if (currentPageRef.current !== todayIndex) {
+    if (currentPageRef.current !== currentPageIndex) {
       skipNextPageSelectedRef.current = true
-      pagerRef.current?.setPageWithoutAnimation(todayIndex)
-      currentPageRef.current = todayIndex
+      pagerRef.current?.setPageWithoutAnimation(currentPageIndex)
+      currentPageRef.current = currentPageIndex
     }
-  }, [currentDate, normalizeAndClampDate, setCurrentDate, todayIndex])
+  }, [currentDate, currentPageIndex, normalizeAndClampDate, setCurrentDate])
 
   const handlePageSelected = useCallback((e: { nativeEvent: { position: number } }) => {
     const newIndex = e.nativeEvent.position
@@ -105,8 +133,8 @@ export function DiaryPagerScreen() {
   const pages = displayDates.map(renderPage)
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header]}>
+    <View style={[styles.container]}>
+      <View style={styles.header}>
         <TouchableOpacity
           style={styles.navButton}
           onPress={handlePreviousYear}
@@ -157,9 +185,9 @@ export function DiaryPagerScreen() {
       <PagerView
         ref={pagerRef}
         style={styles.pager}
-        initialPage={todayIndex}
+        initialPage={currentPageIndex}
         onPageSelected={handlePageSelected}
-        overdrag={true}
+        overdrag={!isToday}
       >
         {pages}
       </PagerView>
@@ -170,6 +198,7 @@ export function DiaryPagerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',

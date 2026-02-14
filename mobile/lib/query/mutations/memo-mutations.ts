@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { memosApi } from '@/lib/api/memos'
 import type { CreateMemoRequest, UpdateMemoRequest } from '@/types/api'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 export function useCreateMemo() {
   const queryClient = useQueryClient()
@@ -43,8 +43,9 @@ export function useArchiveMemo() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => memosApi.archive(id),
-    onSuccess: (_, id) => {
+    mutationFn: ({ id, diaryDate }: { id: string; diaryDate?: string }) =>
+      memosApi.archive(id, diaryDate),
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['memo', id] })
       queryClient.invalidateQueries({ queryKey: ['memos'] })
     },

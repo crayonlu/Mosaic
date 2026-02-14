@@ -357,17 +357,25 @@ impl MemoService {
         &self,
         user_id: &str,
         date: &str,
+        archived: Option<bool>,
     ) -> Result<Vec<MemoWithResources>, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
 
-        let memos = sqlx::query_as::<_, Memo>(
+        let mut query = String::from(
             "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
-             FROM memos 
-             WHERE user_id = $1 
-                AND is_deleted = false 
-                AND DATE(to_timestamp(created_at / 1000)) = $2::date
-             ORDER BY created_at DESC",
-        )
+             FROM memos
+             WHERE user_id = $1
+                AND is_deleted = false
+                AND DATE(to_timestamp(created_at / 1000)) = $2::date",
+        );
+
+        if let Some(is_archived) = archived {
+            query.push_str(&format!(" AND is_archived = {}", is_archived));
+        }
+
+        query.push_str(" ORDER BY created_at DESC");
+
+        let memos = sqlx::query_as::<_, Memo>(&query)
         .bind(user_uuid)
         .bind(date)
         .fetch_all(&self.pool)
@@ -507,18 +515,35 @@ impl MemoService {
         Ok(())
     }
 
-    pub async fn archive_memo(&self, user_id: &str, memo_id: Uuid) -> Result<(), AppError> {
+    pub async fn archive_memo(
+        &self,
+        user_id: &str,
+        memo_id: Uuid,
+        diary_date: Option<chrono::NaiveDate>,
+    ) -> Result<(), AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let now = Utc::now().timestamp_millis();
 
-        let result = sqlx::query(
-            "UPDATE memos SET is_archived = true, updated_at = $1 WHERE id = $2 AND user_id = $3 AND is_deleted = false",
-        )
-        .bind(now)
-        .bind(memo_id)
-        .bind(user_uuid)
-        .execute(&self.pool)
-        .await?;
+        let result = if let Some(date) = diary_date {
+            sqlx::query(
+                "UPDATE memos SET is_archived = true, diary_date = $1, updated_at = $2 WHERE id = $3 AND user_id = $4 AND is_deleted = false",
+            )
+            .bind(date)
+            .bind(now)
+            .bind(memo_id)
+            .bind(user_uuid)
+            .execute(&self.pool)
+            .await?
+        } else {
+            sqlx::query(
+                "UPDATE memos SET is_archived = true, updated_at = $1 WHERE id = $2 AND user_id = $3 AND is_deleted = false",
+            )
+            .bind(now)
+            .bind(memo_id)
+            .bind(user_uuid)
+            .execute(&self.pool)
+            .await?
+        };
 
         if result.rows_affected() == 0 {
             return Err(AppError::MemoNotFound);

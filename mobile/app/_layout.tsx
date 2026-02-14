@@ -1,9 +1,12 @@
 import { QueryProvider } from '@/components/query-provider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
+import { getMoodColorWithIntensity } from '@/lib/utils/mood'
 import { useAuthStore } from '@/stores/auth-store'
 import { useConnectionStore } from '@/stores/connection-store'
+import { useMoodStore } from '@/stores/mood-store'
 import { useThemeInit, useThemeStore } from '@/stores/theme-store'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
@@ -13,6 +16,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 
 export default function RootLayout() {
   const { theme } = useThemeStore()
+  const { currentMood, currentMoodIntensity } = useMoodStore()
   const { isServerReachable, initialize } = useConnectionStore()
   const { isAuthenticated, isInitialized, isLoading, initialize: initAuth } = useAuthStore()
   const segments = useSegments()
@@ -39,6 +43,10 @@ export default function RootLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, isInitialized, segments])
 
+  const isDiariesTab = segments[0] === '(tabs)' && segments[1] === 'diaries'
+  
+  const moodColor = getMoodColorWithIntensity(currentMood, currentMoodIntensity)
+
   if (!isInitialized || isLoading) {
     return (
       <SafeAreaProvider>
@@ -52,7 +60,20 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+        <SafeAreaView
+          style={{
+            flex: 1,
+            backgroundColor: isDiariesTab ? 'transparent' : theme.background,
+          }}
+        >
+          {isDiariesTab && (
+            <LinearGradient
+              colors={[moodColor, 'transparent']}
+              style={StyleSheet.absoluteFill}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+            />
+          )}
           <StatusBar style="auto" />
           <QueryProvider>
             {isAuthenticated && !isServerReachable && (
@@ -63,7 +84,9 @@ export default function RootLayout() {
             <Stack
               screenOptions={{
                 headerShown: false,
-                contentStyle: { backgroundColor: theme.background },
+                contentStyle: {
+                  backgroundColor: isDiariesTab ? 'transparent' : theme.background,
+                },
               }}
             >
               <Stack.Screen name="setup" options={{ headerShown: false }} />
