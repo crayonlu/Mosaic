@@ -58,7 +58,7 @@ export default function HomeScreen() {
   }
 
   const handleDateClick = (date: string) => {
-    router.push({ pathname: '/diary/[date]', params: { date } })
+    router.push({ pathname: '/diaries', params: { date } })
   }
 
   return (

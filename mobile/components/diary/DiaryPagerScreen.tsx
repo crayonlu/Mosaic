@@ -12,7 +12,11 @@ import { DayPageView } from './DayPageView'
 const PREFETCH_DAYS = 2
 const TOTAL_PAGES = PREFETCH_DAYS * 2 + 1
 
-export function DiaryPagerScreen() {
+interface DiaryPagerScreenProps {
+  initialDate?: string
+}
+
+export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
   const { theme } = useThemeStore()
   const { setCurrentMood } = useMoodStore()
   const pagerRef = useRef<PagerView>(null)
@@ -25,6 +29,7 @@ export function DiaryPagerScreen() {
     diaryQuery,
   } = useDiaryPager({
     prefetchDays: PREFETCH_DAYS,
+    initialDate,
   })
 
   useEffect(() => {
@@ -40,7 +45,14 @@ export function DiaryPagerScreen() {
     if (diaryQuery.status === 'error') {
       setCurrentMood(undefined, 5)
     }
-  }, [currentDate, diaryQuery.status, diaryQuery.dataUpdatedAt, diaryQuery.errorUpdatedAt, setCurrentMood])
+  }, [
+    currentDate,
+    diaryQuery.status,
+    diaryQuery.data?.date,
+    diaryQuery.data?.moodKey,
+    diaryQuery.data?.moodScore,
+    setCurrentMood,
+  ])
 
   const todayIndex = PREFETCH_DAYS
   const today = useMemo(() => dayjs().startOf('day'), [])
@@ -66,9 +78,14 @@ export function DiaryPagerScreen() {
   }, [currentDate, currentPageIndex, isToday])
 
   useEffect(() => {
-    skipNextPageSelectedRef.current = true
-    pagerRef.current?.setPageWithoutAnimation(currentPageIndex)
-    currentPageRef.current = currentPageIndex
+    if (currentPageRef.current !== currentPageIndex) {
+      skipNextPageSelectedRef.current = true
+      pagerRef.current?.setPageWithoutAnimation(currentPageIndex)
+      currentPageRef.current = currentPageIndex
+      return
+    }
+
+    skipNextPageSelectedRef.current = false
   }, [currentDate, currentPageIndex])
 
   const handleMemoPress = useCallback((memoId: string) => {
