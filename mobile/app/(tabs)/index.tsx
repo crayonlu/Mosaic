@@ -5,7 +5,7 @@ import { toast } from '@/components/ui'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
-import { useArchiveMemo, useCreateMemo, useDeleteMemo } from '@/lib/query'
+import { useCreateMemo, useDeleteMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@/types/memo'
 import { router } from 'expo-router'
@@ -17,24 +17,12 @@ export default function HomeScreen() {
   const handleError = useErrorHandler()
   const { confirm } = useToastConfirm()
   const { mutateAsync: createMemo, isPending: isCreating } = useCreateMemo()
-  const { mutateAsync: archiveMemo, isPending: isArchiving } = useArchiveMemo()
   const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
 
-  const isPending = isCreating || isArchiving || isDeleting
+  const isPending = isCreating || isDeleting
 
   const handleMemoPress = (memo: MemoWithResources) => {
     router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
-  }
-
-  const handleArchive = async (id: string) => {
-    if (!canUseNetwork || isPending) return
-    try {
-      await archiveMemo(id)
-      toast.success('成功', '已归档')
-    } catch (error) {
-      handleError(error)
-      toast.error('错误', '归档失败')
-    }
   }
 
   const handleDelete = async (id: string) => {
@@ -82,7 +70,6 @@ export default function HomeScreen() {
       <View style={styles.listContainer}>
         <MemoList
           onMemoPress={handleMemoPress}
-          onMemoArchive={handleArchive}
           onMemoDelete={handleDelete}
           headerComponent={
             <View style={styles.heatMapSection}>

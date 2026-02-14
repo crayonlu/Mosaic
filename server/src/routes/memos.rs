@@ -2,6 +2,7 @@ use crate::middleware::get_user_id;
 use crate::models::{CreateMemoRequest, MemoListQuery, UpdateMemoRequest};
 use crate::services::MemoService;
 use actix_web::{web, HttpRequest, HttpResponse};
+use serde::Deserialize;
 
 pub async fn create_memo(
     req: HttpRequest,
@@ -102,6 +103,7 @@ pub async fn delete_memo(
 pub async fn get_memos_by_date(
     req: HttpRequest,
     path: web::Path<String>,
+    query: web::Query<MemoListQuery>,
     memo_service: web::Data<MemoService>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
@@ -110,9 +112,10 @@ pub async fn get_memos_by_date(
     };
 
     let date = path.into_inner();
+    let archived = query.archived;
 
     match memo_service
-        .get_memos_by_created_date(&user_id, &date)
+        .get_memos_by_created_date(&user_id, &date, archived)
         .await
     {
         Ok(memos) => HttpResponse::Ok().json(memos),
@@ -120,9 +123,15 @@ pub async fn get_memos_by_date(
     }
 }
 
+#[derive(Deserialize)]
+pub struct ArchiveMemoRequest {
+    diary_date: Option<String>,
+}
+
 pub async fn archive_memo(
     req: HttpRequest,
     path: web::Path<uuid::Uuid>,
+    payload: web::Json<ArchiveMemoRequest>,
     memo_service: web::Data<MemoService>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
@@ -130,7 +139,14 @@ pub async fn archive_memo(
         Err(e) => return HttpResponse::from_error(e),
     };
 
-    match memo_service.archive_memo(&user_id, path.into_inner()).await {
+    let diary_date = payload.diary_date.as_ref().and_then(|d| {
+        chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()
+    });
+
+    match memo_service
+        .archive_memo(&user_id, path.into_inner(), diary_date)
+        .await
+    {
         Ok(()) => HttpResponse::Ok().finish(),
         Err(e) => HttpResponse::from_error(e),
     }

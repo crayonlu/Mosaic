@@ -140,3 +140,23 @@ export function normalizeMoodKey(moodKey?: string | null): MoodKey | undefined {
 export const MOOD_INTENSITY_LEVELS = 10
 
 export const DEFAULT_MOOD: MoodKey = 'neutral'
+
+/**
+ * Get color with adjusted opacity based on intensity
+ * intensity: 1-10, higher = more intense/darker
+ */
+export function getMoodColorWithIntensity(moodKey?: MoodKey, intensity?: number): string {
+  if (!moodKey) return 'transparent'
+  const baseColor = MOOD_COLOR_MAP[moodKey] || MOOD_COLOR_MAP.neutral
+  // Convert hex to RGBA with opacity based on intensity
+  // intensity 1 = 30% opacity, intensity 10 = 100% opacity
+  const opacity = 0.2 + (intensity !== undefined ? (intensity / 10) * 0.6 : 0.5)
+
+  // Parse hex color
+  const hex = baseColor.replace('#', '')
+  const r = parseInt(hex.substring(0, 2), 16)
+  const g = parseInt(hex.substring(2, 4), 16)
+  const b = parseInt(hex.substring(4, 6), 16)
+
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`
+}

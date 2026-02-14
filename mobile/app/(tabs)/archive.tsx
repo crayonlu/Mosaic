@@ -2,12 +2,12 @@ import { ArchiveDateFilter } from '@/components/archive/ArchiveDateFilter'
 import { MemoFeed } from '@/components/archive/MemoFeed'
 import { MoodSelector } from '@/components/archive/MoodSelector'
 import { toast } from '@/components/ui'
+import type { MoodKey } from '@/constants/common'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
-import { useCreateDiary, useArchiveMemo, useDeleteMemo } from '@/lib/query'
+import { useArchiveMemo, useCreateDiary, useDeleteMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
-import type { MoodKey } from '@/constants/common'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { StyleSheet, View } from 'react-native'
@@ -29,9 +29,7 @@ export default function ArchiveScreen() {
   const isPending = isCreatingDiary || isArchiving || isDeleting
 
   const handleMemoPress = (memo: MemoWithResources) => {
-    if (!isArchiveMode) {
-      router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
-    }
+    if (!isArchiveMode) router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
   }
 
   const handleMemoDelete = (id: string) => {
@@ -76,7 +74,7 @@ export default function ArchiveScreen() {
       })
 
       for (const id of selectedMemoIds) {
-        await archiveMemo(id)
+        await archiveMemo({ id, diaryDate: selectedDate })
       }
 
       toast.success('成功', '已归档')

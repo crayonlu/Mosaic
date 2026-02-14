@@ -2,16 +2,15 @@ import { Loading } from '@/components/ui'
 import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
-import { Check, FileX } from 'lucide-react-native'
+import { FileX } from 'lucide-react-native'
 import { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
-  View,
+  View
 } from 'react-native'
 import { MemoCard } from '../memo/MemoCard'
 
@@ -40,7 +39,7 @@ export function MemoFeed({
     data: memosByDate,
     isLoading: loadingByDate,
     refetch: refetchByDate,
-  } = useMemosByDate(targetDate || '')
+  } = useMemosByDate(targetDate || '', { archived: false })
 
   const {
     data: paginatedData,
@@ -83,34 +82,25 @@ export function MemoFeed({
 
   const isSelected = (id: string) => selectedIds.includes(id)
 
-  const renderMemoCard = ({ item }: { item: MemoWithResources }) => (
-    <Pressable
-      onPress={() => {
-        if (isSelectionMode) {
-          handleSelectionChange(item.id)
-        } else {
-          onMemoPress?.(item)
-        }
-      }}
-      style={({ pressed }) => [styles.cardContainer]}
-    >
-      <View style={styles.cardContent}>
+  const renderMemoCard = ({ item }: { item: MemoWithResources }) => {
+    const handleCardPress = () => {
+      if (isSelectionMode) {
+        handleSelectionChange(item.id)
+      } else {
+        onMemoPress?.(item)
+      }
+    }
+
+    return (
+      <View style={styles.cardContainer}>
         <MemoCard
           memo={item}
-          onPress={() => {
-            if (!isSelectionMode) {
-              onMemoPress?.(item)
-            }
-          }}
+          onPress={handleCardPress}
+          isSelected={isSelectionMode && isSelected(item.id)}
         />
       </View>
-      {isSelectionMode && (
-        <View style={[styles.checkbox, isSelected(item.id) && { backgroundColor: theme.primary }]}>
-          {isSelected(item.id) && <Check size={14} color="#FFFFFF" />}
-        </View>
-      )}
-    </Pressable>
-  )
+    )
+  }
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
@@ -184,16 +174,6 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#E5E5E5',
-    marginHorizontal: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   emptyContainer: {
     flex: 1,
