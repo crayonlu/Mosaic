@@ -2,13 +2,10 @@ import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
 import { TextEditor } from '@/components/editor/TextEditor'
 import { TagInput } from '@/components/tag/TagInput'
 import { Button, DraggableImageGrid, Loading, toast } from '@/components/ui'
-import { MOODS, type MoodKey } from '@/constants/common'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
 import { resourcesApi } from '@/lib/api/resources'
 import {
-  useArchiveMemo,
-  useCreateDiary,
   useDeleteMemo,
   useMemo as useQueryMemo,
   useUpdateMemo,
@@ -16,9 +13,9 @@ import {
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
 import { router, useLocalSearchParams } from 'expo-router'
-import { Archive, ArrowLeft, Image, Trash2 } from 'lucide-react-native'
+import { ArrowLeft, Image } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -27,20 +24,16 @@ export default function MemoDetailScreen() {
   const handleError = useErrorHandler()
   const { data: memo, isLoading } = useQueryMemo(id || '')
   const { mutateAsync: updateMemo, isPending: isUpdating } = useUpdateMemo()
-  const { mutateAsync: archiveMemo, isPending: isArchiving } = useArchiveMemo()
   const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
-  const { mutateAsync: createDiary, isPending: isCreatingDiary } = useCreateDiary()
 
   const [editing, setEditing] = useState(false)
   const [content, setContent] = useState('')
   const [tags, setTags] = useState<string[]>([])
-  const [showArchiveModal, setShowArchiveModal] = useState(false)
-  const [selectedMood, setSelectedMood] = useState<MoodKey | null>(null)
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
   const [imageUris, setImageUris] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
 
-  const isPending = isUpdating || isArchiving || isDeleting || isCreatingDiary || uploading
+  const isPending = isUpdating || isDeleting || uploading
 
   useEffect(() => {
     const loadAuthHeaders = async () => {
@@ -120,40 +113,6 @@ export default function MemoDetailScreen() {
       toast.error('错误', '更新失败')
     }
   }, [memo, content, tags, imageUris, canUseNetwork, isPending, updateMemo, handleError])
-
-  const handleArchive = useCallback(async () => {
-    if (!memo || !canUseNetwork || isPending) return
-
-    try {
-      if (memo.isArchived) {
-        await archiveMemo(memo.id)
-        toast.success('成功', '已取消归档')
-      } else {
-        setShowArchiveModal(true)
-        return
-      }
-    } catch (error) {
-      handleError(error)
-      toast.error('错误', '操作失败')
-    }
-  }, [memo, canUseNetwork, isPending, archiveMemo, handleError])
-
-  const handleArchiveToDiary = useCallback(async () => {
-    if (!memo || !selectedMood || !canUseNetwork) return
-
-    try {
-      const today = new Date().toISOString().split('T')[0]
-      await createDiary({ date: today, data: { moodKey: selectedMood } })
-      await archiveMemo(memo.id)
-      toast.success('成功', '已归档到今日日记')
-      setShowArchiveModal(false)
-      router.back()
-    } catch (error) {
-      handleError(error)
-      toast.error('错误', '归档失败')
-    }
-  }, [memo, selectedMood, canUseNetwork, archiveMemo, createDiary, handleError])
-
   const handleDelete = useCallback(() => {
     if (!memo) return
 
@@ -201,16 +160,24 @@ export default function MemoDetailScreen() {
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Memo详情</Text>
         {!editing ? (
-          <TouchableOpacity
-            onPress={() => {
-              setEditing(true)
-              setContent(memo.content)
-              setTags(memo.tags || [])
-            }}
-            style={styles.headerButton}
-          >
-            <Text style={[styles.editButtonText, { color: theme.primary }]}>编辑</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity
+              onPress={() => {
+                setEditing(true)
+                setContent(memo.content)
+                setTags(memo.tags || [])
+              }}
+              style={styles.headerButton}
+            >
+              <Text style={[styles.editButtonText, { color: theme.primary }]}>编辑</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={styles.headerButton}
+            >
+              <Text style={[styles.editButtonText, { color: theme.primary }]}>删除</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <View style={styles.headerActions}>
             <TouchableOpacity onPress={() => setEditing(false)} style={styles.headerButton}>
@@ -318,72 +285,6 @@ export default function MemoDetailScreen() {
           </View>
         )}
       </View>
-
-      {!editing && (
-        <View style={[styles.footer, { borderTopColor: theme.border }]}>
-          <TouchableOpacity
-            onPress={handleArchive}
-            style={[styles.actionButton, { borderColor: theme.border }]}
-            disabled={!canUseNetwork || isPending}
-          >
-            <Archive size={20} color={theme.text} />
-            <Text style={[styles.actionButtonText, { color: theme.text }]}>
-              {memo.isArchived ? '取消归档' : '归档'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleDelete}
-            style={[styles.deleteButton, { backgroundColor: theme.primary }]}
-            disabled={isPending}
-          >
-            <Trash2 size={20} color="#FFFFFF" />
-            <Text style={styles.deleteButtonText}>删除</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <Modal visible={showArchiveModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>归档到日记</Text>
-            <Text style={[styles.modalLabel, { color: theme.textSecondary }]}>选择心情</Text>
-            <View style={styles.moodSelector}>
-              {MOODS.map(mood => (
-                <TouchableOpacity
-                  key={mood.key}
-                  style={[
-                    styles.moodOption,
-                    selectedMood === mood.key && { backgroundColor: theme.primary + '20' },
-                  ]}
-                  onPress={() => setSelectedMood(mood.key)}
-                >
-                  <Text style={styles.moodEmoji}>{mood.emoji}</Text>
-                  <Text>{mood.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: theme.surface }]}
-                onPress={() => setShowArchiveModal(false)}
-              >
-                <Text style={[styles.modalButtonText, { color: theme.text }]}>取消</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: theme.primary }]}
-                onPress={handleArchiveToDiary}
-                disabled={!selectedMood || isPending}
-              >
-                {isPending ? (
-                  <Loading size="small" />
-                ) : (
-                  <Text style={styles.modalButtonText}>确认归档</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   )
 }
@@ -411,7 +312,6 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 8,
-    minWidth: 40,
     alignItems: 'center',
   },
   headerTitle: {
@@ -462,90 +362,6 @@ const styles = StyleSheet.create({
   metadataText: {
     fontSize: 13,
     marginBottom: 4,
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 16,
-    borderTopWidth: 1,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  actionButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  deleteButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  modalContent: {
-    borderRadius: 8,
-    padding: 20,
-    width: '100%',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  modalLabel: {
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  moodSelector: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-evenly',
-    marginBottom: 20,
-    gap: 'auto',
-  },
-  moodOption: {
-    padding: 8,
-    borderRadius: 8,
-  },
-  moodEmoji: {
-    fontSize: 24,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  modalButtonText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#FFFFFF',
   },
   imageUploadContainer: {
     padding: 16,
