@@ -91,10 +91,12 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   centeredContainer: {
     flex: 1,
     justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   content: {
     paddingTop: 10,

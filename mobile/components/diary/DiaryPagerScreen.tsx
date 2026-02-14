@@ -28,13 +28,19 @@ export function DiaryPagerScreen() {
   })
 
   useEffect(() => {
-    if (diaryQuery.status === 'success' && diaryQuery.data?.date === currentDate) {
-      setCurrentMood(diaryQuery.data.moodKey, diaryQuery.data.moodScore ?? 5)
+    if (diaryQuery.status === 'success') {
+      if (diaryQuery.data?.date === currentDate) {
+        setCurrentMood(diaryQuery.data.moodKey, diaryQuery.data.moodScore ?? 5)
+      } else {
+        setCurrentMood(undefined, 5)
+      }
       return
     }
 
-    setCurrentMood(undefined, 5)
-  }, [currentDate, diaryQuery.status, diaryQuery.dataUpdatedAt, setCurrentMood])
+    if (diaryQuery.status === 'error') {
+      setCurrentMood(undefined, 5)
+    }
+  }, [currentDate, diaryQuery.status, diaryQuery.dataUpdatedAt, diaryQuery.errorUpdatedAt, setCurrentMood])
 
   const todayIndex = PREFETCH_DAYS
   const today = useMemo(() => dayjs().startOf('day'), [])
@@ -221,8 +227,10 @@ const styles = StyleSheet.create({
   },
   pager: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   pageContainer: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
 })

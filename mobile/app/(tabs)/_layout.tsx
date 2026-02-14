@@ -4,12 +4,27 @@
  */
 
 import { Tabs as TabItems } from '@/constants/common'
+import { diariesApi } from '@/lib/api/diaries'
 import { useThemeStore } from '@/stores/theme-store'
+import { useQueryClient } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { Tabs } from 'expo-router'
 import { Book, Calendar, Files, Search, Settings, TestTubes } from 'lucide-react-native'
+import { useEffect } from 'react'
 
 export default function TabLayout() {
   const { theme } = useThemeStore()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    const today = dayjs().format('YYYY-MM-DD')
+
+    queryClient.prefetchQuery({
+      queryKey: ['diary', today],
+      queryFn: () => diariesApi.get(today),
+      staleTime: 5 * 60 * 1000,
+    })
+  }, [queryClient])
 
   return (
     <Tabs
@@ -57,6 +72,7 @@ export default function TabLayout() {
         name="diaries"
         options={{
           title: TabItems.items[2].label,
+          lazy: false,
           sceneStyle: {
             backgroundColor: 'transparent',
           },
