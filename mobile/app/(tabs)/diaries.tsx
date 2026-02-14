@@ -1,11 +1,5 @@
-import { DiaryFeed } from '@/components/diary/DiaryFeed'
-import type { DiaryResponse } from '@/types/api'
-import { router } from 'expo-router'
+import { DiaryPagerScreen } from '@/components/diary/DiaryPagerScreen'
 
 export default function DiariesScreen() {
-  const handleDiaryPress = (diary: DiaryResponse) => {
-    router.push({ pathname: '/diary/[date]', params: { date: diary.date } })
-  }
-
-  return <DiaryFeed onDiaryPress={handleDiaryPress} />
+  return <DiaryPagerScreen />
 }

@@ -2,7 +2,7 @@ import { MOOD_INTENSITY_LEVELS } from '@/constants/common'
 import { useThemeStore } from '@/stores/theme-store'
 import Slider from '@react-native-community/slider'
 import { useCallback } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 
 interface MoodDragBarProps {
   value: number
@@ -30,53 +30,24 @@ export function MoodDragBar({
   )
 
   return (
-    <View style={styles.container}>
-      <View style={styles.labels}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>轻微</Text>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>强烈</Text>
-      </View>
-
-      <Slider
-        style={styles.slider}
-        minimumValue={min}
-        maximumValue={max}
-        value={value}
-        onValueChange={handleValueChange}
-        minimumTrackTintColor={theme.primary}
-        maximumTrackTintColor={theme.border}
-        thumbTintColor={theme.primary}
-        step={1}
-        disabled={disabled}
-      />
-
-      <View style={styles.valueContainer}>
-        <Text style={[styles.valueText, { color: theme.textSecondary }]}>强度: {value}</Text>
-      </View>
-    </View>
+    <Slider
+      style={styles.slider}
+      minimumValue={min}
+      maximumValue={max}
+      value={value}
+      onValueChange={handleValueChange}
+      minimumTrackTintColor={theme.primary}
+      maximumTrackTintColor={theme.border}
+      thumbTintColor={theme.primary}
+      step={1}
+      disabled={disabled}
+    />
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: 8,
-  },
-  labels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
   slider: {
     width: '100%',
     height: 40,
-  },
-  valueContainer: {
-    alignItems: 'center',
-  },
-  valueText: {
-    fontSize: 11,
-    opacity: 0.7,
   },
 })
