@@ -1,31 +1,32 @@
 import { ArchiveDateFilter } from '@/components/archive/ArchiveDateFilter'
+import { ArchiveDialog } from '@/components/archive/ArchiveDialog'
 import { MemoFeed } from '@/components/archive/MemoFeed'
-import { MoodDialog, toast } from '@/components/ui'
-import type { MoodKey } from '@/constants/common'
-import { useConnection } from '@/hooks/use-connection'
-import { useErrorHandler } from '@/hooks/use-error-handler'
-import { useArchiveMemo, useCreateDiary, useDeleteMemo } from '@/lib/query'
+import { toast } from '@/components/ui/Toast'
+import { memosApi } from '@/lib/api/memos'
+import { useDeleteMemo, useMemosByDate } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import { router } from 'expo-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 
 export default function ArchiveScreen() {
   const { theme } = useThemeStore()
-  const { canUseNetwork } = useConnection()
-  const handleError = useErrorHandler()
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(
-    new Date().toISOString().split('T')[0]
-  )
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
   const [isArchiveMode, setIsArchiveMode] = useState(false)
   const [selectedMemoIds, setSelectedMemoIds] = useState<string[]>([])
-  const [showMoodDialog, setShowMoodDialog] = useState(false)
-  const { mutateAsync: createDiary, isPending: isCreatingDiary } = useCreateDiary()
-  const { mutateAsync: archiveMemo, isPending: isArchiving } = useArchiveMemo()
-  const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false)
+  const { mutateAsync: deleteMemo } = useDeleteMemo()
 
-  const isPending = isCreatingDiary || isArchiving || isDeleting
+  const today = new Date().toISOString().split('T')[0]
+  const { data: todayMemos = [] } = useMemosByDate(today, { archived: false })
+  const hasDiaryForToday = todayMemos.length > 0
+
+  const { data: currentMemos = [] } = useMemosByDate(selectedDate || '', { archived: false })
+
+  const selectedMemos = useMemo(() => {
+    return currentMemos.filter(m => selectedMemoIds.includes(m.id))
+  }, [currentMemos, selectedMemoIds])
 
   const handleMemoPress = (memo: MemoWithResources) => {
     if (!isArchiveMode) router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
@@ -42,7 +43,11 @@ export default function ArchiveScreen() {
   const handleArchivePress = () => {
     if (isArchiveMode) {
       if (selectedMemoIds.length > 0) {
-        setShowMoodDialog(true)
+        if (hasDiaryForToday && selectedDate === today) {
+          handleDirectArchive()
+        } else {
+          setShowArchiveDialog(true)
+        }
       } else {
         setIsArchiveMode(false)
         setSelectedMemoIds([])
@@ -50,40 +55,29 @@ export default function ArchiveScreen() {
     } else {
       setIsArchiveMode(true)
       setSelectedMemoIds([])
-      if (!selectedDate) {
-        const today = new Date().toISOString().split('T')[0]
-        setSelectedDate(today)
-      }
     }
   }
 
-  const handleMoodSubmit = async (moodKey: MoodKey, intensity: number) => {
-    if (!canUseNetwork || !selectedDate || isPending) {
-      return
-    }
-
+  const handleDirectArchive = async () => {
     try {
-      await createDiary({
-        date: selectedDate,
-        data: {
-          summary: `${selectedMemoIds.length} 条Memo`,
-          moodKey,
-          moodScore: intensity,
-        },
-      })
-
-      for (const id of selectedMemoIds) {
-        await archiveMemo({ id, diaryDate: selectedDate })
+      for (const memo of selectedMemos) {
+        await memosApi.archive(memo.id, today)
       }
-
-      toast.success('成功', '已归档')
-      setShowMoodDialog(false)
+      toast.success('添加成功')
       setIsArchiveMode(false)
       setSelectedMemoIds([])
     } catch (error) {
-      handleError(error)
-      toast.error('错误', '归档失败')
+      console.error('添加失败:', error)
+      toast.error('添加失败')
     }
+  }
+
+  const shouldShowAddButton = isArchiveMode && selectedMemoIds.length > 0 && hasDiaryForToday && selectedDate === today
+
+  const handleArchiveSuccess = () => {
+    setShowArchiveDialog(false)
+    setIsArchiveMode(false)
+    setSelectedMemoIds([])
   }
 
   return (
@@ -93,6 +87,7 @@ export default function ArchiveScreen() {
         onDateSelect={setSelectedDate}
         isArchiveMode={isArchiveMode}
         hasSelection={selectedMemoIds.length > 0}
+        showAddButton={shouldShowAddButton}
         onArchivePress={handleArchivePress}
       />
       <MemoFeed
@@ -103,13 +98,12 @@ export default function ArchiveScreen() {
         selectedIds={selectedMemoIds}
         onSelectionChange={handleSelectionChange}
       />
-      <MoodDialog
-        visible={showMoodDialog}
-        onClose={() => setShowMoodDialog(false)}
-        onSubmit={handleMoodSubmit}
-        submitting={isPending}
-        title="归档日记"
-        showIntensity={true}
+      <ArchiveDialog
+        visible={showArchiveDialog}
+        selectedMemos={selectedMemos}
+        targetDate={selectedDate || new Date().toISOString().split('T')[0]}
+        onSuccess={handleArchiveSuccess}
+        onCancel={() => setShowArchiveDialog(false)}
       />
     </View>
   )

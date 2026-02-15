@@ -3,6 +3,5 @@ export { Button } from './Button'
 export { DraggableImageGrid } from './DraggableImageGrid'
 export { Input } from './Input'
 export { Loading } from './Loading'
-export { MoodDialog } from './MoodDialog'
 export { toast, ToastContainer, useToastStore } from './Toast'
 

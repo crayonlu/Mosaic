@@ -9,6 +9,7 @@ interface ArchiveDateFilterProps {
   onDateSelect: (date?: string) => void
   isArchiveMode: boolean
   hasSelection: boolean
+  showAddButton?: boolean
   onArchivePress: () => void
 }
 
@@ -17,6 +18,7 @@ export function ArchiveDateFilter({
   onDateSelect,
   isArchiveMode,
   hasSelection,
+  showAddButton,
   onArchivePress,
 }: ArchiveDateFilterProps) {
   const { theme } = useThemeStore()
@@ -77,12 +79,12 @@ export function ArchiveDateFilter({
         <TouchableOpacity
           style={[
             styles.archiveButton,
-            { backgroundColor: hasSelection ? theme.primary : theme.surface },
-            { borderColor: hasSelection ? theme.primary : theme.border },
+            { backgroundColor: hasSelection || showAddButton ? theme.primary : theme.surface },
+            { borderColor: hasSelection || showAddButton ? theme.primary : theme.border },
           ]}
           onPress={onArchivePress}
         >
-          {hasSelection ? (
+          {(hasSelection || showAddButton) ? (
             <Check size={18} color="#FFFFFF" />
           ) : isArchiveMode ? (
             <X size={18} color={theme.textSecondary} />
@@ -90,10 +92,10 @@ export function ArchiveDateFilter({
           <Text
             style={[
               styles.archiveButtonText,
-              { color: hasSelection ? '#FFFFFF' : theme.textSecondary },
+              { color: (hasSelection || showAddButton) ? '#FFFFFF' : theme.textSecondary },
             ]}
           >
-            {hasSelection ? '确定' : isArchiveMode ? '取消' : '归档'}
+            {showAddButton ? '添加' : hasSelection ? '确定' : isArchiveMode ? '取消' : '归档'}
           </Text>
         </TouchableOpacity>
       </View>

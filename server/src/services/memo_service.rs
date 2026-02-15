@@ -228,7 +228,7 @@ impl MemoService {
         } else if let Some(diary_date) = diary_date {
             sqlx::query_as::<_, Memo>(
                 "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
-                 FROM memos WHERE user_id = $1 AND is_deleted = false AND diary_date = $2
+                 FROM memos WHERE user_id = $1 AND is_deleted = false AND diary_date = $2 AND is_archived = true
                  ORDER BY created_at DESC LIMIT $3 OFFSET $4",
             )
             .bind(user_uuid)

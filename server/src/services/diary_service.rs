@@ -25,28 +25,52 @@ impl DiaryService {
         let user_uuid = Uuid::parse_str(user_id)?;
         let now = Utc::now().timestamp_millis();
 
-        let diary = sqlx::query_as::<_, Diary>(
-            "INSERT INTO diaries (date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             ON CONFLICT (date) DO UPDATE SET
-             summary = EXCLUDED.summary,
-             mood_key = EXCLUDED.mood_key,
-             mood_score = EXCLUDED.mood_score,
-             cover_image_id = EXCLUDED.cover_image_id,
-             updated_at = $8
-             RETURNING *",
+        let existing: Option<Diary> = sqlx::query_as(
+            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at
+             FROM diaries WHERE date = $1 AND user_id = $2",
         )
         .bind(req.date)
         .bind(user_uuid)
-        .bind(&req.summary)
-        .bind(&req.mood_key)
-        .bind(req.mood_score)
-        .bind(req.cover_image_id)
-        .bind(0)
-        .bind(now)
-        .bind(now)
-        .fetch_one(&self.pool)
+        .fetch_optional(&self.pool)
         .await?;
+
+        let diary = if let Some(_) = existing {
+            sqlx::query_as::<_, Diary>(
+                "UPDATE diaries SET
+                 summary = $1,
+                 mood_key = $2,
+                 mood_score = $3,
+                 cover_image_id = $4,
+                 updated_at = $5
+                 WHERE date = $6 AND user_id = $7
+                 RETURNING *",
+            )
+            .bind(&req.summary)
+            .bind(&req.mood_key)
+            .bind(req.mood_score)
+            .bind(req.cover_image_id)
+            .bind(now)
+            .bind(req.date)
+            .bind(user_uuid)
+            .fetch_one(&self.pool)
+            .await?
+        } else {
+            sqlx::query_as::<_, Diary>(
+                "INSERT INTO diaries (date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                 RETURNING *",
+            )
+            .bind(req.date)
+            .bind(user_uuid)
+            .bind(&req.summary)
+            .bind(&req.mood_key)
+            .bind(req.mood_score)
+            .bind(req.cover_image_id)
+            .bind(now)
+            .bind(now)
+            .fetch_one(&self.pool)
+            .await?
+        };
 
         Ok(DiaryResponse::from(diary))
     }

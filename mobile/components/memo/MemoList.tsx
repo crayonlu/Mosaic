@@ -25,7 +25,7 @@ export function MemoList({
   const flatListRef = useRef<FlatList>(null)
   const [refreshing, setRefreshing] = useState(false)
 
-  const { data: memosByDate, isLoading: loadingByDate } = useMemosByDate(date || '')
+  const { data: memosByDate, isLoading: loadingByDate } = useMemosByDate(date || '', { archived: undefined })
 
   const {
     data: paginatedData,
@@ -34,7 +34,7 @@ export function MemoList({
     isFetchingNextPage,
     fetchNextPage,
     refetch,
-  } = useInfiniteMemos({ pageSize: 20, archived: false })
+  } = useInfiniteMemos({ pageSize: 20 })
 
   const memos = useMemo(() => {
     if (date) {
