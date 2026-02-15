@@ -1,8 +1,10 @@
 import { MemoCard } from '@/components/memo/MemoCard'
 import { Loading } from '@/components/ui'
+import { resourcesApi } from '@/lib/api/resources'
 import { useDiary, } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
-import { useCallback, useMemo } from 'react'
+import { Image } from 'expo-image'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ScrollView,
   StyleSheet,
@@ -17,10 +19,24 @@ interface DayPageViewProps {
 
 export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
   const { theme } = useThemeStore()
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
   const { data: diary, isLoading } = useDiary(date)
   const archivedMemos = useMemo(() => diary?.memos ?? [], [diary?.memos])
-  console.log(date, diary)
+
+  useEffect(() => {
+    const loadAuthHeaders = async () => {
+      const headers = await resourcesApi.getAuthHeaders()
+      setAuthHeaders(headers)
+    }
+    loadAuthHeaders()
+  }, [])
+
+  const coverImageUrl = useMemo(() => {
+    if (!diary?.coverImageId) return undefined
+    return resourcesApi.getDirectDownloadUrl(diary.coverImageId)
+  }, [diary?.coverImageId])
+
   const handleMemoPress = useCallback(
     (memoId: string) => {
       onMemoPress?.(memoId)
@@ -53,6 +69,16 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
+      {coverImageUrl && (
+        <View style={styles.coverCard}>
+          <Image
+            source={{ uri: coverImageUrl, headers: authHeaders }}
+            style={styles.coverImage}
+            contentFit="cover"
+          />
+        </View>
+      )}
+
       {diary.summary && (
         <View style={[styles.card, { borderColor: theme.border }]}>
           <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>今日总结</Text>
@@ -101,6 +127,14 @@ const styles = StyleSheet.create({
   },
   card: {
     padding: 12,
+  },
+  coverCard: {
+    paddingHorizontal: 12,
+  },
+  coverImage: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: 12,
   },
   sectionLabel: {
     fontSize: 13,

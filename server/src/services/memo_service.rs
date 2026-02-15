@@ -521,12 +521,6 @@ impl MemoService {
         memo_id: Uuid,
         diary_date: Option<chrono::NaiveDate>,
     ) -> Result<(), AppError> {
-        log::info!(
-            "[MemoService] archive_memo start user_id={} memo_id={} diary_date={:?}",
-            user_id,
-            memo_id,
-            diary_date
-        );
         let user_uuid = Uuid::parse_str(user_id)?;
         let now = Utc::now().timestamp_millis();
 
@@ -552,21 +546,8 @@ impl MemoService {
         };
 
         if result.rows_affected() == 0 {
-            log::warn!(
-                "[MemoService] archive_memo no rows affected user_id={} memo_id={} diary_date={:?}",
-                user_id,
-                memo_id,
-                diary_date
-            );
             return Err(AppError::MemoNotFound);
         }
-
-        log::info!(
-            "[MemoService] archive_memo success user_id={} memo_id={} diary_date={:?}",
-            user_id,
-            memo_id,
-            diary_date
-        );
 
         Ok(())
     }

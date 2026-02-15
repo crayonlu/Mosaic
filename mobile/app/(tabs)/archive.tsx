@@ -7,13 +7,14 @@ import { useDeleteMemo, useDiary } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import { useQueryClient } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { router } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 
 export default function ArchiveScreen() {
   const { theme } = useThemeStore()
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(dayjs().format('YYYY-MM-DD'))
   const [isArchiveMode, setIsArchiveMode] = useState(false)
   const [selectedMemoIds, setSelectedMemoIds] = useState<string[]>([])
   const [visibleMemos, setVisibleMemos] = useState<MemoWithResources[]>([])
