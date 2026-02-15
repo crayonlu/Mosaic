@@ -19,11 +19,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
   const { theme } = useThemeStore()
 
   const { data: diary, isLoading } = useDiary(date)
-
-  const archivedMemos = useMemo(() => {
-    if (!diary?.memos?.length) return []
-    return diary.memos.filter((memo) => memo.isArchived)
-  }, [diary?.memos])
+  const archivedMemos = useMemo(() => diary?.memos ?? [], [diary?.memos])
 
   const handleMemoPress = useCallback(
     (memoId: string) => {
