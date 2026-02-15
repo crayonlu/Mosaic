@@ -40,9 +40,15 @@ pub async fn get_diary(
     };
 
     let date_str = path.into_inner();
+    log::info!("[DiaryRoute] GET /diaries/{{date}} user_id={} date={}", user_id, date_str);
     let date = match NaiveDate::parse_from_str(&date_str, "%Y-%m-%d") {
         Ok(d) => d,
         Err(_) => {
+            log::warn!(
+                "[DiaryRoute] invalid date format user_id={} date={}",
+                user_id,
+                date_str
+            );
             return HttpResponse::BadRequest().json(serde_json::json!({
                 "error": "Invalid date format. Use YYYY-MM-DD"
             }))
@@ -50,8 +56,24 @@ pub async fn get_diary(
     };
 
     match diary_service.get_diary_with_memos(&user_id, date).await {
-        Ok(diary) => HttpResponse::Ok().json(diary),
-        Err(e) => HttpResponse::from_error(e),
+        Ok(diary) => {
+            log::info!(
+                "[DiaryRoute] GET /diaries/{{date}} success user_id={} date={} memos={}",
+                user_id,
+                date,
+                diary.memos.len()
+            );
+            HttpResponse::Ok().json(diary)
+        }
+        Err(e) => {
+            log::warn!(
+                "[DiaryRoute] GET /diaries/{{date}} failed user_id={} date={} error={}",
+                user_id,
+                date,
+                e
+            );
+            HttpResponse::from_error(e)
+        }
     }
 }
 

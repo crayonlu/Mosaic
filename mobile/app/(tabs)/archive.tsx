@@ -3,9 +3,10 @@ import { ArchiveDialog } from '@/components/archive/ArchiveDialog'
 import { MemoFeed } from '@/components/archive/MemoFeed'
 import { toast } from '@/components/ui/Toast'
 import { memosApi } from '@/lib/api/memos'
-import { useDeleteMemo, useMemosByDate } from '@/lib/query'
+import { useDeleteMemo, useDiary } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
+import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
@@ -15,18 +16,18 @@ export default function ArchiveScreen() {
   const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
   const [isArchiveMode, setIsArchiveMode] = useState(false)
   const [selectedMemoIds, setSelectedMemoIds] = useState<string[]>([])
+  const [visibleMemos, setVisibleMemos] = useState<MemoWithResources[]>([])
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
+  const queryClient = useQueryClient()
   const { mutateAsync: deleteMemo } = useDeleteMemo()
 
   const today = new Date().toISOString().split('T')[0]
-  const { data: todayMemos = [] } = useMemosByDate(today, { archived: false })
-  const hasDiaryForToday = todayMemos.length > 0
-
-  const { data: currentMemos = [] } = useMemosByDate(selectedDate || '', { archived: false })
+  const { data: todayDiary } = useDiary(today)
+  const hasDiaryForToday = !!todayDiary
 
   const selectedMemos = useMemo(() => {
-    return currentMemos.filter(m => selectedMemoIds.includes(m.id))
-  }, [currentMemos, selectedMemoIds])
+    return visibleMemos.filter(m => selectedMemoIds.includes(m.id))
+  }, [visibleMemos, selectedMemoIds])
 
   const handleMemoPress = (memo: MemoWithResources) => {
     if (!isArchiveMode) router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
@@ -63,6 +64,11 @@ export default function ArchiveScreen() {
       for (const memo of selectedMemos) {
         await memosApi.archive(memo.id, today)
       }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['memos'] }),
+        queryClient.invalidateQueries({ queryKey: ['diaries'] }),
+        queryClient.invalidateQueries({ queryKey: ['diary', today] }),
+      ])
       toast.success('添加成功')
       setIsArchiveMode(false)
       setSelectedMemoIds([])
@@ -97,6 +103,7 @@ export default function ArchiveScreen() {
         isSelectionMode={isArchiveMode}
         selectedIds={selectedMemoIds}
         onSelectionChange={handleSelectionChange}
+        onMemosChange={setVisibleMemos}
       />
       <ArchiveDialog
         visible={showArchiveDialog}

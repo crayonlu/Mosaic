@@ -1,10 +1,10 @@
 import type {
-  CreateMemoRequest,
-  ListMemosQuery,
-  MemoWithResourcesResponse,
-  PaginatedResponse,
-  SearchMemosQuery,
-  UpdateMemoRequest,
+    CreateMemoRequest,
+    ListMemosQuery,
+    MemoWithResourcesResponse,
+    PaginatedResponse,
+    SearchMemosQuery,
+    UpdateMemoRequest,
 } from '@/types/api'
 import { apiClient } from './client'
 
