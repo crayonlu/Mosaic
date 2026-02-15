@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     flexDirection: 'column',
     gap: 8,
   },
