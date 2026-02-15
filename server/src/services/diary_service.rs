@@ -176,11 +176,6 @@ impl DiaryService {
         user_id: &str,
         date: NaiveDate,
     ) -> Result<crate::models::DiaryWithMemosResponse, AppError> {
-        log::info!(
-            "[DiaryService] get_diary_with_memos start user_id={} date={}",
-            user_id,
-            date
-        );
         let user_uuid = Uuid::parse_str(user_id)?;
 
         let diary = sqlx::query_as::<_, Diary>(
@@ -193,14 +188,6 @@ impl DiaryService {
         .await?
         .ok_or(AppError::DiaryNotFound)?;
 
-        log::debug!(
-            "[DiaryService] get_diary_with_memos diary found user_id={} date={} mood_key={} mood_score={}",
-            user_id,
-            diary.date,
-            diary.mood_key,
-            diary.mood_score
-        );
-
         let memos = sqlx::query_as::<_, crate::models::Memo>(
             "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
              FROM memos WHERE user_id = $1 AND diary_date = $2 AND is_deleted = false AND is_archived = true
@@ -211,35 +198,11 @@ impl DiaryService {
         .fetch_all(&self.pool)
         .await?;
 
-        log::info!(
-            "[DiaryService] get_diary_with_memos memos fetched user_id={} date={} count={}",
-            user_id,
-            date,
-            memos.len()
-        );
-
         let mut memo_responses: Vec<MemoWithResources> = Vec::new();
         for memo in memos {
-            log::debug!(
-                "[DiaryService] get_diary_with_memos loading resources memo_id={} created_at={}",
-                memo.id,
-                memo.created_at
-            );
             let resources = self.get_memo_resources(memo.id).await?;
-            log::debug!(
-                "[DiaryService] get_diary_with_memos resources loaded memo_id={} count={}",
-                memo.id,
-                resources.len()
-            );
             memo_responses.push(MemoWithResources::from_memo(memo, resources));
         }
-
-        log::info!(
-            "[DiaryService] get_diary_with_memos success user_id={} date={} memo_response_count={}",
-            user_id,
-            date,
-            memo_responses.len()
-        );
 
         Ok(crate::models::DiaryWithMemosResponse {
             date: diary.date,
@@ -254,10 +217,6 @@ impl DiaryService {
     }
 
     async fn get_memo_resources(&self, memo_id: Uuid) -> Result<Vec<ResourceResponse>, AppError> {
-        log::debug!(
-            "[DiaryService] get_memo_resources start memo_id={}",
-            memo_id
-        );
         let resources = sqlx::query_as::<_, Resource>(
             "SELECT id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, created_at
              FROM resources WHERE memo_id = $1 ORDER BY created_at ASC",
@@ -265,12 +224,6 @@ impl DiaryService {
         .bind(memo_id)
         .fetch_all(&self.pool)
         .await?;
-
-        log::debug!(
-            "[DiaryService] get_memo_resources fetched memo_id={} count={}",
-            memo_id,
-            resources.len()
-        );
 
         Ok(resources
             .into_iter()

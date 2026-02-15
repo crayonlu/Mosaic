@@ -14,10 +14,11 @@ interface MemoCardProps {
   onPress: () => void
   onDelete?: (id: string) => void
   showActions?: boolean
+  showTimestamp?: boolean
   isSelected?: boolean
 }
 
-export function MemoCard({ memo, onPress, onDelete, showActions = true, isSelected = false }: MemoCardProps) {
+export function MemoCard({ memo, onPress, onDelete, showActions = true, showTimestamp = true, isSelected = false }: MemoCardProps) {
   const { theme } = useThemeStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
@@ -44,7 +45,7 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true, isSelect
       style={({ pressed }) => [
         styles.container,
         {
-          backgroundColor: isSelected ? theme.surface : (pressed ? `${theme.surface}80` : theme.background),
+          backgroundColor: isSelected ? theme.surface : (pressed ? `${theme.surface}80` : 'transparent'),
           borderColor: theme.border,
         },
       ]}
@@ -70,7 +71,7 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true, isSelect
         )}
       </View>
 
-      {(memo.tags.length > 0 || showActions) && (
+      {(memo.tags.length > 0 || showActions || showTimestamp) && (
         <View style={[styles.metadataContainer, { borderColor: theme.border }]}>
           {memo.tags.length > 0 && (
             <View style={styles.tagsRow}>
@@ -86,7 +87,9 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true, isSelect
           )}
           
           <View style={[styles.rightSection, memo.tags.length === 0 ? { width: '100%' } : {}]}>
-            <Text style={[styles.timestamp, { color: theme.textSecondary }]}>{formattedTime}</Text>
+            {showTimestamp && (
+              <Text style={[styles.timestamp, { color: theme.textSecondary }]}>{formattedTime}</Text>
+            )}
             {showActions && (
               <View style={styles.actionsContainer}>
                 {onDelete && (
