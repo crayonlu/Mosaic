@@ -8,6 +8,7 @@ import { memosApi } from '@/lib/api/memos'
 import { useThemeStore } from '@/stores/theme-store'
 import type { DiaryResponse } from '@/types'
 import type { MemoWithResources } from '@/types/memo'
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import {
   Animated,
@@ -41,6 +42,7 @@ export function ArchiveDialog({
   onCancel,
 }: ArchiveDialogProps) {
   const { theme } = useThemeStore()
+  const queryClient = useQueryClient()
   const [summary, setSummary] = useState(existingDiary?.summary || '')
   const [moodKey, setMoodKey] = useState<MoodKey | undefined>(
     existingDiary?.moodKey as MoodKey
@@ -69,6 +71,12 @@ export function ArchiveDialog({
       for (const memo of selectedMemos) {
         await memosApi.archive(memo.id, targetDate)
       }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['memos'] }),
+        queryClient.invalidateQueries({ queryKey: ['diaries'] }),
+        queryClient.invalidateQueries({ queryKey: ['diary', targetDate] }),
+      ])
 
       toast.success('归档成功')
       onSuccess()

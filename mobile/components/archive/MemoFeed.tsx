@@ -3,14 +3,14 @@ import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import { FileX } from 'lucide-react-native'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  ActivityIndicator,
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    View
 } from 'react-native'
 import { MemoCard } from '../memo/MemoCard'
 
@@ -22,6 +22,7 @@ interface MemoFeedProps {
   isSelectionMode?: boolean
   selectedIds?: string[]
   onSelectionChange?: (id: string) => void
+  onMemosChange?: (memos: MemoWithResources[]) => void
 }
 
 export function MemoFeed({
@@ -31,6 +32,7 @@ export function MemoFeed({
   isSelectionMode = false,
   selectedIds = [],
   onSelectionChange,
+  onMemosChange,
 }: MemoFeedProps) {
   const { theme } = useThemeStore()
   const [refreshing, setRefreshing] = useState(false)
@@ -59,6 +61,10 @@ export function MemoFeed({
 
   const isLoading = targetDate ? loadingByDate : loadingList
   const hasMore = targetDate ? false : hasNextPage
+
+  useEffect(() => {
+    onMemosChange?.(memos)
+  }, [memos, onMemosChange])
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
