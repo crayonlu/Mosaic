@@ -22,6 +22,7 @@ export type {
   AuthTokens,
   CreateDiaryRequest,
   CreateMemoRequest,
+  DiaryResponse,
   HealthResponse,
   HeatMapData,
   ListDiariesQuery,
@@ -42,7 +43,7 @@ export type {
   TimelineData,
   TrendsData,
   UpdateDiaryRequest,
-  UpdateMemoRequest,
+  UpdateMemoRequest
 } from './api'
 
 // Common Types

@@ -40,13 +40,14 @@ export default function HomeScreen() {
   }
 
   const handleSubmit = async (content: string, tags: string[], resources: string[]) => {
-    if (!content || content.trim().length === 0 || !canUseNetwork || isPending) {
+    const trimmedContent = content.trim()
+    if ((!trimmedContent && resources.length === 0) || !canUseNetwork || isPending) {
       return
     }
 
     try {
       await createMemo({
-        content: content.trim(),
+        content: trimmedContent,
         tags,
         resourceIds: resources,
       })
