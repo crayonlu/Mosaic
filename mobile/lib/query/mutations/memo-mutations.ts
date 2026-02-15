@@ -45,9 +45,13 @@ export function useArchiveMemo() {
   return useMutation({
     mutationFn: ({ id, diaryDate }: { id: string; diaryDate?: string }) =>
       memosApi.archive(id, diaryDate),
-    onSuccess: (_, { id }) => {
+    onSuccess: (_, { id, diaryDate }) => {
       queryClient.invalidateQueries({ queryKey: ['memo', id] })
       queryClient.invalidateQueries({ queryKey: ['memos'] })
+      queryClient.invalidateQueries({ queryKey: ['diaries'] })
+      if (diaryDate) {
+        queryClient.invalidateQueries({ queryKey: ['diary', diaryDate] })
+      }
     },
   })
 }
@@ -60,6 +64,8 @@ export function useUnarchiveMemo() {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['memo', id] })
       queryClient.invalidateQueries({ queryKey: ['memos'] })
+      queryClient.invalidateQueries({ queryKey: ['diaries'] })
+      queryClient.invalidateQueries({ queryKey: ['diary'] })
     },
   })
 }
