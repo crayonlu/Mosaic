@@ -1,3 +1,4 @@
+import { apiClient } from './client'
 import type {
   ChangePasswordRequest,
   LoginRequest,
@@ -6,8 +7,7 @@ import type {
   UpdateAvatarRequest,
   UpdateUserRequest,
   UserResponse,
-} from '@/types/api'
-import { apiClient } from './client'
+} from './types'
 
 export const authApi = {
   login(data: LoginRequest): Promise<LoginResponse> {
@@ -32,8 +32,8 @@ export const authApi = {
     return apiClient.post<void>('/api/auth/change-password', data)
   },
 
-  updateProfile(data: UpdateUserRequest): Promise<UserResponse> {
-    return apiClient.put<UserResponse>('/api/auth/update', data)
+  updateUser(data: UpdateUserRequest): Promise<UserResponse> {
+    return apiClient.put<UserResponse>('/api/auth/update-user', data)
   },
 
   updateAvatar(data: UpdateAvatarRequest): Promise<UserResponse> {

@@ -1,6 +1,6 @@
-import { diariesApi } from '@/lib/api/diaries'
 import { MoodKey } from '@/types'
 import type { DiaryWithMemosResponse } from '@/types/api'
+import { diariesApi } from '@mosaic/api'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -101,7 +101,7 @@ export function useDiaryPager(options: UseDiaryPagerOptions = {}): UseDiaryPager
 
   return {
     currentDate,
-    currentMood: diaryQuery.data?.moodKey ?? undefined,
+    currentMood: (diaryQuery.data?.moodKey as MoodKey | undefined) ?? undefined,
     currentMoodIntensity: diaryQuery.data?.moodScore ?? 5,
     setCurrentDate: handleSetCurrentDate,
     goToPreviousDay,
@@ -111,7 +111,7 @@ export function useDiaryPager(options: UseDiaryPagerOptions = {}): UseDiaryPager
     goToPreviousYear,
     goToNextYear,
     goToToday,
-    diaryQuery,
+    diaryQuery: diaryQuery as ReturnType<typeof useQuery<DiaryWithMemosResponse>>,
     prefetchDates,
   }
 }

@@ -1,11 +1,11 @@
-import { memosApi } from '@/lib/api/memos'
 import type { ListMemosQuery } from '@/types/api'
+import { memosApi } from '@mosaic/api'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 
 export function useMemos(query: ListMemosQuery = {}) {
   return useQuery({
     queryKey: ['memos', query],
-    queryFn: () => memosApi.list(query),
+    queryFn: () => memosApi.list(query as any),
   })
 }
 
@@ -34,7 +34,7 @@ export function useMemo(id: string) {
 export function useMemosByDate(date: string, query: ListMemosQuery = {}) {
   return useQuery({
     queryKey: ['memos', 'date', date, query],
-    queryFn: () => memosApi.getByDate(date, query),
+    queryFn: () => memosApi.getByDate(date, query as any),
     enabled: !!date,
   })
 }

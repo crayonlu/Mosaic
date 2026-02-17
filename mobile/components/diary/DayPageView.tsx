@@ -1,15 +1,16 @@
 import { MemoCard } from '@/components/memo/MemoCard'
 import { Loading } from '@/components/ui'
-import { resourcesApi } from '@/lib/api/resources'
 import { useDiary, } from '@/lib/query'
+import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { useThemeStore } from '@/stores/theme-store'
+import { resourcesApi } from '@mosaic/api'
 import { Image } from 'expo-image'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native'
 
 interface DayPageViewProps {
@@ -26,7 +27,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
 
   useEffect(() => {
     const loadAuthHeaders = async () => {
-      const headers = await resourcesApi.getAuthHeaders()
+      const headers = await getBearerAuthHeaders()
       setAuthHeaders(headers)
     }
     loadAuthHeaders()
@@ -34,7 +35,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
 
   const coverImageUrl = useMemo(() => {
     if (!diary?.coverImageId) return undefined
-    return resourcesApi.getDirectDownloadUrl(diary.coverImageId)
+    return resourcesApi.getDownloadUrl(diary.coverImageId)
   }, [diary?.coverImageId])
 
   const handleMemoPress = useCallback(

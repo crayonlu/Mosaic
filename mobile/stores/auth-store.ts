@@ -1,7 +1,7 @@
-import { apiClient, authApi } from '@/lib/api'
 import { tokenStorage } from '@/lib/services/token-storage'
 import type { ApiError } from '@/types/api'
 import type { User } from '@/types/user'
+import { apiClient, authApi } from '@mosaic/api'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
@@ -34,6 +34,14 @@ const initialState: AuthState = {
   serverUrl: null,
   error: null,
 }
+
+apiClient.setTokenStorage({
+  getAccessToken: () => tokenStorage.getAccessToken(),
+  getRefreshToken: () => tokenStorage.getRefreshToken(),
+  setTokens: (accessToken: string, refreshToken: string) =>
+    tokenStorage.setTokens(accessToken, refreshToken),
+  clearTokens: () => tokenStorage.clearTokens(),
+})
 
 export const useAuthStore = create<AuthStore>()(
   persist(

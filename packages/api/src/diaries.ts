@@ -1,3 +1,4 @@
+import { apiClient } from './client'
 import type {
   CreateDiaryRequest,
   DiaryResponse,
@@ -7,12 +8,11 @@ import type {
   UpdateDiaryMoodRequest,
   UpdateDiaryRequest,
   UpdateDiarySummaryRequest,
-} from '@/types/api'
-import { apiClient } from './client'
+} from './types'
 
 export const diariesApi = {
   list(query?: ListDiariesQuery): Promise<PaginatedResponse<DiaryResponse>> {
-    return apiClient.get<PaginatedResponse<DiaryResponse>>('/api/diaries', query as any)
+    return apiClient.get<PaginatedResponse<DiaryResponse>>('/api/diaries', query)
   },
 
   get(date: string): Promise<DiaryWithMemosResponse> {

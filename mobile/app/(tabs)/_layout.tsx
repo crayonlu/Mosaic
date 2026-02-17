@@ -4,8 +4,8 @@
  */
 
 import { Tabs as TabItems } from '@/constants/common'
-import { diariesApi } from '@/lib/api/diaries'
 import { useThemeStore } from '@/stores/theme-store'
+import { diariesApi } from '@mosaic/api'
 import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { Tabs } from 'expo-router'

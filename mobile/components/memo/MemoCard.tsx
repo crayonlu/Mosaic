@@ -1,10 +1,11 @@
 import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
 import { Badge, DraggableImageGrid } from '@/components/ui'
-import { resourcesApi } from '@/lib/api/resources'
+import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { normalizeContent } from '@/lib/utils/content'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
+import { resourcesApi } from '@mosaic/api'
 import { Trash2 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
@@ -24,7 +25,7 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true, showTime
 
   useEffect(() => {
     const loadAuthHeaders = async () => {
-      const headers = await resourcesApi.getAuthHeaders()
+      const headers = await getBearerAuthHeaders()
       setAuthHeaders(headers)
     }
     loadAuthHeaders()
@@ -33,7 +34,7 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true, showTime
   const displayContent = normalizeContent(memo.content || '')
   const formattedTime = stringUtils.formatRelativeTime(memo.createdAt)
   const imageResources = memo.resources.filter(r => r.resourceType === 'image')
-  const imageUrls = imageResources.map(r => resourcesApi.getDirectDownloadUrl(r.id))
+  const imageUrls = imageResources.map(r => resourcesApi.getDownloadUrl(r.id))
 
   const handleDelete = () => {
     onDelete?.(memo.id)

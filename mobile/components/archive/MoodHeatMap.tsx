@@ -1,6 +1,6 @@
 import { Loading } from '@/components/ui'
-import { statsApi } from '@/lib/api'
 import { useThemeStore } from '@/stores/theme-store'
+import { statsApi } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
