@@ -1,15 +1,16 @@
-export type ResourceType = 'image' | 'video'
+import type {
+    ConfirmUploadRequest,
+    CreateResourceRequest,
+    PresignedUploadResponse,
+    PresignedUrlResponse,
+    Resource,
+} from '@mosaic/api'
 
-export interface Resource {
-  id: string
-  memoId: string
-  filename: string
-  resourceType: ResourceType
-  mimeType: string
-  fileSize: number
-  storageType: string
-  url: string
-  createdAt: number
+export type ResourceType = Resource['resourceType']
+
+export type {
+    Resource, ConfirmUploadRequest as ServerConfirmUploadRequest, CreateResourceRequest as ServerCreateResourceRequest,
+    PresignedUploadResponse as ServerPresignedUploadResponse, PresignedUrlResponse as ServerPresignedUrlResponse, Resource as ServerResourceResponse
 }
 
 export interface ResourcePreview {
@@ -17,37 +18,4 @@ export interface ResourcePreview {
   previewUrl: string
   type: ResourceType
   size?: number
-}
-
-export interface ServerResourceResponse {
-  id: string
-  memoId: string
-  filename: string
-  resourceType: string
-  mimeType: string
-  fileSize: number
-  storageType: string
-  url: string
-  createdAt: number
-}
-
-export interface ServerCreateResourceRequest {
-  memoId: string
-  filename: string
-  mimeType: string
-  fileSize: number
-}
-
-export interface ServerPresignedUploadResponse {
-  uploadUrl: string
-  resourceId: string
-  storagePath: string
-}
-
-export interface ServerConfirmUploadRequest {
-  resourceId: string
-}
-
-export interface ServerPresignedUrlResponse {
-  url: string
 }

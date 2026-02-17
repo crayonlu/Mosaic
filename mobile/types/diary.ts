@@ -1,5 +1,5 @@
+import type { MoodKey } from '@mosaic/api'
 import type { MemoWithResources } from './memo'
-import type { MoodKey } from '@/lib/utils/mood'
 
 export interface Diary {
   date: string

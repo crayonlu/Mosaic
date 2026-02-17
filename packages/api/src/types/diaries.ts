@@ -1,13 +1,13 @@
 import type { MemoWithResources } from './memos'
 
 export type MoodKey =
-  | 'happy'
+  | 'joy'
   | 'calm'
   | 'neutral'
-  | 'sad'
-  | 'anxious'
-  | 'angry'
-  | 'excited'
+  | 'sadness'
+  | 'anxiety'
+  | 'anger'
+  | 'focus'
   | 'tired'
 
 export interface Diary {
