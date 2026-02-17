@@ -13,32 +13,20 @@ export type MoodKey = (typeof MOOD_KEYS)[number]
 
 export interface MoodConfig {
   key: MoodKey
-  emoji: string
   label: string
   color: string
 }
 
 export const MOODS: MoodConfig[] = [
-  { key: 'joy', emoji: '😊', label: '愉悦', color: '#FFD93D' },
-  { key: 'anger', emoji: '😠', label: '愤怒', color: '#FF6B6B' },
-  { key: 'sadness', emoji: '😢', label: '悲伤', color: '#4ECDC4' },
-  { key: 'calm', emoji: '😌', label: '平静', color: '#95E1D3' },
-  { key: 'anxiety', emoji: '😰', label: '焦虑', color: '#FFA07A' },
-  { key: 'focus', emoji: '🎯', label: '专注', color: '#6C5CE7' },
-  { key: 'tired', emoji: '😴', label: '疲惫', color: '#A8A8A8' },
-  { key: 'neutral', emoji: '😐', label: '中性', color: '#B8B8B8' },
+  { key: 'joy', label: '愉悦', color: '#FFD93D' },
+  { key: 'anger', label: '愤怒', color: '#FF6B6B' },
+  { key: 'sadness', label: '悲伤', color: '#4ECDC4' },
+  { key: 'calm', label: '平静', color: '#95E1D3' },
+  { key: 'anxiety', label: '焦虑', color: '#FFA07A' },
+  { key: 'focus', label: '专注', color: '#6C5CE7' },
+  { key: 'tired', label: '疲惫', color: '#A8A8A8' },
+  { key: 'neutral', label: '中性', color: '#B8B8B8' },
 ] as const
-
-export const MOOD_EMOJI_MAP: Record<MoodKey, string> = {
-  joy: '😊',
-  anger: '😠',
-  sadness: '😢',
-  calm: '😌',
-  anxiety: '😰',
-  focus: '🎯',
-  tired: '😴',
-  neutral: '😐',
-}
 
 export const MOOD_LABEL_MAP: Record<MoodKey, string> = {
   joy: '愉悦',

@@ -102,7 +102,6 @@ export function ArchiveDialog({
                   {MOODS.map(mood => (
                     <SelectItem key={mood.key} value={mood.key}>
                       <div className="flex items-center gap-2">
-                        <span>{mood.emoji}</span>
                         <span>{mood.label}</span>
                       </div>
                     </SelectItem>

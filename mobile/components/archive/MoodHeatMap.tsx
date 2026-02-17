@@ -38,11 +38,6 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
     focus: '#6C5CE7',
     tired: '#A8A8A8',
     neutral: theme.border,
-    happy: '#FFD93D',
-    sad: '#4ECDC4',
-    angry: '#FF6B6B',
-    anxious: '#FFA07A',
-    excited: '#FFA500',
   }
 
   const moodLegend = useMemo(

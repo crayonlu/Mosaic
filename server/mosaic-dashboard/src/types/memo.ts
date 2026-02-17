@@ -1,31 +1,12 @@
-import type { Resource } from '@/types/api'
+import type {
+  CreateMemoRequest,
+  Memo,
+  MemoWithResources,
+  SearchMemosQuery,
+  UpdateMemoRequest,
+} from '@mosaic/api'
 
-export interface Memo {
-  id: string
-  content: string
-  tags: string[]
-  isArchived: boolean
-  diaryDate?: string
-  createdAt: number
-  updatedAt: number
-}
-
-export interface MemoWithResources {
-  id: string
-  content: string
-  tags: string[]
-  isArchived: boolean
-  diaryDate?: string
-  createdAt: number
-  updatedAt: number
-  resources: Resource[]
-}
-
-export interface CreateMemoRequest {
-  content: string
-  tags?: string[]
-  diaryDate?: string
-}
+export type { CreateMemoRequest, Memo, MemoWithResources, UpdateMemoRequest }
 
 export interface ListMemosRequest {
   page?: number
@@ -35,20 +16,4 @@ export interface ListMemosRequest {
   diaryDate?: string
 }
 
-export interface UpdateMemoRequest {
-  id: string
-  content?: string
-  tags?: string[]
-  isArchived?: boolean
-  diaryDate?: string
-}
-
-export interface SearchMemosRequest {
-  query?: string
-  tags?: string[]
-  startDate?: string
-  endDate?: string
-  isArchived?: boolean
-  page?: number
-  pageSize?: number
-}
+export type SearchMemosRequest = Partial<SearchMemosQuery>
