@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import { toast } from '@/hooks/use-toast'
-import type { Diary, PaginatedResponse } from '@/types'
-import { diaryCommands } from '@/utils/callRust'
+import type { Diary } from '@/types'
 import { getMoodEmoji, getMoodLabel } from '@/utils/mood'
+import { diariesApi } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { BookOpen, Calendar } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -27,7 +27,7 @@ export default function DiaryPage() {
   const fetchDiaries = async (pageNum: number = page) => {
     try {
       setLoading(true)
-      const response: PaginatedResponse<Diary> = await diaryCommands.listDiaries({
+      const response = await diariesApi.list({
         page: pageNum,
         pageSize,
         startDate,

@@ -1,5 +1,5 @@
+import { resolveApiUrl } from '@/lib/shared-api'
 import { useEffect, useRef, useState } from 'react'
-import { assetCommands } from './callRust'
 
 const avatarUrlCache = new Map<string, string>()
 
@@ -8,7 +8,7 @@ export async function getAvatarUrl(
   avatarUrl?: string | null
 ): Promise<string | undefined> {
   if (avatarUrl) {
-    return avatarUrl
+    return resolveApiUrl(avatarUrl)
   }
 
   if (!avatarPath) {
@@ -20,25 +20,11 @@ export async function getAvatarUrl(
   }
 
   try {
-    const fileData = await assetCommands.readImageFile(avatarPath)
-    const uint8Array = new Uint8Array(fileData)
-
-    const ext = avatarPath.split('.').pop()?.toLowerCase()
-    let mimeType = 'image/webp'
-    if (ext === 'jpg' || ext === 'jpeg') {
-      mimeType = 'image/jpeg'
-    } else if (ext === 'png') {
-      mimeType = 'image/png'
-    } else if (ext === 'webp') {
-      mimeType = 'image/webp'
+    const resolvedUrl = resolveApiUrl(avatarPath)
+    if (resolvedUrl) {
+      avatarUrlCache.set(avatarPath, resolvedUrl)
     }
-
-    const blob = new Blob([uint8Array], { type: mimeType })
-    const blobUrl = URL.createObjectURL(blob)
-
-    avatarUrlCache.set(avatarPath, blobUrl)
-
-    return blobUrl
+    return resolvedUrl
   } catch (error) {
     console.error('Failed to load avatar:', error)
     return undefined
@@ -67,7 +53,7 @@ export function useAvatarUrl(
     previousUrlRef.current = avatarUrl
 
     if (avatarUrl) {
-      setUrl(avatarUrl)
+      setUrl(resolveApiUrl(avatarUrl))
       return
     }
 

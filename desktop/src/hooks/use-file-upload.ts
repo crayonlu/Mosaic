@@ -49,9 +49,13 @@ export function useFileUpload() {
           const arrayBuffer = await file.arrayBuffer()
           const uint8Array = Array.from(new Uint8Array(arrayBuffer))
 
-          const tempFilePath = await assetCommands.saveTempFile(file.name, uint8Array)
-
-          const uploadedResources = await assetCommands.uploadFiles([tempFilePath])
+          const uploadedResources = await assetCommands.uploadFiles([
+            {
+              name: file.name,
+              data: uint8Array,
+              mime_type: file.type || 'application/octet-stream',
+            },
+          ])
 
           if (uploadedResources.length > 0) {
             const presignedUrl = await assetCommands.getPresignedImageUrl(uploadedResources[0].id)

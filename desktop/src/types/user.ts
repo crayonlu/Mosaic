@@ -1,12 +1,8 @@
-export interface User {
-  id: string
-  username: string
-  avatarUrl?: string
-  createdAt: number
-  updatedAt: number
-}
+// Re-export types from @mosaic/api shared package
+export type {
+  AuthTokens, ChangePasswordRequest, LoginRequest,
+  LoginResponse, RefreshTokenRequest,
+  RefreshTokenResponse, UpdateAvatarRequest, UpdateUserRequest, User,
+  UserResponse
+} from '@mosaic/api';
 
-export interface UpdateUserRequest {
-  username?: string
-  avatarUrl?: string
-}

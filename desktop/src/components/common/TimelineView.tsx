@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Calendar, FileText } from 'lucide-react'
-import { statsCommands } from '@/utils/callRust'
+import type { StatsQuery, TimelineData } from '@/types/stats'
 import { getMoodEmoji } from '@/utils/mood'
-import type { TimelineData, TimelineQuery } from '@/types/stats'
+import { statsApi } from '@mosaic/api'
+import { Calendar, FileText } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface TimelineViewProps {
   startDate: string
@@ -21,8 +21,8 @@ export function TimelineView({ startDate, endDate }: TimelineViewProps) {
   const loadTimelineData = async () => {
     try {
       setIsLoading(true)
-      const query: TimelineQuery = { startDate, endDate }
-      const timelineData = await statsCommands.getTimeline(query)
+      const query: StatsQuery = { start_date: startDate, end_date: endDate }
+      const timelineData = await statsApi.getTimeline(query)
       setData(timelineData)
     } catch (error) {
       console.error('Failed to load timeline data:', error)

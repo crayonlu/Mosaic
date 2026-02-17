@@ -1,6 +1,8 @@
-use crate::api::{ApiClient, UserApi};
+use crate::api::user_api::UpdateUserRequest;
+use crate::api::UserApi;
 use crate::config::AppConfig;
 use crate::models::User;
+use serde::Deserialize;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use tauri::State;
@@ -34,26 +36,10 @@ pub async fn get_or_create_default_user(state: State<'_, UserAppState>) -> Resul
 #[tauri::command]
 pub async fn update_user(
     state: State<'_, UserAppState>,
-    username: Option<String>,
-    avatar_url: Option<String>,
+    req: UpdateUserRequest,
 ) -> Result<User, String> {
-    let (server_url, api_token) = {
-        let config_guard = state.config.read().await;
-        (
-            config_guard.server.url.clone(),
-            config_guard.server.api_token.clone().unwrap_or_default(),
-        )
-    };
-
-    let user_api = UserApi::new(ApiClient::new(server_url).with_token(api_token));
-
-    let update_fields = crate::api::UpdateUserRequest {
-        username,
-        avatar_url,
-    };
-
-    user_api
-        .update(update_fields)
+    state.user_api
+        .update(req)
         .await
         .map_err(|e| e.to_string())
 }
@@ -61,23 +47,18 @@ pub async fn update_user(
 #[tauri::command]
 pub async fn upload_avatar(
     state: State<'_, UserAppState>,
-    source_path: String,
-    data: Vec<u8>,
-    filename: String,
-    mime_type: String,
+    file: UploadAvatarFile,
 ) -> Result<User, String> {
-    let (server_url, api_token) = {
-        let config_guard = state.config.read().await;
-        (
-            config_guard.server.url.clone(),
-            config_guard.server.api_token.clone().unwrap_or_default(),
-        )
-    };
-
-    let user_api = UserApi::new(ApiClient::new(server_url).with_token(api_token));
-
-    user_api
-        .upload_avatar(source_path, data, filename, mime_type)
+    state.user_api
+        .upload_avatar(file.name, file.mime_type, file.data)
         .await
         .map_err(|e| e.to_string())
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadAvatarFile {
+    pub name: String,
+    pub data: Vec<u8>,
+    pub mime_type: String,
 }

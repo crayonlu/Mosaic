@@ -1,3 +1,4 @@
+import { AuthImage } from '@/components/common/AuthImage'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Image as ImageIcon, X } from 'lucide-react'
@@ -31,7 +32,7 @@ export function ResourcePreview({
     return (
       <>
         <div className="group relative rounded-lg border bg-card overflow-hidden">
-          <img
+          <AuthImage
             src={previewUrl}
             alt={filename}
             className="w-full h-18 object-cover cursor-pointer transition-opacity hover:opacity-90"
@@ -57,7 +58,7 @@ export function ResourcePreview({
         </div>
         <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
           <DialogContent className="max-w-4xl p-0">
-            <img
+            <AuthImage
               src={previewUrl}
               alt={filename}
               className="w-full h-auto max-h-[80vh] object-contain"

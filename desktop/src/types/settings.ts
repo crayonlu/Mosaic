@@ -1,3 +1,4 @@
+// Desktop-specific settings types (not in shared package)
 export interface Setting {
   id: string
   key: string
@@ -28,18 +29,14 @@ export interface ShortcutConfig {
   closeShortcut: string
 }
 
+// Desktop server config with AI settings (not in shared package)
 export interface ServerConfig {
   url: string
   username: string
   password: string
   apiToken?: string
   refreshToken?: string
-  // AI Configuration
-  aiProvider: string
-  aiBaseUrl: string
-  aiApiKey: string
-  aiModel?: string
-  aiTemperature?: number
-  aiMaxTokens?: number
-  aiTimeout?: number
+  aiProvider?: 'openai' | 'anthropic'
+  aiBaseUrl?: string
+  aiApiKey?: string
 }

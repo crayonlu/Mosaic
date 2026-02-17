@@ -1,5 +1,5 @@
-import type { HeatMapData, HeatMapQuery } from '@/types/stats'
-import { statsCommands } from '@/utils/callRust'
+import type { HeatMapCell, HeatMapData } from '@/types/stats'
+import { statsApi } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { create } from 'zustand'
 
@@ -46,16 +46,17 @@ export const useStatsStore = create<StatsState>((set, get) => ({
       const endDate = dayjs().format('YYYY-MM-DD')
       const startDate = dayjs().subtract(6, 'month').format('YYYY-MM-DD')
 
-      const query: HeatMapQuery = {
-        startDate,
-        endDate,
+      // Use snake_case for API query params as per shared package
+      const query = {
+        start_date: startDate,
+        end_date: endDate,
       }
 
-      const rawData = await statsCommands.getHeatmap(query)
+      const rawData = await statsApi.getHeatmap(query)
 
       // Build a map of date to count and mood from API response
       const dateInfoMap = new Map<string, { count: number; moodKey?: string }>()
-      rawData.dates.forEach((date, index) => {
+      rawData.dates?.forEach((date, index) => {
         const moodKey = rawData.moods?.[index] ?? undefined
         dateInfoMap.set(date, {
           count: rawData.counts[index],
@@ -63,7 +64,7 @@ export const useStatsStore = create<StatsState>((set, get) => ({
         })
       })
 
-      const cells: HeatMapData['cells'] = []
+      const cells: HeatMapCell[] = []
       const start = dayjs(startDate)
       const end = dayjs(endDate)
       const today = dayjs().format('YYYY-MM-DD')
@@ -86,7 +87,7 @@ export const useStatsStore = create<StatsState>((set, get) => ({
           count,
           color,
           isToday: dateStr === today,
-          moodKey,
+          moodKey: moodKey as import('@mosaic/api').MoodKey | undefined,
           moodScore:
             rawData.moodScores?.[
               dateInfoMap.get(dateStr)?.count ? rawData.dates.indexOf(dateStr) : 0
@@ -99,7 +100,7 @@ export const useStatsStore = create<StatsState>((set, get) => ({
       const data: HeatMapData = {
         dates: rawData.dates,
         counts: rawData.counts,
-        moods: rawData.moods,
+        moods: rawData.moods as (import('@mosaic/api').MoodKey | null)[],
         moodScores: rawData.moodScores,
         cells,
         startDate,

@@ -3,36 +3,37 @@ import { RichTextEditor } from '@/components/common/RichTextEditor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
 import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
 } from '@/components/ui/sheet'
 import { useAI } from '@/hooks/use-ai'
 import { toast } from '@/hooks/use-toast'
+import { resolveApiUrl } from '@/lib/shared-api'
 import type { MemoWithResources, Resource } from '@/types/memo'
 import { assetCommands, memoCommands } from '@/utils/callRust'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
-    ArrowLeft,
-    Calendar,
-    Edit2,
-    Image as ImageIcon,
-    Loader2,
-    Save,
-    Sparkles,
-    Tag,
-    Trash2,
-    X,
+  ArrowLeft,
+  Calendar,
+  Edit2,
+  Image as ImageIcon,
+  Loader2,
+  Save,
+  Sparkles,
+  Tag,
+  Trash2,
+  X,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -82,17 +83,11 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       const newImageUrls = new Map<string, string>()
 
       for (const resource of memo.resources) {
-        try {
-          const fileData = await assetCommands.readImageFile(resource.filename)
-          const uint8Array = new Uint8Array(fileData)
-          const blob = new Blob([uint8Array], { type: resource.mimeType })
-          const url = URL.createObjectURL(blob)
-
-          if (resource.resourceType === 'image') {
+        if (resource.resourceType === 'image') {
+          const url = resolveApiUrl(resource.url)
+          if (url) {
             newImageUrls.set(resource.id, url)
           }
-        } catch (error) {
-          console.error(`加载资源失败 ${resource.filename}:`, error)
         }
       }
 
@@ -102,10 +97,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     loadResources()
 
     return () => {
-      setImageUrls(prev => {
-        prev.forEach(url => URL.revokeObjectURL(url))
-        return new Map()
-      })
+      setImageUrls(new Map())
     }
   }, [memo, isEditing])
 
@@ -133,8 +125,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     try {
       setIsSaving(true)
-      await memoCommands.updateMemo({
-        id: memo.id,
+      await memoCommands.updateMemo(memo.id, {
         content: editedContent,
         tags: editedTags,
       })
@@ -259,8 +250,11 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
         const arrayBuffer = await file.arrayBuffer()
         const uint8Array = Array.from(new Uint8Array(arrayBuffer))
 
-        const tempFilePath = await assetCommands.saveTempFile(file.name, uint8Array)
-        const uploadedResources = await assetCommands.uploadFiles([tempFilePath], memo.id)
+        const uploadedResources = await assetCommands.uploadFiles([{
+          name: file.name,
+          data: uint8Array,
+          mime_type: file.type || 'application/octet-stream'
+        }], memo.id)
 
         if (uploadedResources.length > 0) {
           uploadedFiles.push(uploadedResources[0].filename)

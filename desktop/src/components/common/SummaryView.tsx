@@ -1,6 +1,6 @@
-import type { SummaryData, SummaryQuery } from '@/types/stats'
-import { statsCommands } from '@/utils/callRust'
+import type { SummaryData, SummaryQuery, TrendsData } from '@/types/stats'
 import { getMoodColor, getMoodLabel } from '@/utils/mood'
+import { statsApi } from '@mosaic/api'
 import { Calendar as CalendarIcon, Hash, PieChart } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -9,8 +9,15 @@ interface SummaryViewProps {
   month: number
 }
 
+interface ExtendedSummaryData extends SummaryData {
+  moodDistribution?: Record<string, number>
+  avgMoodScore?: number
+  recordedDays?: number
+}
+
 export function SummaryView({ year, month }: SummaryViewProps) {
-  const [data, setData] = useState<SummaryData | null>(null)
+  const [data, setData] = useState<ExtendedSummaryData | null>(null)
+  const [trendsData, setTrendsData] = useState<TrendsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -20,9 +27,19 @@ export function SummaryView({ year, month }: SummaryViewProps) {
   const loadSummaryData = async () => {
     try {
       setIsLoading(true)
+      
       const query: SummaryQuery = { year, month }
-      const summaryData = await statsCommands.getSummary(query)
-      setData(summaryData)
+      const summaryData = await statsApi.getSummary(query)
+      setData(summaryData as ExtendedSummaryData)
+      
+      const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+      const endDate = month === 12 
+        ? `${year + 1}-01-01` 
+        : `${year}-${String(month + 1).padStart(2, '0')}-01`
+      
+      const trendsQuery = { start_date: startDate, end_date: endDate }
+      const trends = await statsApi.getTrends(trendsQuery)
+      setTrendsData(trends)
     } catch (error) {
       console.error('Failed to load summary data:', error)
     } finally {
@@ -31,14 +48,15 @@ export function SummaryView({ year, month }: SummaryViewProps) {
   }
 
   const renderMoodPieChart = () => {
-    if (!data || !data.moodDistribution || Object.keys(data.moodDistribution).length === 0)
-      return null
+    if (!trendsData || !trendsData.moods || trendsData.moods.length === 0) return null
 
-    const moodEntries = Object.entries(data.moodDistribution || {}).map(([moodKey, count]) => ({
-      moodKey,
-      count,
-      percentage:
-        (count / Object.values(data.moodDistribution || {}).reduce((a, b) => a + b, 0)) * 100,
+    const totalCount = trendsData.moods.reduce((sum, mood) => sum + (mood?.count || 0), 0)
+    if (totalCount === 0) return null
+
+    const moodEntries = trendsData.moods.map(mood => ({
+      moodKey: mood?.moodKey || 'neutral',
+      count: mood?.count || 0,
+      percentage: totalCount > 0 ? ((mood?.count || 0) / totalCount) * 100 : 0,
     }))
 
     const size = 120
@@ -84,15 +102,6 @@ export function SummaryView({ year, month }: SummaryViewProps) {
         <svg width={size} height={size} className="drop-shadow-sm">
           {paths}
           <circle cx={center} cy={center} r={20} fill="white" stroke="#e5e7eb" strokeWidth="1" />
-          <text
-            x={center}
-            y={center}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="text-xs font-semibold"
-          >
-            {data.avgMoodScore?.toFixed(1) || '-'}
-          </text>
         </svg>
       </div>
     )
@@ -120,7 +129,14 @@ export function SummaryView({ year, month }: SummaryViewProps) {
     )
   }
 
-  const topTagsList = data.topTags || []
+  const topTagsList = trendsData?.tags || []
+
+  const moodDistribution: Record<string, number> = {}
+  trendsData?.moods?.forEach(mood => {
+    if (mood?.moodKey) {
+      moodDistribution[mood.moodKey] = mood.count
+    }
+  })
 
   return (
     <div className="space-y-6">
@@ -144,12 +160,6 @@ export function SummaryView({ year, month }: SummaryViewProps) {
             <div className="text-xs text-muted-foreground">资源总数</div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border p-6">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-500 mb-1">{data.recordedDays || 0}</div>
-            <div className="text-xs text-muted-foreground">记录天数</div>
-          </div>
-        </div>
       </div>
 
       {/* 情绪分布 */}
@@ -161,21 +171,20 @@ export function SummaryView({ year, month }: SummaryViewProps) {
         <div className="flex items-center gap-8">
           {renderMoodPieChart()}
           <div className="space-y-2">
-            {data.moodDistribution &&
-              Object.entries(data.moodDistribution)
-                .slice(0, 5)
-                .map(([moodKey, count]) => (
-                  <div key={moodKey} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: getMoodColor(moodKey) }}
-                      />
-                      <span>{getMoodLabel(moodKey)}</span>
-                    </div>
-                    <span className="text-muted-foreground">{count}</span>
+            {Object.entries(moodDistribution)
+              .slice(0, 5)
+              .map(([moodKey, count]) => (
+                <div key={moodKey} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: getMoodColor(moodKey) }}
+                    />
+                    <span>{getMoodLabel(moodKey)}</span>
                   </div>
-                ))}
+                  <span className="text-muted-foreground">{count}</span>
+                </div>
+              ))}
           </div>
         </div>
       </div>
@@ -212,12 +221,12 @@ export function SummaryView({ year, month }: SummaryViewProps) {
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-primary mb-1">{data.recordedDays || 0}</div>
+            <div className="text-2xl font-bold text-primary mb-1">{data.totalDiaries || 0}</div>
             <div className="text-xs text-muted-foreground">记录天数</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-500 mb-1">
-              {data.moodDistribution ? Object.keys(data.moodDistribution).length : 0}
+              {Object.keys(moodDistribution).length}
             </div>
             <div className="text-xs text-muted-foreground">情绪种类</div>
           </div>

@@ -3,6 +3,7 @@ import { RichTextEditor } from '@/components/common/RichTextEditor'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import type { MemoWithResources } from '@/types/memo'
 import { memoCommands } from '@/utils/callRust'
+import { memosApi } from '@mosaic/api'
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react'
 
 interface MemoListProps {
@@ -26,9 +27,14 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
         setLoading(true)
         let data: MemoWithResources[]
         if (diaryDate) {
-          data = await memoCommands.getMemosByDiaryDate(diaryDate)
+          data = await memoCommands.getMemosByDiaryDate(diaryDate) as MemoWithResources[]
         } else if (date) {
-          data = await memoCommands.getMemosByDate(date)
+          const memosData = await memosApi.getByDate(date)
+          data = Array.isArray(memosData)
+            ? memosData
+            : Array.isArray((memosData as { items?: unknown[] })?.items)
+              ? ((memosData as { items: MemoWithResources[] }).items ?? [])
+              : []
         } else {
           data = []
         }

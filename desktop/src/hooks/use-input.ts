@@ -5,7 +5,6 @@ import { htmlToText } from '@/utils/domParser'
 interface UseInputOptions {
   onSubmit?: (value: string, resourceFilenames?: string[]) => void
   onFileUpload?: (files: FileList) => void
-  onVoiceInput?: () => void
 }
 
 export function useInput(options?: UseInputOptions) {
@@ -49,10 +48,6 @@ export function useInput(options?: UseInputOptions) {
     fileInputRef.current?.click()
   }, [])
 
-  const handleVoiceInput = useCallback(() => {
-    options?.onVoiceInput?.()
-  }, [options])
-
   const handleToggleExpand = useCallback(() => {
     toggleExpanded()
   }, [toggleExpanded])
@@ -65,7 +60,6 @@ export function useInput(options?: UseInputOptions) {
     handleSubmit,
     handleFileUpload,
     triggerFileSelect,
-    handleVoiceInput,
     handleToggleExpand,
   }
 }
