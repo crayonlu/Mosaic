@@ -7,7 +7,7 @@ import { useTime } from '@/hooks/use-time'
 import { toast } from '@/hooks/use-toast'
 import { useInputStore } from '@/stores/input-store'
 import type { MemoWithResources } from '@/types/memo'
-import { memoCommands } from '@/utils/callRust'
+import { memosApi } from '@mosaic/api'
 import { useRef, useState } from 'react'
 
 export default function DeskTopHome() {
@@ -22,7 +22,7 @@ export default function DeskTopHome() {
 
   const handleSubmit = async (value: string, tags?: string[]) => {
     try {
-      await memoCommands.createMemo({
+      await memosApi.create({
         content: value,
         tags: tags || [],
       })
@@ -61,7 +61,7 @@ export default function DeskTopHome() {
   const handleMemoUpdate = async () => {
     await memoListRef.current?.refetch()
     if (selectedMemo) {
-      const updatedMemo = await memoCommands.getMemo(selectedMemo.id)
+      const updatedMemo = await memosApi.get(selectedMemo.id)
       setSelectedMemo(updatedMemo)
     }
   }

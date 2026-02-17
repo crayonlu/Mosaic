@@ -162,6 +162,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@tanstack/react-query": "^5.0.0",
+        "@tauri-apps/api": "^2",
         "axios": "^1.13.5",
       },
       "devDependencies": {

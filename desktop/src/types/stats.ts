@@ -1,8 +1,17 @@
-export interface HeatMapQuery {
-  startDate: string
-  endDate: string
-}
+// Re-export types from @mosaic/api shared package
+export type {
+  MoodData,
+  StatsQuery,
+  SummaryData,
+  SummaryQuery,
+  TagData,
+  TimelineData,
+  TimelineEntry,
+  TrendsData,
+  PaginatedResponse
+} from '@mosaic/api'
 
+// Desktop-specific HeatMapCell type (not in shared package)
 export interface HeatMapCell {
   date: string
   count: number
@@ -12,6 +21,7 @@ export interface HeatMapCell {
   moodScore?: number
 }
 
+// Desktop-specific extended HeatMapData with cells (not in shared package)
 export interface HeatMapData {
   dates: string[]
   counts: number[]
@@ -22,58 +32,3 @@ export interface HeatMapData {
   endDate?: string
 }
 
-export interface TimelineQuery {
-  startDate: string
-  endDate: string
-}
-
-export interface TimelineEntry {
-  date: string
-  moodKey?: string
-  moodScore?: number
-  summary: string
-  memoCount: number
-  color: string
-}
-
-export interface TimelineData {
-  entries: TimelineEntry[]
-}
-
-export interface TrendsQuery {
-  startDate: string
-  endDate: string
-}
-
-export interface MoodData {
-  moodKey: string
-  count: number
-  percentage: number
-}
-
-export interface TagData {
-  tag: string
-  count: number
-}
-
-export interface TrendsData {
-  moods: MoodData[]
-  tags: TagData[]
-}
-
-export interface SummaryQuery {
-  year: number
-  month: number
-}
-
-export interface SummaryData {
-  totalMemos: number
-  totalDiaries: number
-  totalResources: number
-  moodDistribution?: Record<string, number>
-  avgMoodScore?: number
-  recordedDays?: number
-  totalDays?: number
-  dominantMood?: string
-  topTags?: { tag: string; count: number }[]
-}

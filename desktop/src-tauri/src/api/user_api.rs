@@ -1,15 +1,15 @@
 use super::client::ApiClient;
 use crate::error::{AppError, AppResult};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUserRequest {
     pub username: Option<String>,
     pub avatar_url: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateAvatarRequest {
     pub avatar_url: String,
@@ -52,10 +52,9 @@ impl UserApi {
 
     pub async fn upload_avatar(
         &self,
-        _source_path: String,
-        data: Vec<u8>,
         filename: String,
         mime_type: String,
+        data: Vec<u8>,
     ) -> AppResult<crate::models::User> {
         let url = format!("{}/api/resources/upload-avatar", self.client.base_url());
 

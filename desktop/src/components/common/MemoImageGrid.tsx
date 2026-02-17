@@ -1,3 +1,4 @@
+import { AuthImage } from '@/components/common/AuthImage'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import type { Resource } from '@/types/memo'
@@ -28,6 +29,10 @@ interface SortableImageProps {
   onClick?: () => void
 }
 
+type ResourceWithOptionalSize = Resource & {
+  size?: number
+}
+
 const SortableImage = ({
   resource,
   url,
@@ -51,14 +56,14 @@ const SortableImage = ({
       ref={setNodeRef}
       style={style}
       {...(isEditing ? { ...attributes, ...listeners } : {})}
-      className={`group relative rounded-lg border bg-card overflow-hidden cursor-pointer transition-all ${
+      className={`group relative border bg-card overflow-hidden cursor-pointer transition-all ${
         isDragging ? 'opacity-50 z-50' : ''
       } ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''} ${
         isLarge ? 'col-span-1 row-span-1' : ''
       }`}
       onClick={onClick}
     >
-      <img
+      <AuthImage
         src={url}
         alt={resource.filename}
         className={`w-full h-full object-cover ${isLarge ? 'aspect-4/3' : 'aspect-square'}`}
@@ -80,7 +85,7 @@ const SortableImage = ({
       )}
       <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
         <div className="text-xs text-white truncate">{resource.filename}</div>
-        <div className="text-[10px] text-white/80 mt-1">{formatSize(resource.size)}</div>
+        <div className="text-[10px] text-white/80 mt-1">{formatSize(getResourceSize(resource))}</div>
       </div>
     </div>
   )
@@ -129,9 +134,15 @@ const AddImageButton = ({
 }
 
 const formatSize = (bytes: number) => {
+  if (!Number.isFinite(bytes) || bytes < 0) return '--'
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+const getResourceSize = (resource: Resource): number => {
+  const withOptionalSize = resource as ResourceWithOptionalSize
+  return withOptionalSize.fileSize ?? withOptionalSize.size ?? 0
 }
 
 const getGridLayout = (count: number, withAddButton: boolean) => {
@@ -304,7 +315,7 @@ export function MemoImageGrid({
             )}
 
             {displayResources[currentImageIndex] && (
-              <img
+              <AuthImage
                 src={imageUrls.get(displayResources[currentImageIndex].id)}
                 alt={displayResources[currentImageIndex].filename}
                 className="max-w-full max-h-full object-contain"

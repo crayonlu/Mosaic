@@ -1,19 +1,20 @@
 import DarkMosaicIcon from '@/assets/mosaic-dark.svg'
 import LightMosaicIcon from '@/assets/mosaic-light.svg'
+import { AuthImage } from '@/components/common/AuthImage'
 import { SidebarHeatMap } from '@/components/desktop/SidebarHeatMap'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarRail,
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarRail,
 } from '@/components/ui/sidebar'
 import { useTheme } from '@/hooks/use-theme'
 import { useStatsStore } from '@/stores/stats-store'
@@ -50,10 +51,11 @@ export function AppSidebar() {
             <SidebarMenuButton asChild className="hover:bg-transparent hover:text-inherit">
               <Link to="/">
                 <div className="leading-none text-primary/80">
-                  <img
+                  <AuthImage
                     src={theme === 'dark' ? DarkMosaicIcon : LightMosaicIcon}
                     alt="Mosaic"
                     className="size-16"
+                    withAuth={false}
                   />
                 </div>
               </Link>

@@ -5,8 +5,8 @@ import { SearchInput } from '@/components/common/SearchInput'
 import { SearchResults } from '@/components/common/SearchResults'
 import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
-import type { MemoWithResources, SearchMemosRequest } from '@/types/memo'
-import { memoCommands } from '@/utils/callRust'
+import type { MemoWithResources } from '@/types/memo'
+import { memosApi, type SearchMemosQuery } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { Search as SearchIcon } from 'lucide-react'
 import { useDeferredValue, useEffect, useMemo, useState, useTransition } from 'react'
@@ -35,7 +35,7 @@ export default function SearchPage() {
     )
   }, [deferredQuery, selectedTags, startDate, endDate, isArchived])
 
-  const searchRequest = useMemo<SearchMemosRequest>(() => {
+  const searchRequest = useMemo<SearchMemosQuery>(() => {
     return {
       query: deferredQuery.trim() || '',
       tags: selectedTags.length > 0 ? selectedTags : undefined,
@@ -63,7 +63,7 @@ export default function SearchPage() {
 
       startTransition(async () => {
         try {
-          const response = await memoCommands.searchMemos(searchRequest)
+          const response = await memosApi.search(searchRequest)
           setResults(response.items)
           setTotal(response.total)
         } catch (error) {
@@ -89,16 +89,16 @@ export default function SearchPage() {
 
   const handleMemoUpdate = async () => {
     if (selectedMemo) {
-      const updatedMemo = await memoCommands.getMemo(selectedMemo.id)
+      const updatedMemo = await memosApi.get(selectedMemo.id)
       setSelectedMemo(updatedMemo)
     }
-    const response = await memoCommands.searchMemos(searchRequest)
+    const response = await memosApi.search(searchRequest)
     setResults(response.items)
     setTotal(response.total)
   }
 
   const handleMemoDelete = async () => {
-    const response = await memoCommands.searchMemos(searchRequest)
+    const response = await memosApi.search(searchRequest)
     setResults(response.items)
     setTotal(response.total)
     setIsDetailOpen(false)

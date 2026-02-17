@@ -16,9 +16,9 @@ import { Slider } from '@/components/ui/slider'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/hooks/use-toast'
 import type { DiaryWithMemos } from '@/types'
-import { diaryCommands } from '@/utils/callRust'
 import type { MoodKey } from '@/utils/mood'
 import { MOODS } from '@/utils/mood'
+import { diariesApi } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { ArrowLeft, BookOpen, Edit2, Loader2, Save, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -42,7 +42,7 @@ export default function DiaryDetailPage() {
 
     try {
       setLoading(true)
-      const data = await diaryCommands.getDiaryByDate(date)
+      const data = await diariesApi.get(date)
       setDiary(data)
       setSummary(data.summary || '')
       setMoodKey((data.moodKey ?? 'neutral') as MoodKey)
@@ -69,8 +69,7 @@ export default function DiaryDetailPage() {
 
     try {
       setSaving(true)
-      await diaryCommands.updateDiarySummary({
-        date,
+      await diariesApi.updateSummary(date, {
         summary: summary.trim(),
       })
       await fetchDiary()
@@ -89,8 +88,7 @@ export default function DiaryDetailPage() {
 
     try {
       setSaving(true)
-      await diaryCommands.updateDiaryMood({
-        date,
+      await diariesApi.updateMood(date, {
         moodKey: moodKey || 'neutral',
         moodScore: moodScore[0],
       })

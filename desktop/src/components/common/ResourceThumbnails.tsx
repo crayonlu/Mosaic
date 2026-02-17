@@ -1,14 +1,14 @@
-import { useState, useEffect, useMemo } from 'react'
-import {
-  Image as ImageIcon,
-  Video as VideoIcon,
-  FileText,
-  Volume2,
-  MoreHorizontal,
-} from 'lucide-react'
-import { assetCommands } from '@/utils/callRust'
+import { AuthImage } from '@/components/common/AuthImage'
+import { resolveApiUrl } from '@/lib/shared-api'
 import { cn } from '@/lib/utils'
 import type { Resource } from '@/types/memo'
+import {
+  FileText,
+  Image as ImageIcon,
+  MoreHorizontal,
+  Video as VideoIcon,
+} from 'lucide-react'
+import { useMemo } from 'react'
 
 interface ResourceThumbnailsProps {
   resources: Resource[]
@@ -21,8 +21,6 @@ export function ResourceThumbnails({
   className,
   maxImages = 4,
 }: ResourceThumbnailsProps) {
-  const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
-
   const imageResources = useMemo(
     () => resources.filter(r => r.resourceType === 'image'),
     [resources]
@@ -40,41 +38,6 @@ export function ResourceThumbnails({
 
   const hasMoreImages = imageResources.length > maxImages
 
-  useEffect(() => {
-    const loadImages = async () => {
-      const newUrls = new Map<string, string>()
-
-      for (const resource of displayImages) {
-        try {
-          const data = await assetCommands.readImageFile(resource.filename)
-          const uint8Array = new Uint8Array(data)
-          const blob = new Blob([uint8Array], { type: resource.mimeType })
-          const url = URL.createObjectURL(blob)
-          newUrls.set(resource.id, url)
-        } catch (error) {
-          console.error(`加载图片失败 ${resource.filename}:`, error)
-        }
-      }
-
-      setImageUrls(newUrls)
-
-      return () => {
-        newUrls.forEach(url => URL.revokeObjectURL(url))
-      }
-    }
-
-    if (displayImages.length > 0) {
-      loadImages()
-    }
-
-    return () => {
-      setImageUrls(prev => {
-        prev.forEach(url => URL.revokeObjectURL(url))
-        return new Map()
-      })
-    }
-  }, [displayImages])
-
   if (resources.length === 0) {
     return null
   }
@@ -85,8 +48,6 @@ export function ResourceThumbnails({
         return ImageIcon
       case 'video':
         return VideoIcon
-      case 'voice':
-        return Volume2
       default:
         return FileText
     }
@@ -98,8 +59,6 @@ export function ResourceThumbnails({
         return `图片 ${count}`
       case 'video':
         return `视频 ${count}`
-      case 'voice':
-        return `音频 ${count}`
       default:
         return `文件 ${count}`
     }
@@ -110,14 +69,14 @@ export function ResourceThumbnails({
       {displayImages.length > 0 && (
         <div className="flex gap-1">
           {displayImages.map((resource, index) => {
-            const url = imageUrls.get(resource.id)
+            const url = resolveApiUrl(resource.url)
             return (
               <div
                 key={resource.id}
                 className="relative w-8 h-8 rounded border bg-muted/50 overflow-hidden"
               >
                 {url ? (
-                  <img src={url} alt={resource.filename} className="w-full h-full object-cover" />
+                  <AuthImage src={url} alt={resource.filename} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-muted/50 flex items-center justify-center">
                     <ImageIcon className="w-3 h-3 text-muted-foreground" />
@@ -136,7 +95,7 @@ export function ResourceThumbnails({
 
       {otherResources.length > 0 && (
         <div className="flex gap-1 flex-wrap">
-          {['video', 'voice', 'file'].map(resourceType => {
+          {['video', 'file'].map(resourceType => {
             const typeResources = otherResources.filter(r => r.resourceType === resourceType)
             if (typeResources.length === 0) return null
 

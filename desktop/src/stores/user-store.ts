@@ -1,5 +1,5 @@
 import type { User } from '@/types/user'
-import { userCommands } from '@/utils/callRust'
+import { authApi } from '@mosaic/api'
 import { create } from 'zustand'
 
 interface UserState {
@@ -15,7 +15,7 @@ export const useUserStore = create<UserState>(set => ({
   loadUser: async () => {
     set({ loading: true })
     try {
-      const user = await userCommands.getUser()
+      const user = await authApi.me()
       console.log('Loaded user:', user)
       set({ user: user || null })
     } catch (error) {

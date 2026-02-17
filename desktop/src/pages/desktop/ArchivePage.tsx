@@ -7,16 +7,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar as CalendarComponent } from '@/components/ui/calendar'
 import { Checkbox } from '@/components/ui/checkbox'
+import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/hooks/use-toast'
 import type { MemoWithResources } from '@/types/memo'
-import { diaryCommands, memoCommands } from '@/utils/callRust'
 import { htmlToText } from '@/utils/domParser'
+import { diariesApi, memosApi } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { Archive, Calendar, CheckSquare, Square, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 
 type Mode = 'view' | 'select'
 
@@ -39,13 +39,21 @@ export default function ArchivePage() {
     try {
       setLoading(true)
       const [memosData, diaryData] = await Promise.all([
-        memoCommands.getMemosByDate(formattedDate),
-        diaryCommands.getDiaryByDate(formattedDate).catch(() => null),
+        memosApi.getByDate(formattedDate),
+        diariesApi.get(formattedDate).catch(() => null),
       ])
-      setMemos(memosData)
+
+      const normalizedMemos = Array.isArray(memosData)
+        ? memosData
+        : Array.isArray((memosData as { items?: unknown[] })?.items)
+          ? ((memosData as { items: MemoWithResources[] }).items ?? [])
+          : []
+
+      setMemos(normalizedMemos)
       setExistingDiary(diaryData)
     } catch (error) {
       console.error('获取数据失败:', error)
+      setMemos([])
     } finally {
       setLoading(false)
     }
@@ -60,8 +68,8 @@ export default function ArchivePage() {
 
   const groupedMemos = useMemo(() => {
     const groups: Record<string, MemoWithResources[]> = {}
-
-    memos.forEach(memo => {
+    console.log(memos)
+    memos?.forEach(memo => {
       const hour = dayjs.utc(memo.createdAt).local().format('HH')
       const hourLabel = `${hour}:00-${parseInt(hour) + 1}:00`
       if (!groups[hourLabel]) {
@@ -112,7 +120,7 @@ export default function ArchivePage() {
     if (selectedMemos.size === 0) return
 
     try {
-      const promises = Array.from(selectedMemos).map(id => memoCommands.deleteMemo(id))
+      const promises = Array.from(selectedMemos).map(id => memosApi.delete(id))
       await Promise.all(promises)
       await fetchMemos()
       setSelectedMemos(new Set())
@@ -146,14 +154,13 @@ export default function ArchivePage() {
     try {
       setIsArchiving(true)
 
-      await diaryCommands.createOrUpdateDiary({
-        date: formattedDate,
+      await diariesApi.createOrUpdate(formattedDate, {
         summary,
         moodKey: moodKey as any,
         moodScore,
       })
 
-      const promises = Array.from(selectedMemos).map(id => memoCommands.archiveMemo(id))
+      const promises = Array.from(selectedMemos).map(id => memosApi.archive(id, formattedDate))
       await Promise.all(promises)
 
       await fetchMemos()
@@ -182,7 +189,7 @@ export default function ArchivePage() {
   const handleMemoUpdate = async () => {
     await fetchMemos()
     if (selectedMemo) {
-      const updatedMemo = await memoCommands.getMemo(selectedMemo.id)
+      const updatedMemo = await memosApi.get(selectedMemo.id)
       setSelectedMemo(updatedMemo)
     }
   }
@@ -195,7 +202,7 @@ export default function ArchivePage() {
 
   const handleUnarchiveMemo = async (memoId: string) => {
     try {
-      await memoCommands.unarchiveMemo(memoId)
+      await memosApi.unarchive(memoId)
       await fetchMemos()
     } catch (error) {
       console.error('取消归档失败:', error)

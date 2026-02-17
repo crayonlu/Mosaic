@@ -1,29 +1,34 @@
 use crate::api::{ResourceApi, ResourceResponse};
 use crate::error::AppError;
 use crate::modules::asset::models::UploadedResource;
+use serde::Deserialize;
 use tauri::Manager;
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadFileRequest {
+    pub name: String,
+    pub data: Vec<u8>,
+    pub mime_type: Option<String>,
+}
 
 #[tauri::command]
 pub async fn upload_files(
     api_client: tauri::State<'_, crate::api::ApiClient>,
-    file_paths: Vec<String>,
+    files: Vec<UploadFileRequest>,
     memo_id: Option<String>,
 ) -> Result<Vec<UploadedResource>, String> {
     let resource_api = ResourceApi::new(api_client.inner().clone());
     let mut results = Vec::new();
 
-    for path in file_paths {
-        let data = tokio::fs::read(&path).await.map_err(|e| e.to_string())?;
-
-        let filename = std::path::Path::new(&path)
-            .file_name()
-            .unwrap()
-            .to_string_lossy()
-            .to_string();
-
-        let mime_type = infer::get(&data.as_slice())
-            .map(|m| m.mime_type().to_string())
-            .unwrap_or_else(|| "application/octet-stream".to_string());
+    for file in files {
+        let data = file.data;
+        let filename = file.name;
+        let mime_type = file.mime_type.unwrap_or_else(|| {
+            infer::get(&data)
+                .map(|m| m.mime_type().to_string())
+                .unwrap_or_else(|| "application/octet-stream".to_string())
+        });
 
         if !mime_type.starts_with("image/") && !mime_type.starts_with("video/") {
             return Err(

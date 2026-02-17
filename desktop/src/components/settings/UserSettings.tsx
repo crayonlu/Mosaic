@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
 import { useUserStore } from '@/stores/user-store'
 import { useAvatarUrl } from '@/utils/avatar-helpers'
-import { assetCommands, userCommands } from '@/utils/callRust'
+import { authApi, resourcesApi, type UploadFile } from '@mosaic/api'
 import { Label } from '@radix-ui/react-label'
 import { Loader2, User as UserIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -29,7 +29,7 @@ export function UserSettings() {
     if (user && username !== user.username && username.trim()) {
       const saveUsername = async () => {
         try {
-          const updated = await userCommands.updateUser({ username })
+          const updated = await authApi.updateUser({ username })
           useUserStore.getState().updateUser(updated)
         } catch (error) {
           console.error('Failed to update user:', error)
@@ -51,10 +51,12 @@ export function UserSettings() {
 
     setUploading(true)
     try {
-      const arrayBuffer = await file.arrayBuffer()
-      const uint8Array = Array.from(new Uint8Array(arrayBuffer))
-      const tempFilePath = await assetCommands.saveTempFile(file.name, uint8Array)
-      const updated = await userCommands.uploadAvatar(tempFilePath)
+      const uploadFile: UploadFile = {
+        uri: URL.createObjectURL(file),
+        name: file.name,
+        type: file.type,
+      }
+      const updated = await resourcesApi.uploadAvatar(uploadFile)
       useUserStore.getState().updateUser(updated)
     } catch (error) {
       console.error('Failed to upload avatar:', error)

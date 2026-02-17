@@ -1,5 +1,6 @@
 import DarkMosaicIcon from '@/assets/mosaic-dark.svg'
 import LightMosaicIcon from '@/assets/mosaic-light.svg'
+import { AuthImage } from '@/components/common/AuthImage'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -7,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { useServerConfig } from '@/hooks/use-server-config'
 import { useTheme } from '@/hooks/use-theme'
 import { toast } from '@/hooks/use-toast'
+import { initSharedApiClient, setStoredAuthTokens } from '@/lib/shared-api'
 import type { ServerConfig } from '@/types/settings'
 import { configCommands } from '@/utils/callRust'
 import { ArrowRight, Check, Loader2, X } from 'lucide-react'
@@ -61,7 +63,11 @@ export default function SetupWizard() {
     try {
       await configCommands.setServerConfig(serverConfig)
 
-      await configCommands.login(serverConfig.username, serverConfig.password)
+      const loginResult = await configCommands.login(serverConfig.username, serverConfig.password)
+
+      setStoredAuthTokens(loginResult.accessToken, loginResult.refreshToken)
+
+      initSharedApiClient(serverConfig.url)
 
       toast.success('服务器配置已保存')
 
@@ -81,10 +87,11 @@ export default function SetupWizard() {
       <div className="w-full max-w-2xl space-y-8">
         {/* Header */}
         <div className="text-center flex flex-col items-center gap-4">
-          <img
+          <AuthImage
             src={theme === 'dark' ? DarkMosaicIcon : LightMosaicIcon}
             alt="Mosaic"
             className="size-32 h-auto"
+            withAuth={false}
           />
           <p className="text-muted-foreground">完成初始化配置，开始您的智能笔记之旅</p>
         </div>
