@@ -1,4 +1,4 @@
-import { tokenStorage } from '@/lib/services/token-storage'
+import { apiClient } from './client'
 import type {
   ConfirmUploadRequest,
   CreateResourceRequest,
@@ -6,23 +6,20 @@ import type {
   PaginatedResponse,
   PresignedUploadResponse,
   ResourceResponse,
+  UploadFile,
   UserResponse,
-} from '@/types/api'
-import { apiClient } from './client'
+} from './types'
 
 export const resourcesApi = {
   list(query?: ListResourcesQuery): Promise<PaginatedResponse<ResourceResponse>> {
-    return apiClient.get<PaginatedResponse<ResourceResponse>>('/api/resources', query as any)
+    return apiClient.get<PaginatedResponse<ResourceResponse>>('/api/resources', query)
   },
 
   get(id: string): Promise<ResourceResponse> {
     return apiClient.get<ResourceResponse>(`/api/resources/${id}`)
   },
 
-  upload(
-    file: { uri: string; name: string; type: string },
-    memoId: string
-  ): Promise<ResourceResponse> {
+  upload(file: UploadFile, memoId: string): Promise<ResourceResponse> {
     return apiClient.uploadFile<ResourceResponse>('/api/resources/upload', file, { memoId })
   },
 
@@ -34,7 +31,7 @@ export const resourcesApi = {
     return apiClient.post<ResourceResponse>('/api/resources/confirm-upload', data)
   },
 
-  uploadAvatar(file: { uri: string; name: string; type: string }): Promise<UserResponse> {
+  uploadAvatar(file: UploadFile): Promise<UserResponse> {
     return apiClient.uploadFile<UserResponse>('/api/resources/upload-avatar', file)
   },
 
@@ -42,26 +39,8 @@ export const resourcesApi = {
     return apiClient.delete<void>(`/api/resources/${id}`)
   },
 
-  /**
-   * Get resource download URL for Bearer token authentication
-   * Use with expo-image's source.uri prop
-   */
-  getDirectDownloadUrl(id: string): string {
+  getDownloadUrl(id: string): string {
     const baseUrl = apiClient.getBaseUrl()
     return `${baseUrl}/api/resources/${id}/download`
-  },
-
-  /**
-   * Get auth headers for image requests (without Content-Type)
-   * Use with expo-image's source.headers prop
-   */
-  async getAuthHeaders(): Promise<Record<string, string>> {
-    const token = await tokenStorage.getAccessToken()
-    if (!token) {
-      return {}
-    }
-    return {
-      Authorization: `Bearer ${token}`,
-    }
   },
 }

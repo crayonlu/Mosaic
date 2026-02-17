@@ -1,19 +1,19 @@
 import { Button, toast } from '@/components/ui'
 import { DraggableImageGrid } from '@/components/ui/DraggableImageGrid'
 import { useConnection } from '@/hooks/use-connection'
-import { resourcesApi } from '@/lib/api/resources'
 import { useThemeStore } from '@/stores/theme-store'
+import { resourcesApi } from '@mosaic/api'
 import { Image, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { TagInput } from '../tag/TagInput'

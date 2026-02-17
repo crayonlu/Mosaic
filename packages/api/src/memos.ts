@@ -1,16 +1,16 @@
-import type {
-    CreateMemoRequest,
-    ListMemosQuery,
-    MemoWithResourcesResponse,
-    PaginatedResponse,
-    SearchMemosQuery,
-    UpdateMemoRequest,
-} from '@/types/api'
 import { apiClient } from './client'
+import type {
+  CreateMemoRequest,
+  ListMemosQuery,
+  MemoWithResourcesResponse,
+  PaginatedResponse,
+  SearchMemosQuery,
+  UpdateMemoRequest,
+} from './types'
 
 export const memosApi = {
   list(query?: ListMemosQuery): Promise<PaginatedResponse<MemoWithResourcesResponse>> {
-    return apiClient.get<PaginatedResponse<MemoWithResourcesResponse>>('/api/memos', query as any)
+    return apiClient.get<PaginatedResponse<MemoWithResourcesResponse>>('/api/memos', query)
   },
 
   get(id: string): Promise<MemoWithResourcesResponse> {
@@ -18,7 +18,7 @@ export const memosApi = {
   },
 
   getByDate(date: string, query: ListMemosQuery = {}): Promise<MemoWithResourcesResponse[]> {
-    return apiClient.get<MemoWithResourcesResponse[]>(`/api/memos/date/${date}`, query as any)
+    return apiClient.get<MemoWithResourcesResponse[]>(`/api/memos/date/${date}`, query)
   },
 
   create(data: CreateMemoRequest): Promise<MemoWithResourcesResponse> {
@@ -42,9 +42,6 @@ export const memosApi = {
   },
 
   search(query: SearchMemosQuery): Promise<PaginatedResponse<MemoWithResourcesResponse>> {
-    return apiClient.get<PaginatedResponse<MemoWithResourcesResponse>>(
-      '/api/memos/search',
-      query as any
-    )
+    return apiClient.get<PaginatedResponse<MemoWithResourcesResponse>>('/api/memos/search', query)
   },
 }

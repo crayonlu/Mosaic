@@ -1,16 +1,17 @@
-import { resourcesApi } from '@/lib/api/resources'
+import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
+import { resourcesApi } from '@mosaic/api'
 import { Image } from 'expo-image'
 import { useEffect, useState } from 'react'
 import {
-  Dimensions,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native'
 import { ResizeMode, Video } from 'react-native-video'
 interface ResourceGalleryProps {
@@ -34,14 +35,14 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
   // Load auth headers on mount
   useEffect(() => {
     const loadAuthHeaders = async () => {
-      const headers = await resourcesApi.getAuthHeaders()
+      const headers = await getBearerAuthHeaders()
       setAuthHeaders(headers)
     }
     loadAuthHeaders()
   }, [])
 
   const getResourceUrl = (resourceId: string): string => {
-    return resourcesApi.getDirectDownloadUrl(resourceId)
+    return resourcesApi.getDownloadUrl(resourceId)
   }
 
   // Separate resources by type

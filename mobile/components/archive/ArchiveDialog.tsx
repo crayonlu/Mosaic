@@ -3,24 +3,23 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { toast } from '@/components/ui/Toast'
 import { MOODS, type MoodKey } from '@/constants/common'
-import { diariesApi } from '@/lib/api/diaries'
-import { memosApi } from '@/lib/api/memos'
 import { useThemeStore } from '@/stores/theme-store'
 import type { DiaryResponse } from '@/types'
 import type { MemoWithResources } from '@/types/memo'
+import { diariesApi, memosApi } from '@mosaic/api'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import {
-  Animated,
-  Keyboard,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Animated,
+    Keyboard,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native'
 import { CoverImagePicker } from './CoverImagePicker'
 
@@ -63,7 +62,7 @@ export function ArchiveDialog({
     try {
       await diariesApi.create(targetDate, {
         summary,
-        moodKey: moodKey || 'neutral',
+        moodKey: (moodKey || 'neutral') as any,
         moodScore,
         coverImageId,
       })

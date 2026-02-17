@@ -1,6 +1,14 @@
+// API exports
 export { authApi } from './auth'
-export { apiClient } from './client'
+export { apiClient, ApiClient } from './client'
 export { diariesApi } from './diaries'
 export { memosApi } from './memos'
 export { resourcesApi } from './resources'
 export { statsApi } from './stats'
+
+// Hooks exports
+export * from './hooks'
+
+// Type exports
+export * from './types'
+

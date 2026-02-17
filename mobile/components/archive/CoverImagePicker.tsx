@@ -1,15 +1,16 @@
-import { resourcesApi } from '@/lib/api/resources'
+import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
+import { resourcesApi } from '@mosaic/api'
 import { Image } from 'expo-image'
 import { useEffect, useState } from 'react'
 import {
-  Dimensions,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
+    Dimensions,
+    FlatList,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native'
 
 const { width } = Dimensions.get('window')
@@ -33,7 +34,7 @@ export function CoverImagePicker({
 
   useEffect(() => {
     const loadAuthHeaders = async () => {
-      const headers = await resourcesApi.getAuthHeaders()
+      const headers = await getBearerAuthHeaders()
       setAuthHeaders(headers)
     }
     loadAuthHeaders()
@@ -45,7 +46,7 @@ export function CoverImagePicker({
       .map(resource => ({
         resourceId: resource.id,
         memoId: memo.id,
-        url: resourcesApi.getDirectDownloadUrl(resource.id),
+        url: resourcesApi.getDownloadUrl(resource.id),
       }))
   )
 

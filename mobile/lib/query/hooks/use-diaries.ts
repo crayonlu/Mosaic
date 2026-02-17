@@ -1,6 +1,6 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { diariesApi } from '@/lib/api/diaries'
 import type { ListDiariesQuery } from '@/types/api'
+import { diariesApi } from '@mosaic/api'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 
 export function useDiaries(query: ListDiariesQuery = {}) {
   return useInfiniteQuery({

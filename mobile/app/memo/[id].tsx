@@ -4,14 +4,15 @@ import { TagInput } from '@/components/tag/TagInput'
 import { Button, DraggableImageGrid, Loading, toast } from '@/components/ui'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
-import { resourcesApi } from '@/lib/api/resources'
 import {
-  useDeleteMemo,
-  useMemo as useQueryMemo,
-  useUpdateMemo,
+    useDeleteMemo,
+    useMemo as useQueryMemo,
+    useUpdateMemo,
 } from '@/lib/query'
+import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
+import { resourcesApi } from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, Image } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
@@ -37,7 +38,7 @@ export default function MemoDetailScreen() {
 
   useEffect(() => {
     const loadAuthHeaders = async () => {
-      const headers = await resourcesApi.getAuthHeaders()
+      const headers = await getBearerAuthHeaders()
       setAuthHeaders(headers)
     }
     loadAuthHeaders()
@@ -47,7 +48,7 @@ export default function MemoDetailScreen() {
     if (editing && memo?.resources) {
       const existingImages = memo.resources
         .filter(r => r.resourceType === 'image')
-        .map(r => resourcesApi.getDirectDownloadUrl(r.id))
+        .map(r => resourcesApi.getDownloadUrl(r.id))
       setImageUris(existingImages)
     }
   }, [editing, memo])
@@ -76,7 +77,7 @@ export default function MemoDetailScreen() {
     try {
       const existingImageResources = (memo.resources || []).filter(r => r.resourceType === 'image')
       const existingUriToId = new Map(
-        existingImageResources.map(resource => [resourcesApi.getDirectDownloadUrl(resource.id), resource.id]),
+        existingImageResources.map(resource => [resourcesApi.getDownloadUrl(resource.id), resource.id]),
       )
 
       const newImageUris = imageUris.filter(uri => !existingUriToId.has(uri))
@@ -250,7 +251,7 @@ export default function MemoDetailScreen() {
                 <DraggableImageGrid
                   images={memo.resources
                     .filter(r => r.resourceType === 'image')
-                    .map(r => resourcesApi.getDirectDownloadUrl(r.id))}
+                    .map(r => resourcesApi.getDownloadUrl(r.id))}
                   authHeaders={authHeaders}
                   draggable={false}
                 />
