@@ -11,65 +11,58 @@ import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/hooks/use-toast'
-import type { MemoWithResources } from '@/types/memo'
+import type { MemoWithResources } from '@mosaic/api'
 import { htmlToText } from '@/utils/domParser'
-import { diariesApi, memosApi } from '@mosaic/api'
+import {
+  useMemoByDate,
+  useDiary,
+  useDeleteMemo,
+  useArchiveMemo,
+  useUnarchiveMemo,
+  useCreateOrUpdateDiary,
+} from '@mosaic/api'
 import dayjs from 'dayjs'
 import { Archive, Calendar, CheckSquare, Square, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 type Mode = 'view' | 'select'
 
 export default function ArchivePage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [memos, setMemos] = useState<MemoWithResources[]>([])
-  const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState<Mode>('view')
   const [selectedMemos, setSelectedMemos] = useState<Set<string>>(new Set())
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false)
-  const [isArchiving, setIsArchiving] = useState(false)
   const [selectedMemo, setSelectedMemo] = useState<MemoWithResources | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
-  const [existingDiary, setExistingDiary] = useState<any>(null)
 
   const formattedDate = dayjs(selectedDate).format('YYYY-MM-DD')
   const dateDisplay = dayjs(selectedDate).format('M月D日 dddd')
 
-  const fetchMemos = async () => {
-    try {
-      setLoading(true)
-      const [memosData, diaryData] = await Promise.all([
-        memosApi.getByDate(formattedDate),
-        diariesApi.get(formattedDate).catch(() => null),
-      ])
+  const { data: memosData, isLoading } = useMemoByDate(formattedDate)
+  const { data: diaryData } = useDiary(formattedDate)
+  const deleteMemo = useDeleteMemo()
+  const archiveMemo = useArchiveMemo()
+  const unarchiveMemo = useUnarchiveMemo()
+  const createOrUpdateDiary = useCreateOrUpdateDiary()
 
-      const normalizedMemos = Array.isArray(memosData)
-        ? memosData
-        : Array.isArray((memosData as { items?: unknown[] })?.items)
-          ? ((memosData as { items: MemoWithResources[] }).items ?? [])
-          : []
+  const memos = useMemo(() => {
+    return Array.isArray(memosData) ? memosData : []
+  }, [memosData])
 
-      setMemos(normalizedMemos)
-      setExistingDiary(diaryData)
-    } catch (error) {
-      console.error('获取数据失败:', error)
-      setMemos([])
-    } finally {
-      setLoading(false)
-    }
-  }
+  const existingDiary = diaryData
+    ? {
+        summary: diaryData.summary,
+        moodKey: diaryData.moodKey,
+        moodScore: diaryData.moodScore,
+        coverImageId: diaryData.coverImageId,
+      }
+    : undefined
 
-  useEffect(() => {
-    fetchMemos()
-    setSelectedMemos(new Set())
-    setMode('view')
-    setExistingDiary(null)
-  }, [formattedDate])
+  const isArchiving = archiveMemo.isPending || createOrUpdateDiary.isPending
 
   const groupedMemos = useMemo(() => {
     const groups: Record<string, MemoWithResources[]> = {}
-    console.log(memos)
-    memos?.forEach(memo => {
+    memos.forEach(memo => {
       const hour = dayjs.utc(memo.createdAt).local().format('HH')
       const hourLabel = `${hour}:00-${parseInt(hour) + 1}:00`
       if (!groups[hourLabel]) {
@@ -120,9 +113,9 @@ export default function ArchivePage() {
     if (selectedMemos.size === 0) return
 
     try {
-      const promises = Array.from(selectedMemos).map(id => memosApi.delete(id))
-      await Promise.all(promises)
-      await fetchMemos()
+      for (const id of selectedMemos) {
+        await deleteMemo.mutateAsync(id)
+      }
       setSelectedMemos(new Set())
       setMode('view')
       toast.success(`成功删除 ${selectedMemos.size} 条记录`)
@@ -148,22 +141,29 @@ export default function ArchivePage() {
     setIsArchiveDialogOpen(true)
   }
 
-  const handleArchiveConfirm = async (summary?: string, moodKey?: string, moodScore?: number) => {
+  const handleArchiveConfirm = async (
+    summary?: string,
+    moodKey?: string,
+    moodScore?: number,
+    coverImageId?: string
+  ) => {
     if (selectedMemos.size === 0) return
 
     try {
-      setIsArchiving(true)
-
-      await diariesApi.createOrUpdate(formattedDate, {
-        summary,
-        moodKey: moodKey as any,
-        moodScore,
+      await createOrUpdateDiary.mutateAsync({
+        date: formattedDate,
+        data: {
+          summary,
+          moodKey: moodKey as any,
+          moodScore,
+          coverImageId,
+        },
       })
 
-      const promises = Array.from(selectedMemos).map(id => memosApi.archive(id, formattedDate))
-      await Promise.all(promises)
+      for (const id of selectedMemos) {
+        await archiveMemo.mutateAsync({ id, diaryDate: formattedDate })
+      }
 
-      await fetchMemos()
       setSelectedMemos(new Set())
       setMode('view')
       setIsArchiveDialogOpen(false)
@@ -171,8 +171,6 @@ export default function ArchivePage() {
     } catch (error) {
       console.error('归档失败:', error)
       toast.error('归档失败')
-    } finally {
-      setIsArchiving(false)
     }
   }
 
@@ -187,23 +185,19 @@ export default function ArchivePage() {
   }
 
   const handleMemoUpdate = async () => {
-    await fetchMemos()
     if (selectedMemo) {
-      const updatedMemo = await memosApi.get(selectedMemo.id)
-      setSelectedMemo(updatedMemo)
+      setSelectedMemo({ ...selectedMemo })
     }
   }
 
   const handleMemoDelete = async () => {
-    await fetchMemos()
     setIsDetailOpen(false)
     setTimeout(() => setSelectedMemo(null), 300)
   }
 
   const handleUnarchiveMemo = async (memoId: string) => {
     try {
-      await memosApi.unarchive(memoId)
-      await fetchMemos()
+      await unarchiveMemo.mutateAsync(memoId)
     } catch (error) {
       console.error('取消归档失败:', error)
     }
@@ -267,7 +261,7 @@ export default function ArchivePage() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {loading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <LoadingSpinner size="lg" />
             </div>
@@ -381,6 +375,14 @@ export default function ArchivePage() {
           onConfirm={handleArchiveConfirm}
           isLoading={isArchiving}
           selectedMemosContent={getSelectedMemosContent()}
+          selectedMemosResources={memos
+            .filter(m => selectedMemos.has(m.id) && !m.isArchived)
+            .flatMap(
+              m =>
+                m.resources
+                  ?.filter(r => r.resourceType === 'image')
+                  .map(r => ({ id: r.id, url: `/api/resources/${r.id}/download` })) ?? []
+            )}
         />
 
         <MemoDetail

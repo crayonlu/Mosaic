@@ -4,14 +4,7 @@ import type { MemoWithResources } from '@/types/memo'
 import { resourcesApi } from '@mosaic/api'
 import { Image } from 'expo-image'
 import { useEffect, useState } from 'react'
-import {
-    Dimensions,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native'
+import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 
 const { width } = Dimensions.get('window')
 const IMAGE_SIZE = (width - 48) / 3
@@ -50,11 +43,7 @@ export function CoverImagePicker({
       }))
   )
 
-  const renderImage = ({
-    item,
-  }: {
-    item: { resourceId: string; memoId: string; url: string }
-  }) => {
+  const renderImage = ({ item }: { item: { resourceId: string; memoId: string; url: string } }) => {
     const isSelected = item.resourceId === selectedCoverId
     return (
       <Pressable
@@ -76,9 +65,7 @@ export function CoverImagePicker({
   if (allImages.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-          暂无图片可选
-        </Text>
+        <Text style={[styles.emptyText, { color: theme.textSecondary }]}>暂无图片可选</Text>
       </View>
     )
   }
@@ -89,9 +76,7 @@ export function CoverImagePicker({
         <Text style={[styles.title, { color: theme.text }]}>选择封面图片</Text>
         {selectedCoverId && (
           <Pressable onPress={onClear}>
-            <Text style={[styles.clearButton, { color: theme.primary }]}>
-              清除选择
-            </Text>
+            <Text style={[styles.clearButton, { color: theme.primary }]}>清除选择</Text>
           </Pressable>
         )}
       </View>

@@ -5,4 +5,3 @@ export * from './diaries'
 export * from './memos'
 export * from './resources'
 export * from './stats'
-

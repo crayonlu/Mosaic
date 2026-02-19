@@ -1,18 +1,13 @@
 import { AILoadingIndicator } from '@/components/common/AILoadingIndicator'
+import { AuthImage } from '@/components/common/AuthImage'
 import { Button } from '@/components/ui/button'
 import { DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { StandardDialog } from '@/components/ui/standard-dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { useAI } from '@/hooks/use-ai'
+import { resolveApiUrl } from '@/lib/shared-api'
 import { MOODS } from '@/utils/mood'
 import dayjs from 'dayjs'
 import { Archive, Loader2, Sparkles } from 'lucide-react'
@@ -27,10 +22,17 @@ interface ArchiveDialogProps {
     summary?: string
     moodKey?: string
     moodScore?: number
+    coverImageId?: string
   }
-  onConfirm: (summary?: string, moodKey?: string, moodScore?: number) => Promise<void>
+  onConfirm: (
+    summary?: string,
+    moodKey?: string,
+    moodScore?: number,
+    coverImageId?: string
+  ) => Promise<void>
   isLoading: boolean
   selectedMemosContent?: string
+  selectedMemosResources?: Array<{ id: string; url: string }>
 }
 
 export function ArchiveDialog({
@@ -42,17 +44,19 @@ export function ArchiveDialog({
   onConfirm,
   isLoading,
   selectedMemosContent,
+  selectedMemosResources = [],
 }: ArchiveDialogProps) {
   const [summary, setSummary] = useState(existingDiary?.summary || '')
   const [moodKey, setMoodKey] = useState<string>(existingDiary?.moodKey || '')
   const [moodScore, setMoodScore] = useState<number[]>([existingDiary?.moodScore || 5])
+  const [coverImageId, setCoverImageId] = useState<string | undefined>(existingDiary?.coverImageId)
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
   const [isReplaceDialogOpen, setIsReplaceDialogOpen] = useState(false)
   const [pendingSummary, setPendingSummary] = useState<string>('')
   const { summarizeText, loading: aiLoading } = useAI()
 
   const handleConfirm = async () => {
-    await onConfirm(summary.trim() || undefined, moodKey || undefined, moodScore[0])
+    await onConfirm(summary.trim() || undefined, moodKey || undefined, moodScore[0], coverImageId)
   }
 
   const handleClose = () => {
@@ -60,6 +64,7 @@ export function ArchiveDialog({
       setSummary('')
       setMoodKey('')
       setMoodScore([5])
+      setCoverImageId(undefined)
       onClose()
     }
   }
@@ -101,11 +106,19 @@ export function ArchiveDialog({
     setIsReplaceDialogOpen(false)
   }
 
+  const handleSelectMood = (key: string) => {
+    setMoodKey(key)
+  }
+
   const dateDisplay = dayjs(date).format('M月D日 dddd')
   const isUpdate = !!existingDiary
+  const allImages = selectedMemosResources.map(r => ({
+    ...r,
+    url: resolveApiUrl(r.url) || r.url,
+  }))
 
   return (
-    <StandardDialog open={open} onOpenChange={handleClose} size="2xl">
+    <StandardDialog open={open} onOpenChange={handleClose} size="full">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <Archive className="h-5 w-5" />
@@ -113,7 +126,7 @@ export function ArchiveDialog({
         </DialogTitle>
       </DialogHeader>
 
-      <div className="space-y-6 py-4">
+      <div className="space-y-6 py-4 px-2 overflow-y-auto max-h-[70vh]">
         <div className="text-sm text-muted-foreground">
           {isUpdate
             ? `将选中的 ${selectedCount} 条memo添加到 ${dateDisplay} 的日记中`
@@ -156,24 +169,27 @@ export function ArchiveDialog({
 
           <div className="space-y-3">
             <Label>心情</Label>
-            <Select value={moodKey} onValueChange={setMoodKey} disabled={isLoading}>
-              <SelectTrigger>
-                <SelectValue placeholder="选择今天的心情" />
-              </SelectTrigger>
-              <SelectContent>
-                {MOODS.map(mood => (
-                  <SelectItem key={mood.key} value={mood.key}>
-                    <div className="flex items-center gap-2">
-                      <span>{mood.emoji}</span>
-                      <span>{mood.label}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-wrap gap-2">
+              {MOODS.map(mood => (
+                <button
+                  key={mood.key}
+                  type="button"
+                  onClick={() => handleSelectMood(mood.key)}
+                  disabled={isLoading}
+                  className="flex flex-col items-center justify-center h-14 min-w-[4.5rem] rounded-lg border-2 transition-all hover:scale-105"
+                  style={{
+                    backgroundColor: mood.color,
+                    borderColor: moodKey === mood.key ? '#000' : 'transparent',
+                    opacity: moodKey === mood.key ? 1 : 0.8,
+                  }}
+                >
+                  <span className="text-white text-xs font-semibold">{mood.label}</span>
+                </button>
+              ))}
+            </div>
 
             {moodKey && (
-              <div className="space-y-2">
+              <div className="space-y-2 pt-2">
                 <Label className="text-sm text-muted-foreground">心情强度: {moodScore[0]}/10</Label>
                 <Slider
                   value={moodScore}
@@ -187,6 +203,47 @@ export function ArchiveDialog({
               </div>
             )}
           </div>
+
+          {allImages.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>选择封面图片</Label>
+                {coverImageId && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCoverImageId(undefined)}
+                    className="h-7 text-xs"
+                  >
+                    清除选择
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {allImages.map(resource => (
+                  <div
+                    key={resource.id}
+                    className={`relative aspect-square overflow-hidden cursor-pointer transition-all ${
+                      coverImageId === resource.id ? 'ring-2 ring-primary ring-offset-2' : ''
+                    }`}
+                    onClick={() => setCoverImageId(resource.id)}
+                  >
+                    <AuthImage
+                      src={resource.url}
+                      alt="cover"
+                      className="w-full h-full object-cover"
+                    />
+                    {coverImageId === resource.id && (
+                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                        <div className="bg-primary text-white text-xs px-2 py-1 rounded">封面</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,13 +1,8 @@
 import { AuthImage } from '@/components/common/AuthImage'
 import { resolveApiUrl } from '@/lib/shared-api'
 import { cn } from '@/lib/utils'
-import type { Resource } from '@/types/memo'
-import {
-  FileText,
-  Image as ImageIcon,
-  MoreHorizontal,
-  Video as VideoIcon,
-} from 'lucide-react'
+import type { Resource } from '@mosaic/api'
+import { FileText, Image as ImageIcon, MoreHorizontal, Video as VideoIcon } from 'lucide-react'
 import { useMemo } from 'react'
 
 interface ResourceThumbnailsProps {
@@ -19,7 +14,7 @@ interface ResourceThumbnailsProps {
 export function ResourceThumbnails({
   resources,
   className,
-  maxImages = 4,
+  maxImages = 9,
 }: ResourceThumbnailsProps) {
   const imageResources = useMemo(
     () => resources.filter(r => r.resourceType === 'image'),
@@ -76,7 +71,11 @@ export function ResourceThumbnails({
                 className="relative w-8 h-8 rounded border bg-muted/50 overflow-hidden"
               >
                 {url ? (
-                  <AuthImage src={url} alt={resource.filename} className="w-full h-full object-cover" />
+                  <AuthImage
+                    src={url}
+                    alt={resource.filename}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <div className="w-full h-full bg-muted/50 flex items-center justify-center">
                     <ImageIcon className="w-3 h-3 text-muted-foreground" />

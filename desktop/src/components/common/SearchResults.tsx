@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useRef } from 'react'
 import { RichTextEditor } from '@/components/common/RichTextEditor'
 import { ResourceThumbnails } from '@/components/common/ResourceThumbnails'
-import type { MemoWithResources } from '@/types/memo'
+import type { MemoWithResources } from '@mosaic/api'
 import { cn } from '@/lib/utils'
 
 interface SearchResultsProps {
@@ -192,7 +192,7 @@ function SearchResultItem({ memo, searchWords, onMemoClick }: SearchResultItemPr
       </div>
 
       {(memo.resources.length > 0 || memo.tags.length > 0) && (
-        <div className="p-4 border-t space-y-3">
+        <div className="p-2 border-t space-y-3">
           {memo.resources.length > 0 && <ResourceThumbnails resources={memo.resources} />}
 
           {memo.tags && memo.tags.length > 0 && (

@@ -10,15 +10,16 @@ import {
 } from './dialog'
 import { cn } from '@/lib/utils'
 
-type DialogSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl'
+type DialogSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl' | 'full'
 
 const sizeClasses: Record<DialogSize, string> = {
-  sm: 'sm:max-w-[425px]',
-  md: 'sm:max-w-md',
-  lg: 'sm:max-w-lg',
-  xl: 'sm:max-w-xl',
-  '2xl': 'sm:max-w-2xl',
-  '4xl': 'sm:max-w-4xl',
+  sm: 'max-w-[425px]',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+  '2xl': 'max-w-2xl',
+  '4xl': 'max-w-4xl',
+  full: 'max-w-[95vw] max-h-[90vh]',
 }
 
 interface StandardDialogContentProps extends React.ComponentProps<typeof DialogContent> {

@@ -2,34 +2,46 @@ import { AppInput, type AppInputRef } from '@/components/common/AppInput'
 import { MemoDetail } from '@/components/common/MemoDetail'
 import { MemoList, type MemoListRef } from '@/components/common/MemoList'
 import DeskTopLayout from '@/components/layout/DeskTopLayout'
-import { useFileUpload } from '@/hooks/use-file-upload'
+import { uploadFilesAndGetResourceIds, createObjectUrl } from '@/hooks/use-file-upload'
 import { useTime } from '@/hooks/use-time'
 import { toast } from '@/hooks/use-toast'
 import { useInputStore } from '@/stores/input-store'
-import type { MemoWithResources } from '@/types/memo'
-import { memosApi } from '@mosaic/api'
+import { useHeatmapInvalidate } from '@/stores/stats-store'
+import type { MemoWithResources } from '@mosaic/api'
+import { useCreateMemo } from '@mosaic/api'
 import { useRef, useState } from 'react'
 
 export default function DeskTopHome() {
   const isInputExpanded = useInputStore(state => state.isExpanded)
   const { formattedDate } = useTime()
-  const { uploadFiles } = useFileUpload()
-  const { addResource, clearInputValue, clearResources } = useInputStore()
+  const { addResource, clearInputValue, clearResources, getPendingFiles } = useInputStore()
   const [selectedMemo, setSelectedMemo] = useState<MemoWithResources | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const memoListRef = useRef<MemoListRef>(null)
   const appInputRef = useRef<AppInputRef>(null)
+  const invalidateHeatmap = useHeatmapInvalidate()
+  const createMemo = useCreateMemo()
 
-  const handleSubmit = async (value: string, tags?: string[]) => {
+  const handleSubmit = async (value: string, _resourceFilenames?: string[], tags?: string[]) => {
     try {
-      await memosApi.create({
+      const pendingFiles = getPendingFiles()
+      let resourceIds: string[] = []
+
+      if (pendingFiles.length > 0) {
+        resourceIds = await uploadFilesAndGetResourceIds(pendingFiles)
+      }
+
+      await createMemo.mutateAsync({
         content: value,
         tags: tags || [],
+        resourceIds,
       })
+
       clearInputValue()
       clearResources()
       appInputRef.current?.clearTags()
       await memoListRef.current?.refetch()
+      invalidateHeatmap()
       toast.success('Memo创建成功')
     } catch (error) {
       console.error('创建memo失败:', error)
@@ -37,15 +49,11 @@ export default function DeskTopHome() {
     }
   }
 
-  const handleFileUpload = async (files: FileList) => {
-    try {
-      const uploadedFiles = await uploadFiles(files)
-      uploadedFiles.forEach(fileInfo => {
-        addResource(fileInfo.filename, fileInfo.previewUrl, fileInfo.type, fileInfo.size)
-      })
-    } catch (error) {
-      console.error('文件上传失败:', error)
-    }
+  const handleFileUpload = (files: FileList) => {
+    Array.from(files).forEach(file => {
+      const previewUrl = createObjectUrl(file)
+      addResource(file, previewUrl)
+    })
   }
 
   const handleMemoClick = (memo: MemoWithResources) => {
@@ -60,10 +68,7 @@ export default function DeskTopHome() {
 
   const handleMemoUpdate = async () => {
     await memoListRef.current?.refetch()
-    if (selectedMemo) {
-      const updatedMemo = await memosApi.get(selectedMemo.id)
-      setSelectedMemo(updatedMemo)
-    }
+    // React Query will automatically update the cache
   }
 
   const handleMemoDelete = async () => {

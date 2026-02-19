@@ -14,7 +14,12 @@
     "axios": "^1.13.5"
   },
   "devDependencies": {
+    "prettier": "^3.0.0",
     "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

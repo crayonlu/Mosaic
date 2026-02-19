@@ -1,17 +1,6 @@
-import type { MoodKey as SharedMoodKey } from '@mosaic/api'
+import type { MoodKey } from '@mosaic/api'
 
-export const MOOD_KEYS: readonly SharedMoodKey[] = [
-  'joy', // 愉悦
-  'anger', // 愤怒
-  'sadness', // 悲伤
-  'calm', // 平静
-  'anxiety', // 焦虑
-  'focus', // 专注
-  'tired', // 疲惫
-  'neutral', // 中性
-] as const
-
-export type MoodKey = SharedMoodKey
+export type { MoodKey }
 
 /**
  * Mood configuration with emoji and labels
@@ -60,6 +49,11 @@ export const MOOD_COLOR_MAP: Record<MoodKey, string> = {
   neutral: '#B8B8B8',
 }
 
+function isValidMoodKey(value: string | null | undefined): value is MoodKey {
+  if (!value) return false
+  return (MOODS as readonly MoodConfig[]).some(m => m.key === value.toLowerCase())
+}
+
 function toMoodKey(moodKey?: string | null): MoodKey | undefined {
   if (!moodKey) return undefined
   const normalized = moodKey.toLowerCase()
@@ -103,16 +97,6 @@ export function getMoodConfig(moodKey?: string | null): MoodConfig | undefined {
 }
 
 /**
- * Check if a string is a valid mood key
- * @param value - Value to check
- * @returns True if valid mood key
- */
-export function isValidMoodKey(value: string | null | undefined): value is MoodKey {
-  if (!value) return false
-  return MOOD_KEYS.includes(value.toLowerCase() as MoodKey)
-}
-
-/**
  * Normalize a mood key to standard format
  * @param moodKey - Input mood key
  * @returns Normalized mood key, or undefined if invalid
@@ -132,11 +116,8 @@ export const DEFAULT_MOOD: MoodKey = 'neutral'
 export function getMoodColorWithIntensity(moodKey?: MoodKey, intensity?: number): string {
   if (!moodKey) return 'rgba(184, 184, 184, 0.5)'
   const baseColor = MOOD_COLOR_MAP[moodKey] || MOOD_COLOR_MAP.neutral
-  // Convert hex to RGBA with opacity based on intensity
-  // intensity 1 = 30% opacity, intensity 10 = 100% opacity
   const opacity = 0.2 + (intensity !== undefined ? (intensity / 10) * 0.6 : 0.5)
 
-  // Parse hex color
   const hex = baseColor.replace('#', '')
   const r = parseInt(hex.substring(0, 2), 16)
   const g = parseInt(hex.substring(2, 4), 16)

@@ -19,7 +19,14 @@ interface MemoCardProps {
   isSelected?: boolean
 }
 
-export function MemoCard({ memo, onPress, onDelete, showActions = true, showTimestamp = true, isSelected = false }: MemoCardProps) {
+export function MemoCard({
+  memo,
+  onPress,
+  onDelete,
+  showActions = true,
+  showTimestamp = true,
+  isSelected = false,
+}: MemoCardProps) {
   const { theme } = useThemeStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
@@ -46,28 +53,25 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true, showTime
       style={({ pressed }) => [
         styles.container,
         {
-          backgroundColor: isSelected ? theme.surface : (pressed ? `${theme.surface}80` : 'transparent'),
+          backgroundColor: isSelected
+            ? theme.surface
+            : pressed
+              ? `${theme.surface}80`
+              : 'transparent',
           borderColor: theme.border,
         },
       ]}
     >
       <View style={styles.contentContainer}>
-        {
-          displayContent && 
-          (
-            <View style={styles.textContent}>
-              <MarkdownRenderer content={displayContent} />
-            </View>
-          )
-        }
+        {displayContent && (
+          <View style={styles.textContent}>
+            <MarkdownRenderer content={displayContent} />
+          </View>
+        )}
 
         {imageUrls.length > 0 && (
           <View style={styles.imageGridContainer}>
-            <DraggableImageGrid
-              images={imageUrls}
-              authHeaders={authHeaders}
-              draggable={false}
-            />
+            <DraggableImageGrid images={imageUrls} authHeaders={authHeaders} draggable={false} />
           </View>
         )}
       </View>
@@ -86,10 +90,12 @@ export function MemoCard({ memo, onPress, onDelete, showActions = true, showTime
               )}
             </View>
           )}
-          
+
           <View style={[styles.rightSection, memo.tags.length === 0 ? { width: '100%' } : {}]}>
             {showTimestamp && (
-              <Text style={[styles.timestamp, { color: theme.textSecondary }]}>{formattedTime}</Text>
+              <Text style={[styles.timestamp, { color: theme.textSecondary }]}>
+                {formattedTime}
+              </Text>
             )}
             {showActions && (
               <View style={styles.actionsContainer}>
@@ -124,8 +130,7 @@ const styles = StyleSheet.create({
   textContent: {
     flex: 1,
   },
-  imageGridContainer: {
-  },
+  imageGridContainer: {},
   metadataContainer: {
     flexDirection: 'row',
     alignItems: 'center',

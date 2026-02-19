@@ -1,17 +1,12 @@
 import { MemoCard } from '@/components/memo/MemoCard'
 import { Loading } from '@/components/ui'
-import { useDiary, } from '@/lib/query'
+import { useDiary } from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { useThemeStore } from '@/stores/theme-store'
 import { resourcesApi } from '@mosaic/api'
 import { Image } from 'expo-image'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 
 interface DayPageViewProps {
   date: string
@@ -56,9 +51,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
     return (
       <View style={styles.centeredContainer}>
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            {date} 日记不存在
-          </Text>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>{date} 日记不存在</Text>
         </View>
       </View>
     )
@@ -90,7 +83,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
       <View style={styles.memosSection}>
         {archivedMemos.length > 0 ? (
           <View style={[styles.memosList]}>
-            {archivedMemos.map((memo) => (
+            {archivedMemos.map(memo => (
               <MemoCard
                 key={memo.id}
                 memo={memo}

@@ -1,14 +1,14 @@
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useTime } from '@/hooks/use-time'
+import { useUser } from '@mosaic/api'
 import { minimizeWindow, toggleMaximize, hideWindow, isMaximized } from '@/utils/window-controls'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { Minimize, Maximize, Minimize2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useUserStore } from '@/stores/user-store'
 
 export function CustomTitleBar() {
   const { greeting, formattedDateWithWeek } = useTime()
-  const { user } = useUserStore()
+  const { data: user } = useUser()
   const [maximized, setMaximized] = useState(false)
 
   async function checkMaximized() {

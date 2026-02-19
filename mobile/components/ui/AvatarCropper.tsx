@@ -4,14 +4,7 @@ import * as ImageManipulator from 'expo-image-manipulator'
 import * as ImagePicker from 'expo-image-picker'
 import { RotateCw, X } from 'lucide-react-native'
 import { useState } from 'react'
-import {
-  Dimensions,
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Dimensions, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Button } from './Button'
 
 const { width: screenWidth } = Dimensions.get('window')
@@ -24,12 +17,7 @@ interface AvatarCropperProps {
   onCropComplete: (croppedUri: string) => void
 }
 
-export function AvatarCropper({
-  visible,
-  imageUri,
-  onClose,
-  onCropComplete,
-}: AvatarCropperProps) {
+export function AvatarCropper({ visible, imageUri, onClose, onCropComplete }: AvatarCropperProps) {
   const { theme } = useThemeStore()
   const [rotation, setRotation] = useState(0)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -81,12 +69,7 @@ export function AvatarCropper({
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <View style={styles.container}>
         <View style={[styles.header, { backgroundColor: theme.surface }]}>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
@@ -119,9 +102,7 @@ export function AvatarCropper({
             />
           </View>
 
-          <Text style={[styles.hint, { color: theme.textSecondary }]}>
-            头像将裁剪为 1:1 正方形
-          </Text>
+          <Text style={[styles.hint, { color: theme.textSecondary }]}>头像将裁剪为 1:1 正方形</Text>
 
           <View style={styles.controls}>
             <TouchableOpacity

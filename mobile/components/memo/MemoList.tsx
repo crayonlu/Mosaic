@@ -15,17 +15,14 @@ interface MemoListProps {
   headerComponent?: React.ComponentType<any> | React.ReactElement | null | undefined
 }
 
-export function MemoList({
-  date,
-  onMemoPress,
-  onMemoDelete,
-  headerComponent,
-}: MemoListProps) {
+export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: MemoListProps) {
   const { theme } = useThemeStore()
   const flatListRef = useRef<FlatList>(null)
   const [refreshing, setRefreshing] = useState(false)
 
-  const { data: memosByDate, isLoading: loadingByDate } = useMemosByDate(date || '', { archived: undefined })
+  const { data: memosByDate, isLoading: loadingByDate } = useMemosByDate(date || '', {
+    archived: undefined,
+  })
 
   const {
     data: paginatedData,

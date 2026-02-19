@@ -50,7 +50,7 @@ export default function RootLayout() {
   }, [isAuthenticated, isInitialized, segments])
 
   const isDiariesTab = segments[0] === '(tabs)' && segments[1] === 'diaries'
-  
+
   const moodColor = getMoodColorWithIntensity(currentMood, currentMoodIntensity)
   const [baseMoodColor, setBaseMoodColor] = useState(moodColor)
   const [overlayMoodColor, setOverlayMoodColor] = useState(moodColor)
@@ -70,7 +70,7 @@ export default function RootLayout() {
 
     setOverlayMoodColor(moodColor)
     overlayOpacity.value = 0
-    overlayOpacity.value = withTiming(1, { duration: 200 }, (finished) => {
+    overlayOpacity.value = withTiming(1, { duration: 200 }, finished => {
       if (finished) {
         runOnJS(completeGradientTransition)(moodColor)
       }

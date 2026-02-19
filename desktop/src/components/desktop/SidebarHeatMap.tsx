@@ -1,13 +1,8 @@
 import { MoodHeatMap } from '@/components/common/MoodHeatMap'
-import { useStatsStore } from '@/stores/stats-store'
-import { useEffect } from 'react'
+import { useHeatmapQuery } from '@/stores/stats-store'
 
 export function SidebarHeatMap() {
-  const { heatmapData, heatmapLoading, loadHeatmap } = useStatsStore()
-
-  useEffect(() => {
-    loadHeatmap()
-  }, [loadHeatmap])
+  const { data: heatmapData, isLoading: heatmapLoading } = useHeatmapQuery()
 
   if (heatmapLoading) {
     return (

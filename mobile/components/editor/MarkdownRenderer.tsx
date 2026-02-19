@@ -28,7 +28,21 @@ function isHtmlContent(text: string): boolean {
   return trimmed.startsWith('<') && trimmed.endsWith('>') && /<[a-z][\s\S]*>/i.test(trimmed)
 }
 
-function HtmlRenderer({ content, theme, style }: { content: string; theme: { text: string; background: string; border: string; primary: string; textSecondary: string }; style?: object }) {
+function HtmlRenderer({
+  content,
+  theme,
+  style,
+}: {
+  content: string
+  theme: {
+    text: string
+    background: string
+    border: string
+    primary: string
+    textSecondary: string
+  }
+  style?: object
+}) {
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -88,7 +102,15 @@ function HtmlRenderer({ content, theme, style }: { content: string; theme: { tex
   )
 }
 
-function MarkdownContent({ content, theme, style }: { content: string; theme: { text: string; primary: string; textSecondary: string }; style?: object }) {
+function MarkdownContent({
+  content,
+  theme,
+  style,
+}: {
+  content: string
+  theme: { text: string; primary: string; textSecondary: string }
+  style?: object
+}) {
   const renderContent = () => {
     const lines = content.split('\n')
     return lines.map((line, index) => {
@@ -143,7 +165,10 @@ function MarkdownContent({ content, theme, style }: { content: string; theme: { 
   return <View style={[styles.container, style]}>{renderContent()}</View>
 }
 
-function renderInlineStyles(text: string, theme: { primary: string; text: string; textSecondary: string }) {
+function renderInlineStyles(
+  text: string,
+  theme: { primary: string; text: string; textSecondary: string }
+) {
   let result: React.ReactNode[] = []
   let remaining = text
   let key = 0
@@ -155,11 +180,42 @@ function renderInlineStyles(text: string, theme: { primary: string; text: string
     const linkMatch = remaining.match(/\[(.+?)\]\((.+?)\)/)
 
     const matches = [
-      boldMatch ? { type: 'bold', index: boldMatch.index!, length: boldMatch[0].length, content: boldMatch[1] } : null,
-      italicMatch ? { type: 'italic', index: italicMatch.index!, length: italicMatch[0].length, content: italicMatch[1] } : null,
-      codeMatch ? { type: 'code', index: codeMatch.index!, length: codeMatch[0].length, content: codeMatch[1] } : null,
-      linkMatch ? { type: 'link', index: linkMatch.index!, length: linkMatch[0].length, text: linkMatch[1], url: linkMatch[2] } : null,
-    ].filter(Boolean).sort((a, b) => a!.index - b!.index)
+      boldMatch
+        ? {
+            type: 'bold',
+            index: boldMatch.index!,
+            length: boldMatch[0].length,
+            content: boldMatch[1],
+          }
+        : null,
+      italicMatch
+        ? {
+            type: 'italic',
+            index: italicMatch.index!,
+            length: italicMatch[0].length,
+            content: italicMatch[1],
+          }
+        : null,
+      codeMatch
+        ? {
+            type: 'code',
+            index: codeMatch.index!,
+            length: codeMatch[0].length,
+            content: codeMatch[1],
+          }
+        : null,
+      linkMatch
+        ? {
+            type: 'link',
+            index: linkMatch.index!,
+            length: linkMatch[0].length,
+            text: linkMatch[1],
+            url: linkMatch[2],
+          }
+        : null,
+    ]
+      .filter(Boolean)
+      .sort((a, b) => a!.index - b!.index)
 
     if (matches.length === 0) {
       result.push(<Text key={key++}>{remaining}</Text>)
@@ -174,16 +230,32 @@ function renderInlineStyles(text: string, theme: { primary: string; text: string
 
     switch (match.type) {
       case 'bold':
-        result.push(<Text key={key++} style={styles.bold}>{match.content}</Text>)
+        result.push(
+          <Text key={key++} style={styles.bold}>
+            {match.content}
+          </Text>
+        )
         break
       case 'italic':
-        result.push(<Text key={key++} style={styles.italic}>{match.content}</Text>)
+        result.push(
+          <Text key={key++} style={styles.italic}>
+            {match.content}
+          </Text>
+        )
         break
       case 'code':
-        result.push(<Text key={key++} style={[styles.code, { backgroundColor: theme.textSecondary + '20' }]}>{match.content}</Text>)
+        result.push(
+          <Text key={key++} style={[styles.code, { backgroundColor: theme.textSecondary + '20' }]}>
+            {match.content}
+          </Text>
+        )
         break
       case 'link':
-        result.push(<Text key={key++} style={[styles.link, { color: theme.primary }]}>{match.text}</Text>)
+        result.push(
+          <Text key={key++} style={[styles.link, { color: theme.primary }]}>
+            {match.text}
+          </Text>
+        )
         break
     }
 

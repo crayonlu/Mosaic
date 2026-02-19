@@ -22,12 +22,8 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
   const pagerRef = useRef<PagerView>(null)
   const currentPageRef = useRef(PREFETCH_DAYS)
   const skipNextPageSelectedRef = useRef(false)
-  
-  const {
-    currentDate,
-    setCurrentDate,
-    diaryQuery,
-  } = useDiaryPager({
+
+  const { currentDate, setCurrentDate, diaryQuery } = useDiaryPager({
     prefetchDays: PREFETCH_DAYS,
     initialDate,
   })
@@ -56,10 +52,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
 
   const todayIndex = PREFETCH_DAYS
   const today = useMemo(() => dayjs().startOf('day'), [])
-  const isToday = useMemo(
-    () => dayjs(currentDate).isSame(today, 'day'),
-    [currentDate, today]
-  )
+  const isToday = useMemo(() => dayjs(currentDate).isSame(today, 'day'), [currentDate, today])
 
   const currentPageIndex = isToday ? PREFETCH_DAYS : todayIndex
 
@@ -73,7 +66,9 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     }
 
     return Array.from({ length: TOTAL_PAGES }, (_, index) =>
-      dayjs(currentDate).add(index - currentPageIndex, 'day').format('YYYY-MM-DD')
+      dayjs(currentDate)
+        .add(index - currentPageIndex, 'day')
+        .format('YYYY-MM-DD')
     )
   }, [currentDate, currentPageIndex, isToday])
 
@@ -92,39 +87,48 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     router.push({ pathname: '/memo/[id]', params: { id: memoId } })
   }, [])
 
-  const normalizeAndClampDate = useCallback((date: string) => {
-    const nextDate = dayjs(date)
-    if (nextDate.isAfter(today, 'day')) {
-      return today.format('YYYY-MM-DD')
-    }
-    return nextDate.format('YYYY-MM-DD')
-  }, [today])
+  const normalizeAndClampDate = useCallback(
+    (date: string) => {
+      const nextDate = dayjs(date)
+      if (nextDate.isAfter(today, 'day')) {
+        return today.format('YYYY-MM-DD')
+      }
+      return nextDate.format('YYYY-MM-DD')
+    },
+    [today]
+  )
 
-  const navigateToDate = useCallback((date: string) => {
-    const safeDate = normalizeAndClampDate(date)
-    if (safeDate === currentDate) return
-    setCurrentDate(safeDate)
+  const navigateToDate = useCallback(
+    (date: string) => {
+      const safeDate = normalizeAndClampDate(date)
+      if (safeDate === currentDate) return
+      setCurrentDate(safeDate)
 
-    if (currentPageRef.current !== currentPageIndex) {
-      skipNextPageSelectedRef.current = true
-      pagerRef.current?.setPageWithoutAnimation(currentPageIndex)
-      currentPageRef.current = currentPageIndex
-    }
-  }, [currentDate, currentPageIndex, normalizeAndClampDate, setCurrentDate])
+      if (currentPageRef.current !== currentPageIndex) {
+        skipNextPageSelectedRef.current = true
+        pagerRef.current?.setPageWithoutAnimation(currentPageIndex)
+        currentPageRef.current = currentPageIndex
+      }
+    },
+    [currentDate, currentPageIndex, normalizeAndClampDate, setCurrentDate]
+  )
 
-  const handlePageSelected = useCallback((e: { nativeEvent: { position: number } }) => {
-    const newIndex = e.nativeEvent.position
-    currentPageRef.current = newIndex
+  const handlePageSelected = useCallback(
+    (e: { nativeEvent: { position: number } }) => {
+      const newIndex = e.nativeEvent.position
+      currentPageRef.current = newIndex
 
-    if (skipNextPageSelectedRef.current) {
-      skipNextPageSelectedRef.current = false
-      return
-    }
+      if (skipNextPageSelectedRef.current) {
+        skipNextPageSelectedRef.current = false
+        return
+      }
 
-    const targetDate = displayDates[newIndex]
-    if (!targetDate) return
-    navigateToDate(targetDate)
-  }, [displayDates, navigateToDate])
+      const targetDate = displayDates[newIndex]
+      if (!targetDate) return
+      navigateToDate(targetDate)
+    },
+    [displayDates, navigateToDate]
+  )
 
   const handlePreviousMonth = useCallback(() => {
     navigateToDate(dayjs(currentDate).subtract(1, 'month').format('YYYY-MM-DD'))
@@ -142,35 +146,27 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     navigateToDate(dayjs(currentDate).add(1, 'year').format('YYYY-MM-DD'))
   }, [currentDate, navigateToDate])
 
-  const renderPage = useCallback((date: string) => {
-    return (
-      <View key={date} style={styles.pageContainer}>
-        <DayPageView
-          date={date}
-          onMemoPress={handleMemoPress}
-        />
-      </View>
-    )
-  }, [handleMemoPress])
+  const renderPage = useCallback(
+    (date: string) => {
+      return (
+        <View key={date} style={styles.pageContainer}>
+          <DayPageView date={date} onMemoPress={handleMemoPress} />
+        </View>
+      )
+    },
+    [handleMemoPress]
+  )
 
   const pages = displayDates.map(renderPage)
 
   return (
     <View style={[styles.container]}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.navButton}
-          onPress={handlePreviousYear}
-          hitSlop={8}
-        >
+        <TouchableOpacity style={styles.navButton} onPress={handlePreviousYear} hitSlop={8}>
           <ChevronsLeft size={22} color={theme.text} strokeWidth={2.2} />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.navButton}
-          onPress={handlePreviousMonth}
-          hitSlop={8}
-        >
+        <TouchableOpacity style={styles.navButton} onPress={handlePreviousMonth} hitSlop={8}>
           <ChevronLeft size={22} color={theme.text} strokeWidth={2.2} />
         </TouchableOpacity>
 

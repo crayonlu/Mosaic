@@ -5,11 +5,12 @@ import { SearchInput } from '@/components/common/SearchInput'
 import { SearchResults } from '@/components/common/SearchResults'
 import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
-import type { MemoWithResources } from '@/types/memo'
-import { memosApi, type SearchMemosQuery } from '@mosaic/api'
+import type { MemoWithResources } from '@mosaic/api'
+import { useSearchMemos } from '@mosaic/api'
+import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { Search as SearchIcon } from 'lucide-react'
-import { useDeferredValue, useEffect, useMemo, useState, useTransition } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 
 export default function SearchPage() {
   const [query, setQuery] = useState('')
@@ -17,26 +18,14 @@ export default function SearchPage() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = useState<Date | undefined>(undefined)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [results, setResults] = useState<MemoWithResources[]>([])
-  const [total, setTotal] = useState(0)
-  const [isPending, startTransition] = useTransition()
   const [selectedMemo, setSelectedMemo] = useState<MemoWithResources | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const queryClient = useQueryClient()
 
   const deferredQuery = useDeferredValue(query)
 
-  const hasSearchCriteria = useMemo(() => {
-    return (
-      deferredQuery.trim() ||
-      selectedTags.length > 0 ||
-      startDate ||
-      endDate ||
-      isArchived !== undefined
-    )
-  }, [deferredQuery, selectedTags, startDate, endDate, isArchived])
-
-  const searchRequest = useMemo<SearchMemosQuery>(() => {
-    return {
+  const searchRequest = useMemo(
+    () => ({
       query: deferredQuery.trim() || '',
       tags: selectedTags.length > 0 ? selectedTags : undefined,
       startDate: startDate ? dayjs(startDate).format('YYYY-MM-DD') : undefined,
@@ -44,38 +33,28 @@ export default function SearchPage() {
       isArchived,
       page: 1,
       pageSize: 50,
-    }
-  }, [deferredQuery, selectedTags, startDate, endDate, isArchived])
+    }),
+    [deferredQuery, selectedTags, startDate, endDate, isArchived]
+  )
 
-  useEffect(() => {
-    const performSearch = async () => {
-      if (
-        !deferredQuery.trim() &&
-        !selectedTags.length &&
-        !startDate &&
-        !endDate &&
-        isArchived === undefined
-      ) {
-        setResults([])
-        setTotal(0)
-        return
-      }
+  const { data: response, isLoading: isPending } = useSearchMemos(searchRequest)
+  const results: MemoWithResources[] = response?.items ?? []
+  const total = response?.total ?? 0
 
-      startTransition(async () => {
-        try {
-          const response = await memosApi.search(searchRequest)
-          setResults(response.items)
-          setTotal(response.total)
-        } catch (error) {
-          console.error('搜索失败:', error)
-          setResults([])
-          setTotal(0)
-        }
-      })
-    }
+  const hasSearchCriteria =
+    deferredQuery.trim() ||
+    selectedTags.length > 0 ||
+    startDate ||
+    endDate ||
+    isArchived !== undefined
 
-    performSearch()
-  }, [searchRequest])
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>()
+    results.forEach(memo => {
+      memo.tags.forEach(tag => tagSet.add(tag))
+    })
+    return Array.from(tagSet).sort()
+  }, [results])
 
   const handleMemoClick = (memo: MemoWithResources) => {
     setSelectedMemo(memo)
@@ -88,30 +67,14 @@ export default function SearchPage() {
   }
 
   const handleMemoUpdate = async () => {
-    if (selectedMemo) {
-      const updatedMemo = await memosApi.get(selectedMemo.id)
-      setSelectedMemo(updatedMemo)
-    }
-    const response = await memosApi.search(searchRequest)
-    setResults(response.items)
-    setTotal(response.total)
+    await queryClient.invalidateQueries({ queryKey: ['memos', 'search'] })
   }
 
   const handleMemoDelete = async () => {
-    const response = await memosApi.search(searchRequest)
-    setResults(response.items)
-    setTotal(response.total)
+    await queryClient.invalidateQueries({ queryKey: ['memos', 'search'] })
     setIsDetailOpen(false)
     setTimeout(() => setSelectedMemo(null), 300)
   }
-
-  const allTags = useMemo(() => {
-    const tagSet = new Set<string>()
-    results.forEach(memo => {
-      memo.tags.forEach(tag => tagSet.add(tag))
-    })
-    return Array.from(tagSet).sort()
-  }, [results])
 
   return (
     <DeskTopLayout className="relative">

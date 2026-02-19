@@ -19,7 +19,7 @@ import {
 import { useAI } from '@/hooks/use-ai'
 import { toast } from '@/hooks/use-toast'
 import { resolveApiUrl } from '@/lib/shared-api'
-import type { MemoWithResources, Resource } from '@/types/memo'
+import type { MemoWithResources, Resource } from '@mosaic/api'
 import { assetCommands, memoCommands } from '@/utils/callRust'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -62,9 +62,11 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [resourceToDelete, setResourceToDelete] = useState<string | null>(null)
   const [reorderedImageResources, setReorderedImageResources] = useState<Resource[]>([])
   const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
+  const [videoUrls, setVideoUrls] = useState<Map<string, string>>(new Map())
   const { suggestTags, loading: aiLoading } = useAI()
 
   const imageResources = memo?.resources.filter(r => r.resourceType === 'image') || []
+  const videoResources = memo?.resources.filter(r => r.resourceType === 'video') || []
 
   useEffect(() => {
     if (!memo) {
@@ -81,23 +83,28 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     const loadResources = async () => {
       const newImageUrls = new Map<string, string>()
+      const newVideoUrls = new Map<string, string>()
 
       for (const resource of memo.resources) {
+        const url = resolveApiUrl(resource.url)
+        if (!url) continue
+
         if (resource.resourceType === 'image') {
-          const url = resolveApiUrl(resource.url)
-          if (url) {
-            newImageUrls.set(resource.id, url)
-          }
+          newImageUrls.set(resource.id, url)
+        } else if (resource.resourceType === 'video') {
+          newVideoUrls.set(resource.id, url)
         }
       }
 
       setImageUrls(newImageUrls)
+      setVideoUrls(newVideoUrls)
     }
 
     loadResources()
 
     return () => {
       setImageUrls(new Map())
+      setVideoUrls(new Map())
     }
   }, [memo, isEditing])
 
@@ -250,11 +257,16 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
         const arrayBuffer = await file.arrayBuffer()
         const uint8Array = Array.from(new Uint8Array(arrayBuffer))
 
-        const uploadedResources = await assetCommands.uploadFiles([{
-          name: file.name,
-          data: uint8Array,
-          mime_type: file.type || 'application/octet-stream'
-        }], memo.id)
+        const uploadedResources = await assetCommands.uploadFiles(
+          [
+            {
+              name: file.name,
+              data: uint8Array,
+              mime_type: file.type || 'application/octet-stream',
+            },
+          ],
+          memo.id
+        )
 
         if (uploadedResources.length > 0) {
           uploadedFiles.push(uploadedResources[0].filename)
@@ -474,8 +486,9 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 <span>图片 ({imageResources.length})</span>
               </div>
               <MemoImageGrid
-                resources={imageResources}
+                resources={[...imageResources, ...videoResources]}
                 imageUrls={imageUrls}
+                videoUrls={videoUrls}
                 isEditing={isEditing}
                 isUploading={isUploading}
                 onReorder={handleReorder}
@@ -488,7 +501,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
             </div>
           )}
 
-          {isEditing && imageResources.length === 0 && (
+          {isEditing && imageResources.length === 0 && videoResources.length === 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                 <ImageIcon className="h-4 w-4" />
@@ -497,6 +510,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
               <MemoImageGrid
                 resources={[]}
                 imageUrls={imageUrls}
+                videoUrls={videoUrls}
                 isEditing={isEditing}
                 isUploading={isUploading}
                 onUpload={handleUploadResources}

@@ -12,7 +12,7 @@ interface TextEditorProps {
 export function TextEditor({
   value,
   onChange,
-  placeholder = 'What\'s on your mind?',
+  placeholder = "What's on your mind?",
   editable = true,
 }: TextEditorProps) {
   const { theme } = useThemeStore()
@@ -54,4 +54,3 @@ const styles = StyleSheet.create({
     minHeight: 150,
   },
 })
-

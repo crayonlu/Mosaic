@@ -15,10 +15,9 @@ import {
 import { Slider } from '@/components/ui/slider'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/hooks/use-toast'
-import type { DiaryWithMemos } from '@/types'
-import type { MoodKey } from '@/utils/mood'
-import { MOODS } from '@/utils/mood'
-import { diariesApi } from '@mosaic/api'
+import type { MoodKey } from '@mosaic/api'
+import { getMoodColor, MOODS } from '@/utils/mood'
+import { useDiary, useUpdateDiarySummary, useUpdateDiaryMood } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { ArrowLeft, BookOpen, Edit2, Loader2, Save, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -27,38 +26,26 @@ import { useNavigate, useParams } from 'react-router-dom'
 export default function DiaryDetailPage() {
   const { date } = useParams<{ date: string }>()
   const navigate = useNavigate()
-  const [diary, setDiary] = useState<DiaryWithMemos | null>(null)
-  const [loading, setLoading] = useState(true)
   const [editingSummary, setEditingSummary] = useState(false)
   const [editingMood, setEditingMood] = useState(false)
   const [summary, setSummary] = useState('')
   const [moodKey, setMoodKey] = useState<MoodKey>('neutral')
   const [moodScore, setMoodScore] = useState([5])
-  const [saving, setSaving] = useState(false)
   const memoListRef = useRef<MemoListRef>(null)
 
-  const fetchDiary = async () => {
-    if (!date) return
+  const { data: diary, isLoading } = useDiary(date || '')
+  const updateSummary = useUpdateDiarySummary()
+  const updateMood = useUpdateDiaryMood()
 
-    try {
-      setLoading(true)
-      const data = await diariesApi.get(date)
-      setDiary(data)
-      setSummary(data.summary || '')
-      setMoodKey((data.moodKey ?? 'neutral') as MoodKey)
-      setMoodScore([data.moodScore || 5])
-    } catch (error) {
-      console.error('获取日记详情失败:', error)
-      toast.error('获取日记详情失败')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const isSaving = updateSummary.isPending || updateMood.isPending
 
   useEffect(() => {
-    fetchDiary()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date])
+    if (diary) {
+      setSummary(diary.summary || '')
+      setMoodKey((diary.moodKey ?? 'neutral') as MoodKey)
+      setMoodScore([diary.moodScore || 5])
+    }
+  }, [diary])
 
   const handleBack = () => {
     navigate('/diaries')
@@ -68,38 +55,34 @@ export default function DiaryDetailPage() {
     if (!date) return
 
     try {
-      setSaving(true)
-      await diariesApi.updateSummary(date, {
-        summary: summary.trim(),
+      await updateSummary.mutateAsync({
+        date,
+        data: { summary: summary.trim() },
       })
-      await fetchDiary()
       setEditingSummary(false)
       toast.success('日记摘要已保存')
     } catch (error) {
       console.error('保存摘要失败:', error)
       toast.error('保存摘要失败')
-    } finally {
-      setSaving(false)
     }
   }
 
   const handleSaveMood = async () => {
-    if (!diary || saving || !date) return
+    if (!diary || !date) return
 
     try {
-      setSaving(true)
-      await diariesApi.updateMood(date, {
-        moodKey: moodKey || 'neutral',
-        moodScore: moodScore[0],
+      await updateMood.mutateAsync({
+        date,
+        data: {
+          moodKey: moodKey || 'neutral',
+          moodScore: moodScore[0],
+        },
       })
-      await fetchDiary()
       setEditingMood(false)
       toast.success('心情已保存')
     } catch (error) {
       console.error('保存心情失败:', error)
       toast.error('保存心情失败')
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -113,7 +96,7 @@ export default function DiaryDetailPage() {
     setEditingMood(false)
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <DeskTopLayout className="relative">
         <div className="h-full flex items-center justify-center">
@@ -151,8 +134,12 @@ export default function DiaryDetailPage() {
                 <span className="text-lg font-semibold">{dateDisplay}</span>
               </div>
               {moodOption && (
-                <Badge variant="outline" className="text-sm">
-                  {moodOption.emoji} {moodOption.label} (强度: {diary.moodScore}/10)
+                <Badge
+                  variant="outline"
+                  className="text-sm text-white"
+                  style={{ backgroundColor: getMoodColor(diary.moodKey || '') }}
+                >
+                  {moodOption.label} (强度: {diary.moodScore}/10)
                 </Badge>
               )}
             </div>
@@ -180,11 +167,11 @@ export default function DiaryDetailPage() {
                         onChange={e => setSummary(e.target.value)}
                         placeholder="写下今天的总结..."
                         rows={4}
-                        disabled={saving}
+                        disabled={isSaving}
                       />
                       <div className="flex justify-end">
-                        <Button onClick={handleSaveSummary} disabled={saving}>
-                          {saving ? (
+                        <Button onClick={handleSaveSummary} disabled={isSaving}>
+                          {isSaving ? (
                             <>
                               <Loader2 className="h-4 w-4 animate-spin mr-2" />
                               保存中
@@ -219,7 +206,7 @@ export default function DiaryDetailPage() {
                           variant="ghost"
                           size="sm"
                           onClick={handleCancelEdit}
-                          disabled={saving}
+                          disabled={isSaving}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -227,9 +214,9 @@ export default function DiaryDetailPage() {
                           variant="ghost"
                           size="sm"
                           onClick={handleSaveMood}
-                          disabled={saving || !moodKey}
+                          disabled={isSaving || !moodKey}
                         >
-                          {saving ? (
+                          {isSaving ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Save className="h-4 w-4" />
@@ -245,7 +232,7 @@ export default function DiaryDetailPage() {
                       <Select
                         value={moodKey}
                         onValueChange={(value: string) => setMoodKey(value as MoodKey)}
-                        disabled={saving}
+                        disabled={isSaving}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="选择心情" />
@@ -254,7 +241,10 @@ export default function DiaryDetailPage() {
                           {MOODS.map(mood => (
                             <SelectItem key={mood.key} value={mood.key}>
                               <div className="flex items-center gap-2">
-                                <span>{mood.emoji}</span>
+                                <span
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: mood.color }}
+                                />
                                 <span>{mood.label}</span>
                               </div>
                             </SelectItem>
@@ -269,15 +259,19 @@ export default function DiaryDetailPage() {
                           max={10}
                           min={1}
                           step={1}
-                          disabled={saving}
+                          disabled={isSaving}
                           className="flex-1"
                         />
                       </div>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-sm">
-                        {moodOption?.emoji} {moodOption?.label} (强度: {diary.moodScore}/10)
+                      <Badge
+                        variant="outline"
+                        className="text-sm text-white"
+                        style={{ backgroundColor: getMoodColor(diary.moodKey || '') }}
+                      >
+                        {moodOption?.label} (强度: {diary.moodScore}/10)
                       </Badge>
                     </div>
                   )}

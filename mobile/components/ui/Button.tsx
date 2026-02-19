@@ -134,22 +134,20 @@ export function Button({
       ) : (
         <View style={styles.contentContainer}>
           {leftIcon}
-          { 
-            title && (
-              <Text
-                style={[
-                  styles.text,
-                  {
-                    color: getTextColor(),
-                    fontSize: getFontSize(),
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {title}
-              </Text>
-            )
-          }
+          {title && (
+            <Text
+              style={[
+                styles.text,
+                {
+                  color: getTextColor(),
+                  fontSize: getFontSize(),
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+          )}
           {rightIcon}
         </View>
       )}
