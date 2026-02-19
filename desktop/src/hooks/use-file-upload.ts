@@ -1,89 +1,43 @@
 import { toast } from '@/hooks/use-toast'
-import { useInputStore } from '@/stores/input-store'
-import { assetCommands } from '@/utils/callRust'
-import { useCallback } from 'react'
+import { getStoredApiBaseUrl } from '@/lib/shared-api'
 
-const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif']
+export async function uploadFilesAndGetResourceIds(files: File[]): Promise<string[]> {
+  if (files.length === 0) return []
 
-function isValidFileType(filename: string): boolean {
-  const ext = filename.split('.').pop()?.toLowerCase() || ''
-  return IMAGE_EXTENSIONS.includes(ext)
-}
+  const accessToken = localStorage.getItem('accessToken')
+  const baseUrl = getStoredApiBaseUrl()
+  const resourceIds: string[] = []
 
-function getFileType(filename: string): 'image' {
-  const ext = filename.split('.').pop()?.toLowerCase() || ''
-  if (IMAGE_EXTENSIONS.includes(ext)) return 'image'
-  return 'image'
-}
+  for (const file of files) {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('memoId', '')
 
-export interface UploadedFileInfo {
-  filename: string
-  previewUrl: string
-  type: 'image'
-  size: number
-}
+      const response = await fetch(`${baseUrl}/api/resources/upload`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      })
 
-export function useFileUpload() {
-  const { addUploadingFile, removeUploadingFile } = useInputStore()
-
-  const uploadFiles = useCallback(
-    async (files: FileList): Promise<UploadedFileInfo[]> => {
-      const fileArray = Array.from(files)
-      const uploadedFiles: UploadedFileInfo[] = []
-
-      for (const file of fileArray) {
-        if (!isValidFileType(file.name)) {
-          console.error(`不支持的文件类型: ${file.name}`)
-          continue
-        }
-
-        const fileType = getFileType(file.name)
-        addUploadingFile({
-          name: file.name,
-          size: file.size,
-          type: fileType,
-        })
-
-        try {
-          const previewUrl = URL.createObjectURL(file)
-          const arrayBuffer = await file.arrayBuffer()
-          const uint8Array = Array.from(new Uint8Array(arrayBuffer))
-
-          const uploadedResources = await assetCommands.uploadFiles([
-            {
-              name: file.name,
-              data: uint8Array,
-              mime_type: file.type || 'application/octet-stream',
-            },
-          ])
-
-          if (uploadedResources.length > 0) {
-            const presignedUrl = await assetCommands.getPresignedImageUrl(uploadedResources[0].id)
-            uploadedFiles.push({
-              filename: uploadedResources[0].filename,
-              previewUrl: presignedUrl,
-              type: fileType,
-              size: file.size,
-            })
-          } else {
-            URL.revokeObjectURL(previewUrl)
-          }
-        } catch (error) {
-          console.error(`上传文件 ${file.name} 失败:`, error)
-          toast.error(`上传文件 ${file.name} 失败`)
-        } finally {
-          removeUploadingFile(file.name)
-        }
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`上传失败: ${errorText}`)
       }
 
-      if (uploadedFiles.length > 0) {
-        toast.success(`成功上传 ${uploadedFiles.length} 个文件`)
-      }
+      const resource: { id: string; filename: string } = await response.json()
+      resourceIds.push(resource.id)
+    } catch (error) {
+      console.error(`上传文件 ${file.name} 失败:`, error)
+      toast.error(`上传文件 ${file.name} 失败`)
+    }
+  }
 
-      return uploadedFiles
-    },
-    [addUploadingFile, removeUploadingFile]
-  )
+  return resourceIds
+}
 
-  return { uploadFiles }
+export function createObjectUrl(file: File): string {
+  return URL.createObjectURL(file)
 }

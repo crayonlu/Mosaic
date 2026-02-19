@@ -2,26 +2,24 @@ import DarkMosaicIcon from '@/assets/mosaic-dark.svg'
 import LightMosaicIcon from '@/assets/mosaic-light.svg'
 import { AuthImage } from '@/components/common/AuthImage'
 import { SidebarHeatMap } from '@/components/desktop/SidebarHeatMap'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarGroupLabel,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    SidebarRail,
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
 } from '@/components/ui/sidebar'
 import { useTheme } from '@/hooks/use-theme'
-import { useStatsStore } from '@/stores/stats-store'
-import { useUserStore } from '@/stores/user-store'
-import { useAvatarUrl } from '@/utils/avatar-helpers'
+import { resolveApiUrl } from '@/lib/shared-api'
+import { useUser } from '@mosaic/api'
 import { Inbox, Moon, PenBox, Search, Settings, Sun, User as UserIcon } from 'lucide-react'
-import { useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 const items = [
@@ -32,17 +30,10 @@ const items = [
 
 export function AppSidebar() {
   const location = useLocation()
-  const { user, loadUser } = useUserStore()
-  const loadHeatmap = useStatsStore(state => state.loadHeatmap)
-  const { theme, toggleTheme } = useTheme()
-  const avatarUrl = useAvatarUrl(user?.avatarUrl)
+  const { data: user } = useUser()
 
-  useEffect(() => {
-    if (!user) {
-      loadUser()
-    }
-    loadHeatmap()
-  }, [])
+  const { theme, toggleTheme } = useTheme()
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -112,7 +103,11 @@ export function AppSidebar() {
               className="hover:bg-transparent hover:text-primary transition-all w-auto"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={avatarUrl} alt={user?.username || 'User'} />
+                <AuthImage
+                  src={user ? resolveApiUrl(user.avatarUrl) : undefined}
+                  alt={user?.username || 'User'}
+                  className="h-full w-full"
+                />
                 <AvatarFallback>
                   <UserIcon className="size-4" />
                 </AvatarFallback>

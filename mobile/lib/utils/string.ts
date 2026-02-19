@@ -63,7 +63,10 @@ export const stringUtils = {
       return text.replace(/\n{3,}/g, '\n\n').trim()
     } catch (error) {
       console.warn('HTML parsing failed, falling back to regex:', error)
-      return html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim()
+      return html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]*>/g, '')
+        .trim()
     }
   },
   extractHashtags: (text: string): string[] => {

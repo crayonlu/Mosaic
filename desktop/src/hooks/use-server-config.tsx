@@ -16,22 +16,27 @@ export function useServerConfig() {
     try {
       const serverConfig = await configCommands.getServerConfig()
       const configured = !!serverConfig.url && !!serverConfig.username && !!serverConfig.password
-      initSharedApiClient(serverConfig.url)
+
+      // Only initialize API client if we have a valid URL
+      if (serverConfig.url) {
+        initSharedApiClient(serverConfig.url)
+      }
+
       if (serverConfig.apiToken && serverConfig.refreshToken) {
         setStoredAuthTokens(serverConfig.apiToken, serverConfig.refreshToken)
       }
+
       setConfig(serverConfig)
       setIsConfigured(configured)
     } catch (error) {
       console.error('Failed to check server config:', error)
-      initSharedApiClient()
       setIsConfigured(false)
     } finally {
       setLoading(false)
     }
   }
 
-  const Logout = async () => {
+  const logout = async () => {
     try {
       await configCommands.logout()
       await clearStoredAuth()
@@ -42,5 +47,5 @@ export function useServerConfig() {
     }
   }
 
-  return { isConfigured, loading, config, checkConfig, Logout }
+  return { isConfigured, loading, config, checkConfig, logout }
 }

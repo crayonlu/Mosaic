@@ -4,11 +4,7 @@ import { TagInput } from '@/components/tag/TagInput'
 import { Button, DraggableImageGrid, Loading, toast } from '@/components/ui'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
-import {
-    useDeleteMemo,
-    useMemo as useQueryMemo,
-    useUpdateMemo,
-} from '@/lib/query'
+import { useDeleteMemo, useMemo as useQueryMemo, useUpdateMemo } from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
@@ -53,9 +49,12 @@ export default function MemoDetailScreen() {
     }
   }, [editing, memo])
 
-  const handleImagesChange = useCallback((nextImageUris: string[]) => {
-    setImageUris(nextImageUris)
-  }, [imageUris])
+  const handleImagesChange = useCallback(
+    (nextImageUris: string[]) => {
+      setImageUris(nextImageUris)
+    },
+    [imageUris]
+  )
 
   const selectImages = async () => {
     const { launchImageLibraryAsync } = await import('expo-image-picker')
@@ -77,7 +76,10 @@ export default function MemoDetailScreen() {
     try {
       const existingImageResources = (memo.resources || []).filter(r => r.resourceType === 'image')
       const existingUriToId = new Map(
-        existingImageResources.map(resource => [resourcesApi.getDownloadUrl(resource.id), resource.id]),
+        existingImageResources.map(resource => [
+          resourcesApi.getDownloadUrl(resource.id),
+          resource.id,
+        ])
       )
 
       const newImageUris = imageUris.filter(uri => !existingUriToId.has(uri))
@@ -92,7 +94,7 @@ export default function MemoDetailScreen() {
               name: `image_${Date.now()}.jpg`,
               type: 'image/jpeg',
             },
-            memo.id,
+            memo.id
           )
           uploadedUriToId.set(uri, resource.id)
         }
@@ -172,10 +174,7 @@ export default function MemoDetailScreen() {
             >
               <Text style={[styles.editButtonText, { color: theme.primary }]}>编辑</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleDelete}
-              style={styles.headerButton}
-            >
+            <TouchableOpacity onPress={handleDelete} style={styles.headerButton}>
               <Text style={[styles.editButtonText, { color: theme.primary }]}>删除</Text>
             </TouchableOpacity>
           </View>

@@ -1,2 +1,1 @@
-export type { User } from '@mosaic/api';
-
+export type { User } from '@mosaic/api'

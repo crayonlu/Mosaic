@@ -3,7 +3,15 @@ import { Image } from 'expo-image'
 import * as ExpoImagePicker from 'expo-image-picker'
 import { ImagePlus, Upload, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
-import { Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import {
+  Dimensions,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 import { Button } from './Button'
 
 interface ImagePickerProps {
@@ -50,9 +58,9 @@ const getGridLayout = (count: number, hasAddButton: boolean) => {
   return { columns: 3, size, isLarge: false }
 }
 
-export function ImagePicker({ 
-  images, 
-  onImagesChange, 
+export function ImagePicker({
+  images,
+  onImagesChange,
   maxImages = 9,
   showUploadButton = true,
   triggerUpload = 0,
@@ -127,11 +135,7 @@ export function ImagePicker({
                 // Future: implement drag-and-drop reordering
               }}
             >
-              <Image
-                source={{ uri }}
-                style={styles.editImage}
-                contentFit="cover"
-              />
+              <Image source={{ uri }} style={styles.editImage} contentFit="cover" />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.editRemoveButton, { backgroundColor: theme.background }]}
@@ -197,10 +201,8 @@ export function ImagePicker({
 }
 
 const styles = StyleSheet.create({
-  container: {
-  },
-  uploadButtonContainer: {
-  },
+  container: {},
+  uploadButtonContainer: {},
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -260,8 +262,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  editContainer: {
-  },
+  editContainer: {},
   editGrid: {
     flexDirection: 'row',
     alignItems: 'center',

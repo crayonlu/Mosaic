@@ -39,21 +39,22 @@ export function setStoredApiBaseUrl(url: string): void {
   apiClient.setBaseUrl(url)
 }
 
-export function resolveApiUrl(url?: string | null): string | undefined {
-  if (!url) return undefined
-  if (/^https?:\/\//i.test(url)) return url
-
-  const baseUrl = getStoredApiBaseUrl()
-  if (!baseUrl) return url
-
-  return `${baseUrl.replace(/\/$/, '')}/${url.replace(/^\//, '')}`
-}
-
-export function setStoredAuthTokens(accessToken: string, refreshToken: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
-}
-
 export async function clearStoredAuth(): Promise<void> {
   await tokenStorage.clearTokens()
+}
+
+export async function setStoredAuthTokens(
+  accessToken: string,
+  refreshToken: string
+): Promise<void> {
+  await tokenStorage.setTokens(accessToken, refreshToken)
+}
+
+export function resolveApiUrl(url: string | undefined | null): string {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+  const baseUrl = apiClient.getBaseUrl()
+  return baseUrl ? `${baseUrl}${url}` : url
 }

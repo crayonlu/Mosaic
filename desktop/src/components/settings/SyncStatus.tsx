@@ -5,10 +5,10 @@ import { useServerConfig } from '@/hooks/use-server-config'
 import { AlertCircle, Cloud, CloudOff, LogOutIcon, RefreshCw } from 'lucide-react'
 
 export function SyncStatusDisplay() {
-  const { isConfigured, loading, config, checkConfig, Logout } = useServerConfig()
+  const { isConfigured, loading, config, checkConfig, logout } = useServerConfig()
   const handleLogout = async () => {
     try {
-      await Logout()
+      await logout()
     } catch (error) {
       console.error('Failed to logout:', error)
     }

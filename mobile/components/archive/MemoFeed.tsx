@@ -4,14 +4,7 @@ import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@/types/memo'
 import { FileX } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-    ActivityIndicator,
-    FlatList,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    View
-} from 'react-native'
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { MemoCard } from '../memo/MemoCard'
 
 interface MemoFeedProps {

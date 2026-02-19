@@ -1,10 +1,10 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTheme } from '@/hooks/use-theme'
-import type { HeatMapCell, HeatMapData } from '@/types/stats'
+import type { HeatMapCell, HeatMapDataExtended } from '@/types/stats'
 import { useMemo } from 'react'
 
 interface MoodHeatMapProps {
-  data: HeatMapData
+  data: HeatMapDataExtended
   onDateClick?: (date: string) => void
   selectedMonth?: number
   onMonthClick?: (month: number) => void

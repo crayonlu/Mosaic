@@ -114,7 +114,6 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
     },
   ]
 
-  // 结构组
   const structureButtons = [
     {
       icon: Heading1,
@@ -167,7 +166,6 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
     },
   ]
 
-  // 插入组
   const insertButtons = [
     {
       icon: Link,

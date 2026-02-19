@@ -5,13 +5,13 @@ import { resourcesApi } from '@mosaic/api'
 import { Image } from 'expo-image'
 import { useEffect, useState } from 'react'
 import {
-    Dimensions,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 import { ResizeMode, Video } from 'react-native-video'
 interface ResourceGalleryProps {
@@ -75,9 +75,9 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
           {layout === 'single' && (
             <TouchableOpacity onPress={() => handleImagePress(0)} activeOpacity={0.8}>
               <Image
-                source={{ 
+                source={{
                   uri: getResourceUrl(images[0].id),
-                  headers: authHeaders
+                  headers: authHeaders,
                 }}
                 style={styles.singleImage}
                 contentFit="cover"
@@ -95,9 +95,9 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
                   style={styles.gridItem}
                 >
                   <Image
-                    source={{ 
+                    source={{
                       uri: getResourceUrl(img.id),
-                      headers: authHeaders
+                      headers: authHeaders,
                     }}
                     style={styles.gridImage}
                     contentFit="cover"
@@ -117,9 +117,9 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
                   style={styles.gridItem}
                 >
                   <Image
-                    source={{ 
+                    source={{
                       uri: getResourceUrl(img.id),
-                      headers: authHeaders
+                      headers: authHeaders,
                     }}
                     style={styles.gridImage}
                     contentFit="cover"
@@ -142,9 +142,9 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
           {videos.map(video => (
             <View key={video.id} style={styles.videoContainer}>
               <Video
-                source={{ 
+                source={{
                   uri: getResourceUrl(video.id),
-                  headers: authHeaders
+                  headers: authHeaders,
                 }}
                 style={styles.video}
                 resizeMode={ResizeMode.CONTAIN}
@@ -161,7 +161,7 @@ export function ResourceGallery({ memo, onImagePress }: ResourceGalleryProps) {
         visible={previewVisible}
         images={images.map(img => ({
           uri: getResourceUrl(img.id),
-          headers: authHeaders
+          headers: authHeaders,
         }))}
         initialIndex={previewIndex}
         onClose={() => setPreviewVisible(false)}

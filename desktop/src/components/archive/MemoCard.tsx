@@ -1,13 +1,13 @@
-import { MemoImageGrid } from '@/components/common/MemoImageGrid'
+import { AuthImage } from '@/components/common/AuthImage'
 import { RichTextEditor } from '@/components/common/RichTextEditor'
+import { resolveApiUrl } from '@/lib/shared-api'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { resolveApiUrl } from '@/lib/shared-api'
 import { cn } from '@/lib/utils'
-import type { MemoWithResources } from '@/types/memo'
+import type { MemoWithResources } from '@mosaic/api'
 import dayjs from 'dayjs'
-import { Archive, X } from 'lucide-react'
-import { memo, useMemo } from 'react'
+import { Archive, Image as ImageIcon, X } from 'lucide-react'
+import { memo } from 'react'
 
 interface MemoCardProps {
   memo: MemoWithResources
@@ -20,20 +20,68 @@ interface MemoCardProps {
 
 export const MemoCard = memo<MemoCardProps>(
   ({ memo, mode, selected, onSelect, onClick, onUnarchive }) => {
-    const mediaResources = useMemo(() => {
+    const getMediaResources = () => {
       return memo.resources.filter(r => r.resourceType === 'image')
-    }, [memo.resources])
+    }
 
-    const imageUrls = useMemo(() => {
-      const urls = new Map<string, string>()
-      mediaResources.forEach(resource => {
-        const imageUrl = resolveApiUrl(resource.url)
-        if (imageUrl) {
-          urls.set(resource.id, imageUrl)
-        }
-      })
-      return urls
-    }, [mediaResources])
+    const renderMediaGrid = () => {
+      const mediaResources = getMediaResources()
+      if (mediaResources.length === 0) return null
+
+      const count = mediaResources.length
+
+      let gridClass = ''
+      let itemClass = ''
+
+      if (count === 1) {
+        gridClass = 'grid-cols-1'
+        itemClass = 'aspect-square'
+      } else if (count === 2) {
+        gridClass = 'grid-cols-2'
+        itemClass = 'aspect-square'
+      } else if (count === 3) {
+        gridClass = 'grid-cols-3'
+        itemClass = 'aspect-square'
+      } else if (count === 4) {
+        gridClass = 'grid-cols-2'
+        itemClass = 'aspect-square'
+      } else {
+        gridClass = 'grid-cols-3'
+        itemClass = 'aspect-square'
+      }
+
+      return (
+        <div className={`mt-3 grid ${gridClass} gap-1 rounded-lg overflow-hidden`}>
+          {mediaResources.slice(0, 9).map((resource, index) => {
+            const imageUrl = resolveApiUrl(resource.url)
+
+            return (
+              <div
+                key={resource.id}
+                className={`relative ${itemClass} bg-muted flex items-center justify-center group`}
+              >
+                {imageUrl ? (
+                  <AuthImage
+                    src={imageUrl}
+                    alt={resource.filename}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
+                    <ImageIcon className="h-8 w-8" />
+                  </div>
+                )}
+                {count > 9 && index === 8 && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                    <span className="text-white font-medium">+{count - 9}</span>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )
+    }
 
     const timeDisplay = dayjs.utc(memo.createdAt).local().format('HH:mm')
 
@@ -103,13 +151,7 @@ export const MemoCard = memo<MemoCardProps>(
                 <></>
               )}
 
-              {mediaResources.length > 0 && (
-                <MemoImageGrid
-                  resources={mediaResources}
-                  imageUrls={imageUrls}
-                  isEditing={false}
-                />
-              )}
+              {renderMediaGrid()}
 
               {memo.tags && memo.tags.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1">

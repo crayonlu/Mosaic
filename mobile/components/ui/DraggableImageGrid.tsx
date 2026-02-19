@@ -51,75 +51,98 @@ export function DraggableImageGrid({
 }: DraggableImageGridProps) {
   const { theme } = useThemeStore()
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
-  
+
   const gridData: GridItem[] = useMemo(
     () =>
       images.map(uri => ({
         key: `img_${uri}`,
         uri,
       })),
-    [images],
+    [images]
   )
 
   const imageSize = getImageSize(images.length)
   const imageImages = useMemo(
     () => images.map(uri => ({ uri, headers: authHeaders })),
-    [images, authHeaders],
+    [images, authHeaders]
   )
 
-  const handleDragRelease = useCallback((data: GridItem[]) => {
-    if (!onImagesChange) return
-    const newImages = data.map(item => item.uri)
-    onImagesChange(newImages)
-  }, [onImagesChange])
+  const handleDragRelease = useCallback(
+    (data: GridItem[]) => {
+      if (!onImagesChange) return
+      const newImages = data.map(item => item.uri)
+      onImagesChange(newImages)
+    },
+    [onImagesChange]
+  )
 
-  const handleRemove = useCallback((index: number) => {
-    if (onImagesChange) {
-      onImagesChange(images.filter((_, i) => i !== index))
-    } else if (onRemove) {
-      onRemove(index)
-    }
-  }, [images, onImagesChange, onRemove])
+  const handleRemove = useCallback(
+    (index: number) => {
+      if (onImagesChange) {
+        onImagesChange(images.filter((_, i) => i !== index))
+      } else if (onRemove) {
+        onRemove(index)
+      }
+    },
+    [images, onImagesChange, onRemove]
+  )
 
-  const handleImagePress = useCallback((index: number) => {
-    if (onImagePress) {
-      onImagePress(index)
-    } else {
-      setPreviewIndex(index)
-    }
-  }, [onImagePress])
+  const handleImagePress = useCallback(
+    (index: number) => {
+      if (onImagePress) {
+        onImagePress(index)
+      } else {
+        setPreviewIndex(index)
+      }
+    },
+    [onImagePress]
+  )
 
-  const renderItem = useCallback((item: GridItem, order: number) => {
-    const index = order
-    return (
-      <View style={[styles.imageWrapper, { width: imageSize.width, height: imageSize.height }]}>
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: item.uri, headers: authHeaders }} style={styles.image} contentFit="cover" />
+  const renderItem = useCallback(
+    (item: GridItem, order: number) => {
+      const index = order
+      return (
+        <View style={[styles.imageWrapper, { width: imageSize.width, height: imageSize.height }]}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={{ uri: item.uri, headers: authHeaders }}
+              style={styles.image}
+              contentFit="cover"
+            />
+          </View>
+          {(onRemove || onImagesChange) && (
+            <TouchableOpacity
+              style={[styles.removeButton, { backgroundColor: theme.background }]}
+              onPress={() => handleRemove(index)}
+            >
+              <X size={14} color={theme.text} />
+            </TouchableOpacity>
+          )}
         </View>
-        {(onRemove || onImagesChange) && (
-          <TouchableOpacity
-            style={[styles.removeButton, { backgroundColor: theme.background }]}
-            onPress={() => handleRemove(index)}
-          >
-            <X size={14} color={theme.text} />
-          </TouchableOpacity>
-        )}
-      </View>
-    )
-  }, [imageSize, theme, authHeaders, handleRemove, onRemove, onImagesChange])
+      )
+    },
+    [imageSize, theme, authHeaders, handleRemove, onRemove, onImagesChange]
+  )
 
   if (!draggable) {
     return (
       <View style={styles.container}>
         <View style={styles.grid}>
           {images.map((uri, index) => (
-            <View key={index} style={[styles.imageWrapper, { width: imageSize.width, height: imageSize.height }]}>
+            <View
+              key={index}
+              style={[styles.imageWrapper, { width: imageSize.width, height: imageSize.height }]}
+            >
               <TouchableOpacity
                 style={styles.imageContainer}
                 onPress={() => handleImagePress(index)}
                 activeOpacity={0.9}
               >
-                <Image source={{ uri, headers: authHeaders }} style={styles.image} contentFit="cover" />
+                <Image
+                  source={{ uri, headers: authHeaders }}
+                  style={styles.image}
+                  contentFit="cover"
+                />
               </TouchableOpacity>
               {onRemove && (
                 <TouchableOpacity

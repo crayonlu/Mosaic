@@ -1,13 +1,13 @@
 import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import type { HeatMapData } from '@/types/stats'
+import type { HeatMapDataExtended } from '@/types/stats'
 import { useTheme } from '@/hooks/use-theme'
 import dayjs from 'dayjs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 interface MonthlyViewProps {
   year: number
   month: number
-  heatmapData: HeatMapData
+  heatmapData: HeatMapDataExtended
   selectedDate?: string
   onDateClick?: (date: string) => void
 }

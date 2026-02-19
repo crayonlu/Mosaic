@@ -1,10 +1,9 @@
 import { ResourceThumbnails } from '@/components/common/ResourceThumbnails'
 import { RichTextEditor } from '@/components/common/RichTextEditor'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
-import type { MemoWithResources } from '@/types/memo'
-import { memoCommands } from '@/utils/callRust'
-import { memosApi } from '@mosaic/api'
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react'
+import type { MemoWithResources } from '@mosaic/api'
+import { useMemoByDate, useMemos } from '@mosaic/api'
+import { forwardRef, useImperativeHandle } from 'react'
 
 interface MemoListProps {
   date?: string
@@ -17,46 +16,37 @@ export interface MemoListRef {
   refetch: () => Promise<void>
 }
 
+function getMemosData(data: unknown): MemoWithResources[] {
+  if (Array.isArray(data)) {
+    return data as MemoWithResources[]
+  }
+  if (data && typeof data === 'object' && 'items' in data) {
+    return (data as { items: MemoWithResources[] }).items || []
+  }
+  return []
+}
+
 export const MemoList = forwardRef<MemoListRef, MemoListProps>(
   ({ date, diaryDate, className, onMemoClick }, ref) => {
-    const [memos, setMemos] = useState<MemoWithResources[]>([])
-    const [loading, setLoading] = useState(true)
+    const diaryQuery = useMemoByDate(diaryDate || '')
+    const listQuery = useMemos({ diaryDate: date })
 
-    const fetchMemos = useCallback(async () => {
-      try {
-        setLoading(true)
-        let data: MemoWithResources[]
-        if (diaryDate) {
-          data = await memoCommands.getMemosByDiaryDate(diaryDate) as MemoWithResources[]
-        } else if (date) {
-          const memosData = await memosApi.getByDate(date)
-          data = Array.isArray(memosData)
-            ? memosData
-            : Array.isArray((memosData as { items?: unknown[] })?.items)
-              ? ((memosData as { items: MemoWithResources[] }).items ?? [])
-              : []
-        } else {
-          data = []
-        }
-        setMemos(data)
-      } catch (error) {
-        console.error('获取memos失败:', error)
-      } finally {
-        setLoading(false)
-      }
-    }, [date, diaryDate])
+    const memos = diaryDate ? getMemosData(diaryQuery?.data) : getMemosData(listQuery?.data)
+    const loading = diaryDate ? diaryQuery?.isLoading : listQuery?.isLoading || false
 
     useImperativeHandle(
       ref,
       () => ({
-        refetch: fetchMemos,
+        refetch: async () => {
+          if (diaryDate) {
+            await diaryQuery.refetch()
+          } else {
+            await listQuery.refetch()
+          }
+        },
       }),
-      [fetchMemos]
+      [diaryDate, diaryQuery, listQuery]
     )
-
-    useEffect(() => {
-      fetchMemos()
-    }, [fetchMemos])
 
     if (loading) {
       return (
@@ -92,7 +82,7 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
                 )}
               </div>
               {(memo.resources.length > 0 || (memo.tags && memo.tags.length > 0)) && (
-                <div className="p-4 border-t space-y-3">
+                <div className="p-2 border-t space-y-3">
                   {memo.resources.length > 0 && <ResourceThumbnails resources={memo.resources} />}
 
                   {memo.tags && memo.tags.length > 0 && (

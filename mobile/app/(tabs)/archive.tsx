@@ -79,7 +79,8 @@ export default function ArchiveScreen() {
     }
   }
 
-  const shouldShowAddButton = isArchiveMode && selectedMemoIds.length > 0 && hasDiaryForToday && selectedDate === today
+  const shouldShowAddButton =
+    isArchiveMode && selectedMemoIds.length > 0 && hasDiaryForToday && selectedDate === today
 
   const handleArchiveSuccess = () => {
     setShowArchiveDialog(false)

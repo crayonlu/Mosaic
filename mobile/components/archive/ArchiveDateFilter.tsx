@@ -84,7 +84,7 @@ export function ArchiveDateFilter({
           ]}
           onPress={onArchivePress}
         >
-          {(hasSelection || showAddButton) ? (
+          {hasSelection || showAddButton ? (
             <Check size={18} color="#FFFFFF" />
           ) : isArchiveMode ? (
             <X size={18} color={theme.textSecondary} />
@@ -92,7 +92,7 @@ export function ArchiveDateFilter({
           <Text
             style={[
               styles.archiveButtonText,
-              { color: (hasSelection || showAddButton) ? '#FFFFFF' : theme.textSecondary },
+              { color: hasSelection || showAddButton ? '#FFFFFF' : theme.textSecondary },
             ]}
           >
             {showAddButton ? '添加' : hasSelection ? '确定' : isArchiveMode ? '取消' : '归档'}

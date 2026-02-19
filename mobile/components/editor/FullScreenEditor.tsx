@@ -6,14 +6,14 @@ import { resourcesApi } from '@mosaic/api'
 import { Image, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { TagInput } from '../tag/TagInput'
@@ -33,7 +33,7 @@ export function FullScreenEditor({
   visible,
   initialContent = '',
   initialTags = [],
-  placeholder = 'What\'s on your mind?',
+  placeholder = "What's on your mind?",
   availableTags = [],
   onClose,
   onSubmit,
@@ -159,7 +159,9 @@ export function FullScreenEditor({
                 onPress={handleSubmit}
                 variant="ghost"
                 size="medium"
-                disabled={(!content.trim() && imageUris.length === 0) || !canUseNetwork || uploading}
+                disabled={
+                  (!content.trim() && imageUris.length === 0) || !canUseNetwork || uploading
+                }
               />
             </View>
           </View>
@@ -176,11 +178,7 @@ export function FullScreenEditor({
             </View>
 
             <View style={styles.editorContainer}>
-              <TextEditor
-                value={content}
-                onChange={setContent}
-                placeholder={placeholder}
-              />
+              <TextEditor value={content} onChange={setContent} placeholder={placeholder} />
             </View>
 
             {imageUris.length > 0 && (

@@ -1,16 +1,20 @@
 import type {
-    ConfirmUploadRequest,
-    CreateResourceRequest,
-    PresignedUploadResponse,
-    PresignedUrlResponse,
-    Resource,
+  ConfirmUploadRequest,
+  CreateResourceRequest,
+  PresignedUploadResponse,
+  PresignedUrlResponse,
+  Resource,
 } from '@mosaic/api'
 
 export type ResourceType = Resource['resourceType']
 
 export type {
-    Resource, ConfirmUploadRequest as ServerConfirmUploadRequest, CreateResourceRequest as ServerCreateResourceRequest,
-    PresignedUploadResponse as ServerPresignedUploadResponse, PresignedUrlResponse as ServerPresignedUrlResponse, Resource as ServerResourceResponse
+  Resource,
+  ConfirmUploadRequest as ServerConfirmUploadRequest,
+  CreateResourceRequest as ServerCreateResourceRequest,
+  PresignedUploadResponse as ServerPresignedUploadResponse,
+  PresignedUrlResponse as ServerPresignedUrlResponse,
+  Resource as ServerResourceResponse,
 }
 
 export interface ResourcePreview {

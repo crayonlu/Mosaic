@@ -1,6 +1,6 @@
 // API exports
 export { authApi } from './auth'
-export { apiClient, ApiClient } from './client'
+export { apiClient, ApiClient, type TokenStorage } from './client'
 export { diariesApi } from './diaries'
 export { memosApi } from './memos'
 export { resourcesApi } from './resources'
@@ -14,4 +14,3 @@ export * from './types'
 
 // Tauri plugin exports
 export * from './plugins/tauri'
-

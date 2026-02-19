@@ -15,23 +15,11 @@ interface PostPreviewProps {
   onPost: () => void
 }
 
-export function PostPreview({
-  visible,
-  content,
-  images,
-  tags,
-  onClose,
-  onPost,
-}: PostPreviewProps) {
+export function PostPreview({ visible, content, images, tags, onClose, onPost }: PostPreviewProps) {
   const { theme } = useThemeStore()
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <TouchableOpacity onPress={onClose} style={styles.headerButton}>
@@ -45,9 +33,7 @@ export function PostPreview({
           {content.trim() ? (
             <MarkdownRenderer content={content} />
           ) : (
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              无内容
-            </Text>
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>无内容</Text>
           )}
 
           {images.length > 0 && (
@@ -65,7 +51,7 @@ export function PostPreview({
 
           {tags.length > 0 && (
             <View style={styles.tagsContainer}>
-              {tags.map((tag) => (
+              {tags.map(tag => (
                 <Badge key={tag} text={tag} variant="outline" size="small" />
               ))}
             </View>

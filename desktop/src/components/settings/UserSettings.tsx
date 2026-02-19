@@ -1,45 +1,28 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { AuthImage } from '@/components/common/AuthImage'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
-import { useUserStore } from '@/stores/user-store'
-import { useAvatarUrl } from '@/utils/avatar-helpers'
-import { authApi, resourcesApi, type UploadFile } from '@mosaic/api'
+import { resolveApiUrl } from '@/lib/shared-api'
+import { useUpdateAvatar, useUpdateUser, useUser } from '@mosaic/api'
 import { Label } from '@radix-ui/react-label'
 import { Loader2, User as UserIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 export function UserSettings() {
-  const { user, loadUser, loading: userLoading } = useUserStore()
+  const { data: user, isLoading } = useUser()
+  const updateUser = useUpdateUser()
+  const updateAvatar = useUpdateAvatar()
   const [username, setUsername] = useState('')
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const avatarUrl = useAvatarUrl(user?.avatarUrl)
 
   useEffect(() => {
     if (user) {
       setUsername(user.username)
-    } else {
-      loadUser()
     }
   }, [user])
-
-  useEffect(() => {
-    if (user && username !== user.username && username.trim()) {
-      const saveUsername = async () => {
-        try {
-          const updated = await authApi.updateUser({ username })
-          useUserStore.getState().updateUser(updated)
-        } catch (error) {
-          console.error('Failed to update user:', error)
-        }
-      }
-
-      const timeoutId = setTimeout(saveUsername, 1000)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [username, user])
 
   async function handleAvatarUpload() {
     fileInputRef.current?.click()
@@ -51,13 +34,7 @@ export function UserSettings() {
 
     setUploading(true)
     try {
-      const uploadFile: UploadFile = {
-        uri: URL.createObjectURL(file),
-        name: file.name,
-        type: file.type,
-      }
-      const updated = await resourcesApi.uploadAvatar(uploadFile)
-      useUserStore.getState().updateUser(updated)
+      await updateAvatar.mutateAsync({ avatarUrl: file.name })
     } catch (error) {
       console.error('Failed to upload avatar:', error)
     } finally {
@@ -68,7 +45,14 @@ export function UserSettings() {
     }
   }
 
-  if (!user || userLoading) {
+  const handleUsernameChange = (value: string) => {
+    setUsername(value)
+    if (user && value !== user.username && value.trim()) {
+      updateUser.mutate({ username: value })
+    }
+  }
+
+  if (isLoading || !user) {
     return <LoadingSkeleton lines={3} />
   }
 
@@ -84,7 +68,11 @@ export function UserSettings() {
       <CardContent className="space-y-4">
         <div className="flex flex-col items-center gap-4">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={avatarUrl} alt={user?.username || 'User'} />
+            <AuthImage
+              src={resolveApiUrl(user.avatarUrl)}
+              alt={user.username || 'User'}
+              className="h-full w-full"
+            />
             <AvatarFallback>
               <UserIcon className="h-10 w-10" />
             </AvatarFallback>
@@ -111,8 +99,8 @@ export function UserSettings() {
           </Label>
           <Input
             id="username"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
+            value={username || user.username}
+            onChange={e => handleUsernameChange(e.target.value)}
             placeholder="输入用户名"
           />
         </div>

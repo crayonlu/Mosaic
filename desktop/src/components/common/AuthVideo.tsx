@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { LoadingSpinner } from '../ui/loading/loading-spinner'
 
-type NativeImgProps = React.ComponentPropsWithoutRef<'img'>
+type NativeVideoProps = React.ComponentPropsWithoutRef<'video'>
 
-interface AuthImageProps extends NativeImgProps {
+interface AuthVideoProps extends NativeVideoProps {
   withAuth?: boolean
 }
 
@@ -11,7 +11,7 @@ function isBypassSource(src: string): boolean {
   return src.startsWith('blob:') || src.startsWith('data:')
 }
 
-export function AuthImage({ src, withAuth = true, ...props }: AuthImageProps) {
+export function AuthVideo({ src, withAuth = true, ...props }: AuthVideoProps) {
   const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(
     typeof src === 'string' ? src : undefined
   )
@@ -40,10 +40,9 @@ export function AuthImage({ src, withAuth = true, ...props }: AuthImageProps) {
       return
     }
 
-    let objectUrl: string | null = null
     const controller = new window.AbortController()
 
-    const loadImage = async () => {
+    const loadVideo = async () => {
       try {
         setIsLoading(true)
         const response = await fetch(source, {
@@ -55,11 +54,11 @@ export function AuthImage({ src, withAuth = true, ...props }: AuthImageProps) {
 
         if (!response.ok) {
           setIsLoading(false)
-          throw new Error(`Image request failed with status ${response.status}`)
+          throw new Error(`Video request failed with status ${response.status}`)
         }
 
         const blob = await response.blob()
-        objectUrl = URL.createObjectURL(blob)
+        const objectUrl = URL.createObjectURL(blob)
         setResolvedSrc(objectUrl)
         setIsLoading(false)
       } catch (error) {
@@ -71,15 +70,19 @@ export function AuthImage({ src, withAuth = true, ...props }: AuthImageProps) {
         setIsLoading(false)
       }
     }
-    loadImage()
+    loadVideo()
+
+    return () => {
+      controller.abort()
+    }
   }, [source, withAuth])
 
-  const { className, ...restProps } = props
+  const { className, style, ...restVideoProps } = props
 
   if (isLoading) {
     return (
       <div
-        {...restProps}
+        style={style}
         className={`w-full h-full flex items-center justify-center ${className || ''}`}
       >
         <LoadingSpinner size="md" />
@@ -87,5 +90,5 @@ export function AuthImage({ src, withAuth = true, ...props }: AuthImageProps) {
     )
   }
 
-  return <img src={resolvedSrc} {...restProps} className={className} />
+  return <video src={resolvedSrc} {...restVideoProps} className={className} style={style} />
 }

@@ -4,54 +4,35 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
-import { toast } from '@/hooks/use-toast'
-import type { Diary } from '@/types'
-import { getMoodEmoji, getMoodLabel } from '@/utils/mood'
-import { diariesApi } from '@mosaic/api'
+import type { Diary } from '@mosaic/api'
+import { getMoodColor, getMoodLabel } from '@/utils/mood'
+import { useDiaries } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { BookOpen, Calendar } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export default function DiaryPage() {
-  const [diaries, setDiaries] = useState<Diary[]>([])
-  const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [pageSize] = useState(20)
-  const [total, setTotal] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
   const [startDate, setStartDate] = useState<string>()
   const [endDate, setEndDate] = useState<string>()
   const navigate = useNavigate()
 
-  const fetchDiaries = async (pageNum: number = page) => {
-    try {
-      setLoading(true)
-      const response = await diariesApi.list({
-        page: pageNum,
-        pageSize,
-        startDate,
-        endDate,
-      })
-      setDiaries(response.items)
-      setTotal(response.total)
-      setTotalPages(response.totalPages)
-      setPage(response.page)
-    } catch (error) {
-      console.error('获取日记列表失败:', error)
-      toast.error('获取日记列表失败')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: response, isLoading } = useDiaries({
+    page,
+    pageSize,
+    startDate,
+    endDate,
+  })
 
-  useEffect(() => {
-    fetchDiaries(1)
-  }, [startDate, endDate])
+  const diaries: Diary[] = response?.items ?? []
+  const total = response?.total ?? 0
+  const totalPages = response?.totalPages ?? 0
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
-      fetchDiaries(newPage)
+      setPage(newPage)
     }
   }
 
@@ -82,7 +63,7 @@ export default function DiaryPage() {
     return mostCommon
   }, [moodStats])
 
-  if (loading && diaries.length === 0) {
+  if (isLoading && diaries.length === 0) {
     return (
       <DeskTopLayout className="relative">
         <div className="h-full flex items-center justify-center">
@@ -108,8 +89,12 @@ export default function DiaryPage() {
               </Badge>
 
               {mostCommonMood && (
-                <Badge variant="outline" className="text-xs">
-                  常见心情: {getMoodEmoji(mostCommonMood)} {getMoodLabel(mostCommonMood)}
+                <Badge
+                  variant="outline"
+                  className="text-xs text-white"
+                  style={{ backgroundColor: getMoodColor(mostCommonMood) }}
+                >
+                  常见心情: {getMoodLabel(mostCommonMood)}
                 </Badge>
               )}
             </div>
@@ -147,7 +132,7 @@ export default function DiaryPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {!loading && diaries.length === 0 ? (
+          {!isLoading && diaries.length === 0 ? (
             <EmptyState icon={BookOpen} title="暂无日记" description="开始记录你的每一天吧" />
           ) : (
             <div className="p-6">
@@ -167,8 +152,12 @@ export default function DiaryPage() {
                               <span>{dayjs(diary.date).format('M月D日 dddd')}</span>
                             </div>
                             {diary.moodKey && (
-                              <Badge variant="outline" className="text-sm">
-                                {getMoodEmoji(diary.moodKey)} {getMoodLabel(diary.moodKey)}
+                              <Badge
+                                variant="outline"
+                                className="text-sm text-white"
+                                style={{ backgroundColor: getMoodColor(diary.moodKey) }}
+                              >
+                                {getMoodLabel(diary.moodKey)}
                               </Badge>
                             )}
                           </div>
