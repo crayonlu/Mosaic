@@ -1,4 +1,4 @@
-import type { ListDiariesQuery } from '@/types/api'
+import type { ListDiariesQuery } from '@mosaic/api'
 import { diariesApi } from '@mosaic/api'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 

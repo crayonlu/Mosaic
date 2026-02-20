@@ -1,5 +1,5 @@
 import type { HeatMapCell, HeatMapDataExtended } from '@/types/stats'
-import { getMoodColor } from '@/utils/mood'
+import { getMoodColor } from '@mosaic/utils'
 import { useHeatmap } from '@mosaic/api'
 import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'

@@ -1,6 +1,6 @@
 import { clearStoredAuth, initSharedApiClient, setStoredAuthTokens } from '@/lib/shared-api'
 import type { ServerConfig } from '@/types/settings'
-import { configCommands } from '@/utils/callRust'
+import { configCommands } from '@/utils/call-rust'
 import { useEffect, useState } from 'react'
 
 export function useServerConfig() {

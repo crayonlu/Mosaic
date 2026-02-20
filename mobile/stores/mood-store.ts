@@ -1,4 +1,4 @@
-import { MoodKey } from '@/types'
+import type { MoodKey } from '@mosaic/api'
 import { create } from 'zustand'
 
 interface MoodState {

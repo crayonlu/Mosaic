@@ -1,6 +1,5 @@
 import { tokenStorage } from '@/lib/services/token-storage'
-import type { ApiError } from '@/types/api'
-import type { User } from '@/types/user'
+import type { ApiError, User } from '@mosaic/api'
 import { apiClient, authApi } from '@mosaic/api'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { create } from 'zustand'
