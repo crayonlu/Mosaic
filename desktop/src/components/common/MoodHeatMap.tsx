@@ -1,7 +1,8 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTheme } from '@/hooks/use-theme'
 import type { HeatMapCell, HeatMapDataExtended } from '@/types/stats'
-import { useMemo } from 'react'
+import { getMoodLabel } from '@mosaic/utils'
+import { useEffect, useMemo, useRef } from 'react'
 
 interface MoodHeatMapProps {
   data: HeatMapDataExtended
@@ -16,6 +17,14 @@ export function MoodHeatMap({
   selectedMonth: _selectedMonth,
   onMonthClick: _onMonthClick,
 }: MoodHeatMapProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollLeft = containerRef.current.scrollWidth
+    }
+  }, [data])
+
   const { weeks } = useMemo(() => {
     const cells = data.cells || []
     const weeks: HeatMapCell[][] = []
@@ -29,23 +38,14 @@ export function MoodHeatMap({
     const firstDayOfWeek = new Date(startDate)
     firstDayOfWeek.setDate(startDate.getDate() - startDate.getDay())
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
     let currentDate = new Date(firstDayOfWeek)
     let weekIndex = 0
     let lastMonth = -1
-    let reachedEnd = false
 
-    while (currentDate <= endDate && !reachedEnd) {
+    while (currentDate <= endDate) {
       const week: HeatMapCell[] = []
 
       for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
-        if (currentDate > today) {
-          reachedEnd = true
-          break
-        }
-
         const dateStr = currentDate.toISOString().split('T')[0]
         const cell = cellMap.get(dateStr) || {
           date: dateStr,
@@ -91,18 +91,7 @@ export function MoodHeatMap({
       return `${formattedDate} · ${weekday} · 无记录`
     }
 
-    const moodLabels: Record<string, string> = {
-      happy: '愉悦',
-      angry: '愤怒',
-      sad: '悲伤',
-      calm: '平静',
-      anxious: '焦虑',
-      excited: '兴奋',
-      tired: '疲惫',
-      neutral: '中性',
-    }
-
-    const moodLabel = moodLabels[cell.moodKey] || cell.moodKey
+    const moodLabel = getMoodLabel(cell.moodKey)
     const score = cell.moodScore || 0
 
     return `${formattedDate} · ${weekday} · ${moodLabel} (${score})`
@@ -110,7 +99,10 @@ export function MoodHeatMap({
 
   return (
     <TooltipProvider>
-      <div className="overflow-x-auto overflow-y-hidden flex gap-1 justify-start">
+      <div
+        ref={containerRef}
+        className="overflow-x-auto overflow-y-hidden flex gap-1 justify-start"
+      >
         {weeks.map((week, weekIndex) => (
           <div key={weekIndex} className="flex flex-col gap-1">
             {week.map(cell => (

@@ -1,11 +1,12 @@
 import { AuthImage } from '@/components/common/AuthImage'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
 import { resolveApiUrl } from '@/lib/shared-api'
-import { useUpdateAvatar, useUpdateUser, useUser } from '@mosaic/api'
+import { useUpdateUser, useUser } from '@mosaic/api'
+import { userCommands } from '@/utils/call-rust'
 import { Label } from '@radix-ui/react-label'
 import { Loader2, User as UserIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -13,7 +14,6 @@ import { useEffect, useRef, useState } from 'react'
 export function UserSettings() {
   const { data: user, isLoading } = useUser()
   const updateUser = useUpdateUser()
-  const updateAvatar = useUpdateAvatar()
   const [username, setUsername] = useState('')
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -34,7 +34,14 @@ export function UserSettings() {
 
     setUploading(true)
     try {
-      await updateAvatar.mutateAsync({ avatarUrl: file.name })
+      const arrayBuffer = await file.arrayBuffer()
+      const data = Array.from(new Uint8Array(arrayBuffer))
+
+      await userCommands.uploadAvatar({
+        name: file.name,
+        mimeType: file.type || 'image/jpeg',
+        data,
+      })
     } catch (error) {
       console.error('Failed to upload avatar:', error)
     } finally {
@@ -73,9 +80,6 @@ export function UserSettings() {
               alt={user.username || 'User'}
               className="h-full w-full"
             />
-            <AvatarFallback>
-              <UserIcon className="h-10 w-10" />
-            </AvatarFallback>
           </Avatar>
           <div className="text-center space-y-2">
             <input

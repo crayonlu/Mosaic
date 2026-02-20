@@ -176,10 +176,10 @@ export function ArchiveDialog({
                   type="button"
                   onClick={() => handleSelectMood(mood.key)}
                   disabled={isLoading}
-                  className="flex flex-col items-center justify-center h-14 min-w-[4.5rem] rounded-lg border-2 transition-all hover:scale-105"
+                  className="flex flex-col items-center justify-center h-14 min-w-18 rounded-lg border-2 transition-all hover:scale-105"
                   style={{
                     backgroundColor: mood.color,
-                    borderColor: moodKey === mood.key ? '#000' : 'transparent',
+                    borderColor: moodKey === mood.key ? mood.color : 'transparent',
                     opacity: moodKey === mood.key ? 1 : 0.8,
                   }}
                 >

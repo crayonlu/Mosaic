@@ -231,7 +231,7 @@ export class TauriApiClient {
     return this.invoke('update_user', { req })
   }
 
-  async uploadAvatar(file: { name: string; data: number[]; mime_type: string }): Promise<unknown> {
+  async uploadAvatar(file: { name: string; data: number[]; mimeType: string }): Promise<unknown> {
     return this.invoke('upload_avatar', { file })
   }
 
