@@ -138,7 +138,6 @@ async fn main() -> anyhow::Result<()> {
                     .configure(routes::configure_resource_routes)
                     .configure(routes::configure_stats_routes),
             )
-            .service(Files::new("/", "/app/dist").index_file("index.html"))
     })
     .bind(&bind_address)?
     .run()
