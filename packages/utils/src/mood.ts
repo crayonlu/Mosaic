@@ -2,15 +2,9 @@ import type { MoodKey } from '@mosaic/api'
 
 export type { MoodKey }
 
-/**
- * Mood configuration with emoji and labels
- */
 export interface MoodConfig {
-  /** Unique mood identifier */
   key: MoodKey
-  /** Chinese label */
   label: string
-  /** Color for visual representation */
   color: string
 }
 
@@ -25,7 +19,6 @@ export const MOODS: MoodConfig[] = [
   { key: 'neutral', label: '中性', color: '#B8B8B8' },
 ] as const
 
-/** Mood label lookup by key */
 export const MOOD_LABEL_MAP: Record<MoodKey, string> = {
   joy: '愉悦',
   anger: '愤怒',
@@ -37,7 +30,6 @@ export const MOOD_LABEL_MAP: Record<MoodKey, string> = {
   neutral: '中性',
 }
 
-/** Mood color lookup by key */
 export const MOOD_COLOR_MAP: Record<MoodKey, string> = {
   joy: '#FFD93D',
   anger: '#FF6B6B',
@@ -63,44 +55,24 @@ function toMoodKey(moodKey?: string | null): MoodKey | undefined {
   return undefined
 }
 
-/**
- * Get label for a mood key
- * @param moodKey - The mood key (case-insensitive)
- * @returns Label string, or '未知' if not found
- */
 export function getMoodLabel(moodKey?: string | null): string {
   const key = toMoodKey(moodKey)
   if (!key) return moodKey || '未知'
   return MOOD_LABEL_MAP[key] ?? moodKey
 }
 
-/**
- * Get color for a mood key
- * @param moodKey - The mood key (case-insensitive)
- * @returns Color hex string, or neutral color if not found
- */
 export function getMoodColor(moodKey?: string | null): string {
   const key = toMoodKey(moodKey)
   if (!key) return MOOD_COLOR_MAP.neutral
   return MOOD_COLOR_MAP[key] ?? MOOD_COLOR_MAP.neutral
 }
 
-/**
- * Get full mood configuration
- * @param moodKey - The mood key (case-insensitive)
- * @returns MoodConfig or undefined
- */
 export function getMoodConfig(moodKey?: string | null): MoodConfig | undefined {
   const key = toMoodKey(moodKey)
   if (!key) return undefined
   return MOODS.find(m => m.key === key)
 }
 
-/**
- * Normalize a mood key to standard format
- * @param moodKey - Input mood key
- * @returns Normalized mood key, or undefined if invalid
- */
 export function normalizeMoodKey(moodKey?: string | null): MoodKey | undefined {
   return toMoodKey(moodKey)
 }
@@ -109,10 +81,6 @@ export const MOOD_INTENSITY_LEVELS = 10
 
 export const DEFAULT_MOOD: MoodKey = 'neutral'
 
-/**
- * Get color with adjusted opacity based on intensity
- * intensity: 1-10, higher = more intense/darker
- */
 export function getMoodColorWithIntensity(moodKey?: MoodKey, intensity?: number): string {
   if (!moodKey) return 'rgba(184, 184, 184, 0.5)'
   const baseColor = MOOD_COLOR_MAP[moodKey] || MOOD_COLOR_MAP.neutral

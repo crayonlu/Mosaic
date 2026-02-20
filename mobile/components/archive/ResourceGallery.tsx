@@ -1,6 +1,6 @@
 import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { useThemeStore } from '@/stores/theme-store'
-import type { MemoWithResources } from '@/types/memo'
+import type { MemoWithResources } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
 import { Image } from 'expo-image'
 import { useEffect, useState } from 'react'

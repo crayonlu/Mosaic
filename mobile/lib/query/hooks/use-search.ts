@@ -1,4 +1,4 @@
-import type { SearchMemosQuery } from '@/types/api'
+import type { SearchMemosQuery } from '@mosaic/api'
 import { memosApi } from '@mosaic/api'
 import { useInfiniteQuery } from '@tanstack/react-query'
 

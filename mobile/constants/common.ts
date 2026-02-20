@@ -1,6 +1,6 @@
 export { DarkTheme, LightTheme, type Theme, type ThemeMode } from './theme'
 
-export { MOOD_INTENSITY_LEVELS, MOODS, type MoodKey } from '@/lib/utils/mood'
+export { MOOD_INTENSITY_LEVELS, MOODS, type MoodKey } from '@mosaic/utils'
 
 export const APP = {
   NAME: 'Mosaic',

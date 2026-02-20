@@ -7,7 +7,7 @@ import { useErrorHandler } from '@/hooks/use-error-handler'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
 import { useCreateMemo, useDeleteMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
-import { type MemoWithResources } from '@/types/memo'
+import { type MemoWithResources } from '@mosaic/api'
 import { router } from 'expo-router'
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 
