@@ -20,6 +20,7 @@ import {
   View,
 } from 'react-native'
 import { CoverImagePicker } from './CoverImagePicker'
+import { useThemeStore } from '@/stores/theme-store'
 
 interface ArchiveDialogProps {
   visible: boolean
