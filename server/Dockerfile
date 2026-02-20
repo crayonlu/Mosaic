@@ -15,21 +15,6 @@ COPY Cargo.lock .
 RUN cargo fetch
 RUN cargo build --release --package server
 
-FROM node:20-alpine AS frontend-builder
-
-WORKDIR /app
-
-RUN apk add --no-cache curl bash
-RUN curl -fsSL https://bun.sh/install | bash
-ENV BUN_INSTALL=/root/.bun
-ENV PATH=$BUN_INSTALL/bin:$PATH
-
-COPY mosaic-dashboard/package.json ./
-COPY mosaic-dashboard/bun.lock ./
-RUN bun install
-COPY mosaic-dashboard ./
-RUN bun run build
-
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y \
@@ -41,7 +26,6 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 COPY --from=backend-builder /app/target/release/server /usr/local/bin/
-COPY --from=frontend-builder /app/dist /app/dist
 
 RUN mkdir -p storage/uploads storage/temp logs
 RUN chown -R appuser:appuser /app
