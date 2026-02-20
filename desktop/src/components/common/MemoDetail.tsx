@@ -19,8 +19,8 @@ import {
 import { useAI } from '@/hooks/use-ai'
 import { toast } from '@/hooks/use-toast'
 import { resolveApiUrl } from '@/lib/shared-api'
+import { assetCommands, memoCommands } from '@/utils/call-rust'
 import type { MemoWithResources, Resource } from '@mosaic/api'
-import { assetCommands, memoCommands } from '@/utils/callRust'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
