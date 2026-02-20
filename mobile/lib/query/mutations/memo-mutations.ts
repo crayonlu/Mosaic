@@ -1,4 +1,4 @@
-import type { CreateMemoRequest, UpdateMemoRequest } from '@/types/api'
+import type { CreateMemoRequest, UpdateMemoRequest } from '@mosaic/api'
 import { memosApi } from '@mosaic/api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 

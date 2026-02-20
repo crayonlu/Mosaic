@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/hooks/use-toast'
 import type { MemoWithResources } from '@mosaic/api'
-import { htmlToText } from '@/utils/domParser'
+import { extractTextFromHtml } from '@mosaic/utils'
 import {
   useMemoByDate,
   useDiary,
@@ -130,7 +130,7 @@ export default function ArchivePage() {
     if (selectedMemosList.length === 0) return ''
 
     const contents = selectedMemosList
-      .map(memo => htmlToText(memo.content))
+      .map(memo => extractTextFromHtml(memo.content))
       .filter(text => text.length > 0)
 
     return contents.join('\n\n')

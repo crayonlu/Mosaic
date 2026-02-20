@@ -3,7 +3,7 @@ import type {
   UpdateDiaryMoodRequest,
   UpdateDiaryRequest,
   UpdateDiarySummaryRequest,
-} from '@/types/api'
+} from '@mosaic/api'
 import { diariesApi } from '@mosaic/api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 

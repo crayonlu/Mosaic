@@ -1,17 +1,17 @@
-import { useState, useCallback } from 'react'
-import { aiCommands } from '@/utils/callRust'
-import { loadAIConfig } from '@/utils/settings-helpers'
 import { toast } from '@/hooks/use-toast'
 import type {
   CompleteTextRequest,
   CompleteTextResponse,
   RewriteTextRequest,
   RewriteTextResponse,
-  SummarizeTextRequest,
-  SummarizeTextResponse,
   SuggestTagsRequest,
   SuggestTagsResponse,
+  SummarizeTextRequest,
+  SummarizeTextResponse,
 } from '@/types/ai'
+import { aiCommands } from '@/utils/call-rust'
+import { loadAIConfig } from '@/utils/settings-helpers'
+import { useCallback, useState } from 'react'
 
 let aiConfigCache: { config: any; timestamp: number } | null = null
 const CACHE_DURATION = 5 * 60 * 1000

@@ -7,5 +7,6 @@ export {
   selectDataDirectory,
   settingsCommands,
   storageCommands,
-  syncCommands,
-} from './callRust'
+  syncCommands
+} from './call-rust';
+
