@@ -183,13 +183,13 @@ impl StatsService {
 
             // Calculate color based on mood
             let color = match mood_key.as_deref() {
-                Some("happy") => "#22c55e",
-                Some("sad") => "#3b82f6",
-                Some("angry") => "#ef4444",
-                Some("anxious") => "#f59e0b",
-                Some("calm") => "#06b6d4",
-                Some("excited") => "#f97316",
-                Some("tired") => "#6b7280",
+                Some("joy") => "#FFD93D",
+                Some("sadness") => "#4ECDC4",
+                Some("anger") => "#FF6B6B",
+                Some("anxiety") => "#FFA07A",
+                Some("calm") => "#95E1D3",
+                Some("focus") => "#6C5CE7",
+                Some("tired") => "#A8A8A8",
                 Some("neutral") | _ => "#8b5cf6",
             };
 

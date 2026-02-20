@@ -2,7 +2,7 @@ import DarkMosaicIcon from '@/assets/mosaic-dark.svg'
 import LightMosaicIcon from '@/assets/mosaic-light.svg'
 import { AuthImage } from '@/components/common/AuthImage'
 import { SidebarHeatMap } from '@/components/desktop/SidebarHeatMap'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar } from '@/components/ui/avatar'
 import {
   Sidebar,
   SidebarContent,
@@ -108,9 +108,6 @@ export function AppSidebar() {
                   alt={user?.username || 'User'}
                   className="h-full w-full"
                 />
-                <AvatarFallback>
-                  <UserIcon className="size-4" />
-                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user?.username || 'new user'}</span>

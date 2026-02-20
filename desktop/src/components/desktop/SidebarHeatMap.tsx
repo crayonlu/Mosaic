@@ -1,9 +1,9 @@
 import { MoodHeatMap } from '@/components/common/MoodHeatMap'
+import { MOODS } from '@mosaic/utils'
 import { useHeatmapQuery } from '@/stores/stats-store'
 
 export function SidebarHeatMap() {
   const { data: heatmapData, isLoading: heatmapLoading } = useHeatmapQuery()
-
   if (heatmapLoading) {
     return (
       <div className="p-2">
@@ -26,38 +26,12 @@ export function SidebarHeatMap() {
         <MoodHeatMap data={heatmapData} onDateClick={() => {}} />
       </div>
       <div className="flex flex-wrap gap-1 mt-2 text-[10px] text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(45, 70%, 70%)' }} />
-          <span>愉悦</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(0, 70%, 70%)' }} />
-          <span>愤怒</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(210, 70%, 70%)' }} />
-          <span>悲伤</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(180, 70%, 70%)' }} />
-          <span>平静</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(25, 70%, 70%)' }} />
-          <span>焦虑</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(160, 70%, 70%)' }} />
-          <span>专注</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(195, 70%, 70%)' }} />
-          <span>疲惫</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(0, 0%, 70%)' }} />
-          <span>中性</span>
-        </div>
+        {MOODS.map(mood => (
+          <div key={mood.key} className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: mood.color }} />
+            <span>{mood.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   )

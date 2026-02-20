@@ -80,7 +80,7 @@ export default function SearchPage() {
     <DeskTopLayout className="relative">
       <div className="h-full flex flex-col">
         <div className="bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
-          <div className="flex items-center gap-4 px-6 pt-2 pb-4 border-b">
+          <div className="flex items-center gap-4 px-6 pb-4 border-b">
             <div className="flex-1 max-w-2xl">
               <SearchInput value={query} onChange={setQuery} placeholder="搜索内容或标签..." />
             </div>

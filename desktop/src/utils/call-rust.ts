@@ -27,8 +27,8 @@ export const userCommands = {
   getOrCreateDefaultUser: () => tauriApiClient.getOrCreateDefaultUser() as Promise<User>,
   updateUser: (req: { username?: string; avatar_url?: string }) =>
     tauriApiClient.updateUser(req) as Promise<User>,
-  uploadAvatar: (file: { name: string; data: number[]; mime_type: string }) =>
-    tauriApiClient.uploadAvatar(file) as Promise<User>,
+  uploadAvatar: (file: { name: string; data: number[]; mimeType: string }) =>
+    tauriApiClient.uploadAvatar(file as any) as Promise<User>,
   login: (username: string, password: string) =>
     tauriApiClient.login(username, password) as Promise<{
       accessToken: string

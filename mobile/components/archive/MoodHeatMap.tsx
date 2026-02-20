@@ -1,10 +1,10 @@
 import { Loading } from '@/components/ui'
 import { useThemeStore } from '@/stores/theme-store'
 import { statsApi } from '@mosaic/api'
+import { MOODS, getMoodColor } from '@mosaic/utils'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-
 interface HeatMapCell {
   date: string
   color: string
@@ -29,35 +29,14 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
   const [loading, setLoading] = useState(true)
   const scrollViewRef = useRef<ScrollView>(null)
 
-  const moodColors: Record<string, string> = {
-    joy: '#FFD93D',
-    anger: '#FF6B6B',
-    sadness: '#4ECDC4',
-    calm: '#95E1D3',
-    anxiety: '#FFA07A',
-    focus: '#6C5CE7',
-    tired: '#A8A8A8',
-    neutral: theme.border,
-  }
+  const moodLegend = useMemo(() => MOODS, [])
 
-  const moodLegend = useMemo(
-    () => [
-      { key: 'joy', label: '愉悦', color: moodColors.joy || '#FFD93D' },
-      { key: 'anger', label: '愤怒', color: moodColors.anger || '#FF6B6B' },
-      { key: 'sadness', label: '悲伤', color: moodColors.sadness || '#4ECDC4' },
-      { key: 'calm', label: '平静', color: moodColors.calm || '#95E1D3' },
-      { key: 'anxiety', label: '焦虑', color: moodColors.anxiety || '#FFA07A' },
-      { key: 'focus', label: '专注', color: moodColors.focus || '#6C5CE7' },
-      { key: 'tired', label: '疲惫', color: moodColors.tired || '#A8A8A8' },
-      { key: 'neutral', label: '中性', color: theme.border },
-    ],
+  const getLocalMoodColor = useCallback(
+    (moodKey?: string | null) => {
+      return getMoodColor(moodKey) || theme.border
+    },
     [theme.border]
   )
-
-  const getMoodColor = (moodKey?: string | null) => {
-    if (!moodKey) return theme.border
-    return moodColors[moodKey] || theme.border
-  }
 
   const loadHeatMapData = useCallback(async () => {
     try {
@@ -103,7 +82,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
         // Calculate color based on mood
         let color = theme.border // default empty color
         if (count > 0) {
-          color = getMoodColor(moodKey)
+          color = getLocalMoodColor(moodKey)
         }
 
         cells.push({
@@ -128,7 +107,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
     } finally {
       setLoading(false)
     }
-  }, [moodLegend, theme.border])
+  }, [theme.border, getLocalMoodColor])
 
   useEffect(() => {
     loadHeatMapData()

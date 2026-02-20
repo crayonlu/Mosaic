@@ -16,7 +16,7 @@ export const MOODS: MoodConfig[] = [
   { key: 'anxiety', label: '焦虑', color: '#FFA07A' },
   { key: 'focus', label: '专注', color: '#6C5CE7' },
   { key: 'tired', label: '疲惫', color: '#A8A8A8' },
-  { key: 'neutral', label: '中性', color: '#B8B8B8' },
+  { key: 'neutral', label: '无感', color: '#B8B8B8' },
 ] as const
 
 export const MOOD_LABEL_MAP: Record<MoodKey, string> = {
@@ -27,7 +27,7 @@ export const MOOD_LABEL_MAP: Record<MoodKey, string> = {
   anxiety: '焦虑',
   focus: '专注',
   tired: '疲惫',
-  neutral: '中性',
+  neutral: '无感',
 }
 
 export const MOOD_COLOR_MAP: Record<MoodKey, string> = {
