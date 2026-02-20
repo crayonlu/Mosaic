@@ -1,17 +1,3 @@
-// Re-export types from @mosaic/api shared package
-export type {
-  HeatMapData,
-  MoodData,
-  StatsQuery,
-  SummaryData,
-  SummaryQuery,
-  TagData,
-  TimelineData,
-  TimelineEntry,
-  TrendsData,
-} from '@mosaic/api'
-
-// Desktop-specific HeatMapCell type (not in shared package)
 export interface HeatMapCell {
   date: string
   count: number
@@ -21,7 +7,6 @@ export interface HeatMapCell {
   moodScore?: number
 }
 
-// Extended HeatMapData with cells for desktop UI
 export interface HeatMapDataExtended {
   dates: string[]
   counts: number[]
@@ -31,6 +16,3 @@ export interface HeatMapDataExtended {
   startDate?: string
   endDate?: string
 }
-
-// Re-export common types
-export type { PaginatedResponse } from '@mosaic/api'

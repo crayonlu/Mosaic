@@ -1,5 +1,4 @@
-import { MoodKey } from '@/types'
-import type { DiaryWithMemosResponse } from '@/types/api'
+import type { DiaryWithMemosResponse, MoodKey } from '@mosaic/api'
 import { diariesApi } from '@mosaic/api'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
