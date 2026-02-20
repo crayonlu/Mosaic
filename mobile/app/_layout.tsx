@@ -1,4 +1,4 @@
-import { QueryProvider } from '@/components/query-provider'
+import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
 import { getMoodColorWithIntensity } from '@mosaic/utils'
