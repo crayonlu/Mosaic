@@ -1,5 +1,5 @@
 use crate::api::StatsApi;
-use crate::cache::CacheStore;
+use crate::cache::{CacheStats, CacheStore};
 use crate::models::*;
 use chrono::{Datelike, TimeZone};
 use std::collections::HashMap;
@@ -230,4 +230,32 @@ pub async fn get_summary(
             total_resources: 0,
         })
     }
+}
+
+#[tauri::command]
+pub async fn get_cache_stats(state: State<'_, StatsAppState>) -> Result<CacheStats, String> {
+    state
+        .cache
+        .get_cache_stats()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn clear_backend_cache(state: State<'_, StatsAppState>) -> Result<(), String> {
+    state
+        .cache
+        .clear_all_cache()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn clear_memos_cache(state: State<'_, StatsAppState>) -> Result<(), String> {
+    state.cache.clear_memos().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn clear_diaries_cache(state: State<'_, StatsAppState>) -> Result<(), String> {
+    state.cache.clear_diaries().await.map_err(|e| e.to_string())
 }
