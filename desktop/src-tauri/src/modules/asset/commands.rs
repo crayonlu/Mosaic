@@ -31,9 +31,10 @@ pub async fn upload_files(
         });
 
         if !mime_type.starts_with("image/") && !mime_type.starts_with("video/") {
-            return Err(
-                AppError::UploadError("Only image and video files are supported".to_string()).to_string(),
-            );
+            return Err(AppError::UploadError(
+                "Only image and video files are supported".to_string(),
+            )
+            .to_string());
         }
 
         let response = resource_api
@@ -143,6 +144,9 @@ pub async fn get_presigned_image_url(
     id: String,
 ) -> Result<String, String> {
     let resource_api = ResourceApi::new(api_client.inner().clone());
-    let response = resource_api.get_presigned_url(&id).await.map_err(|e| e.to_string())?;
+    let response = resource_api
+        .get_presigned_url(&id)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(response.url)
 }
