@@ -199,4 +199,62 @@ impl CacheStore {
 
         Ok(())
     }
+
+    pub async fn get_cache_stats(&self) -> AppResult<CacheStats> {
+        let memo_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM cached_memos")
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| AppError::CacheError(format!("Failed to count memos: {}", e)))?;
+
+        let diary_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM cached_diaries")
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| AppError::CacheError(format!("Failed to count diaries: {}", e)))?;
+
+        Ok(CacheStats {
+            memo_count: memo_count.0,
+            diary_count: diary_count.0,
+        })
+    }
+
+    pub async fn clear_all_cache(&self) -> AppResult<()> {
+        sqlx::query("DELETE FROM cached_memos")
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::CacheError(format!("Failed to clear memos: {}", e)))?;
+
+        sqlx::query("DELETE FROM cached_diaries")
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::CacheError(format!("Failed to clear diaries: {}", e)))?;
+
+        sqlx::query("DELETE FROM offline_operations")
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::CacheError(format!("Failed to clear operations: {}", e)))?;
+
+        Ok(())
+    }
+
+    pub async fn clear_memos(&self) -> AppResult<()> {
+        sqlx::query("DELETE FROM cached_memos")
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::CacheError(format!("Failed to clear memos: {}", e)))?;
+        Ok(())
+    }
+
+    pub async fn clear_diaries(&self) -> AppResult<()> {
+        sqlx::query("DELETE FROM cached_diaries")
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::CacheError(format!("Failed to clear diaries: {}", e)))?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct CacheStats {
+    pub memo_count: i64,
+    pub diary_count: i64,
 }

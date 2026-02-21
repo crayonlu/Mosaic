@@ -23,7 +23,10 @@ use modules::settings::commands::{
     register_show_shortcut, set_data_directory, set_setting, test_ai_connection,
     unregister_shortcut,
 };
-use modules::stats::commands::{get_heatmap, get_summary, get_timeline, get_trends};
+use modules::stats::commands::{
+    clear_backend_cache, clear_diaries_cache, clear_memos_cache, get_cache_stats, get_heatmap,
+    get_summary, get_timeline, get_trends,
+};
 use modules::user::commands::{get_or_create_default_user, get_user, update_user, upload_avatar};
 use sync::commands::{check_connection, get_sync_status, trigger_sync};
 use sync::*;
@@ -145,6 +148,10 @@ pub fn run() {
             trigger_sync,
             get_sync_status,
             check_connection,
+            get_cache_stats,
+            clear_backend_cache,
+            clear_memos_cache,
+            clear_diaries_cache,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

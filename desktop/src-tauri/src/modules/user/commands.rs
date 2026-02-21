@@ -38,10 +38,7 @@ pub async fn update_user(
     state: State<'_, UserAppState>,
     req: UpdateUserRequest,
 ) -> Result<User, String> {
-    state.user_api
-        .update(req)
-        .await
-        .map_err(|e| e.to_string())
+    state.user_api.update(req).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -49,7 +46,8 @@ pub async fn upload_avatar(
     state: State<'_, UserAppState>,
     file: UploadAvatarFile,
 ) -> Result<User, String> {
-    state.user_api
+    state
+        .user_api
         .upload_avatar(file.name, file.mime_type, file.data)
         .await
         .map_err(|e| e.to_string())

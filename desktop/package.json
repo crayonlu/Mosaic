@@ -59,6 +59,7 @@
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.19",
     "highlight.js": "^11.11.1",
+    "idb": "^8.0.3",
     "lowlight": "^3.3.0",
     "lucide-react": "^0.562.0",
     "marked": "^17.0.1",
