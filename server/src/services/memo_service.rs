@@ -23,10 +23,20 @@ impl MemoService {
         user_id: &str,
         req: CreateMemoRequest,
     ) -> Result<MemoWithResources, AppError> {
+        let content_preview = if req.content.len() <= 50 {
+            req.content.clone()
+        } else {
+            let mut end_idx = 50;
+            while end_idx > 0 && !req.content.is_char_boundary(end_idx) {
+                end_idx -= 1;
+            }
+            format!("{}...", &req.content[..end_idx])
+        };
+        
         log::info!(
             "[MemoService] Creating memo for user: {}, content: {}, tags: {:?}, resource_ids: {:?}",
             user_id,
-            &req.content[..req.content.len().min(50)],
+            content_preview,
             req.tags,
             req.resource_ids
         );

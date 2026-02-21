@@ -88,8 +88,24 @@ export const settingsCommands = {
   getSettings: (category?: string) => tauriApiClient.getSettings(category) as Promise<Setting[]>,
   setSetting: (req: SetSettingRequest) => tauriApiClient.setSetting(req) as Promise<Setting>,
   deleteSetting: (key: string) => tauriApiClient.deleteSetting(key),
-  testAIConnection: (provider: string, baseUrl: string, apiKey: string) =>
-    tauriApiClient.testAIConnection(provider, baseUrl, apiKey),
+  testAIConnection: (
+    provider: string,
+    baseUrl: string,
+    apiKey: string,
+    model?: string,
+    temperature?: number,
+    maxTokens?: number,
+    timeout?: number
+  ) =>
+    tauriApiClient.testAIConnection(
+      provider,
+      baseUrl,
+      apiKey,
+      model,
+      temperature,
+      maxTokens,
+      timeout
+    ),
   enableAutostart: (enabled: boolean) => tauriApiClient.enableAutostart(enabled),
   isAutostartEnabled: () => tauriApiClient.isAutostartEnabled(),
   registerShowShortcut: (shortcut: string) => tauriApiClient.registerShowShortcut(shortcut),
@@ -127,31 +143,33 @@ export async function loadAIConfig(): Promise<AIConfig | null> {
 }
 
 export async function saveAIConfig(config: AIConfig): Promise<void> {
-  await Promise.all([
-    settingsCommands.setSetting({ key: 'ai.provider', value: config.provider, category: 'ai' }),
-    settingsCommands.setSetting({ key: 'ai.baseUrl', value: config.baseUrl, category: 'ai' }),
-    settingsCommands.setSetting({ key: 'ai.apiKey', value: config.apiKey, category: 'ai' }),
-    config.model &&
-      settingsCommands.setSetting({ key: 'ai.model', value: config.model, category: 'ai' }),
-    config.temperature !== undefined &&
-      settingsCommands.setSetting({
-        key: 'ai.temperature',
-        value: config.temperature.toString(),
-        category: 'ai',
-      }),
-    config.maxTokens !== undefined &&
-      settingsCommands.setSetting({
-        key: 'ai.maxTokens',
-        value: config.maxTokens.toString(),
-        category: 'ai',
-      }),
-    config.timeout !== undefined &&
-      settingsCommands.setSetting({
-        key: 'ai.timeout',
-        value: config.timeout.toString(),
-        category: 'ai',
-      }),
-  ])
+  await settingsCommands.setSetting({ key: 'ai.provider', value: config.provider, category: 'ai' })
+  await settingsCommands.setSetting({ key: 'ai.baseUrl', value: config.baseUrl, category: 'ai' })
+  await settingsCommands.setSetting({ key: 'ai.apiKey', value: config.apiKey, category: 'ai' })
+  if (config.model) {
+    await settingsCommands.setSetting({ key: 'ai.model', value: config.model, category: 'ai' })
+  }
+  if (config.temperature !== undefined) {
+    await settingsCommands.setSetting({
+      key: 'ai.temperature',
+      value: config.temperature.toString(),
+      category: 'ai',
+    })
+  }
+  if (config.maxTokens !== undefined) {
+    await settingsCommands.setSetting({
+      key: 'ai.maxTokens',
+      value: config.maxTokens.toString(),
+      category: 'ai',
+    })
+  }
+  if (config.timeout !== undefined) {
+    await settingsCommands.setSetting({
+      key: 'ai.timeout',
+      value: config.timeout.toString(),
+      category: 'ai',
+    })
+  }
 }
 
 export async function loadShortcutConfig(): Promise<ShortcutConfig | null> {

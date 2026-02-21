@@ -10,14 +10,6 @@ pub struct ServerConfig {
     pub password: String,
     pub api_token: Option<String>,
     pub refresh_token: Option<String>,
-    // AI Configuration
-    pub ai_provider: String,
-    pub ai_base_url: String,
-    pub ai_api_key: String,
-    pub ai_model: Option<String>,
-    pub ai_temperature: Option<f64>,
-    pub ai_max_tokens: Option<i32>,
-    pub ai_timeout: Option<u64>,
 }
 
 impl ServerConfig {
@@ -84,13 +76,6 @@ impl Default for ServerConfig {
             password: String::new(),
             api_token: None,
             refresh_token: None,
-            ai_provider: String::new(),
-            ai_base_url: String::new(),
-            ai_api_key: String::new(),
-            ai_model: None,
-            ai_temperature: Some(0.7),
-            ai_max_tokens: Some(1000),
-            ai_timeout: Some(30),
         }
     }
 }

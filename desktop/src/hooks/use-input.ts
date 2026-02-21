@@ -3,7 +3,7 @@ import { useInputStore } from '@/stores/input-store'
 import { extractTextFromHtml } from '@mosaic/utils'
 
 interface UseInputOptions {
-  onSubmit?: (value: string, resourceFilenames?: string[]) => void
+  onSubmit?: (value: string, resourceFilenames?: string[], clearInput?: () => void) => void
   onFileUpload?: (files: FileList) => void
 }
 
@@ -29,8 +29,7 @@ export function useInput(options?: UseInputOptions) {
   const handleSubmit = useCallback(() => {
     const textContent = extractTextFromHtml(inputValue)
     if (textContent || resourceFilenames.length > 0) {
-      options?.onSubmit?.(inputValue || '', resourceFilenames)
-      clearInputValue()
+      options?.onSubmit?.(inputValue || '', resourceFilenames, clearInputValue)
     }
   }, [inputValue, resourceFilenames, options, clearInputValue])
 

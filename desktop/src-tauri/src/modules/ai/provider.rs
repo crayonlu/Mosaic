@@ -5,24 +5,39 @@ use crate::modules::ai::models::{
 };
 use crate::modules::ai::prompts::PromptBuilder;
 use crate::modules::settings::models::AIConfig;
+use crate::modules::settings::store::SettingsStore;
 
 pub async fn load_ai_config() -> AppResult<Option<AIConfig>> {
-    let config = AppConfig::load().map_err(|e| {
-        crate::error::AppError::ConfigError(format!("Failed to load config: {}", e))
-    })?;
+    let store = SettingsStore::new(AppConfig::config_dir());
 
-    let provider = config.server.ai_provider;
-    let base_url = config.server.ai_base_url;
-    let api_key = config.server.ai_api_key;
+    let provider = store.get("ai.provider").ok().flatten().map(|s| s.value);
+    let base_url = store.get("ai.baseUrl").ok().flatten().map(|s| s.value);
+    let api_key = store.get("ai.apiKey").ok().flatten().map(|s| s.value);
+
+    let provider = provider.unwrap_or_default();
+    let base_url = base_url.unwrap_or_default();
+    let api_key = api_key.unwrap_or_default();
 
     if provider.is_empty() || base_url.is_empty() || api_key.is_empty() {
         return Ok(None);
     }
 
-    let model = config.server.ai_model;
-    let temperature = config.server.ai_temperature;
-    let max_tokens = config.server.ai_max_tokens;
-    let timeout = config.server.ai_timeout.map(|t| t as i32);
+    let model = store.get("ai.model").ok().flatten().map(|s| s.value);
+    let temperature = store
+        .get("ai.temperature")
+        .ok()
+        .flatten()
+        .and_then(|s| s.value.parse().ok());
+    let max_tokens = store
+        .get("ai.maxTokens")
+        .ok()
+        .flatten()
+        .and_then(|s| s.value.parse().ok());
+    let timeout = store
+        .get("ai.timeout")
+        .ok()
+        .flatten()
+        .and_then(|s| s.value.parse().ok());
 
     Ok(Some(AIConfig {
         provider,
@@ -40,6 +55,10 @@ pub async fn create_provider() -> AppResult<Provider> {
         .await?
         .ok_or_else(|| crate::error::AppError::NotFound("AI config not found".to_string()))?;
 
+    create_provider_with_config(config).await
+}
+
+pub async fn create_provider_with_config(config: AIConfig) -> AppResult<Provider> {
     match config.provider.to_lowercase().as_str() {
         "openai" => Ok(Provider::OpenAI(OpenAIProvider::new(&config))),
         "anthropic" => Ok(Provider::Anthropic(AnthropicProvider::new(&config))),
