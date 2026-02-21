@@ -14,7 +14,7 @@ import { useRef, useState } from 'react'
 export default function DeskTopHome() {
   const isInputExpanded = useInputStore(state => state.isExpanded)
   const { formattedDate } = useTime()
-  const { addResource, clearInputValue, clearResources, getPendingFiles } = useInputStore()
+  const { addResource, clearResources, getPendingFiles } = useInputStore()
   const [selectedMemo, setSelectedMemo] = useState<MemoWithResources | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const memoListRef = useRef<MemoListRef>(null)
