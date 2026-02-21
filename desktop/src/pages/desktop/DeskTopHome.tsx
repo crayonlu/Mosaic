@@ -2,7 +2,7 @@ import { AppInput, type AppInputRef } from '@/components/common/AppInput'
 import { MemoDetail } from '@/components/common/MemoDetail'
 import { MemoList, type MemoListRef } from '@/components/common/MemoList'
 import DeskTopLayout from '@/components/layout/DeskTopLayout'
-import { uploadFilesAndGetResourceIds, createObjectUrl } from '@/hooks/use-file-upload'
+import { createObjectUrl, uploadFilesAndGetResourceIds } from '@/hooks/use-file-upload'
 import { useTime } from '@/hooks/use-time'
 import { toast } from '@/hooks/use-toast'
 import { useInputStore } from '@/stores/input-store'
@@ -22,7 +22,7 @@ export default function DeskTopHome() {
   const invalidateHeatmap = useHeatmapInvalidate()
   const createMemo = useCreateMemo()
 
-  const handleSubmit = async (value: string, _resourceFilenames?: string[], tags?: string[]) => {
+  const handleSubmit = async (value: string, _resourceFilenames?: string[], tags?: string[], clearInputValue?: () => void) => {
     try {
       const pendingFiles = getPendingFiles()
       let resourceIds: string[] = []
@@ -37,7 +37,7 @@ export default function DeskTopHome() {
         resourceIds,
       })
 
-      clearInputValue()
+      clearInputValue?.()
       clearResources()
       appInputRef.current?.clearTags()
       await memoListRef.current?.refetch()

@@ -116,11 +116,24 @@ export class TauriApiClient {
     return this.invoke('delete_setting', { key })
   }
 
-  async testAIConnection(provider: string, baseUrl: string, apiKey: string): Promise<boolean> {
-    void provider
-    void baseUrl
-    void apiKey
-    return this.invoke('test_ai_connection')
+  async testAIConnection(
+    provider: string,
+    baseUrl: string,
+    apiKey: string,
+    model?: string | number,
+    temperature?: number,
+    maxTokens?: number,
+    timeout?: number
+  ): Promise<boolean> {
+    return this.invoke('test_ai_connection', {
+      provider,
+      baseUrl,
+      apiKey,
+      model: model?.toString(),
+      temperature,
+      maxTokens,
+      timeout,
+    })
   }
 
   async enableAutostart(enabled: boolean): Promise<void> {
@@ -166,22 +179,22 @@ export class TauriApiClient {
     content: string
     context?: string
   }): Promise<{ generatedText: string }> {
-    return this.invoke('complete_text', req)
+    return this.invoke('complete_text', { req })
   }
 
   async rewriteText(req: { text: string; style?: string }): Promise<{ rewrittenText: string }> {
-    return this.invoke('rewrite_text', req)
+    return this.invoke('rewrite_text', { req })
   }
 
   async summarizeText(req: { text: string; maxLength?: number }): Promise<{ summary: string }> {
-    return this.invoke('summarize_text', req)
+    return this.invoke('summarize_text', { req })
   }
 
   async suggestTags(req: {
     content: string
     existingTags?: string[]
   }): Promise<{ tags: string[] }> {
-    return this.invoke('suggest_tags', req)
+    return this.invoke('suggest_tags', { req })
   }
 
   async getSyncStatus(): Promise<{ status: string; timestamp: string; error?: string }> {

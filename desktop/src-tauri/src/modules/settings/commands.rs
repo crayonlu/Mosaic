@@ -79,10 +79,33 @@ pub async fn delete_setting(key: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn test_ai_connection() -> Result<(), String> {
-    use crate::modules::ai::provider::{create_provider, AIProvider};
+pub async fn test_ai_connection(
+    provider: String,
+    base_url: String,
+    api_key: String,
+    model: Option<String>,
+    temperature: Option<f64>,
+    max_tokens: Option<i32>,
+    timeout: Option<i32>,
+) -> Result<(), String> {
+    use crate::modules::ai::provider::{create_provider_with_config, AIProvider};
+    use crate::modules::settings::models::AIConfig;
 
-    let provider = create_provider()
+    if provider.is_empty() || base_url.is_empty() || api_key.is_empty() {
+        return Err("Provider, base URL and API key are required".to_string());
+    }
+
+    let config = AIConfig {
+        provider,
+        base_url,
+        api_key,
+        model,
+        temperature,
+        max_tokens,
+        timeout,
+    };
+
+    let provider = create_provider_with_config(config)
         .await
         .map_err(|e| format!("Failed to create AI provider: {}", e))?;
 

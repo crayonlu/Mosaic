@@ -23,7 +23,7 @@ export interface AppInputRef {
 
 interface AppInputProps {
   placeholder?: string
-  onSubmit?: (value: string, resourceFilenames?: string[], tags?: string[]) => void
+  onSubmit?: (value: string, resourceFilenames?: string[], tags?: string[], clearInputValue?: () => void) => void
   onFileUpload?: (files: FileList) => void
   className?: string
 }
@@ -47,7 +47,7 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
       triggerFileSelect,
       handleToggleExpand,
     } = useInput({
-      onSubmit: (value, resourceFilenames) => onSubmit?.(value, resourceFilenames, tags),
+      onSubmit: (value, resourceFilenames, clearInput) => onSubmit?.(value, resourceFilenames, tags, clearInput),
       onFileUpload,
     })
 

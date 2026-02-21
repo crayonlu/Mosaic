@@ -228,6 +228,7 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
       label: 'AI重写',
       shortcut: 'Ctrl+Shift+R',
       onClick: handleRewriteClick,
+      canExecute: () => !!editor.getText().trim(),
     },
   ]
 

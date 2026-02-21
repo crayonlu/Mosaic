@@ -74,12 +74,16 @@ export function AISettings() {
     setTesting(true)
     setTestResult(null)
     try {
-      const result = await settingsCommands.testAIConnection(
+      await settingsCommands.testAIConnection(
         config.provider,
         config.baseUrl,
-        config.apiKey
+        config.apiKey,
+        config.model,
+        config.temperature,
+        config.maxTokens,
+        config.timeout
       )
-      setTestResult(result)
+      setTestResult(true)
     } catch (error) {
       console.error('Failed to test AI connection:', error)
       setTestResult(false)
