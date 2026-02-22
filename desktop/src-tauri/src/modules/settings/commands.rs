@@ -19,9 +19,7 @@ pub async fn get_setting(
     let store = SettingsStore::new(AppConfig::config_dir());
 
     match store.get(&key) {
-        Ok(Some(setting)) => Ok(Some(SettingValue {
-            value: setting.value,
-        })),
+        Ok(Some(value)) => Ok(Some(SettingValue { value })),
         Ok(None) => Ok(None),
         Err(e) => Err(format!("Failed to get setting: {}", e)),
     }
@@ -37,14 +35,7 @@ pub async fn get_settings(
         Ok(settings) => {
             let result = settings
                 .into_iter()
-                .map(|(key, setting)| {
-                    (
-                        key,
-                        SettingValue {
-                            value: setting.value,
-                        },
-                    )
-                })
+                .map(|(key, value)| (key, SettingValue { value }))
                 .collect();
             Ok(result)
         }
@@ -61,7 +52,7 @@ pub async fn set_setting(
     let store = SettingsStore::new(AppConfig::config_dir());
 
     store
-        .set(key, value.value, "user".to_string())
+        .set(key, value.value)
         .map_err(|e| format!("Failed to set setting: {}", e))?;
 
     Ok(())

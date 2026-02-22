@@ -69,6 +69,14 @@ export class TauriApiClient {
     return this.invoke('refresh_token')
   }
 
+  async setAuthTokens(accessToken: string, refreshToken: string): Promise<void> {
+    return this.invoke('set_auth_tokens', { accessToken, refreshToken })
+  }
+
+  async clearAuthTokens(): Promise<void> {
+    return this.invoke('clear_auth_tokens')
+  }
+
   async changePassword(oldPassword: string, newPassword: string): Promise<void> {
     return this.invoke('change_password', { oldPassword, newPassword })
   }
@@ -195,18 +203,6 @@ export class TauriApiClient {
     existingTags?: string[]
   }): Promise<{ tags: string[] }> {
     return this.invoke('suggest_tags', { req })
-  }
-
-  async getSyncStatus(): Promise<{ status: string; timestamp: string; error?: string }> {
-    return this.invoke('get_sync_status')
-  }
-
-  async checkConnection(): Promise<boolean> {
-    return this.invoke('check_connection')
-  }
-
-  async triggerSync(): Promise<void> {
-    return this.invoke('trigger_sync')
   }
 
   async getResource(id: string): Promise<unknown> {

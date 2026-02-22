@@ -1,9 +1,11 @@
+import { apiClient } from '@mosaic/api'
+
 export async function loadAuthResource(url: string): Promise<{
   blobUrl: string
   type: 'image' | 'video'
   blob: Blob
 }> {
-  const token = localStorage.getItem('accessToken')
+  const token = await apiClient.getTokenStorage()?.getAccessToken()
   const response = await fetch(url, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   })

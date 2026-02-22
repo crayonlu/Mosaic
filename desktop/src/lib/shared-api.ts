@@ -1,52 +1,68 @@
+import { useAuthStore } from '@/stores/auth-store'
+import { configCommands } from '@/utils/call-rust'
 import { apiClient } from '@mosaic/api'
 
-const API_BASE_URL_KEY = 'apiBaseUrl'
-const ACCESS_TOKEN_KEY = 'accessToken'
-const REFRESH_TOKEN_KEY = 'refreshToken'
+async function syncTokensFromBackend(): Promise<void> {
+  try {
+    const config = await configCommands.getServerConfig()
+    const accessToken = config.apiToken || null
+    const refreshToken = config.refreshToken || null
+
+    if (accessToken && refreshToken) {
+      useAuthStore.getState().setTokens(accessToken, refreshToken)
+    } else {
+      useAuthStore.getState().clearTokens()
+    }
+  } catch {
+    useAuthStore.getState().clearTokens()
+  }
+}
 
 const tokenStorage = {
   async getAccessToken(): Promise<string | null> {
-    return localStorage.getItem(ACCESS_TOKEN_KEY)
+    const token = useAuthStore.getState().accessToken
+    if (token) return token
+
+    await syncTokensFromBackend()
+    return useAuthStore.getState().accessToken
   },
   async getRefreshToken(): Promise<string | null> {
-    return localStorage.getItem(REFRESH_TOKEN_KEY)
+    const token = useAuthStore.getState().refreshToken
+    if (token) return token
+
+    await syncTokensFromBackend()
+    return useAuthStore.getState().refreshToken
   },
   async setTokens(accessToken: string, refreshToken: string): Promise<void> {
-    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
-    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+    useAuthStore.getState().setTokens(accessToken, refreshToken)
+    await configCommands.setAuthTokens(accessToken, refreshToken)
   },
   async clearTokens(): Promise<void> {
-    localStorage.removeItem(ACCESS_TOKEN_KEY)
-    localStorage.removeItem(REFRESH_TOKEN_KEY)
+    useAuthStore.getState().clearTokens()
+    await configCommands.clearAuthTokens()
   },
 }
 
 export function initSharedApiClient(baseUrl?: string): void {
-  const resolvedBaseUrl = baseUrl || localStorage.getItem(API_BASE_URL_KEY) || ''
-  if (resolvedBaseUrl) {
-    apiClient.setBaseUrl(resolvedBaseUrl)
-    localStorage.setItem(API_BASE_URL_KEY, resolvedBaseUrl)
+  if (baseUrl) {
+    apiClient.setBaseUrl(baseUrl)
   }
   apiClient.setTokenStorage(tokenStorage)
 }
 
-export function getStoredApiBaseUrl(): string {
-  return localStorage.getItem(API_BASE_URL_KEY) || ''
+export function getApiBaseUrl(): string {
+  return apiClient.getBaseUrl()
 }
 
-export function setStoredApiBaseUrl(url: string): void {
-  localStorage.setItem(API_BASE_URL_KEY, url)
+export function setApiBaseUrl(url: string): void {
   apiClient.setBaseUrl(url)
 }
 
-export async function clearStoredAuth(): Promise<void> {
+export async function clearAuth(): Promise<void> {
   await tokenStorage.clearTokens()
 }
 
-export async function setStoredAuthTokens(
-  accessToken: string,
-  refreshToken: string
-): Promise<void> {
+export async function setAuthTokens(accessToken: string, refreshToken: string): Promise<void> {
   await tokenStorage.setTokens(accessToken, refreshToken)
 }
 

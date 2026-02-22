@@ -1,6 +1,7 @@
+import { getCachedResource, setCachedResource } from '@/utils/resource-cache'
+import { apiClient } from '@mosaic/api'
 import { useEffect, useMemo, useState } from 'react'
 import { LoadingSpinner } from '../ui/loading/loading-spinner'
-import { getCachedResource, setCachedResource } from '@/utils/resource-cache'
 
 type NativeVideoProps = React.ComponentPropsWithoutRef<'video'>
 
@@ -35,14 +36,6 @@ export function AuthVideo({ src, withAuth = true, ...props }: AuthVideoProps) {
       return
     }
 
-    const token = localStorage.getItem('accessToken')
-    if (!token) {
-      setResolvedSrc(source)
-      setIsLoading(false)
-      setHasError(false)
-      return
-    }
-
     const controller = new window.AbortController()
 
     const loadVideo = async () => {
@@ -57,7 +50,7 @@ export function AuthVideo({ src, withAuth = true, ...props }: AuthVideoProps) {
           return
         }
 
-        const token = localStorage.getItem('accessToken')
+        const token = await apiClient.getTokenStorage()?.getAccessToken()
         const response = await fetch(source, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           signal: controller.signal,

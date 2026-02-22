@@ -46,6 +46,10 @@ export function MoodHeatMap({
       const week: HeatMapCell[] = []
 
       for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+        if (currentDate > endDate) {
+          break
+        }
+
         const dateStr = currentDate.toISOString().split('T')[0]
         const cell = cellMap.get(dateStr) || {
           date: dateStr,

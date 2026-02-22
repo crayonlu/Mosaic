@@ -1,6 +1,7 @@
+import { getCachedResource, setCachedResource } from '@/utils/resource-cache'
+import { apiClient } from '@mosaic/api'
 import { useEffect, useMemo, useState } from 'react'
 import { LoadingSpinner } from '../ui/loading/loading-spinner'
-import { getCachedResource, setCachedResource } from '@/utils/resource-cache'
 
 type NativeImgProps = React.ComponentPropsWithoutRef<'img'>
 
@@ -49,7 +50,7 @@ export function AuthImage({ src, withAuth = true, ...props }: AuthImageProps) {
           return
         }
 
-        const token = localStorage.getItem('accessToken')
+        const token = await apiClient.getTokenStorage()?.getAccessToken()
         const response = await fetch(source, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           signal: controller.signal,

@@ -136,34 +136,23 @@ pub async fn change_password(
         .map_err(|e| e.to_string())
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SyncSettings {
-    pub auto_sync: bool,
-    pub sync_interval_seconds: u64,
-    pub offline_mode: bool,
-}
-
 #[tauri::command]
-pub async fn get_sync_settings(
+pub async fn set_auth_tokens(
     config: State<'_, Arc<RwLock<AppConfig>>>,
-) -> Result<SyncSettings, String> {
-    let config_guard = config.read().await;
-    Ok(SyncSettings {
-        auto_sync: config_guard.auto_sync,
-        sync_interval_seconds: config_guard.sync_interval_seconds,
-        offline_mode: config_guard.offline_mode,
-    })
-}
-
-#[tauri::command]
-pub async fn set_sync_settings(
-    config: State<'_, Arc<RwLock<AppConfig>>>,
-    settings: SyncSettings,
+    access_token: String,
+    refresh_token: String,
 ) -> Result<(), String> {
     let mut config_guard = config.write().await;
-    config_guard.auto_sync = settings.auto_sync;
-    config_guard.sync_interval_seconds = settings.sync_interval_seconds;
-    config_guard.offline_mode = settings.offline_mode;
+    config_guard.server.api_token = Some(access_token);
+    config_guard.server.refresh_token = Some(refresh_token);
     config_guard.save().map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub async fn clear_auth_tokens(config: State<'_, Arc<RwLock<AppConfig>>>) -> Result<(), String> {
+    let mut config_guard = config.write().await;
+    config_guard.server.api_token = None;
+    config_guard.server.refresh_token = None;
+    config_guard.save().map_err(|e| e.to_string())
+}
+

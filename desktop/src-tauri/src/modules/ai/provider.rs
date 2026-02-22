@@ -10,9 +10,9 @@ use crate::modules::settings::store::SettingsStore;
 pub async fn load_ai_config() -> AppResult<Option<AIConfig>> {
     let store = SettingsStore::new(AppConfig::config_dir());
 
-    let provider = store.get("ai.provider").ok().flatten().map(|s| s.value);
-    let base_url = store.get("ai.baseUrl").ok().flatten().map(|s| s.value);
-    let api_key = store.get("ai.apiKey").ok().flatten().map(|s| s.value);
+    let provider = store.get("ai.provider").ok().flatten();
+    let base_url = store.get("ai.baseUrl").ok().flatten();
+    let api_key = store.get("ai.apiKey").ok().flatten();
 
     let provider = provider.unwrap_or_default();
     let base_url = base_url.unwrap_or_default();
@@ -22,22 +22,22 @@ pub async fn load_ai_config() -> AppResult<Option<AIConfig>> {
         return Ok(None);
     }
 
-    let model = store.get("ai.model").ok().flatten().map(|s| s.value);
+    let model = store.get("ai.model").ok().flatten();
     let temperature = store
         .get("ai.temperature")
         .ok()
         .flatten()
-        .and_then(|s| s.value.parse().ok());
+        .and_then(|s| s.parse().ok());
     let max_tokens = store
         .get("ai.maxTokens")
         .ok()
         .flatten()
-        .and_then(|s| s.value.parse().ok());
+        .and_then(|s| s.parse().ok());
     let timeout = store
         .get("ai.timeout")
         .ok()
         .flatten()
-        .and_then(|s| s.value.parse().ok());
+        .and_then(|s| s.parse().ok());
 
     Ok(Some(AIConfig {
         provider,

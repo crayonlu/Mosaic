@@ -22,9 +22,6 @@ impl ServerConfig {
 #[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     pub server: ServerConfig,
-    pub auto_sync: bool,
-    pub sync_interval_seconds: u64,
-    pub offline_mode: bool,
     pub custom_data_directory: Option<String>,
 }
 
@@ -84,9 +81,6 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             server: ServerConfig::default(),
-            auto_sync: true,
-            sync_interval_seconds: 300,
-            offline_mode: false,
             custom_data_directory: None,
         }
     }
