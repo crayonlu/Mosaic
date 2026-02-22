@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
-import { invoke } from '@tauri-apps/api/core'
-import { getCacheSize, getCacheCount, clearCache } from '@/utils/resource-cache'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { clearCache, getCacheCount, getCacheSize } from '@/utils/resource-cache'
 import { Label } from '@radix-ui/react-label'
-import { Image, Video, FileText, BookOpen, Loader2 } from 'lucide-react'
+import { Image, Loader2, Video } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 function formatSize(bytes: number): string {
   if (bytes === 0) return '0 B'
@@ -19,18 +18,9 @@ interface CacheInfo {
   count: number
 }
 
-interface BackendCacheStats {
-  memo_count: number
-  diary_count: number
-}
-
 export function StorageSettings() {
   const [imageCache, setImageCache] = useState<CacheInfo>({ size: 0, count: 0 })
   const [videoCache, setVideoCache] = useState<CacheInfo>({ size: 0, count: 0 })
-  const [backendCache, setBackendCache] = useState<BackendCacheStats>({
-    memo_count: 0,
-    diary_count: 0,
-  })
   const [isClearing, setIsClearing] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -41,19 +31,14 @@ export function StorageSettings() {
   const loadCacheInfo = async () => {
     setIsLoading(true)
     try {
-      const [imgSize, imgCount, vidSize, vidCount, backendStats] = await Promise.all([
+      const [imgSize, imgCount, vidSize, vidCount] = await Promise.all([
         getCacheSize('images'),
         getCacheCount('images'),
         getCacheSize('videos'),
         getCacheCount('videos'),
-        invoke<BackendCacheStats>('get_cache_stats').catch(() => ({
-          memo_count: 0,
-          diary_count: 0,
-        })),
       ])
       setImageCache({ size: imgSize, count: imgCount })
       setVideoCache({ size: vidSize, count: vidCount })
-      setBackendCache(backendStats)
     } catch (error) {
       console.error('Failed to load cache info:', error)
     } finally {
@@ -61,7 +46,7 @@ export function StorageSettings() {
     }
   }
 
-  const handleClear = async (type: 'images' | 'videos' | 'backend' | 'all') => {
+  const handleClear = async (type: 'images' | 'videos' | 'all') => {
     setIsClearing(type)
     try {
       if (type === 'images' || type === 'all') {
@@ -69,9 +54,6 @@ export function StorageSettings() {
       }
       if (type === 'videos' || type === 'all') {
         await clearCache('videos')
-      }
-      if (type === 'backend' || type === 'all') {
-        await invoke('clear_backend_cache')
       }
       await loadCacheInfo()
     } catch (error) {
@@ -136,58 +118,6 @@ export function StorageSettings() {
               </Button>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <Label className="text-sm font-medium">备忘录缓存</Label>
-                  <p className="text-xs text-muted-foreground">{backendCache.memo_count} 条记录</p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  setIsClearing('memos')
-                  try {
-                    await invoke('clear_memos_cache')
-                    await loadCacheInfo()
-                  } finally {
-                    setIsClearing(null)
-                  }
-                }}
-                disabled={isClearing !== null || backendCache.memo_count === 0}
-              >
-                {isClearing === 'memos' ? <Loader2 className="h-4 w-4 animate-spin" /> : '清理'}
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <BookOpen className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <Label className="text-sm font-medium">日记缓存</Label>
-                  <p className="text-xs text-muted-foreground">{backendCache.diary_count} 条记录</p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  setIsClearing('diaries')
-                  try {
-                    await invoke('clear_diaries_cache')
-                    await loadCacheInfo()
-                  } finally {
-                    setIsClearing(null)
-                  }
-                }}
-                disabled={isClearing !== null || backendCache.diary_count === 0}
-              >
-                {isClearing === 'diaries' ? <Loader2 className="h-4 w-4 animate-spin" /> : '清理'}
-              </Button>
-            </div>
-
             <div className="flex items-center justify-between pt-4 border-t">
               <div>
                 <Label className="text-sm font-medium">前端缓存总计</Label>
@@ -199,10 +129,7 @@ export function StorageSettings() {
                 onClick={() => handleClear('all')}
                 disabled={
                   isClearing !== null ||
-                  (imageCache.count === 0 &&
-                    videoCache.count === 0 &&
-                    backendCache.memo_count === 0 &&
-                    backendCache.diary_count === 0)
+                  (imageCache.count === 0 && videoCache.count === 0)
                 }
               >
                 {isClearing === 'all' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

@@ -1,15 +1,6 @@
 use crate::error::{AppError, AppResult};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Setting {
-    pub key: String,
-    pub value: String,
-    pub category: String,
-}
 
 pub struct SettingsStore {
     config_dir: PathBuf,
@@ -30,7 +21,7 @@ impl SettingsStore {
         self.config_dir.join("settings")
     }
 
-    pub fn load(&self) -> AppResult<HashMap<String, Setting>> {
+    pub fn load(&self) -> AppResult<HashMap<String, String>> {
         if !self.settings_file.exists() {
             return Ok(HashMap::new());
         }
@@ -42,7 +33,7 @@ impl SettingsStore {
             .map_err(|e| AppError::Internal(format!("Failed to parse settings: {}", e)))
     }
 
-    pub fn save(&self, settings: &HashMap<String, Setting>) -> AppResult<()> {
+    pub fn save(&self, settings: &HashMap<String, String>) -> AppResult<()> {
         let settings_dir = self.settings_dir();
         std::fs::create_dir_all(&settings_dir).map_err(|e| {
             AppError::Internal(format!("Failed to create settings directory: {}", e))
@@ -57,30 +48,19 @@ impl SettingsStore {
         Ok(())
     }
 
-    pub fn get(&self, key: &str) -> AppResult<Option<Setting>> {
+    pub fn get(&self, key: &str) -> AppResult<Option<String>> {
         let settings = self.load()?;
         Ok(settings.get(key).cloned())
     }
 
-    pub fn get_all(&self) -> AppResult<HashMap<String, Setting>> {
+    pub fn get_all(&self) -> AppResult<HashMap<String, String>> {
         self.load()
     }
 
-    pub fn set(&self, key: String, value: String, category: String) -> AppResult<()> {
+    pub fn set(&self, key: String, value: String) -> AppResult<()> {
         let mut settings = self.load()?;
 
-        if let Some(existing) = settings.get_mut(&key) {
-            existing.value = value;
-        } else {
-            settings.insert(
-                key.clone(),
-                Setting {
-                    key,
-                    value,
-                    category,
-                },
-            );
-        }
+        settings.insert(key, value);
 
         self.save(&settings)
     }

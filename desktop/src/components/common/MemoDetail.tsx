@@ -17,10 +17,11 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useAI } from '@/hooks/use-ai'
+import { uploadFilesAndGetResourceIds } from '@/hooks/use-file-upload'
 import { toast } from '@/hooks/use-toast'
 import { resolveApiUrl } from '@/lib/shared-api'
-import { assetCommands, memoCommands } from '@/utils/call-rust'
 import type { MemoWithResources, Resource } from '@mosaic/api'
+import { resourcesApi, useDeleteMemo, useUpdateMemo } from '@mosaic/api'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
@@ -64,6 +65,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
   const [videoUrls, setVideoUrls] = useState<Map<string, string>>(new Map())
   const { suggestTags, loading: aiLoading } = useAI()
+  const updateMemo = useUpdateMemo()
+  const deleteMemo = useDeleteMemo()
 
   const imageResources = memo?.resources.filter(r => r.resourceType === 'image') || []
   const videoResources = memo?.resources.filter(r => r.resourceType === 'video') || []
@@ -132,10 +135,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     try {
       setIsSaving(true)
-      await memoCommands.updateMemo(memo.id, {
-        content: editedContent,
-        tags: editedTags,
-      })
+      await updateMemo.mutateAsync({ id: memo.id, data: { content: editedContent, tags: editedTags } })
       setIsEditing(false)
       onUpdate?.()
       toast.success('Memo保存成功')
@@ -217,7 +217,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     try {
       setIsDeleting(true)
-      await memoCommands.deleteMemo(memo.id)
+      await deleteMemo.mutateAsync(memo.id)
       onDelete?.()
       onClose()
       toast.success('Memo删除成功')
@@ -233,7 +233,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     if (!resourceToDelete || !memo) return
 
     try {
-      await assetCommands.deleteAssetFile(resourceToDelete)
+      await resourcesApi.delete(resourceToDelete)
       onUpdate?.()
       toast.success('资源删除成功')
     } catch (error) {
@@ -250,32 +250,11 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     setIsUploading(true)
     try {
-      const uploadedFiles: string[] = []
+      const uploadedIds = await uploadFilesAndGetResourceIds(Array.from(files), memo.id)
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-        const arrayBuffer = await file.arrayBuffer()
-        const uint8Array = Array.from(new Uint8Array(arrayBuffer))
-
-        const uploadedResources = await assetCommands.uploadFiles(
-          [
-            {
-              name: file.name,
-              data: uint8Array,
-              mime_type: file.type || 'application/octet-stream',
-            },
-          ],
-          memo.id
-        )
-
-        if (uploadedResources.length > 0) {
-          uploadedFiles.push(uploadedResources[0].filename)
-        }
-      }
-
-      if (uploadedFiles.length > 0) {
+      if (uploadedIds.length > 0) {
         onUpdate?.()
-        toast.success(`成功添加 ${uploadedFiles.length} 个资源`)
+        toast.success(`成功添加 ${uploadedIds.length} 个资源`)
       }
     } catch (error) {
       console.error('上传资源失败:', error)

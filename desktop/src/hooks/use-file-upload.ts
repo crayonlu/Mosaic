@@ -1,18 +1,21 @@
 import { toast } from '@/hooks/use-toast'
-import { getStoredApiBaseUrl } from '@/lib/shared-api'
+import { apiClient } from '@mosaic/api'
 
-export async function uploadFilesAndGetResourceIds(files: File[]): Promise<string[]> {
+export async function uploadFilesAndGetResourceIds(
+  files: File[],
+  memoId?: string
+): Promise<string[]> {
   if (files.length === 0) return []
 
-  const accessToken = localStorage.getItem('accessToken')
-  const baseUrl = getStoredApiBaseUrl()
+  const accessToken = await apiClient.getTokenStorage()?.getAccessToken()
+  const baseUrl = apiClient.getBaseUrl()
   const resourceIds: string[] = []
 
   for (const file of files) {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('memoId', '')
+      formData.append('memoId', memoId || '')
 
       const response = await fetch(`${baseUrl}/api/resources/upload`, {
         method: 'POST',

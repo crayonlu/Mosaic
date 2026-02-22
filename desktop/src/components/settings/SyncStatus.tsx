@@ -6,6 +6,8 @@ import { AlertCircle, Cloud, CloudOff, LogOutIcon, RefreshCw } from 'lucide-reac
 
 export function SyncStatusDisplay() {
   const { isConfigured, loading, config, checkConfig, logout } = useServerConfig()
+
+
   const handleLogout = async () => {
     try {
       await logout()
@@ -22,7 +24,7 @@ export function SyncStatusDisplay() {
     if (!isConfigured) {
       return { icon: CloudOff, text: '未配置', variant: 'destructive' as const }
     }
-    return { icon: Cloud, text: '已连接', variant: 'default' as const }
+    return { icon: Cloud, text: '在线', variant: 'default' as const }
   }
 
   const { icon: StatusIcon, text, variant } = getStatus()
@@ -55,6 +57,10 @@ export function SyncStatusDisplay() {
               <span className="text-muted-foreground">用户名</span>
               <span>{config.username}</span>
             </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">同步状态</span>
+              <span>{isConfigured ? '已连接' : '未连接'}</span>
+            </div>
           </div>
         ) : (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -62,7 +68,7 @@ export function SyncStatusDisplay() {
             <span>请先完成服务器配置向导</span>
           </div>
         )}
-        <div className="mt-4 flex gap-2 justify-end">
+        <div className="mt-4 flex flex-wrap gap-2 justify-end">
           <Button variant="outline" size="sm" onClick={checkConfig} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             刷新状态

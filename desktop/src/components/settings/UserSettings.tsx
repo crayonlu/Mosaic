@@ -5,14 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
 import { resolveApiUrl } from '@/lib/shared-api'
-import { useUpdateUser, useUser } from '@mosaic/api'
-import { userCommands } from '@/utils/call-rust'
+import { apiClient, useUpdateUser, useUser } from '@mosaic/api'
 import { Label } from '@radix-ui/react-label'
 import { Loader2, User as UserIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 export function UserSettings() {
-  const { data: user, isLoading } = useUser()
+  const { data: user, isLoading, refetch } = useUser()
   const updateUser = useUpdateUser()
   const [username, setUsername] = useState('')
   const [uploading, setUploading] = useState(false)
@@ -34,14 +33,29 @@ export function UserSettings() {
 
     setUploading(true)
     try {
-      const arrayBuffer = await file.arrayBuffer()
-      const data = Array.from(new Uint8Array(arrayBuffer))
+      const accessToken = await apiClient.getTokenStorage()?.getAccessToken()
+      const baseUrl = apiClient.getBaseUrl()
+      if (!accessToken || !baseUrl) {
+        throw new Error('Missing API configuration or token')
+      }
 
-      await userCommands.uploadAvatar({
-        name: file.name,
-        mimeType: file.type || 'image/jpeg',
-        data,
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch(`${baseUrl}/api/resources/upload-avatar`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
       })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || 'Avatar upload failed')
+      }
+
+      await refetch()
     } catch (error) {
       console.error('Failed to upload avatar:', error)
     } finally {

@@ -1,4 +1,4 @@
-import { clearStoredAuth, initSharedApiClient, setStoredAuthTokens } from '@/lib/shared-api'
+import { clearAuth, initSharedApiClient } from '@/lib/shared-api'
 import type { ServerConfig } from '@/types/settings'
 import { configCommands } from '@/utils/call-rust'
 import { useEffect, useState } from 'react'
@@ -22,10 +22,6 @@ export function useServerConfig() {
         initSharedApiClient(serverConfig.url)
       }
 
-      if (serverConfig.apiToken && serverConfig.refreshToken) {
-        setStoredAuthTokens(serverConfig.apiToken, serverConfig.refreshToken)
-      }
-
       setConfig(serverConfig)
       setIsConfigured(configured)
     } catch (error) {
@@ -39,7 +35,7 @@ export function useServerConfig() {
   const logout = async () => {
     try {
       await configCommands.logout()
-      await clearStoredAuth()
+      await clearAuth()
       setIsConfigured(false)
       setConfig(null)
     } catch (error) {

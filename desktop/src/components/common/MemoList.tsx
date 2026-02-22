@@ -16,23 +16,23 @@ export interface MemoListRef {
   refetch: () => Promise<void>
 }
 
-function getMemosData(data: unknown): MemoWithResources[] {
-  if (Array.isArray(data)) {
-    return data as MemoWithResources[]
-  }
-  if (data && typeof data === 'object' && 'items' in data) {
-    return (data as { items: MemoWithResources[] }).items || []
-  }
-  return []
-}
-
 export const MemoList = forwardRef<MemoListRef, MemoListProps>(
   ({ date, diaryDate, className, onMemoClick }, ref) => {
-    const diaryQuery = useMemoByDate(diaryDate || '')
-    const listQuery = useMemos({ diaryDate: date })
+    const diaryQuery = useMemos({ page: 1, pageSize: 100, archived: false, diaryDate })
+    const dateQuery = useMemoByDate(date || '')
+    const listQuery = useMemos({ page: 1, pageSize: 100, archived: false })
 
-    const memos = diaryDate ? getMemosData(diaryQuery?.data) : getMemosData(listQuery?.data)
-    const loading = diaryDate ? diaryQuery?.isLoading : listQuery?.isLoading || false
+    const memos: MemoWithResources[] = diaryDate
+      ? (diaryQuery.data?.items || [])
+      : date
+        ? (dateQuery.data || [])
+        : (listQuery.data?.items || [])
+
+    const loading = diaryDate
+      ? diaryQuery.isLoading
+      : date
+        ? dateQuery.isLoading
+        : listQuery.isLoading
 
     useImperativeHandle(
       ref,
@@ -40,12 +40,14 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
         refetch: async () => {
           if (diaryDate) {
             await diaryQuery.refetch()
+          } else if (date) {
+            await dateQuery.refetch()
           } else {
             await listQuery.refetch()
           }
         },
       }),
-      [diaryDate, diaryQuery, listQuery]
+      [date, diaryDate, diaryQuery, dateQuery, listQuery]
     )
 
     if (loading) {

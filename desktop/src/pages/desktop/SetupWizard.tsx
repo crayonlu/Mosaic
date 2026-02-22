@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { useServerConfig } from '@/hooks/use-server-config'
 import { useTheme } from '@/hooks/use-theme'
 import { toast } from '@/hooks/use-toast'
-import { initSharedApiClient, setStoredAuthTokens } from '@/lib/shared-api'
+import { initSharedApiClient } from '@/lib/shared-api'
 import type { ServerConfig } from '@/types/settings'
 import { configCommands } from '@/utils/call-rust'
 import { ArrowRight, Check, Loader2, X } from 'lucide-react'
@@ -63,9 +63,7 @@ export default function SetupWizard() {
     try {
       await configCommands.setServerConfig(serverConfig)
 
-      const loginResult = await configCommands.login(serverConfig.username, serverConfig.password)
-
-      setStoredAuthTokens(loginResult.accessToken, loginResult.refreshToken)
+      await configCommands.login(serverConfig.username, serverConfig.password)
 
       initSharedApiClient(serverConfig.url)
 
