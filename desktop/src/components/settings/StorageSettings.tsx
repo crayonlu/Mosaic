@@ -127,10 +127,7 @@ export function StorageSettings() {
                 variant="default"
                 size="sm"
                 onClick={() => handleClear('all')}
-                disabled={
-                  isClearing !== null ||
-                  (imageCache.count === 0 && videoCache.count === 0)
-                }
+                disabled={isClearing !== null || (imageCache.count === 0 && videoCache.count === 0)}
               >
                 {isClearing === 'all' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 {isClearing === 'all' ? '清理中...' : '清理全部'}

@@ -27,8 +27,13 @@ pub async fn complete_text(
     req: CompleteTextRequest,
 ) -> Result<CompleteTextResponse, String> {
     let provider = create_provider().await.map_err(|e| e.to_string())?;
-    let result = provider.complete_text(&req).await.map_err(|e| e.to_string())?;
-    Ok(CompleteTextResponse { generated_text: result })
+    let result = provider
+        .complete_text(&req)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(CompleteTextResponse {
+        generated_text: result,
+    })
 }
 
 #[tauri::command]
@@ -37,8 +42,13 @@ pub async fn rewrite_text(
     req: RewriteTextRequest,
 ) -> Result<RewriteTextResponse, String> {
     let provider = create_provider().await.map_err(|e| e.to_string())?;
-    let result = provider.rewrite_text(&req).await.map_err(|e| e.to_string())?;
-    Ok(RewriteTextResponse { rewritten_text: result })
+    let result = provider
+        .rewrite_text(&req)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(RewriteTextResponse {
+        rewritten_text: result,
+    })
 }
 
 #[tauri::command]
@@ -47,7 +57,10 @@ pub async fn summarize_text(
     req: SummarizeTextRequest,
 ) -> Result<SummarizeTextResponse, String> {
     let provider = create_provider().await.map_err(|e| e.to_string())?;
-    let result = provider.summarize_text(&req).await.map_err(|e| e.to_string())?;
+    let result = provider
+        .summarize_text(&req)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(SummarizeTextResponse { summary: result })
 }
 

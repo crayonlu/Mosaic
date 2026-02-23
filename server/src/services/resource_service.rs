@@ -19,11 +19,7 @@ pub struct ResourceService {
 }
 
 impl ResourceService {
-    pub fn new(
-        pool: PgPool,
-        storage: Arc<dyn Storage>,
-        config: Config,
-    ) -> Self {
+    pub fn new(pool: PgPool, storage: Arc<dyn Storage>, config: Config) -> Self {
         Self {
             pool,
             storage,
@@ -374,9 +370,9 @@ impl ResourceService {
                 .get_presigned_url(&resource.storage_path, 300)
                 .await
                 .map_err(|e| AppError::Storage(e.to_string()))?,
-                crate::config::StorageType::Local => {
-                    format!("/api/resources/{}/download", resource.id)
-                }
+            crate::config::StorageType::Local => {
+                format!("/api/resources/{}/download", resource.id)
+            }
         };
 
         Ok(ResourceResponse {

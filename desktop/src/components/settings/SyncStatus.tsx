@@ -7,7 +7,6 @@ import { AlertCircle, Cloud, CloudOff, LogOutIcon, RefreshCw } from 'lucide-reac
 export function SyncStatusDisplay() {
   const { isConfigured, loading, config, checkConfig, logout } = useServerConfig()
 
-
   const handleLogout = async () => {
     try {
       await logout()

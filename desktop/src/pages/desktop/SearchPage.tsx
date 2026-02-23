@@ -3,10 +3,11 @@ import { MemoDetail } from '@/components/common/MemoDetail'
 import { SearchFilters } from '@/components/common/SearchFilters'
 import { SearchInput } from '@/components/common/SearchInput'
 import { SearchResults } from '@/components/common/SearchResults'
+import { TagCloud } from '@/components/common/TagCloud'
 import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import type { MemoWithResources } from '@mosaic/api'
-import { useSearchMemos } from '@mosaic/api'
+import { useMemoTags, useSearchMemos } from '@mosaic/api'
 import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { Search as SearchIcon } from 'lucide-react'
@@ -38,23 +39,16 @@ export default function SearchPage() {
   )
 
   const { data: response, isLoading: isPending } = useSearchMemos(searchRequest)
+  const { data: allTags = [], isLoading: isTagsLoading } = useMemoTags()
+
   const results: MemoWithResources[] = response?.items ?? []
   const total = response?.total ?? 0
 
-  const hasSearchCriteria =
-    deferredQuery.trim() ||
-    selectedTags.length > 0 ||
-    startDate ||
-    endDate ||
-    isArchived !== undefined
-
-  const allTags = useMemo(() => {
-    const tagSet = new Set<string>()
-    results.forEach(memo => {
-      memo.tags.forEach(tag => tagSet.add(tag))
-    })
-    return Array.from(tagSet).sort()
-  }, [results])
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tag) ? prev.filter(item => item !== tag) : [...prev, tag]
+    )
+  }
 
   const handleMemoClick = (memo: MemoWithResources) => {
     setSelectedMemo(memo)
@@ -94,9 +88,15 @@ export default function SearchPage() {
             onStartDateChange={setStartDate}
             onEndDateChange={setEndDate}
             selectedTags={selectedTags}
-            availableTags={allTags}
             onTagsChange={setSelectedTags}
             total={total}
+          />
+
+          <TagCloud
+            tags={allTags}
+            selectedTags={selectedTags}
+            onTagToggle={handleTagToggle}
+            isLoading={isTagsLoading}
           />
         </div>
 
@@ -105,17 +105,19 @@ export default function SearchPage() {
             <div className="flex items-center justify-center h-full">
               <LoadingSpinner size="lg" />
             </div>
-          ) : !hasSearchCriteria ? (
-            <EmptyState
-              icon={SearchIcon}
-              title="开始搜索"
-              description="输入关键词或选择筛选条件开始搜索你的记录"
-            />
           ) : results.length === 0 ? (
             <EmptyState
               icon={SearchIcon}
               title="暂无搜索结果"
-              description="尝试调整搜索条件或关键词"
+              description={
+                deferredQuery.trim() ||
+                selectedTags.length > 0 ||
+                startDate ||
+                endDate ||
+                isArchived !== undefined
+                  ? '尝试调整搜索条件或关键词'
+                  : '暂无记录'
+              }
             />
           ) : (
             <div className="p-6">

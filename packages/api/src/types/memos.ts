@@ -14,6 +14,11 @@ export interface MemoWithResources extends Memo {
   resources: Resource[]
 }
 
+export interface TagResponse {
+  tag: string
+  count: number
+}
+
 export type MemoResponse = Memo
 export type MemoWithResourcesResponse = MemoWithResources
 

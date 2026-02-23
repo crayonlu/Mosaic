@@ -1,9 +1,9 @@
-import { Calendar } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Calendar as CalendarComponent } from '@/components/ui/calendar'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Calendar as CalendarComponent } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import dayjs from 'dayjs'
+import { Calendar } from 'lucide-react'
 
 interface SearchFiltersProps {
   isArchived?: boolean
@@ -13,7 +13,6 @@ interface SearchFiltersProps {
   onStartDateChange?: (date: Date | undefined) => void
   onEndDateChange?: (date: Date | undefined) => void
   selectedTags?: string[]
-  availableTags?: string[]
   onTagsChange?: (tags: string[]) => void
   total?: number
 }
@@ -112,11 +111,7 @@ export function SearchFilters({
             <span className="text-sm text-muted-foreground">日期:</span>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-3 text-xs gap-1 min-w-[120px]"
-                >
+                <Button variant="outline" size="sm" className="h-7 px-3 text-xs gap-1 min-w-30">
                   <Calendar className="h-3 w-3" />
                   {startDate || endDate
                     ? `${startDate ? dayjs(startDate).format('MM-DD') : '...'} - ${endDate ? dayjs(endDate).format('MM-DD') : '...'}`
