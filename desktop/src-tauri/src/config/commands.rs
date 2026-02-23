@@ -155,4 +155,3 @@ pub async fn clear_auth_tokens(config: State<'_, Arc<RwLock<AppConfig>>>) -> Res
     config_guard.server.refresh_token = None;
     config_guard.save().map_err(|e| e.to_string())
 }
-

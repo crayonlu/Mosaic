@@ -22,7 +22,12 @@ export default function DeskTopHome() {
   const invalidateHeatmap = useHeatmapInvalidate()
   const createMemo = useCreateMemo()
 
-  const handleSubmit = async (value: string, _resourceFilenames?: string[], tags?: string[], clearInputValue?: () => void) => {
+  const handleSubmit = async (
+    value: string,
+    _resourceFilenames?: string[],
+    tags?: string[],
+    clearInputValue?: () => void
+  ) => {
     try {
       const pendingFiles = getPendingFiles()
       let resourceIds: string[] = []

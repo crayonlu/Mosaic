@@ -23,10 +23,10 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
     const listQuery = useMemos({ page: 1, pageSize: 100, archived: false })
 
     const memos: MemoWithResources[] = diaryDate
-      ? (diaryQuery.data?.items || [])
+      ? diaryQuery.data?.items || []
       : date
-        ? (dateQuery.data || [])
-        : (listQuery.data?.items || [])
+        ? dateQuery.data || []
+        : listQuery.data?.items || []
 
     const loading = diaryDate
       ? diaryQuery.isLoading

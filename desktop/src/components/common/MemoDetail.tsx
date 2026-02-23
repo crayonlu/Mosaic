@@ -135,7 +135,10 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     try {
       setIsSaving(true)
-      await updateMemo.mutateAsync({ id: memo.id, data: { content: editedContent, tags: editedTags } })
+      await updateMemo.mutateAsync({
+        id: memo.id,
+        data: { content: editedContent, tags: editedTags },
+      })
       setIsEditing(false)
       onUpdate?.()
       toast.success('Memo保存成功')

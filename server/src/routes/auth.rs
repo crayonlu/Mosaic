@@ -111,5 +111,3 @@ pub async fn update_user(
         Err(e) => HttpResponse::from_error(e),
     }
 }
-
-

@@ -1,7 +1,7 @@
 use crate::error::AppError;
 use crate::models::{
     CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse, MemoWithResources,
-    PaginatedResponse, Resource, UpdateMemoRequest,
+    PaginatedResponse, Resource, TagResponse, UpdateMemoRequest,
 };
 use chrono::Utc;
 use serde_json::json;
@@ -32,7 +32,7 @@ impl MemoService {
             }
             format!("{}...", &req.content[..end_idx])
         };
-        
+
         log::info!(
             "[MemoService] Creating memo for user: {}, content: {}, tags: {:?}, resource_ids: {:?}",
             user_id,
@@ -132,6 +132,23 @@ impl MemoService {
         Ok(MemoWithResources::from_memo(memo, resources))
     }
 
+    pub async fn get_all_tags(&self, user_id: &str) -> Result<Vec<TagResponse>, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+
+        let tags = sqlx::query_as::<_, TagResponse>(
+            "SELECT tag, COUNT(*)::bigint AS count
+             FROM memos, jsonb_array_elements_text(tags) AS tag
+             WHERE user_id = $1 AND is_deleted = false
+             GROUP BY tag
+             ORDER BY tag ASC",
+        )
+        .bind(user_uuid)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(tags)
+    }
+
     async fn get_memo_resources(&self, memo_id: Uuid) -> Result<Vec<ResourceResponse>, AppError> {
         log::debug!("[MemoService] Getting resources for memo {}", memo_id);
         let resources = sqlx::query_as::<_, Resource>(
@@ -176,7 +193,11 @@ impl MemoService {
         user_id: &str,
         memo_id: Uuid,
     ) -> Result<MemoWithResources, AppError> {
-        log::info!("[MemoService] Getting memo {} for user {}", memo_id, user_id);
+        log::info!(
+            "[MemoService] Getting memo {} for user {}",
+            memo_id,
+            user_id
+        );
         let user_uuid = Uuid::parse_str(user_id).map_err(|e| {
             log::error!("[MemoService] Invalid user_id format: {}", e);
             e
@@ -386,10 +407,10 @@ impl MemoService {
         query.push_str(" ORDER BY created_at DESC");
 
         let memos = sqlx::query_as::<_, Memo>(&query)
-        .bind(user_uuid)
-        .bind(date)
-        .fetch_all(&self.pool)
-        .await?;
+            .bind(user_uuid)
+            .bind(date)
+            .fetch_all(&self.pool)
+            .await?;
 
         let mut items = Vec::new();
         for memo in memos {
@@ -613,9 +634,16 @@ impl MemoService {
             param_count += 1;
         }
 
-        if let Some(archived) = is_archived {
+        if is_archived.is_some() {
             conditions.push(format!("is_archived = ${}", param_count));
             param_count += 1;
+        }
+
+        if let Some(ref tag_filters) = tags {
+            if !tag_filters.is_empty() {
+                conditions.push(format!("tags ?& ${}::text[]", param_count));
+                param_count += 1;
+            }
         }
 
         if start_date.is_some() {
@@ -658,6 +686,11 @@ impl MemoService {
         if let Some(archived) = is_archived {
             count_builder = count_builder.bind(archived);
         }
+        if let Some(ref tag_filters) = tags {
+            if !tag_filters.is_empty() {
+                count_builder = count_builder.bind(tag_filters);
+            }
+        }
         if let Some(ref date) = start_date {
             count_builder = count_builder.bind(date);
         }
@@ -681,6 +714,11 @@ impl MemoService {
         if let Some(archived) = is_archived {
             query_builder = query_builder.bind(archived);
         }
+        if let Some(ref tag_filters) = tags {
+            if !tag_filters.is_empty() {
+                query_builder = query_builder.bind(tag_filters);
+            }
+        }
         if let Some(ref date) = start_date {
             query_builder = query_builder.bind(date);
         }
@@ -698,18 +736,11 @@ impl MemoService {
             items.push(MemoWithResources::from_memo(memo, resources));
         }
 
-        if let Some(ref tag_filters) = tags {
-            if !tag_filters.is_empty() {
-                items.retain(|item| tag_filters.iter().any(|tag| item.tags.contains(tag)));
-            }
-        }
-
-        let filtered_total = items.len() as i64;
-        let total_pages = ((filtered_total as f64) / (page_size as f64)).ceil() as u32;
+        let total_pages = ((total as f64) / (page_size as f64)).ceil() as u32;
 
         Ok(PaginatedResponse {
             items,
-            total: filtered_total,
+            total,
             page,
             page_size,
             total_pages,

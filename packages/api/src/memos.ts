@@ -1,11 +1,12 @@
 import { apiClient } from './client'
 import type {
-  CreateMemoRequest,
-  ListMemosQuery,
-  MemoWithResourcesResponse,
-  PaginatedResponse,
-  SearchMemosQuery,
-  UpdateMemoRequest,
+    CreateMemoRequest,
+    ListMemosQuery,
+    MemoWithResourcesResponse,
+    PaginatedResponse,
+    SearchMemosQuery,
+    TagResponse,
+    UpdateMemoRequest,
 } from './types'
 
 export const memosApi = {
@@ -43,5 +44,9 @@ export const memosApi = {
 
   search(query: SearchMemosQuery): Promise<PaginatedResponse<MemoWithResourcesResponse>> {
     return apiClient.get<PaginatedResponse<MemoWithResourcesResponse>>('/api/memos/search', query)
+  },
+
+  getAllTags(): Promise<TagResponse[]> {
+    return apiClient.get<TagResponse[]>('/api/memos/tags')
   },
 }

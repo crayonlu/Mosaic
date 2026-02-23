@@ -7,7 +7,6 @@ mod routes;
 mod services;
 mod storage;
 
-use actix_files::Files;
 use actix_web::{web, App, HttpResponse, HttpServer};
 use anyhow::anyhow;
 use config::Config;

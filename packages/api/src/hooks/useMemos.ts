@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { memosApi } from '../memos'
 import type {
-  CreateMemoRequest,
-  ListMemosQuery,
-  SearchMemosQuery,
-  UpdateMemoRequest,
+    CreateMemoRequest,
+    ListMemosQuery,
+    SearchMemosQuery,
+    UpdateMemoRequest,
 } from '../types'
 
 const DEFAULT_STALE_TIME = 5 * 60 * 1000
@@ -39,6 +39,14 @@ export function useSearchMemos(query: SearchMemosQuery) {
   return useQuery({
     queryKey: ['memos', 'search', query],
     queryFn: () => memosApi.search(query),
+    staleTime: DEFAULT_STALE_TIME,
+  })
+}
+
+export function useMemoTags() {
+  return useQuery({
+    queryKey: ['memos', 'tags'],
+    queryFn: () => memosApi.getAllTags(),
     staleTime: DEFAULT_STALE_TIME,
   })
 }

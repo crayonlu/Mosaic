@@ -141,9 +141,10 @@ pub async fn archive_memo(
         Err(e) => return HttpResponse::from_error(e),
     };
 
-    let diary_date = payload.diary_date.as_ref().and_then(|d| {
-        chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()
-    });
+    let diary_date = payload
+        .diary_date
+        .as_ref()
+        .and_then(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
 
     match memo_service
         .archive_memo(&user_id, path.into_inner(), diary_date)
@@ -205,12 +206,25 @@ pub async fn search_memos(
     }
 }
 
+pub async fn get_all_tags(req: HttpRequest, memo_service: web::Data<MemoService>) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match memo_service.get_all_tags(&user_id).await {
+        Ok(tags) => HttpResponse::Ok().json(tags),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
 pub fn configure_memo_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/memos")
             .route(web::post().to(create_memo))
             .route(web::get().to(list_memos)),
     )
+    .service(web::resource("/memos/tags").route(web::get().to(get_all_tags)))
     .service(web::resource("/memos/search").route(web::get().to(search_memos)))
     .service(web::resource("/memos/date/{date}").route(web::get().to(get_memos_by_date)))
     .service(
