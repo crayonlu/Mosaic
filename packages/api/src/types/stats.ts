@@ -1,8 +1,8 @@
 import type { MoodKey } from './diaries'
 
 export interface StatsQuery {
-  start_date: string
-  end_date: string
+  startDate: string
+  endDate: string
   [key: string]: unknown
 }
 

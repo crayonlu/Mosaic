@@ -49,8 +49,8 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
       const startDateStr = startDate.toISOString().split('T')[0]
       const endDateStr = endDate.toISOString().split('T')[0]
       const response = await statsApi.getHeatmap({
-        start_date: startDateStr,
-        end_date: endDateStr,
+        startDate: startDateStr,
+        endDate: endDateStr,
       })
 
       // Build a map of date to count and mood from API response
