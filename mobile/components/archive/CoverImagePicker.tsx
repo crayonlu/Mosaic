@@ -3,6 +3,7 @@ import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
 import { Image } from 'expo-image'
+import { Check } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 
@@ -50,14 +51,21 @@ export function CoverImagePicker({
         onPress={() => onSelect(item.resourceId)}
         style={[
           styles.imageContainer,
-          isSelected && { borderColor: theme.primary, borderWidth: 3 },
         ]}
       >
         <Image
           source={{ uri: item.url, headers: authHeaders }}
-          style={styles.image}
+          style={[styles.image, isSelected && styles.imageSelected]}
           contentFit="cover"
         />
+        {isSelected && (
+          <>
+            <View style={[styles.selectedOverlay, { backgroundColor: `${theme.primary}22` }]} />
+            <View style={[styles.selectedBadge, { backgroundColor: theme.primary }]}> 
+              <Check size={12} color="#fff" strokeWidth={3} />
+            </View>
+          </>
+        )}
       </Pressable>
     )
   }
@@ -115,13 +123,28 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
-    borderRadius: 8,
     overflow: 'hidden',
     margin: 4,
   },
   image: {
     width: '100%',
     height: '100%',
+  },
+  imageSelected: {
+    opacity: 0.92,
+  },
+  selectedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  selectedBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyContainer: {
     padding: 20,

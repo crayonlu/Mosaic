@@ -1,7 +1,25 @@
 use chrono::NaiveDate;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
+
+fn deserialize_cover_image_id<'de, D>(deserializer: D) -> Result<Option<Option<Uuid>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = serde_json::Value::deserialize(deserializer)?;
+
+    match value {
+        serde_json::Value::Null => Ok(Some(None)),
+        serde_json::Value::String(s) => {
+            let parsed = Uuid::parse_str(&s).map_err(serde::de::Error::custom)?;
+            Ok(Some(Some(parsed)))
+        }
+        _ => Err(serde::de::Error::custom(
+            "coverImageId must be a UUID string or null",
+        )),
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -46,6 +64,7 @@ pub struct UpdateDiaryRequest {
     pub summary: Option<String>,
     pub mood_key: Option<String>,
     pub mood_score: Option<i32>,
+    #[serde(default, deserialize_with = "deserialize_cover_image_id")]
     pub cover_image_id: Option<Option<Uuid>>,
 }
 

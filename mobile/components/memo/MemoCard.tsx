@@ -12,11 +12,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 interface MemoCardProps {
   memo: MemoWithResources
-  onPress: () => void
+  onPress?: () => void
   onDelete?: (id: string) => void
   showActions?: boolean
   showTimestamp?: boolean
   isSelected?: boolean
+  showPressFeedback?: boolean
 }
 
 export function MemoCard({
@@ -26,6 +27,7 @@ export function MemoCard({
   showActions = true,
   showTimestamp = true,
   isSelected = false,
+  showPressFeedback = true,
 }: MemoCardProps) {
   const { theme } = useThemeStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
@@ -50,12 +52,13 @@ export function MemoCard({
   return (
     <Pressable
       onPress={onPress}
+      disabled={!onPress}
       style={({ pressed }) => [
         styles.container,
         {
           backgroundColor: isSelected
             ? theme.surface
-            : pressed
+            : pressed && showPressFeedback
               ? `${theme.surface}80`
               : 'transparent',
           borderColor: theme.border,

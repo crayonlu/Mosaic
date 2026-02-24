@@ -25,13 +25,13 @@ export const LightTheme: Theme = {
 }
 
 export const DarkTheme: Theme = {
-  background: '#1A1A2E',
-  surface: '#1F2937',
+  background: '#212124',
+  surface: '#2A2A2A',
   text: '#F5F5F5',
   textSecondary: '#A0AEC0',
   border: 'rgba(255, 255, 255, 0.1)',
   spacing: 16,
-  primary: '#8A9B8F',
+  primary: '#87582C',
   link: '#B8A9A9',
   mark: '#FFD93D',
 }
