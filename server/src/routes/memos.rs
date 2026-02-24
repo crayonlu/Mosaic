@@ -126,7 +126,6 @@ pub async fn get_memos_by_date(
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ArchiveMemoRequest {
-    #[serde(alias = "diary_date")]
     diary_date: Option<String>,
 }
 

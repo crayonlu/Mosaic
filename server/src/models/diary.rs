@@ -69,6 +69,7 @@ pub struct UpdateDiaryRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DiaryListQuery {
     pub page: Option<u32>,
     pub page_size: Option<u32>,

@@ -236,7 +236,7 @@ export class TauriApiClient {
     return this.invoke('get_or_create_default_user')
   }
 
-  async updateUser(req: { username?: string; avatar_url?: string }): Promise<unknown> {
+  async updateUser(req: { username?: string; avatarUrl?: string }): Promise<unknown> {
     return this.invoke('update_user', { req })
   }
 
@@ -297,8 +297,8 @@ export class TauriApiClient {
     return this.invoke('list_diaries', {
       page: query?.page,
       pageSize: query?.pageSize,
-      startDate: query?.startDate ?? query?.start_date,
-      endDate: query?.endDate ?? query?.end_date,
+      startDate: query?.startDate,
+      endDate: query?.endDate,
     })
   }
 
@@ -331,22 +331,22 @@ export class TauriApiClient {
 
   async getHeatmap(query: Record<string, unknown>): Promise<unknown> {
     return this.invoke('get_heatmap', {
-      startDate: query.startDate ?? query.start_date,
-      endDate: query.endDate ?? query.end_date,
+      startDate: query.startDate,
+      endDate: query.endDate,
     })
   }
 
   async getTimeline(query: Record<string, unknown>): Promise<unknown> {
     return this.invoke('get_timeline', {
-      startDate: query.startDate ?? query.start_date,
-      endDate: query.endDate ?? query.end_date,
+      startDate: query.startDate,
+      endDate: query.endDate,
     })
   }
 
   async getTrends(query: Record<string, unknown>): Promise<unknown> {
     return this.invoke('get_trends', {
-      startDate: query.startDate ?? query.start_date,
-      endDate: query.endDate ?? query.end_date,
+      startDate: query.startDate,
+      endDate: query.endDate,
     })
   }
 

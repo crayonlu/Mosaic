@@ -231,6 +231,7 @@ pub async fn upload_avatar(
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ListResourcesQuery {
     pub page: Option<i64>,
     pub page_size: Option<i64>,
@@ -257,7 +258,7 @@ pub async fn list_resources(
             "items": items,
             "total": total,
             "page": page,
-            "page_size": page_size
+            "pageSize": page_size
         })),
         Err(e) => HttpResponse::from_error(e),
     }

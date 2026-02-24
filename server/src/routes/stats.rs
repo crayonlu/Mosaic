@@ -20,14 +20,14 @@ pub async fn get_heatmap(
         Ok(date) => date,
         Err(_) => {
             return HttpResponse::BadRequest()
-                .json("Invalid start_date format, expected YYYY-MM-DD")
+                .json("Invalid startDate format, expected YYYY-MM-DD")
         }
     };
 
     let end_date = match chrono::NaiveDate::parse_from_str(&query.end_date, "%Y-%m-%d") {
         Ok(date) => date,
         Err(_) => {
-            return HttpResponse::BadRequest().json("Invalid end_date format, expected YYYY-MM-DD")
+            return HttpResponse::BadRequest().json("Invalid endDate format, expected YYYY-MM-DD")
         }
     };
 
@@ -57,14 +57,14 @@ pub async fn get_timeline(
         Ok(date) => date,
         Err(_) => {
             return HttpResponse::BadRequest()
-                .json("Invalid start_date format, expected YYYY-MM-DD")
+                .json("Invalid startDate format, expected YYYY-MM-DD")
         }
     };
 
     let end_date = match chrono::NaiveDate::parse_from_str(&query.end_date, "%Y-%m-%d") {
         Ok(date) => date,
         Err(_) => {
-            return HttpResponse::BadRequest().json("Invalid end_date format, expected YYYY-MM-DD")
+            return HttpResponse::BadRequest().json("Invalid endDate format, expected YYYY-MM-DD")
         }
     };
 
@@ -94,14 +94,14 @@ pub async fn get_trends(
         Ok(date) => date,
         Err(_) => {
             return HttpResponse::BadRequest()
-                .json("Invalid start_date format, expected YYYY-MM-DD")
+                .json("Invalid startDate format, expected YYYY-MM-DD")
         }
     };
 
     let end_date = match chrono::NaiveDate::parse_from_str(&query.end_date, "%Y-%m-%d") {
         Ok(date) => date,
         Err(_) => {
-            return HttpResponse::BadRequest().json("Invalid end_date format, expected YYYY-MM-DD")
+            return HttpResponse::BadRequest().json("Invalid endDate format, expected YYYY-MM-DD")
         }
     };
 
@@ -137,6 +137,7 @@ pub async fn get_summary(
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StatsQuery {
     pub start_date: String,
     pub end_date: String,

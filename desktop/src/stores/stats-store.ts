@@ -1,6 +1,6 @@
 import type { HeatMapCell, HeatMapDataExtended } from '@/types/stats'
-import { getMoodColor } from '@mosaic/utils'
 import { useHeatmap } from '@mosaic/api'
+import { getMoodColor } from '@mosaic/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 
@@ -66,8 +66,8 @@ export function useHeatmapQuery() {
   const endDate = dayjs().format('YYYY-MM-DD')
 
   const { data: rawData, ...rest } = useHeatmap({
-    start_date: startDate,
-    end_date: endDate,
+    startDate,
+    endDate,
   })
 
   const heatmapData = rawData ? buildHeatmapData(rawData, startDate, endDate) : undefined

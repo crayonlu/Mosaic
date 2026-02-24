@@ -94,6 +94,7 @@ pub struct UpdateMemoRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MemoListQuery {
     pub page: Option<u32>,
     pub page_size: Option<u32>,

@@ -1,3 +1,7 @@
+## Docs
+
+- [Server API](./server-api.md)
+
 ```bash
 pnpm desktop:dev                # Desktop开发
 pnpm mobile:start               # Mobile开发
@@ -16,4 +20,3 @@ pnpm install                    # 安装所有依赖
 pnpm install --filter desktop   # 仅Desktop
 pnpm install --filter mobile    # 仅Mobile
 ```
-
