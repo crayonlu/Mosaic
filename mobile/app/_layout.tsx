@@ -1,15 +1,16 @@
 import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
-import { getMoodColorWithIntensity } from '@mosaic/utils'
 import { useAuthStore } from '@/stores/auth-store'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useMoodStore } from '@/stores/mood-store'
 import { useThemeInit, useThemeStore } from '@/stores/theme-store'
+import { getMoodColorWithIntensity } from '@mosaic/utils'
+import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, {
@@ -60,10 +61,13 @@ export default function RootLayout() {
     opacity: overlayOpacity.value,
   }))
 
-  const completeGradientTransition = (nextColor: string) => {
-    setBaseMoodColor(nextColor)
-    overlayOpacity.value = 0
-  }
+  const completeGradientTransition = useCallback(
+    (nextColor: string) => {
+      setBaseMoodColor(nextColor)
+      overlayOpacity.value = 0
+    },
+    [overlayOpacity]
+  )
 
   useEffect(() => {
     if (moodColor === baseMoodColor) return
@@ -75,7 +79,7 @@ export default function RootLayout() {
         runOnJS(completeGradientTransition)(moodColor)
       }
     })
-  }, [baseMoodColor, moodColor, overlayOpacity])
+  }, [baseMoodColor, completeGradientTransition, moodColor, overlayOpacity])
 
   if (!isInitialized || isLoading) {
     return (
@@ -141,6 +145,13 @@ export default function RootLayout() {
                   }}
                 />
               </Stack>
+              <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.noiseOverlay]}>
+                <Image
+                  source={require('../assets/images/noise.png')}
+                  contentFit="cover"
+                  style={[styles.noiseImage, { opacity: 0.6 }]}
+                />
+              </View>
               <ToastContainer />
             </QueryProvider>
           </SafeAreaView>
@@ -160,5 +171,13 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '500',
+  },
+  noiseOverlay: {
+    zIndex: 5,
+  },
+  noiseImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
   },
 })
