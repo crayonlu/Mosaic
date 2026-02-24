@@ -354,10 +354,10 @@ const styles = StyleSheet.create({
   },
   metadata: {
     padding: 16,
-    paddingTop: 0,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.05)',
-    marginTop: 16,
+    marginTop: 4,
   },
   metadataText: {
     fontSize: 13,

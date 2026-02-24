@@ -15,6 +15,7 @@ import { useEffect } from 'react'
 export default function TabLayout() {
   const { theme } = useThemeStore()
   const queryClient = useQueryClient()
+  const inactiveTabColor = `${theme.primary}90`
 
   useEffect(() => {
     const today = dayjs().format('YYYY-MM-DD')
@@ -31,7 +32,7 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.primary,
-        tabBarInactiveTintColor: theme.textSecondary,
+        tabBarInactiveTintColor: inactiveTabColor,
         tabBarStyle: {
           backgroundColor: theme.background,
           height: 54,
