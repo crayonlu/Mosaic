@@ -22,6 +22,9 @@ export class ApiClient {
     headers: {
       'Content-Type': 'application/json',
     },
+    paramsSerializer: {
+      indexes: null,
+    },
   })
 
   private lastRefreshTime = 0
