@@ -2,12 +2,6 @@ export { DarkTheme, LightTheme, type Theme, type ThemeMode } from './theme'
 
 export { MOOD_INTENSITY_LEVELS, MOODS, type MoodKey } from '@mosaic/utils'
 
-export const APP = {
-  NAME: 'Mosaic',
-  DESCRIPTION: '重新整合破碎的自我 一次一个像素',
-  VERSION: '1.0.0',
-} as const
-
 export const Screens = {
   HOME: 'index',
   ARCHIVE: 'archive',
