@@ -2,26 +2,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
-fn deserialize_tags<'de, D>(deserializer: D) -> Result<Option<Vec<String>>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum TagsValue {
-        Single(String),
-        Multiple(Vec<String>),
-    }
-
-    let value = Option::<TagsValue>::deserialize(deserializer)?;
-
-    Ok(match value {
-        Some(TagsValue::Single(tag)) => Some(vec![tag]),
-        Some(TagsValue::Multiple(tags)) => Some(tags),
-        None => None,
-    })
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct TagResponse {
@@ -106,9 +86,10 @@ pub struct MemoListQuery {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchMemosRequest {
+    #[serde(default)]
     pub query: String,
-    #[serde(default, alias = "tags[]", deserialize_with = "deserialize_tags")]
-    pub tags: Option<Vec<String>>,
+    #[serde(default, alias = "tags[]")]
+    pub tags: Vec<String>,
     pub start_date: Option<String>,
     pub end_date: Option<String>,
     pub is_archived: Option<bool>,
