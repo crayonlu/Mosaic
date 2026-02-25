@@ -186,12 +186,17 @@ pub async fn search_memos(
     let search_req = query.into_inner();
     let page = search_req.page.unwrap_or(1);
     let page_size = search_req.page_size.unwrap_or(50);
+    let tags = if search_req.tags.is_empty() {
+        None
+    } else {
+        Some(search_req.tags)
+    };
 
     match memo_service
         .search_memos(
             &user_id,
             &search_req.query,
-            search_req.tags,
+            tags,
             search_req.start_date,
             search_req.end_date,
             search_req.is_archived,
