@@ -6,10 +6,13 @@ import { tokenStorage } from '@/lib/services/token-storage'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
 import { resourcesApi } from '@mosaic/api'
+import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 import { Info, LogOut, Moon, Sparkles, Sun } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+
+const appVersion = Constants.expoConfig?.version ?? 'unknown'
 
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
   const [token, setToken] = useState<string | null>(null)
@@ -263,7 +266,7 @@ export default function SettingsScreen() {
           <Text style={[styles.menuItemText, { color: theme.text }]}>关于</Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              Mosaic v1.0.0
+              Mosaic v{appVersion}
             </Text>
           </View>
         </TouchableOpacity>
