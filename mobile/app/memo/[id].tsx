@@ -8,10 +8,10 @@ import { useDeleteMemo, useMemo as useQueryMemo, useUpdateMemo } from '@/lib/que
 import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
-import { resourcesApi } from '@mosaic/api'
+import { resourcesApi, type ResourceResponse } from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, Image } from 'lucide-react-native'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function MemoDetailScreen() {
@@ -27,8 +27,9 @@ export default function MemoDetailScreen() {
   const [content, setContent] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
-  const [imageUris, setImageUris] = useState<string[]>([])
+  const [editingImageResources, setEditingImageResources] = useState<ResourceResponse[]>([])
   const [uploading, setUploading] = useState(false)
+  const wasEditingRef = useRef(false)
 
   const isPending = isUpdating || isDeleting || uploading
 
@@ -41,19 +42,48 @@ export default function MemoDetailScreen() {
   }, [])
 
   useEffect(() => {
-    if (editing && memo?.resources) {
+    if (editing && !wasEditingRef.current && memo?.resources) {
       const existingImages = memo.resources
         .filter(r => r.resourceType === 'image')
-        .map(r => resourcesApi.getDownloadUrl(r.id))
-      setImageUris(existingImages)
+      setEditingImageResources(existingImages)
     }
-  }, [editing, memo])
+
+    wasEditingRef.current = editing
+  }, [editing, memo?.resources])
+
+  const getImageUrl = useCallback((resource: ResourceResponse) => {
+    return resourcesApi.getDownloadUrl(resource.id)
+  }, [])
+
+  const imageUris = editingImageResources.map(getImageUrl)
 
   const handleImagesChange = useCallback(
     (nextImageUris: string[]) => {
-      setImageUris(nextImageUris)
+      const nextImageSet = new Set(nextImageUris)
+      const nextResources = nextImageUris
+        .map(uri => editingImageResources.find(resource => getImageUrl(resource) === uri))
+        .filter((resource): resource is ResourceResponse => Boolean(resource))
+
+      const removedResources = editingImageResources.filter(
+        resource => !nextImageSet.has(getImageUrl(resource))
+      )
+
+      setEditingImageResources(nextResources)
+
+      if (removedResources.length > 0 && canUseNetwork) {
+        void (async () => {
+          for (const resource of removedResources) {
+            try {
+              await resourcesApi.delete(resource.id)
+            } catch (error) {
+              handleError(error)
+              toast.error('错误', '删除图片失败')
+            }
+          }
+        })()
+      }
     },
-    [imageUris]
+    [editingImageResources, canUseNetwork, getImageUrl, handleError]
   )
 
   const selectImages = async () => {
@@ -66,28 +96,14 @@ export default function MemoDetailScreen() {
 
     if (!result.canceled) {
       const newUris = result.assets.map(asset => asset.uri)
-      setImageUris([...imageUris, ...newUris].slice(0, 9))
-    }
-  }
+      if (!memo || !canUseNetwork || newUris.length === 0) {
+        return
+      }
 
-  const handleSave = useCallback(async () => {
-    if (!memo || !canUseNetwork || isPending) return
-
-    try {
-      const existingImageResources = (memo.resources || []).filter(r => r.resourceType === 'image')
-      const existingUriToId = new Map(
-        existingImageResources.map(resource => [
-          resourcesApi.getDownloadUrl(resource.id),
-          resource.id,
-        ])
-      )
-
-      const newImageUris = imageUris.filter(uri => !existingUriToId.has(uri))
-      const uploadedUriToId = new Map<string, string>()
-
-      if (newImageUris.length > 0) {
-        setUploading(true)
-        for (const uri of newImageUris) {
+      setUploading(true)
+      try {
+        const uploadedResources: ResourceResponse[] = []
+        for (const uri of newUris) {
           const resource = await resourcesApi.upload(
             {
               uri,
@@ -96,14 +112,26 @@ export default function MemoDetailScreen() {
             },
             memo.id
           )
-          uploadedUriToId.set(uri, resource.id)
+          uploadedResources.push(resource)
         }
+
+        setEditingImageResources(prev => [...prev, ...uploadedResources].slice(0, 9))
+      } catch (error) {
+        handleError(error)
+        toast.error('错误', '上传图片失败')
+      } finally {
         setUploading(false)
       }
+    } else {
+      console.log('[MemoEditUpload] selectImages canceled')
+    }
+  }
 
-      const allResourceIds = imageUris
-        .map(uri => existingUriToId.get(uri) || uploadedUriToId.get(uri))
-        .filter((id): id is string => Boolean(id))
+  const handleSave = useCallback(async () => {
+    if (!memo || !canUseNetwork || isPending) return
+
+    try {
+      const allResourceIds = editingImageResources.map(resource => resource.id)
 
       await updateMemo({
         id: memo.id,
@@ -115,7 +143,7 @@ export default function MemoDetailScreen() {
       handleError(error)
       toast.error('错误', '更新失败')
     }
-  }, [memo, content, tags, imageUris, canUseNetwork, isPending, updateMemo, handleError])
+  }, [memo, content, tags, editingImageResources, canUseNetwork, isPending, updateMemo, handleError])
   const handleDelete = useCallback(() => {
     if (!memo) return
 
@@ -226,11 +254,12 @@ export default function MemoDetailScreen() {
                   variant="ghost"
                   size="small"
                   leftIcon={<Image size={16} color={theme.text} />}
-                  disabled={!canUseNetwork || imageUris.length >= 9}
+                  disabled={!canUseNetwork || imageUris.length >= 9 || uploading}
                 />
               </View>
               {imageUris.length > 0 && (
                 <DraggableImageGrid
+                  key={`edit-grid-${imageUris.join('|')}`}
                   images={imageUris}
                   authHeaders={authHeaders}
                   onImagesChange={handleImagesChange}

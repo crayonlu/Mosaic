@@ -34,14 +34,13 @@
           "image": "./assets/images/mosaic-light.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#FFF9F5",
+          "backgroundColor": "#FFF5EB",
           "dark": {
             "image": "./assets/images/mosaic-dark.png",
-            "backgroundColor": "#1A1A2E"
+            "backgroundColor": "#212124"
           }
         }
       ],
-      ["./plugins/withNinjaLongPaths.js"],
       [
         "expo-image-picker",
         {
