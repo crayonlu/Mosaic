@@ -1,12 +1,12 @@
 import { apiClient } from './client'
 import type {
-    CreateMemoRequest,
-    ListMemosQuery,
-    MemoWithResourcesResponse,
-    PaginatedResponse,
-    SearchMemosQuery,
-    TagResponse,
-    UpdateMemoRequest,
+  CreateMemoRequest,
+  ListMemosQuery,
+  MemoWithResourcesResponse,
+  PaginatedResponse,
+  SearchMemosQuery,
+  TagResponse,
+  UpdateMemoRequest,
 } from './types'
 
 export const memosApi = {

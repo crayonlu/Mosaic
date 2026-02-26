@@ -43,8 +43,7 @@ export default function MemoDetailScreen() {
 
   useEffect(() => {
     if (editing && !wasEditingRef.current && memo?.resources) {
-      const existingImages = memo.resources
-        .filter(r => r.resourceType === 'image')
+      const existingImages = memo.resources.filter(r => r.resourceType === 'image')
       setEditingImageResources(existingImages)
     }
 
@@ -143,7 +142,16 @@ export default function MemoDetailScreen() {
       handleError(error)
       toast.error('错误', '更新失败')
     }
-  }, [memo, content, tags, editingImageResources, canUseNetwork, isPending, updateMemo, handleError])
+  }, [
+    memo,
+    content,
+    tags,
+    editingImageResources,
+    canUseNetwork,
+    isPending,
+    updateMemo,
+    handleError,
+  ])
   const handleDelete = useCallback(() => {
     if (!memo) return
 

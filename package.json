@@ -17,27 +17,31 @@
     "mobile:android": "bun --filter @mosaic/mobile android",
     "mobile:ios": "bun --filter @mosaic/mobile ios",
     "mobile:web": "bun --filter @mosaic/mobile web",
-    "lint": "bun --filter @mosaic/desktop lint && bun --filter @mosaic/mobile lint",
+    "lint": "bun --filter @mosaic/api lint && bun --filter @mosaic/utils lint && bun --filter @mosaic/desktop lint && bun --filter @mosaic/mobile lint",
+    "lint:api": "bun --filter @mosaic/api lint",
+    "lint:utils": "bun --filter @mosaic/utils lint",
     "lint:desktop": "bun --filter @mosaic/desktop lint",
     "lint:desktop:fix": "bun --filter @mosaic/desktop lint:fix",
     "lint:mobile": "bun --filter @mosaic/mobile lint",
     "lint:mobile:fix": "bun --filter @mosaic/mobile lint:fix",
-    "format": "bun --filter @mosaic/desktop format && bun --filter @mosaic/mobile format",
+    "format": "bun --filter @mosaic/api format && bun --filter @mosaic/utils format && bun --filter @mosaic/desktop format && bun --filter @mosaic/mobile format",
+    "format:api": "bun --filter @mosaic/api format",
+    "format:utils": "bun --filter @mosaic/utils format",
     "format:desktop": "bun --filter @mosaic/desktop format",
     "format:desktop:check": "bun --filter @mosaic/desktop format:check",
     "format:mobile": "bun --filter @mosaic/mobile format",
     "format:mobile:check": "bun --filter @mosaic/mobile format:check",
-    "check": "bun lint && bun format:desktop:check && bun format:mobile:check"
+    "check": "bun lint && bun format:api && bun format:utils && bun format:desktop:check && bun format:mobile:check"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/mosaic.git"
+    "url": "https://github.com/crayonlu/Mosaic.git"
   },
   "author": "",
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "dependencies": {
     "@eslint/js": "^9.39.2",
     "@typescript-eslint/eslint-plugin": "^8.51.0",

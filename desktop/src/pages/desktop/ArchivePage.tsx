@@ -11,16 +11,16 @@ import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
 import { toast } from '@/hooks/use-toast'
-import type { MemoWithResources } from '@mosaic/api'
-import { extractTextFromHtml } from '@mosaic/utils'
+import type { MemoWithResources, MoodKey } from '@mosaic/api'
 import {
-  useMemoByDate,
-  useDiary,
-  useDeleteMemo,
   useArchiveMemo,
-  useUnarchiveMemo,
   useCreateOrUpdateDiary,
+  useDeleteMemo,
+  useDiary,
+  useMemoByDate,
+  useUnarchiveMemo,
 } from '@mosaic/api'
+import { extractTextFromHtml } from '@mosaic/utils'
 import dayjs from 'dayjs'
 import { Archive, Calendar, CheckSquare, Square, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -154,7 +154,7 @@ export default function ArchivePage() {
         date: formattedDate,
         data: {
           summary,
-          moodKey: moodKey as any,
+          moodKey: moodKey as MoodKey,
           moodScore,
           coverImageId,
         },

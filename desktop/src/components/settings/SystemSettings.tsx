@@ -1,17 +1,4 @@
-import { useState, useEffect } from 'react'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Label } from '@radix-ui/react-label'
-import {
-  settingsCommands,
-  loadShortcutConfig,
-  storageCommands,
-  selectDataDirectory,
-} from '@/utils/settings-helpers'
-import { useSettingsStore } from '@/stores/settings-store'
-import { Keyboard, Settings as SettingsIcon } from 'lucide-react'
-import { useKeyCapture } from '@/hooks/use-key-capture'
-import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
@@ -21,7 +8,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
+import { useKeyCapture } from '@/hooks/use-key-capture'
 import { toast } from '@/hooks/use-toast'
+import { useSettingsStore } from '@/stores/settings-store'
+import {
+  loadShortcutConfig,
+  selectDataDirectory,
+  settingsCommands,
+  storageCommands,
+} from '@/utils/settings-helpers'
+import { Label } from '@radix-ui/react-label'
+import { Keyboard, Settings as SettingsIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 export function SystemSettings() {
   const { autostartEnabled, setAutostartEnabled } = useSettingsStore()
@@ -43,6 +43,7 @@ export function SystemSettings() {
 
   useEffect(() => {
     loadSettings()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadSettings() {
