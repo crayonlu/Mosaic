@@ -397,7 +397,7 @@ impl MemoService {
              FROM memos
              WHERE user_id = $1
                 AND is_deleted = false
-                AND DATE(to_timestamp(created_at / 1000) AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Shanghai') = $2::date",
+                AND DATE(to_timestamp(created_at / 1000) AT TIME ZONE 'Asia/Shanghai') = $2::date",
         );
 
         if let Some(is_archived) = archived {
