@@ -50,7 +50,17 @@ pub async fn get_diary(
     };
 
     match diary_service.get_diary_with_memos(&user_id, date).await {
-        Ok(diary) => HttpResponse::Ok().json(diary),
+        Ok(Some(diary)) => HttpResponse::Ok().json(diary),
+        Ok(None) => HttpResponse::Ok().json(serde_json::json!({
+            "date": date_str,
+            "summary": "",
+            "mood_key": "",
+            "mood_score": 0,
+            "cover_image_id": null,
+            "created_at": 0,
+            "updated_at": 0,
+            "memos": []
+        })),
         Err(e) => HttpResponse::from_error(e),
     }
 }

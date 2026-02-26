@@ -67,7 +67,8 @@ Mosaic/
    3. 在此文件夹下创建`.env`文件，内容参考 [.env.example](./server/.env.example)，并根据你的需要修改其中的配置项（记得修改账号名称和密码）
    4. 同样在此文件夹下创建`docker-compose.yml`文件，直接复制 [docker-compose.yml](./server/docker-compose.yml) 即可
    5. 回到mosaic-server文件夹，执行 `docker-compose up -d` 启动即可
-   6. 之后你可以自己配置反向代理到自己的域名上
+   6. **注意**：如果遇到文件上传权限问题，执行 `chown -R 1000:1000 ~/mosaic-server/storage ~/mosaic-server/logs` 修复目录权限
+   7. 之后你可以自己配置反向代理到自己的域名上
 2. 下载release中的客户端连接你自己的服务器即可
 
 ---

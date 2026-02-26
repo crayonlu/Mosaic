@@ -175,10 +175,10 @@ impl DiaryService {
         &self,
         user_id: &str,
         date: NaiveDate,
-    ) -> Result<crate::models::DiaryWithMemosResponse, AppError> {
+    ) -> Result<Option<crate::models::DiaryWithMemosResponse>, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
 
-        let diary = sqlx::query_as::<_, Diary>(
+        let diary = match sqlx::query_as::<_, Diary>(
             "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at
              FROM diaries WHERE date = $1 AND user_id = $2",
         )
@@ -186,7 +186,10 @@ impl DiaryService {
         .bind(user_uuid)
         .fetch_optional(&self.pool)
         .await?
-        .ok_or(AppError::DiaryNotFound)?;
+        {
+            Some(d) => d,
+            None => return Ok(None),
+        };
 
         let memos = sqlx::query_as::<_, crate::models::Memo>(
             "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
@@ -204,7 +207,7 @@ impl DiaryService {
             memo_responses.push(MemoWithResources::from_memo(memo, resources));
         }
 
-        Ok(crate::models::DiaryWithMemosResponse {
+        Ok(Some(crate::models::DiaryWithMemosResponse {
             date: diary.date,
             summary: diary.summary,
             mood_key: diary.mood_key,
@@ -213,7 +216,7 @@ impl DiaryService {
             created_at: diary.created_at,
             updated_at: diary.updated_at,
             memos: memo_responses,
-        })
+        }))
     }
 
     async fn get_memo_resources(&self, memo_id: Uuid) -> Result<Vec<ResourceResponse>, AppError> {

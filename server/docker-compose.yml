@@ -41,8 +41,8 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - mosaic_storage:/app/storage
-      - mosaic_logs:/app/logs
+      - ./storage:/app/storage
+      - ./logs:/app/logs
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
@@ -52,5 +52,3 @@ services:
 
 volumes:
   postgres_data:
-  mosaic_storage:
-  mosaic_logs:
