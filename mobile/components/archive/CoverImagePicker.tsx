@@ -47,12 +47,7 @@ export function CoverImagePicker({
   const renderImage = ({ item }: { item: { resourceId: string; memoId: string; url: string } }) => {
     const isSelected = item.resourceId === selectedCoverId
     return (
-      <Pressable
-        onPress={() => onSelect(item.resourceId)}
-        style={[
-          styles.imageContainer,
-        ]}
-      >
+      <Pressable onPress={() => onSelect(item.resourceId)} style={[styles.imageContainer]}>
         <Image
           source={{ uri: item.url, headers: authHeaders }}
           style={[styles.image, isSelected && styles.imageSelected]}
@@ -61,7 +56,7 @@ export function CoverImagePicker({
         {isSelected && (
           <>
             <View style={[styles.selectedOverlay, { backgroundColor: `${theme.primary}22` }]} />
-            <View style={[styles.selectedBadge, { backgroundColor: theme.primary }]}> 
+            <View style={[styles.selectedBadge, { backgroundColor: theme.primary }]}>
               <Check size={12} color="#fff" strokeWidth={3} />
             </View>
           </>

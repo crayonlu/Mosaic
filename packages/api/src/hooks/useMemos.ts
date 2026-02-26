@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { memosApi } from '../memos'
 import type {
-    CreateMemoRequest,
-    ListMemosQuery,
-    SearchMemosQuery,
-    UpdateMemoRequest,
+  CreateMemoRequest,
+  ListMemosQuery,
+  SearchMemosQuery,
+  UpdateMemoRequest,
 } from '../types'
 
 const DEFAULT_STALE_TIME = 5 * 60 * 1000

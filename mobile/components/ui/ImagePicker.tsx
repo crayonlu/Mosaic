@@ -3,15 +3,7 @@ import { Image } from 'expo-image'
 import * as ExpoImagePicker from 'expo-image-picker'
 import { ImagePlus, Upload, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
-import {
-  Dimensions,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Button } from './Button'
 
 interface ImagePickerProps {
@@ -20,42 +12,6 @@ interface ImagePickerProps {
   maxImages?: number
   showUploadButton?: boolean
   triggerUpload?: number
-}
-
-const screenWidth = Dimensions.get('window').width
-
-// Calculate grid layout based on image count (WeChat-style)
-const getGridLayout = (count: number, hasAddButton: boolean) => {
-  const totalCells = hasAddButton ? count + 1 : count
-
-  if (count === 0 && hasAddButton) {
-    // Only add button
-    return { columns: 1, size: 120, isLarge: false }
-  }
-
-  if (count === 1) {
-    // Single image: larger display with max-width 70%
-    const maxWidth = screenWidth * 0.7
-    const size = Math.min(maxWidth, 280)
-    return { columns: 1, size, isLarge: true }
-  }
-
-  if (totalCells <= 4) {
-    // 2-4 images: 2x2 grid
-    const gap = 8
-    const padding = 16
-    const availableWidth = screenWidth - padding * 2 - gap
-    const size = availableWidth / 2
-    return { columns: 2, size, isLarge: false }
-  }
-
-  // 5-9 images: 3x3 grid
-  // 9+ images: infinite 3-column grid
-  const gap = 8
-  const padding = 16
-  const availableWidth = screenWidth - padding * 2 - gap * 2
-  const size = availableWidth / 3
-  return { columns: 3, size, isLarge: false }
 }
 
 export function ImagePicker({
@@ -95,8 +51,6 @@ export function ImagePicker({
   const removeImage = (index: number) => {
     onImagesChange(images.filter((_, i) => i !== index))
   }
-
-  const { size, isLarge } = getGridLayout(images.length, images.length < maxImages)
 
   return (
     <View style={styles.container}>

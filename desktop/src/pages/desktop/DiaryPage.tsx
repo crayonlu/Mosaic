@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import type { Diary } from '@mosaic/api'
-import { getMoodColor, getMoodLabel } from '@mosaic/utils'
 import { useDiaries } from '@mosaic/api'
+import { getMoodColor, getMoodLabel } from '@mosaic/utils'
 import dayjs from 'dayjs'
 import { BookOpen, Calendar } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -26,7 +26,7 @@ export default function DiaryPage() {
     endDate,
   })
 
-  const diaries: Diary[] = response?.items ?? []
+  const diaries: Diary[] = useMemo(() => response?.items ?? [], [response?.items])
   const total = response?.total ?? 0
   const totalPages = response?.totalPages ?? 0
 

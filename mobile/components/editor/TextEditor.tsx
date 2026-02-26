@@ -1,5 +1,4 @@
 import { useThemeStore } from '@/stores/theme-store'
-import { useState } from 'react'
 import { StyleSheet, TextInput, View } from 'react-native'
 
 interface TextEditorProps {
@@ -16,7 +15,6 @@ export function TextEditor({
   editable = true,
 }: TextEditorProps) {
   const { theme } = useThemeStore()
-  const [isFocused, setIsFocused] = useState(false)
 
   return (
     <View style={styles.container}>

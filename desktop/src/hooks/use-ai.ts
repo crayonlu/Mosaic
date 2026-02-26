@@ -13,7 +13,7 @@ import { aiCommands } from '@/utils/call-rust'
 import { loadAIConfig } from '@/utils/settings-helpers'
 import { useCallback, useState } from 'react'
 
-let aiConfigCache: { config: any; timestamp: number } | null = null
+let aiConfigCache: { config: unknown; timestamp: number } | null = null
 const CACHE_DURATION = 5 * 60 * 1000
 
 export function useAI() {
@@ -47,9 +47,9 @@ export function useAI() {
         setLoading(true)
         const result = await aiCommands.completeText(req)
         return result
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('AI complete text failed:', error)
-        toast.error(error?.message || '文本补全失败，请重试')
+        toast.error(error instanceof Error ? error.message : '文本补全失败，请重试')
         return null
       } finally {
         setLoading(false)
@@ -70,9 +70,9 @@ export function useAI() {
         setLoading(true)
         const result = await aiCommands.rewriteText(req)
         return result
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('AI rewrite text failed:', error)
-        toast.error(error?.message || '文本重写失败，请重试')
+        toast.error(error instanceof Error ? error.message : '文本重写失败，请重试')
         return null
       } finally {
         setLoading(false)
@@ -93,9 +93,9 @@ export function useAI() {
         setLoading(true)
         const result = await aiCommands.summarizeText(req)
         return result
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('AI summarize text failed:', error)
-        toast.error(error?.message || '生成总结失败，请重试')
+        toast.error(error instanceof Error ? error.message : '生成总结失败，请重试')
         return null
       } finally {
         setLoading(false)
@@ -116,9 +116,9 @@ export function useAI() {
         setLoading(true)
         const result = await aiCommands.suggestTags(req)
         return result
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('AI suggest tags failed:', error)
-        toast.error(error?.message || '标签建议失败，请重试')
+        toast.error(error instanceof Error ? error.message : '标签建议失败，请重试')
         return null
       } finally {
         setLoading(false)

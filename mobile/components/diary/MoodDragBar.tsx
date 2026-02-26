@@ -2,7 +2,7 @@ import { MOOD_INTENSITY_LEVELS } from '@/constants/common'
 import { useThemeStore } from '@/stores/theme-store'
 import Slider from '@react-native-community/slider'
 import { useCallback } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet } from 'react-native'
 
 interface MoodDragBarProps {
   value: number

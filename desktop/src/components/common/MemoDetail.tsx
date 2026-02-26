@@ -379,7 +379,9 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 variant="default"
                 size="sm"
                 onClick={handleSave}
-                disabled={isSaving || (!hasContentChanged && !hasTagsChanged && !hasResourceChanges)}
+                disabled={
+                  isSaving || (!hasContentChanged && !hasTagsChanged && !hasResourceChanges)
+                }
               >
                 <Save className="h-4 w-4 mr-1" />
                 {isSaving ? '保存中...' : '保存'}
