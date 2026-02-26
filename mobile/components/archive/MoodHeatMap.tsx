@@ -46,8 +46,8 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
       const startDate = new Date()
       startDate.setMonth(startDate.getMonth() - 6)
 
-      const startDateStr = startDate.toISOString().split('T')[0]
-      const endDateStr = endDate.toISOString().split('T')[0]
+      const startDateStr = dayjs(startDate).format('YYYY-MM-DD')
+      const endDateStr = dayjs(endDate).format('YYYY-MM-DD')
       const response = await statsApi.getHeatmap({
         startDate: startDateStr,
         endDate: endDateStr,

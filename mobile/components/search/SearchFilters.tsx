@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui'
 import { useThemeStore } from '@/stores/theme-store'
 import DateTimePicker from '@react-native-community/datetimepicker'
+import dayjs from 'dayjs'
 import { Calendar, Filter, X } from 'lucide-react-native'
 import { useState } from 'react'
 import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
@@ -88,7 +89,7 @@ export function SearchFilters({
   const onStartDateChange = (event: { type: string }, selectedDate?: Date) => {
     setShowStartDatePicker(Platform.OS === 'ios')
     if (selectedDate && event.type !== 'dismissed') {
-      const dateString = selectedDate.toISOString().split('T')[0]
+      const dateString = dayjs(selectedDate).format('YYYY-MM-DD')
       setTempStartDate(dateString)
     }
   }
@@ -96,7 +97,7 @@ export function SearchFilters({
   const onEndDateChange = (event: { type: string }, selectedDate?: Date) => {
     setShowEndDatePicker(Platform.OS === 'ios')
     if (selectedDate && event.type !== 'dismissed') {
-      const dateString = selectedDate.toISOString().split('T')[0]
+      const dateString = dayjs(selectedDate).format('YYYY-MM-DD')
       setTempEndDate(dateString)
     }
   }

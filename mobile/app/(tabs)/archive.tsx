@@ -22,9 +22,9 @@ export default function ArchiveScreen() {
   const queryClient = useQueryClient()
   const { mutateAsync: deleteMemo } = useDeleteMemo()
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = dayjs().format('YYYY-MM-DD')
   const { data: todayDiary } = useDiary(today)
-  const hasDiaryForToday = (todayDiary?.createdAt ?? 0) > 0
+  const hasDiaryForToday = !!todayDiary
 
   const selectedMemos = useMemo(() => {
     return visibleMemos.filter(m => selectedMemoIds.includes(m.id))
@@ -110,7 +110,7 @@ export default function ArchiveScreen() {
       <ArchiveDialog
         visible={showArchiveDialog}
         selectedMemos={selectedMemos}
-        targetDate={selectedDate || new Date().toISOString().split('T')[0]}
+        targetDate={selectedDate || dayjs().format('YYYY-MM-DD')}
         onSuccess={handleArchiveSuccess}
         onCancel={() => setShowArchiveDialog(false)}
         existingDiary={todayDiary}

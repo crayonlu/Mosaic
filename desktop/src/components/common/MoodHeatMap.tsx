@@ -2,6 +2,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useTheme } from '@/hooks/use-theme'
 import type { HeatMapCell, HeatMapDataExtended } from '@/types/stats'
 import { getMoodLabel } from '@mosaic/utils'
+import dayjs from 'dayjs'
 import { useEffect, useMemo, useRef } from 'react'
 
 interface MoodHeatMapProps {
@@ -50,7 +51,7 @@ export function MoodHeatMap({
           break
         }
 
-        const dateStr = currentDate.toISOString().split('T')[0]
+        const dateStr = dayjs(currentDate).format('YYYY-MM-DD')
         const cell = cellMap.get(dateStr) || {
           date: dateStr,
           color: '#ebedf0',

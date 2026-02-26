@@ -1,5 +1,6 @@
 import { useThemeStore } from '@/stores/theme-store'
 import DateTimePicker from '@react-native-community/datetimepicker'
+import dayjs from 'dayjs'
 import { Calendar, Check, X } from 'lucide-react-native'
 import { useState } from 'react'
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
@@ -34,7 +35,7 @@ export function ArchiveDateFilter({
   const onDateChange = (event: { type: string }, date?: Date) => {
     setShowDatePicker(Platform.OS === 'ios')
     if (date && event.type !== 'dismissed') {
-      const dateString = date.toISOString().split('T')[0]
+      const dateString = dayjs(date).format('YYYY-MM-DD')
       setTempDate(date)
       onDateSelect(dateString)
     }
