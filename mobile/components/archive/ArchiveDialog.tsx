@@ -2,16 +2,14 @@ import { MoodDragBar } from '@/components/diary/MoodDragBar'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { toast } from '@/components/ui/Toast'
+import { useThemeStore } from '@/stores/theme-store'
+import { diariesApi, memosApi, type DiaryResponse, type MemoWithResources } from '@mosaic/api'
 import { MOODS, type MoodKey } from '@mosaic/utils'
-import { type DiaryResponse, type MemoWithResources } from '@mosaic/api'
-import { diariesApi, memosApi } from '@mosaic/api'
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   Animated,
-  Keyboard,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,7 +18,6 @@ import {
   View,
 } from 'react-native'
 import { CoverImagePicker } from './CoverImagePicker'
-import { useThemeStore } from '@/stores/theme-store'
 
 interface ArchiveDialogProps {
   visible: boolean
@@ -46,7 +43,7 @@ export function ArchiveDialog({
   const [moodScore, setMoodScore] = useState(existingDiary?.moodScore || 5)
   const [coverImageId, setCoverImageId] = useState<string | undefined>(existingDiary?.coverImageId)
   const [loading, setLoading] = useState(false)
-
+  console.log(existingDiary)
   const handleConfirm = async () => {
     if (selectedMemos.length === 0) {
       toast.error('请选择至少一条Memo')
@@ -82,35 +79,6 @@ export function ArchiveDialog({
     }
   }
 
-  const [keyboardHeight] = useState(() => new Animated.Value(0))
-
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
-
-    const onShow = (e: { endCoordinates: { height: number }; duration?: number }) => {
-      Animated.timing(keyboardHeight, {
-        toValue: e.endCoordinates.height,
-        duration: Platform.OS === 'ios' ? (e.duration ?? 250) : 150,
-        useNativeDriver: false,
-      }).start()
-    }
-    const onHide = (e?: { duration?: number }) => {
-      Animated.timing(keyboardHeight, {
-        toValue: 0,
-        duration: Platform.OS === 'ios' ? (e?.duration ?? 250) : 150,
-        useNativeDriver: false,
-      }).start()
-    }
-
-    const sub1 = Keyboard.addListener(showEvent, onShow)
-    const sub2 = Keyboard.addListener(hideEvent, onHide)
-    return () => {
-      sub1.remove()
-      sub2.remove()
-    }
-  }, [keyboardHeight])
-
   const allImages = selectedMemos.flatMap(memo =>
     memo.resources.filter(r => r.resourceType === 'image')
   )
@@ -118,7 +86,12 @@ export function ArchiveDialog({
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View
+          style={[
+            styles.container,
+            { backgroundColor: theme.background, borderTopColor: theme.border },
+          ]}
+        >
           <View style={[styles.header, { borderBottomColor: theme.border }]}>
             <Text style={[styles.title, { color: theme.text }]}>归档Memo</Text>
             <Pressable onPress={onCancel}>
@@ -200,7 +173,7 @@ export function ArchiveDialog({
             />
           </View>
         </View>
-        <Animated.View style={{ height: keyboardHeight }} />
+        <Animated.View />
       </View>
     </Modal>
   )
@@ -209,7 +182,6 @@ export function ArchiveDialog({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   keyboardView: {
@@ -217,9 +189,8 @@ const styles = StyleSheet.create({
   },
   container: {
     maxHeight: '90%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
     overflow: 'hidden',
+    borderTopWidth: 1,
   },
   header: {
     flexDirection: 'row',

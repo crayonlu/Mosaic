@@ -24,7 +24,7 @@ export default function ArchiveScreen() {
 
   const today = new Date().toISOString().split('T')[0]
   const { data: todayDiary } = useDiary(today)
-  const hasDiaryForToday = !!todayDiary
+  const hasDiaryForToday = (todayDiary?.createdAt ?? 0) > 0
 
   const selectedMemos = useMemo(() => {
     return visibleMemos.filter(m => selectedMemoIds.includes(m.id))
@@ -113,6 +113,7 @@ export default function ArchiveScreen() {
         targetDate={selectedDate || new Date().toISOString().split('T')[0]}
         onSuccess={handleArchiveSuccess}
         onCancel={() => setShowArchiveDialog(false)}
+        existingDiary={todayDiary}
       />
     </View>
   )

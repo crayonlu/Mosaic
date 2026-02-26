@@ -91,13 +91,11 @@ export function MemoFeed({
     }
 
     return (
-      <View style={styles.cardContainer}>
-        <MemoCard
-          memo={item}
-          onPress={handleCardPress}
-          isSelected={isSelectionMode && isSelected(item.id)}
-        />
-      </View>
+      <MemoCard
+        memo={item}
+        onPress={handleCardPress}
+        isSelected={isSelectionMode && isSelected(item.id)}
+      />
     )
   }
 
@@ -167,10 +165,6 @@ export function MemoFeed({
 
 const styles = StyleSheet.create({
   listContent: {},
-  cardContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   cardContent: {
     flex: 1,
   },

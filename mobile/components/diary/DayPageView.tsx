@@ -111,90 +111,98 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
     )
   }
 
+  const hasDiaryForToday = (diary?.createdAt ?? 0) > 0
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.editActionsRow}>
-        {!isEditing ? (
-          <Pressable
-            style={[styles.editActionButton, { backgroundColor: `${theme.primary}12` }]}
-            onPress={handleStartEdit}
-          >
-            <Text style={[styles.editActionText, { color: theme.primary }]}>编辑</Text>
-          </Pressable>
-        ) : (
-          <>
-            <Pressable style={styles.actionTextButton} onPress={handleCancelEdit}>
-              <Text style={[styles.actionText, { color: theme.textSecondary }]}>取消</Text>
-            </Pressable>
+      {hasDiaryForToday && (
+        <View style={styles.editActionsRow}>
+          {!isEditing ? (
             <Pressable
-              style={styles.actionTextButton}
-              onPress={handleSave}
-              disabled={!hasChanges || updateDiary.isPending}
+              style={[styles.editActionButton, { backgroundColor: `${theme.primary}12` }]}
+              onPress={handleStartEdit}
             >
-              <Text
-                style={[
-                  styles.actionText,
-                  {
-                    color:
-                      !hasChanges || updateDiary.isPending ? theme.textSecondary : theme.primary,
-                  },
-                ]}
-              >
-                {updateDiary.isPending ? '保存中...' : '保存'}
-              </Text>
+              <Text style={[styles.editActionText, { color: theme.primary }]}>编辑</Text>
             </Pressable>
-          </>
-        )}
-      </View>
-
-      {coverImageUrl && (
-        <View style={styles.coverCard}>
-          <Image
-            source={{ uri: coverImageUrl, headers: authHeaders }}
-            style={styles.coverImage}
-            contentFit="cover"
-          />
-        </View>
-      )}
-
-      {(diary.summary || isEditing) && (
-        <View style={[styles.card, { borderColor: theme.border }]}>
-          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>今日总结</Text>
-          {isEditing ? (
-            <TextInput
-              value={summaryDraft}
-              onChangeText={setSummaryDraft}
-              placeholder="写下今天的心情或总结..."
-              placeholderTextColor={theme.textSecondary}
-              multiline
-              textAlignVertical="top"
-              style={[
-                styles.summaryInput,
-                {
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-            />
           ) : (
-            <Text style={[styles.summaryText, { color: theme.text }]}>{diary.summary}</Text>
+            <>
+              <Pressable style={styles.actionTextButton} onPress={handleCancelEdit}>
+                <Text style={[styles.actionText, { color: theme.textSecondary }]}>取消</Text>
+              </Pressable>
+              <Pressable
+                style={styles.actionTextButton}
+                onPress={handleSave}
+                disabled={!hasChanges || updateDiary.isPending}
+              >
+                <Text
+                  style={[
+                    styles.actionText,
+                    {
+                      color:
+                        !hasChanges || updateDiary.isPending ? theme.textSecondary : theme.primary,
+                    },
+                  ]}
+                >
+                  {updateDiary.isPending ? '保存中...' : '保存'}
+                </Text>
+              </Pressable>
+            </>
           )}
         </View>
       )}
 
-      {isEditing && (
-        <View style={styles.coverPickerSection}>
-          <CoverImagePicker
-            memos={archivedMemos}
-            selectedCoverId={coverImageIdDraft}
-            onSelect={setCoverImageIdDraft}
-            onClear={() => setCoverImageIdDraft(undefined)}
-          />
-        </View>
+      {hasDiaryForToday && (
+        <>
+          {coverImageUrl && (
+            <View style={styles.coverCard}>
+              <Image
+                source={{ uri: coverImageUrl, headers: authHeaders }}
+                style={styles.coverImage}
+                contentFit="cover"
+              />
+            </View>
+          )}
+
+          {(diary.summary || isEditing) && (
+            <View style={[styles.card, { borderColor: theme.border }]}>
+              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>今日总结</Text>
+              {isEditing ? (
+                <TextInput
+                  value={summaryDraft}
+                  onChangeText={setSummaryDraft}
+                  placeholder="写下今天的心情或总结..."
+                  placeholderTextColor={theme.textSecondary}
+                  multiline
+                  textAlignVertical="top"
+                  style={[
+                    styles.summaryInput,
+                    {
+                      color: theme.text,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                />
+              ) : (
+                <Text style={[styles.summaryText, { color: theme.text }]}>{diary.summary}</Text>
+              )}
+            </View>
+          )}
+
+          {isEditing && (
+            <View style={styles.coverPickerSection}>
+              <CoverImagePicker
+                memos={archivedMemos}
+                selectedCoverId={coverImageIdDraft}
+                onSelect={setCoverImageIdDraft}
+                onClear={() => setCoverImageIdDraft(undefined)}
+              />
+            </View>
+          )}
+        </>
       )}
 
       <View style={styles.memosSection}>
