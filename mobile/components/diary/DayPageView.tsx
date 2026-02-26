@@ -111,7 +111,6 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
     )
   }
 
-  const hasDiaryForToday = (diary?.createdAt ?? 0) > 0
 
   return (
     <ScrollView
@@ -119,7 +118,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {hasDiaryForToday && (
+      {diary && (
         <View style={styles.editActionsRow}>
           {!isEditing ? (
             <Pressable
@@ -155,7 +154,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
         </View>
       )}
 
-      {hasDiaryForToday && (
+      {diary && (
         <>
           {coverImageUrl && (
             <View style={styles.coverCard}>
