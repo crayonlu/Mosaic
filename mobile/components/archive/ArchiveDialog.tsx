@@ -43,7 +43,6 @@ export function ArchiveDialog({
   const [moodScore, setMoodScore] = useState(existingDiary?.moodScore || 5)
   const [coverImageId, setCoverImageId] = useState<string | undefined>(existingDiary?.coverImageId)
   const [loading, setLoading] = useState(false)
-  console.log(existingDiary)
   const handleConfirm = async () => {
     if (selectedMemos.length === 0) {
       toast.error('请选择至少一条Memo')
