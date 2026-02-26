@@ -19,9 +19,6 @@ export class ApiClient {
   private tokenStorage: TokenStorage | null = null
   private readonly httpClient = axios.create({
     timeout: REQUEST_TIMEOUT,
-    headers: {
-      'Content-Type': 'application/json',
-    },
     paramsSerializer: {
       indexes: null,
     },
@@ -215,6 +212,56 @@ export class ApiClient {
       const token = await this.tokenStorage.getAccessToken()
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
+      }
+    }
+
+    const isReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative'
+    const requestUrl = path.startsWith('http') ? path : `${this.baseUrl}${path}`
+
+    if (isReactNative) {
+      const AbortControllerCtor = globalThis.AbortController
+      const controller = AbortControllerCtor ? new AbortControllerCtor() : undefined
+      const timeout = setTimeout(() => controller?.abort(), UPLOAD_TIMEOUT)
+
+      try {
+        const response = await fetch(requestUrl, {
+          method: 'POST',
+          headers,
+          body: formData,
+          signal: controller?.signal,
+        })
+
+        if (response.status === 204) {
+          return undefined as T
+        }
+
+        const responseText = await response.text()
+        const responseData = responseText ? JSON.parse(responseText) : undefined
+
+        if (!response.ok) {
+          if (responseData && typeof responseData.error === 'string') {
+            throw responseData as ApiError
+          }
+
+          throw {
+            error: response.statusText || '上传失败',
+            status: response.status,
+          } as ApiError
+        }
+
+        return responseData as T
+      } catch (error) {
+        if ((error as { name?: string }).name === 'AbortError') {
+          throw { error: '上传超时', status: 408 } as ApiError
+        }
+
+        if ((error as ApiError).error) {
+          throw error
+        }
+
+        throw { error: '上传失败', status: 0 } as ApiError
+      } finally {
+        clearTimeout(timeout)
       }
     }
 

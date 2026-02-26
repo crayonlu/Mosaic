@@ -17,7 +17,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useAI } from '@/hooks/use-ai'
-import { uploadFilesAndGetResourceIds } from '@/hooks/use-file-upload'
+import { uploadFiles } from '@/hooks/use-file-upload'
 import { toast } from '@/hooks/use-toast'
 import { resolveApiUrl } from '@/lib/shared-api'
 import type { MemoWithResources, Resource } from '@mosaic/api'
@@ -34,9 +34,10 @@ import {
   Sparkles,
   Tag,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 dayjs.extend(utc)
 
@@ -61,15 +62,21 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleteResourceDialogOpen, setIsDeleteResourceDialogOpen] = useState(false)
   const [resourceToDelete, setResourceToDelete] = useState<string | null>(null)
-  const [reorderedImageResources, setReorderedImageResources] = useState<Resource[]>([])
+  const [editingResources, setEditingResources] = useState<Resource[]>([])
+  const [hasResourceChanges, setHasResourceChanges] = useState(false)
   const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
   const [videoUrls, setVideoUrls] = useState<Map<string, string>>(new Map())
+  const uploadInputRef = useRef<HTMLInputElement>(null)
   const { suggestTags, loading: aiLoading } = useAI()
   const updateMemo = useUpdateMemo()
   const deleteMemo = useDeleteMemo()
 
-  const imageResources = memo?.resources.filter(r => r.resourceType === 'image') || []
-  const videoResources = memo?.resources.filter(r => r.resourceType === 'video') || []
+  const displayResources = useMemo(
+    () => (isEditing ? editingResources : memo?.resources || []),
+    [isEditing, editingResources, memo?.resources]
+  )
+  const imageResources = displayResources.filter(r => r.resourceType === 'image')
+  const videoResources = displayResources.filter(r => r.resourceType === 'video')
 
   useEffect(() => {
     if (!memo) {
@@ -80,15 +87,15 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     if (!isEditing) {
       setEditedContent(memo.content)
+      setEditingResources(memo.resources)
+      setHasResourceChanges(false)
     }
-
-    setReorderedImageResources(imageResources)
 
     const loadResources = async () => {
       const newImageUrls = new Map<string, string>()
       const newVideoUrls = new Map<string, string>()
 
-      for (const resource of memo.resources) {
+      for (const resource of displayResources) {
         const url = resolveApiUrl(resource.url)
         if (!url) continue
 
@@ -109,14 +116,15 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       setImageUrls(new Map())
       setVideoUrls(new Map())
     }
-  }, [memo, isEditing])
+  }, [memo, isEditing, displayResources])
 
   const handleStartEdit = () => {
     if (memo) {
       setEditedContent(memo.content)
       setEditedTags([...memo.tags])
       setTagInput('')
-      setReorderedImageResources(imageResources)
+      setEditingResources(memo.resources)
+      setHasResourceChanges(false)
       setIsEditing(true)
     }
   }
@@ -127,6 +135,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       setEditedTags([...memo.tags])
       setTagInput('')
     }
+    setHasResourceChanges(false)
     setIsEditing(false)
   }
 
@@ -137,8 +146,13 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       setIsSaving(true)
       await updateMemo.mutateAsync({
         id: memo.id,
-        data: { content: editedContent, tags: editedTags },
+        data: {
+          content: editedContent,
+          tags: editedTags,
+          resourceIds: editingResources.map(resource => resource.id),
+        },
       })
+      setHasResourceChanges(false)
       setIsEditing(false)
       onUpdate?.()
       toast.success('Memo保存成功')
@@ -237,6 +251,18 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     try {
       await resourcesApi.delete(resourceToDelete)
+      setEditingResources(prev => prev.filter(resource => resource.id !== resourceToDelete))
+      setImageUrls(prev => {
+        const next = new Map(prev)
+        next.delete(resourceToDelete)
+        return next
+      })
+      setVideoUrls(prev => {
+        const next = new Map(prev)
+        next.delete(resourceToDelete)
+        return next
+      })
+      setHasResourceChanges(true)
       onUpdate?.()
       toast.success('资源删除成功')
     } catch (error) {
@@ -253,11 +279,38 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     setIsUploading(true)
     try {
-      const uploadedIds = await uploadFilesAndGetResourceIds(Array.from(files), memo.id)
+      const uploadedResources = await uploadFiles(Array.from(files), memo.id)
 
-      if (uploadedIds.length > 0) {
+      if (uploadedResources.length > 0) {
+        setEditingResources(prev => [...prev, ...uploadedResources])
+
+        setImageUrls(prev => {
+          const next = new Map(prev)
+          for (const resource of uploadedResources) {
+            if (resource.resourceType !== 'image') continue
+            const url = resolveApiUrl(resource.url)
+            if (url) {
+              next.set(resource.id, url)
+            }
+          }
+          return next
+        })
+
+        setVideoUrls(prev => {
+          const next = new Map(prev)
+          for (const resource of uploadedResources) {
+            if (resource.resourceType !== 'video') continue
+            const url = resolveApiUrl(resource.url)
+            if (url) {
+              next.set(resource.id, url)
+            }
+          }
+          return next
+        })
+
+        setHasResourceChanges(true)
         onUpdate?.()
-        toast.success(`成功添加 ${uploadedIds.length} 个资源`)
+        toast.success(`成功添加 ${uploadedResources.length} 个资源`)
       }
     } catch (error) {
       console.error('上传资源失败:', error)
@@ -268,8 +321,17 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   }
 
   const handleReorder = (reordered: Resource[]) => {
-    setReorderedImageResources(reordered)
+    setEditingResources(reordered)
+    setHasResourceChanges(true)
   }
+
+  const handleUploadButtonClick = () => {
+    uploadInputRef.current?.click()
+  }
+
+  const hasContentChanged = editedContent !== memo?.content
+  const hasTagsChanged =
+    JSON.stringify([...editedTags].sort()) !== JSON.stringify([...(memo?.tags ?? [])].sort())
 
   if (!memo) return null
 
@@ -317,13 +379,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 variant="default"
                 size="sm"
                 onClick={handleSave}
-                disabled={
-                  isSaving ||
-                  (editedContent === memo.content &&
-                    JSON.stringify(editedTags.sort()) === JSON.stringify(memo.tags.sort()) &&
-                    JSON.stringify(reorderedImageResources.map(r => r.id)) ===
-                      JSON.stringify(imageResources.map(r => r.id)))
-                }
+                disabled={isSaving || (!hasContentChanged && !hasTagsChanged && !hasResourceChanges)}
               >
                 <Save className="h-4 w-4 mr-1" />
                 {isSaving ? '保存中...' : '保存'}
@@ -461,11 +517,39 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
             </div>
           )}
 
-          {imageResources.length > 0 && (
+          {(imageResources.length > 0 || videoResources.length > 0 || isEditing) && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <ImageIcon className="h-4 w-4" />
-                <span>图片 ({imageResources.length})</span>
+              <div className="flex items-center justify-between gap-2 text-sm font-medium text-foreground">
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  <span>图片 ({imageResources.length})</span>
+                </div>
+                {isEditing && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleUploadButtonClick}
+                      disabled={isUploading}
+                    >
+                      <Upload className="h-4 w-4 mr-1" />
+                      {isUploading ? '上传中...' : '上传资源'}
+                    </Button>
+                    <input
+                      ref={uploadInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*,video/*"
+                      onChange={e => {
+                        if (e.target.files) {
+                          handleUploadResources(e.target.files)
+                          e.target.value = ''
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </>
+                )}
               </div>
               <MemoImageGrid
                 resources={[...imageResources, ...videoResources]}
@@ -478,24 +562,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                   setResourceToDelete(resourceId)
                   setIsDeleteResourceDialogOpen(true)
                 }}
-                onUpload={handleUploadResources}
-              />
-            </div>
-          )}
-
-          {isEditing && imageResources.length === 0 && videoResources.length === 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <ImageIcon className="h-4 w-4" />
-                <span>图片</span>
-              </div>
-              <MemoImageGrid
-                resources={[]}
-                imageUrls={imageUrls}
-                videoUrls={videoUrls}
-                isEditing={isEditing}
-                isUploading={isUploading}
-                onUpload={handleUploadResources}
               />
             </div>
           )}
