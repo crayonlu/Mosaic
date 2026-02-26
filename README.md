@@ -37,7 +37,6 @@ I realized that even though I have memorable moments every day, they gradually f
 
 ---
 
-
 ## Directory Structure
 
 ```
@@ -68,7 +67,8 @@ Mosaic/
    3. Create a `.env` file in this folder, refer to [.env.example](./server/.env.example) for content, and modify the configuration items as needed (remember to change the username and password)
    4. Also create a `docker-compose.yml` file in this folder, simply copy [docker-compose.yml](./server/docker-compose.yml)
    5. Go back to the mosaic-server folder and run `docker-compose up -d` to start
-   6. Afterwards, you can configure reverse proxy to your own domain
+   6. **Note**: If you encounter permission issues with file uploads, run `chown -R 1000:1000 ~/mosaic-server/storage ~/mosaic-server/logs` to fix directory permissions
+   7. Afterwards, you can configure reverse proxy to your own domain
 2. Download the client from releases and connect to your own server
 
 ---

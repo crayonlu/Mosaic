@@ -85,7 +85,7 @@ where
                     if status >= 400 {
                         log::error!(
                             "[{}] {} {}{} - {} - {}ms - IP: {} - User-Agent: {}",
-                            chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ"),
+                            chrono::Local::now().format("%Y-%m-%dT%H:%M:%S"),
                             method,
                             path,
                             if query_string.is_empty() {
@@ -101,7 +101,7 @@ where
                     } else {
                         log::info!(
                             "[{}] {} {}{} - {} - {}ms - IP: {}",
-                            chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ"),
+                            chrono::Local::now().format("%Y-%m-%dT%H:%M:%S"),
                             method,
                             path,
                             if query_string.is_empty() {
@@ -123,7 +123,7 @@ where
 
                     log::error!(
                         "[{}] {} {}{} - ERROR - {}ms - IP: {} - User-Agent: {}",
-                        chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ"),
+                        chrono::Local::now().format("%Y-%m-%dT%H:%M:%S"),
                         method,
                         path,
                         if query_string.is_empty() {
