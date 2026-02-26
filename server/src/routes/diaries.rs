@@ -54,11 +54,11 @@ pub async fn get_diary(
         Ok(None) => HttpResponse::Ok().json(serde_json::json!({
             "date": date_str,
             "summary": "",
-            "mood_key": "",
-            "mood_score": 0,
-            "cover_image_id": null,
-            "created_at": 0,
-            "updated_at": 0,
+            "moodKey": "",
+            "moodScore": 0,
+            "coverImageId": null,
+            "createdAt": 0,
+            "updatedAt": 0,
             "memos": []
         })),
         Err(e) => HttpResponse::from_error(e),

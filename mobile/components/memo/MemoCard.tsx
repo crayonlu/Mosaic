@@ -84,7 +84,7 @@ export function MemoCard({
           {memo.tags.length > 0 && (
             <View style={styles.tagsRow}>
               {memo.tags.slice(0, 3).map(tag => (
-                <Badge key={tag} text={tag} variant="outline" size="small" />
+                <Badge key={tag} text={`#${tag}`} variant="outline" size="small" />
               ))}
               {memo.tags.length > 3 && (
                 <Text style={[styles.moreTags, { color: theme.textSecondary }]}>
