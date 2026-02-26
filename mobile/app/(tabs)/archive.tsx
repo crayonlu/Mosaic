@@ -113,7 +113,6 @@ export default function ArchiveScreen() {
         targetDate={selectedDate || dayjs().format('YYYY-MM-DD')}
         onSuccess={handleArchiveSuccess}
         onCancel={() => setShowArchiveDialog(false)}
-        existingDiary={todayDiary}
       />
     </View>
   )
