@@ -32,8 +32,6 @@ export function TextEditor({
         placeholderTextColor={theme.textSecondary}
         multiline
         editable={editable}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
         textAlignVertical="top"
       />
     </View>
@@ -44,6 +42,7 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     flexShrink: 0,
+    paddingHorizontal: 4,
   },
   input: {
     fontSize: 16,
