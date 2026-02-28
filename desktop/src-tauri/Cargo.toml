@@ -1,6 +1,6 @@
 [package]
 name = "mosaic"
-version = "1.6.1"
+version = "1.6.2"
 description = "A digital second brain that combines note-taking with deep emotional visualization."
 authors = ["crayon"]
 edition = "2021"
