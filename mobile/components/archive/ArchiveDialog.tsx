@@ -9,7 +9,9 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import {
   Animated,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -85,93 +87,99 @@ export function ArchiveDialog({
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View
-          style={[
-            styles.container,
-            { backgroundColor: theme.background, borderTopColor: theme.border },
-          ]}
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-          <View style={[styles.header, { borderBottomColor: theme.border }]}>
-            <Text style={[styles.title, { color: theme.text }]}>归档Memo</Text>
-            <Pressable onPress={onCancel}>
-              <Text style={[styles.cancelButton, { color: theme.primary }]}>取消</Text>
-            </Pressable>
-          </View>
-
-          <ScrollView style={styles.content}>
-            <View style={styles.info}>
-              <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-                将 {selectedMemos.length} 条Memo归档到 {targetDate}
-              </Text>
+          <View
+            style={[
+              styles.container,
+              { backgroundColor: theme.background, borderTopColor: theme.border },
+            ]}
+          >
+            <View style={[styles.header, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.title, { color: theme.text }]}>归档Memo</Text>
+              <Pressable onPress={onCancel}>
+                <Text style={[styles.cancelButton, { color: theme.primary }]}>取消</Text>
+              </Pressable>
             </View>
 
-            <Input
-              label="日记总结（可选）"
-              placeholder="写下今天的心情或总结..."
-              value={summary}
-              onChangeText={setSummary}
-              multiline
-              numberOfLines={3}
-              style={styles.summaryInput}
-            />
-
-            <View style={styles.moodSection}>
-              <Text style={[styles.label, { color: theme.text }]}>心情</Text>
-              <View style={styles.moodSelector}>
-                {MOODS.map(mood => (
-                  <TouchableOpacity
-                    key={mood.key}
-                    style={[
-                      styles.moodOption,
-                      { backgroundColor: mood.color },
-                      moodKey === mood.key && {
-                        borderColor: theme.text,
-                      },
-                    ]}
-                    onPress={() => setMoodKey(mood.key)}
-                  >
-                    <Text style={styles.moodLabelText}>{mood.label[0]}</Text>
-                    <Text style={styles.moodLabelText}>{mood.label[1]}</Text>
-                  </TouchableOpacity>
-                ))}
+            <ScrollView style={styles.content}>
+              <View style={styles.info}>
+                <Text style={[styles.infoText, { color: theme.textSecondary }]}>
+                  将 {selectedMemos.length} 条Memo归档到 {targetDate}
+                </Text>
               </View>
 
-              {moodKey && (
-                <View style={styles.intensitySection}>
-                  <Text style={[styles.intensityLabel, { color: theme.textSecondary }]}>
-                    强度: {moodScore}/10
-                  </Text>
-                  <MoodDragBar value={moodScore} onChange={setMoodScore} />
-                </View>
-              )}
-            </View>
-
-            {allImages.length > 0 && (
-              <CoverImagePicker
-                memos={selectedMemos}
-                selectedCoverId={coverImageId}
-                onSelect={setCoverImageId}
-                onClear={() => setCoverImageId(undefined)}
+              <Input
+                label="日记总结（可选）"
+                placeholder="写下今天的心情或总结..."
+                value={summary}
+                onChangeText={setSummary}
+                multiline
+                numberOfLines={3}
+                style={styles.summaryInput}
               />
-            )}
-          </ScrollView>
 
-          <View style={[styles.footer, { borderTopColor: theme.border }]}>
-            <Button
-              title="取消"
-              variant="secondary"
-              onPress={onCancel}
-              style={styles.footerButton}
-            />
-            <Button
-              title={loading ? '归档中...' : '确认归档'}
-              onPress={handleConfirm}
-              loading={loading}
-              disabled={loading}
-              style={styles.footerButton}
-            />
+              <View style={styles.moodSection}>
+                <Text style={[styles.label, { color: theme.text }]}>心情</Text>
+                <View style={styles.moodSelector}>
+                  {MOODS.map(mood => (
+                    <TouchableOpacity
+                      key={mood.key}
+                      style={[
+                        styles.moodOption,
+                        { backgroundColor: mood.color },
+                        moodKey === mood.key && {
+                          borderColor: theme.text,
+                        },
+                      ]}
+                      onPress={() => setMoodKey(mood.key)}
+                    >
+                      <Text style={styles.moodLabelText}>{mood.label[0]}</Text>
+                      <Text style={styles.moodLabelText}>{mood.label[1]}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {moodKey && (
+                  <View style={styles.intensitySection}>
+                    <Text style={[styles.intensityLabel, { color: theme.textSecondary }]}>
+                      强度: {moodScore}/10
+                    </Text>
+                    <MoodDragBar value={moodScore} onChange={setMoodScore} />
+                  </View>
+                )}
+              </View>
+
+              {allImages.length > 0 && (
+                <CoverImagePicker
+                  memos={selectedMemos}
+                  selectedCoverId={coverImageId}
+                  onSelect={setCoverImageId}
+                  onClear={() => setCoverImageId(undefined)}
+                />
+              )}
+            </ScrollView>
+
+            <View style={[styles.footer, { borderTopColor: theme.border }]}>
+              <Button
+                title="取消"
+                variant="secondary"
+                onPress={onCancel}
+                style={styles.footerButton}
+              />
+              <Button
+                title={loading ? '归档中...' : '确认归档'}
+                onPress={handleConfirm}
+                loading={loading}
+                disabled={loading}
+                style={styles.footerButton}
+              />
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
         <Animated.View />
       </View>
     </Modal>
@@ -184,6 +192,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   keyboardView: {
+    flex: 1,
     justifyContent: 'flex-end',
   },
   container: {
