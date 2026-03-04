@@ -1,4 +1,4 @@
-import { Button, Input } from '@/components/ui'
+import { Button, Input, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
@@ -8,7 +8,7 @@ import { useThemeStore } from '@/stores/theme-store'
 import { resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
-import { Info, LogOut, Moon, Sparkles, Sun } from 'lucide-react-native'
+import { Info, LogOut, Moon, Sparkles, Sun, ShieldCheck } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -39,8 +39,10 @@ export default function SettingsScreen() {
   const { theme, themeMode, setThemeMode } = useThemeStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
   const [aiConfig, setLocalAIConfig] = useState<AIConfig | null>(null)
-  const [showAISettings, setShowAISettings] = useState(true)
+  const [showAISettings, setShowAISettings] = useState(false)
+  const [showPermissionSettings, setShowPermissionSettings] = useState(false)
   const [savingAI, setSavingAI] = useState(false)
+  const [pushPermission, setPushPermission] = useState<boolean>(false)
   useEffect(() => {
     loadAIConfig()
   }, [])
@@ -258,6 +260,39 @@ export default function SettingsScreen() {
     </View>
   )
 
+  const renderPermissionSection = () => (
+    <View style={[styles.section]}>
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={()=>{setShowPermissionSettings(!showPermissionSettings)}}
+        >
+          <ShieldCheck size={18} color={theme.text} />
+          <Text style={[styles.menuItemText, { color: theme.text }]}>权限管理</Text>
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
+              {showPermissionSettings ? '隐藏设置' : '显示设置'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+        {showPermissionSettings && (
+          <View style={styles.permissionSettings}>
+            <View style={{
+            }}>
+              <View style={{display: 'flex',flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
+                <Text style={{
+                  fontSize: 14,
+                  color: theme.text,
+                }}>推送消息</Text>
+                <SwitchBtn value={pushPermission} onValueChange={setPushPermission} />
+              </View>
+            </View>
+          </View>
+        )}
+      </View>
+    </View>
+  )
+
   const renderAboutSection = () => (
     <View style={[styles.section]}>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -284,6 +319,7 @@ export default function SettingsScreen() {
         {renderAccountSection()}
         {renderAppearanceSection()}
         {renderAISettings()}
+        {renderPermissionSection()}
         {renderAboutSection()}
       </View>
     </ScrollView>
@@ -356,6 +392,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   aiSettings: {
+    padding: 12,
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  permissionSettings: {
     padding: 12,
     gap: 10,
     borderTopWidth: 1,
