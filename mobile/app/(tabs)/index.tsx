@@ -1,5 +1,6 @@
 import { MoodHeatMap } from '@/components/archive/MoodHeatMap'
 import { MemoInput } from '@/components/editor/MemoInput'
+import { KeyboardAvoidProvider } from '@/components/KeyboardAvoidProvider'
 import { MemoList } from '@/components/memo/MemoList'
 import { toast } from '@/components/ui'
 import { useConnection } from '@/hooks/use-connection'
@@ -9,7 +10,9 @@ import { useCreateMemo, useDeleteMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import { type MemoWithResources } from '@mosaic/api'
 import { router } from 'expo-router'
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
+
+const TAB_BAR_HEIGHT = 54
 
 export default function HomeScreen() {
   const { theme } = useThemeStore()
@@ -63,11 +66,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 44}
-    >
+    <View style={[styles.container, { backgroundColor: theme.background }]}> 
       <View style={styles.listContainer}>
         <MemoList
           onMemoPress={handleMemoPress}
@@ -80,10 +79,16 @@ export default function HomeScreen() {
         />
       </View>
 
-      <View style={[styles.inputContainer, { backgroundColor: theme.background }]}>
+      <KeyboardAvoidProvider
+        style={[
+          styles.inputContainer,
+          { backgroundColor: theme.background },
+        ]}
+        extraBottom={-TAB_BAR_HEIGHT}
+      >
         <MemoInput onSubmit={handleSubmit} disabled={!canUseNetwork || isPending} />
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidProvider>
+    </View>
   )
 }
 
