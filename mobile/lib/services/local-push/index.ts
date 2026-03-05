@@ -1,34 +1,79 @@
+import type {
+  NotificationContentInput,
+  SchedulableNotificationTriggerInput,
+} from 'expo-notifications'
 import * as Notifications from 'expo-notifications'
+import { registerCustomNotifications } from './custom'
+import { registerSystemNotifications } from './system'
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-})
+export type RigsterSchedule = {
+  content: NotificationContentInput
+  trigger: SchedulableNotificationTriggerInput
+}
 
-export const requestNotificationPermission = async () => {
-  const { status } = await Notifications.getPermissionsAsync()
-  if (status !== 'granted') {
+export class LocalPushService {
+  private static instance: LocalPushService
+
+  private constructor() {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    })
+  }
+
+  /**
+   * Singleton pattern
+   */
+  static getInstance(): LocalPushService {
+    if (!LocalPushService.instance) LocalPushService.instance = new LocalPushService()
+    return LocalPushService.instance
+  }
+
+  /**
+   * @brief Get the current notification permissions status.
+   * @returns Boolean
+   */
+  getNotificationPermissionStatus = async () => {
+    const { status } = await Notifications.getPermissionsAsync()
+    return status === 'granted'
+  }
+
+  /**
+   * @brief Requests permission to show notifications to the user.
+   * @returns Boolean
+   */
+  requestNotificationPermission = async () => {
+    const isGranted = await this.getNotificationPermissionStatus()
+    if (isGranted) return true
     const { status: newStatus } = await Notifications.requestPermissionsAsync()
     return newStatus === 'granted'
   }
-  return true
-}
 
-export const triggerLocalNotification = async () => {
-  try {
-    console.log('触发本地推送通知')
+  /**
+   * @brief Schedules a local notification.
+   * @param content Notification content.
+   * @param trigger Notification trigger.
+   */
+  registerNotification = async (
+    content: NotificationContentInput,
+    trigger: SchedulableNotificationTriggerInput
+  ) => {
+    if (!this.getNotificationPermissionStatus()) {
+      const isGranted = await this.requestNotificationPermission()
+      if (!isGranted) throw new Error('Notification permission not granted')
+    }
     await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '测试通知',
-        body: '这是一条来自开发界面的本地推送通知',
-      },
-      trigger: null,
+      content,
+      trigger,
     })
-  } catch (error) {
-    console.error('推送通知失败:', error)
+  }
+
+  async registerAll() {
+    registerSystemNotifications()
+    registerCustomNotifications()
   }
 }
