@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import type {
   NotificationContentInput,
   SchedulableNotificationTriggerInput,
@@ -10,6 +11,9 @@ export type RigsterSchedule = {
   content: NotificationContentInput
   trigger: SchedulableNotificationTriggerInput
 }
+
+const STORAGE_KEY = 'mosaic_disabled_push_notifications'
+const DISABLED_VALUE = '1'
 
 export class LocalPushService {
   private static instance: LocalPushService
@@ -54,6 +58,38 @@ export class LocalPushService {
   }
 
   /**
+   * @brief Returns true if user disabled push notifications in app settings.
+   */
+  isPushDisabledByUser = async () => {
+    const value = await AsyncStorage.getItem(STORAGE_KEY)
+    return value === DISABLED_VALUE
+  }
+
+  /**
+   * @brief Enable or disable app-level push switch stored locally.
+   */
+  setPushEnabled = async (enabled: boolean) => {
+    if (enabled) {
+      await AsyncStorage.removeItem(STORAGE_KEY)
+      return
+    }
+
+    await AsyncStorage.setItem(STORAGE_KEY, DISABLED_VALUE)
+    await Notifications.cancelAllScheduledNotificationsAsync()
+  }
+
+  /**
+   * @brief Returns effective push status (system permission + app-level switch).
+   */
+  isPushEnabled = async () => {
+    const [granted, disabledByUser] = await Promise.all([
+      this.getNotificationPermissionStatus(),
+      this.isPushDisabledByUser(),
+    ])
+    return granted && !disabledByUser
+  }
+
+  /**
    * @brief Schedules a local notification.
    * @param content Notification content.
    * @param trigger Notification trigger.
@@ -62,10 +98,13 @@ export class LocalPushService {
     content: NotificationContentInput,
     trigger: SchedulableNotificationTriggerInput
   ) => {
-    if (!this.getNotificationPermissionStatus()) {
+    if (await this.isPushDisabledByUser()) return
+
+    if (!(await this.getNotificationPermissionStatus())) {
       const isGranted = await this.requestNotificationPermission()
       if (!isGranted) throw new Error('Notification permission not granted')
     }
+
     await Notifications.scheduleNotificationAsync({
       content,
       trigger,
@@ -73,7 +112,9 @@ export class LocalPushService {
   }
 
   async registerAll() {
-    registerSystemNotifications()
-    registerCustomNotifications()
+    if (await this.isPushDisabledByUser()) return
+
+    await registerSystemNotifications()
+    await registerCustomNotifications()
   }
 }

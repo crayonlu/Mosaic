@@ -1,5 +1,5 @@
-import { Switch } from "react-native";
-import { useTheme } from "@/hooks/use-theme";
+import { Switch } from 'react-native'
+import { useTheme } from '@/hooks/use-theme'
 
 export interface SwitchBtnProps {
   value: boolean
@@ -8,7 +8,7 @@ export interface SwitchBtnProps {
 }
 
 export function SwitchBtn({ value, onValueChange, disabled }: SwitchBtnProps) {
-  const { theme } = useTheme();
+  const { theme } = useTheme()
 
   return (
     <Switch
@@ -18,5 +18,5 @@ export function SwitchBtn({ value, onValueChange, disabled }: SwitchBtnProps) {
       trackColor={{ false: theme.border, true: theme.primary }}
       thumbColor={theme.background}
     />
-  );
+  )
 }

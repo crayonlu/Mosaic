@@ -64,8 +64,6 @@ export const customPushStorage = new CustomPushStorage()
 export const registerCustomNotifications = async () => {
   const pushes = await customPushStorage.getAllPushes()
   for (const data of pushes) {
-    await customPushStorage.saveCustomPush(data)
-
     // Parse trigger date string (format: YYYY-MM-DDTHH:mm)
     const triggerDate = new Date(data.trigger)
     const year = triggerDate.getFullYear()

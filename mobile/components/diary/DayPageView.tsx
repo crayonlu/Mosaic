@@ -111,7 +111,6 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
     )
   }
 
-
   return (
     <ScrollView
       style={styles.container}
