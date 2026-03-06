@@ -4,8 +4,6 @@ import type {
   SchedulableNotificationTriggerInput,
 } from 'expo-notifications'
 import * as Notifications from 'expo-notifications'
-import { registerCustomNotifications } from './custom'
-import { registerSystemNotifications } from './system'
 
 export type RigsterSchedule = {
   content: NotificationContentInput
@@ -111,8 +109,26 @@ export class LocalPushService {
     })
   }
 
+  /**
+   * @brief Cancels a scheduled notification by its identifier.
+   * @param identifier The notification identifier to cancel.
+   */
+  cancelNotification = async (identifier: string) => {
+    await Notifications.cancelScheduledNotificationAsync(identifier)
+  }
+
+  /**
+   * @brief Cancels all scheduled notifications.
+   */
+  cancelAllNotifications = async () => {
+    await Notifications.cancelAllScheduledNotificationsAsync()
+  }
+
   async registerAll() {
     if (await this.isPushDisabledByUser()) return
+
+    const { registerSystemNotifications } = await import('./system')
+    const { registerCustomNotifications } = await import('./custom')
 
     await registerSystemNotifications()
     await registerCustomNotifications()
