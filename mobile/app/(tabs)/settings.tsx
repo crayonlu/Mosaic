@@ -2,6 +2,7 @@ import { Button, Input, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
+import { useCustomPushCount } from '@/lib/query/hooks/use-custom-push'
 import { LocalPushService } from '@/lib/services/local-push'
 import { tokenStorage } from '@/lib/services/token-storage'
 import { useAuthStore } from '@/stores/auth-store'
@@ -9,7 +10,8 @@ import { useThemeStore } from '@/stores/theme-store'
 import { resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
-import { Info, LogOut, Moon, ShieldCheck, Sparkles, Sun } from 'lucide-react-native'
+import { router } from 'expo-router'
+import { Bell, Info, LogOut, Moon, Plus, ShieldCheck, Sparkles, Sun } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -41,6 +43,7 @@ function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
 export default function SettingsScreen() {
   const { theme, themeMode, setThemeMode } = useThemeStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
+  const { data: customPushCount = 0 } = useCustomPushCount()
   const [aiConfig, setLocalAIConfig] = useState<AIConfig | null>(null)
   const [showAISettings, setShowAISettings] = useState(false)
   const [showPermissionSettings, setShowPermissionSettings] = useState(false)
@@ -375,6 +378,47 @@ export default function SettingsScreen() {
                 <SwitchBtn value={pushEnabled} onValueChange={handleTogglePush} />
               </View>
             </View>
+            <TouchableOpacity
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingTop: 12,
+                borderTopWidth: 1,
+                borderTopColor: theme.border,
+                marginTop: 12,
+              }}
+              onPress={() => router.push('/custom-push')}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Bell size={18} color={theme.text} />
+                <View>
+                  <Text style={{ fontSize: 14, color: theme.text }}>自定义提醒</Text>
+                  <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
+                    {customPushCount > 0
+                      ? `已设置 ${customPushCount} 条提醒`
+                      : '添加自定义推送提醒'}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                {customPushCount > 0 && (
+                  <View
+                    style={{
+                      backgroundColor: theme.primary,
+                      borderRadius: 10,
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                      marginRight: 4,
+                    }}
+                  >
+                    <Text style={{ fontSize: 10, color: '#FFFFFF' }}>{customPushCount}</Text>
+                  </View>
+                )}
+                <Plus size={16} color={theme.textSecondary} />
+              </View>
+            </TouchableOpacity>
           </View>
         )}
       </View>
