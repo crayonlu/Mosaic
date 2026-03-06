@@ -2,17 +2,20 @@ import { Button, Input, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
+import { LocalPushService } from '@/lib/services/local-push'
 import { tokenStorage } from '@/lib/services/token-storage'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
 import { resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
-import { Info, LogOut, Moon, Sparkles, Sun, ShieldCheck } from 'lucide-react-native'
+import { Info, LogOut, Moon, ShieldCheck, Sparkles, Sun } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 const appVersion = Constants.expoConfig?.version ?? 'unknown'
+
+const localPush = LocalPushService.getInstance()
 
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
   const [token, setToken] = useState<string | null>(null)
@@ -42,14 +45,71 @@ export default function SettingsScreen() {
   const [showAISettings, setShowAISettings] = useState(false)
   const [showPermissionSettings, setShowPermissionSettings] = useState(false)
   const [savingAI, setSavingAI] = useState(false)
-  const [pushPermission, setPushPermission] = useState<boolean>(false)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushPermissionGranted, setPushPermissionGranted] = useState(false)
+
   useEffect(() => {
     loadAIConfig()
+    loadPushStatus()
   }, [])
 
   const loadAIConfig = async () => {
     const config = await getAIConfig()
     setLocalAIConfig(config)
+  }
+
+  const loadPushStatus = async () => {
+    const [enabled, granted] = await Promise.all([
+      localPush.isPushEnabled(),
+      localPush.getNotificationPermissionStatus(),
+    ])
+    setPushEnabled(enabled)
+    setPushPermissionGranted(granted)
+  }
+
+  const handleTogglePush = async (nextEnabled: boolean) => {
+    try {
+      if (!nextEnabled) {
+        await localPush.setPushEnabled(false)
+        setPushEnabled(false)
+        toast.show({
+          type: 'success',
+          title: '推送已关闭',
+          message: '你可以随时在这里重新开启',
+        })
+        return
+      }
+
+      const granted = await localPush.requestNotificationPermission()
+      setPushPermissionGranted(granted)
+
+      if (!granted) {
+        setPushEnabled(false)
+        toast.show({
+          type: 'warning',
+          title: '未获得系统权限',
+          message: '请先在系统设置中允许通知权限',
+        })
+        return
+      }
+
+      await localPush.setPushEnabled(true)
+      await localPush.registerAll()
+      setPushEnabled(true)
+      toast.show({
+        type: 'success',
+        title: '推送已开启',
+        message: '提醒会按你的配置自动注册',
+      })
+    } catch (error) {
+      console.error('Toggle push error:', error)
+      toast.show({
+        type: 'error',
+        title: '操作失败',
+        message: '推送开关更新失败，请稍后重试',
+      })
+      await loadPushStatus()
+    }
   }
 
   const toggleTheme = () => {
@@ -263,9 +323,11 @@ export default function SettingsScreen() {
   const renderPermissionSection = () => (
     <View style={[styles.section]}>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.menuItem}
-          onPress={()=>{setShowPermissionSettings(!showPermissionSettings)}}
+          onPress={() => {
+            setShowPermissionSettings(!showPermissionSettings)
+          }}
         >
           <ShieldCheck size={18} color={theme.text} />
           <Text style={[styles.menuItemText, { color: theme.text }]}>权限管理</Text>
@@ -277,14 +339,40 @@ export default function SettingsScreen() {
         </TouchableOpacity>
         {showPermissionSettings && (
           <View style={styles.permissionSettings}>
-            <View style={{
-            }}>
-              <View style={{display: 'flex',flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
-                <Text style={{
-                  fontSize: 14,
-                  color: theme.text,
-                }}>推送消息</Text>
-                <SwitchBtn value={pushPermission} onValueChange={setPushPermission} />
+            <View>
+              <View
+                style={{
+                  display: 'flex',
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: theme.text,
+                    }}
+                  >
+                    推送消息
+                  </Text>
+                  <Text
+                    style={{
+                      marginTop: 2,
+                      fontSize: 12,
+                      color: theme.textSecondary,
+                    }}
+                  >
+                    {pushPermissionGranted
+                      ? pushEnabled
+                        ? '已开启提醒'
+                        : '已关闭提醒'
+                      : '系统通知权限未开启'}
+                  </Text>
+                </View>
+                <SwitchBtn value={pushEnabled} onValueChange={handleTogglePush} />
               </View>
             </View>
           </View>

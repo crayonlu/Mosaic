@@ -41,9 +41,5 @@ export function KeyboardAvoidProvider({
     }
   }, [enabled])
 
-  return (
-    <View style={[style, { transform: [{ translateY }] }]}>
-      {children}
-    </View>
-  )
+  return <View style={[style, { transform: [{ translateY }] }]}>{children}</View>
 }

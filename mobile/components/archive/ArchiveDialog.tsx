@@ -9,14 +9,14 @@ import { MOODS, type MoodKey } from '@mosaic/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import {
-    Animated,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 import { CoverImagePicker } from './CoverImagePicker'
 
