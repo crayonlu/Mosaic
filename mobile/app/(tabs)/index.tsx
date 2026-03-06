@@ -66,7 +66,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}> 
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.listContainer}>
         <MemoList
           onMemoPress={handleMemoPress}
@@ -80,10 +80,7 @@ export default function HomeScreen() {
       </View>
 
       <KeyboardAvoidProvider
-        style={[
-          styles.inputContainer,
-          { backgroundColor: theme.background },
-        ]}
+        style={[styles.inputContainer, { backgroundColor: theme.background }]}
         extraBottom={-TAB_BAR_HEIGHT}
       >
         <MemoInput onSubmit={handleSubmit} disabled={!canUseNetwork || isPending} />

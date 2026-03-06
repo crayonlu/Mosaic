@@ -1,18 +1,23 @@
-import { Button, Input } from '@/components/ui'
+import { Button, Input, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
+import { useCustomPushCount } from '@/lib/query/hooks/use-custom-push'
+import { LocalPushService } from '@/lib/services/local-push'
 import { tokenStorage } from '@/lib/services/token-storage'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
 import { resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
-import { Info, LogOut, Moon, Sparkles, Sun } from 'lucide-react-native'
+import { router } from 'expo-router'
+import { Bell, Info, LogOut, Moon, Plus, ShieldCheck, Sparkles, Sun } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 const appVersion = Constants.expoConfig?.version ?? 'unknown'
+
+const localPush = LocalPushService.getInstance()
 
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
   const [token, setToken] = useState<string | null>(null)
@@ -38,16 +43,76 @@ function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
 export default function SettingsScreen() {
   const { theme, themeMode, setThemeMode } = useThemeStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
+  const { data: customPushCount = 0 } = useCustomPushCount()
   const [aiConfig, setLocalAIConfig] = useState<AIConfig | null>(null)
-  const [showAISettings, setShowAISettings] = useState(true)
+  const [showAISettings, setShowAISettings] = useState(false)
+  const [showPermissionSettings, setShowPermissionSettings] = useState(false)
   const [savingAI, setSavingAI] = useState(false)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushPermissionGranted, setPushPermissionGranted] = useState(false)
+
   useEffect(() => {
     loadAIConfig()
+    loadPushStatus()
   }, [])
 
   const loadAIConfig = async () => {
     const config = await getAIConfig()
     setLocalAIConfig(config)
+  }
+
+  const loadPushStatus = async () => {
+    const [enabled, granted] = await Promise.all([
+      localPush.isPushEnabled(),
+      localPush.getNotificationPermissionStatus(),
+    ])
+    setPushEnabled(enabled)
+    setPushPermissionGranted(granted)
+  }
+
+  const handleTogglePush = async (nextEnabled: boolean) => {
+    try {
+      if (!nextEnabled) {
+        await localPush.setPushEnabled(false)
+        setPushEnabled(false)
+        toast.show({
+          type: 'success',
+          title: '推送已关闭',
+          message: '你可以随时在这里重新开启',
+        })
+        return
+      }
+
+      const granted = await localPush.requestNotificationPermission()
+      setPushPermissionGranted(granted)
+
+      if (!granted) {
+        setPushEnabled(false)
+        toast.show({
+          type: 'warning',
+          title: '未获得系统权限',
+          message: '请先在系统设置中允许通知权限',
+        })
+        return
+      }
+
+      await localPush.setPushEnabled(true)
+      await localPush.registerAll()
+      setPushEnabled(true)
+      toast.show({
+        type: 'success',
+        title: '推送已开启',
+        message: '提醒会按你的配置自动注册',
+      })
+    } catch (error) {
+      console.error('Toggle push error:', error)
+      toast.show({
+        type: 'error',
+        title: '操作失败',
+        message: '推送开关更新失败，请稍后重试',
+      })
+      await loadPushStatus()
+    }
   }
 
   const toggleTheme = () => {
@@ -258,6 +323,108 @@ export default function SettingsScreen() {
     </View>
   )
 
+  const renderPermissionSection = () => (
+    <View style={[styles.section]}>
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => {
+            setShowPermissionSettings(!showPermissionSettings)
+          }}
+        >
+          <ShieldCheck size={18} color={theme.text} />
+          <Text style={[styles.menuItemText, { color: theme.text }]}>权限管理</Text>
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
+              {showPermissionSettings ? '隐藏设置' : '显示设置'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+        {showPermissionSettings && (
+          <View style={styles.permissionSettings}>
+            <View>
+              <View
+                style={{
+                  display: 'flex',
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: theme.text,
+                    }}
+                  >
+                    推送消息
+                  </Text>
+                  <Text
+                    style={{
+                      marginTop: 2,
+                      fontSize: 12,
+                      color: theme.textSecondary,
+                    }}
+                  >
+                    {pushPermissionGranted
+                      ? pushEnabled
+                        ? '已开启提醒'
+                        : '已关闭提醒'
+                      : '系统通知权限未开启'}
+                  </Text>
+                </View>
+                <SwitchBtn value={pushEnabled} onValueChange={handleTogglePush} />
+              </View>
+            </View>
+            <TouchableOpacity
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingTop: 12,
+                borderTopWidth: 1,
+                borderTopColor: theme.border,
+                marginTop: 12,
+              }}
+              onPress={() => router.push('/custom-push')}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Bell size={18} color={theme.text} />
+                <View>
+                  <Text style={{ fontSize: 14, color: theme.text }}>自定义提醒</Text>
+                  <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
+                    {customPushCount > 0
+                      ? `已设置 ${customPushCount} 条提醒`
+                      : '添加自定义推送提醒'}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                {customPushCount > 0 && (
+                  <View
+                    style={{
+                      backgroundColor: theme.primary,
+                      borderRadius: 10,
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                      marginRight: 4,
+                    }}
+                  >
+                    <Text style={{ fontSize: 10, color: '#FFFFFF' }}>{customPushCount}</Text>
+                  </View>
+                )}
+                <Plus size={16} color={theme.textSecondary} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </View>
+  )
+
   const renderAboutSection = () => (
     <View style={[styles.section]}>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -284,6 +451,7 @@ export default function SettingsScreen() {
         {renderAccountSection()}
         {renderAppearanceSection()}
         {renderAISettings()}
+        {renderPermissionSection()}
         {renderAboutSection()}
       </View>
     </ScrollView>
@@ -356,6 +524,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   aiSettings: {
+    padding: 12,
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  permissionSettings: {
     padding: 12,
     gap: 10,
     borderTopWidth: 1,

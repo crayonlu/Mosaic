@@ -19,11 +19,11 @@ export function MoodDragBar({
   max = MOOD_INTENSITY_LEVELS,
 }: MoodDragBarProps) {
   const { theme } = useThemeStore()
-  
+
   const trackWidthRef = useRef(0)
   const valueRef = useRef(value)
   const startValueRef = useRef(value)
-  
+
   valueRef.current = value
   const range = max - min
 
@@ -32,20 +32,20 @@ export function MoodDragBar({
       onStartShouldSetPanResponder: () => !disabled,
       onMoveShouldSetPanResponder: () => !disabled,
       onPanResponderTerminationRequest: () => false,
-      
+
       onPanResponderGrant: () => {
         startValueRef.current = valueRef.current
       },
-      
+
       onPanResponderMove: (_, gestureState) => {
         if (trackWidthRef.current === 0) return
-        
+
         const deltaRatio = gestureState.dx / trackWidthRef.current
         const deltaValue = deltaRatio * range
-        
+
         const newValue = Math.round(startValueRef.current + deltaValue)
         const clampedValue = Math.max(min, Math.min(max, newValue))
-        
+
         if (clampedValue !== valueRef.current) {
           onChange(clampedValue)
         }
@@ -60,31 +60,27 @@ export function MoodDragBar({
   const percentage = range > 0 ? ((value - min) / range) * 100 : 0
 
   return (
-    <View 
-      style={styles.container} 
-      onLayout={handleLayout}
-      {...panResponder.panHandlers}
-    >
+    <View style={styles.container} onLayout={handleLayout} {...panResponder.panHandlers}>
       <View style={[styles.track, { backgroundColor: theme.border }]} />
-      
-      <View 
+
+      <View
         style={[
-          styles.fill, 
-          { 
+          styles.fill,
+          {
             backgroundColor: theme.primary,
-            width: `${percentage}%` 
-          }
-        ]} 
+            width: `${percentage}%`,
+          },
+        ]}
       />
-      
-      <View 
+
+      <View
         style={[
-          styles.thumb, 
-          { 
+          styles.thumb,
+          {
             backgroundColor: theme.primary,
-            left: `${percentage}%` 
-          }
-        ]} 
+            left: `${percentage}%`,
+          },
+        ]}
       />
     </View>
   )

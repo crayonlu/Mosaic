@@ -1,6 +1,7 @@
 import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
+import { registerCustomNotifications } from '@/lib/services/local-push/custom'
 import { useAuthStore } from '@/stores/auth-store'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useMoodStore } from '@/stores/mood-store'
@@ -34,6 +35,7 @@ export default function RootLayout() {
   useEffect(() => {
     initAuth()
     initialize()
+    registerCustomNotifications()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
