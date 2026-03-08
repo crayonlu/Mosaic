@@ -2,7 +2,7 @@ import { Button, Input, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
-import { useCustomPushCount } from '@/lib/query/hooks/use-custom-push'
+// import { useCustomPushCount } from '@/lib/query/hooks/use-custom-push'
 import { LocalPushService } from '@/lib/services/local-push'
 import { tokenStorage } from '@/lib/services/token-storage'
 import { useAuthStore } from '@/stores/auth-store'
@@ -10,8 +10,12 @@ import { useThemeStore } from '@/stores/theme-store'
 import { resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
-import { router } from 'expo-router'
-import { Bell, Info, LogOut, Moon, Plus, ShieldCheck, Sparkles, Sun } from 'lucide-react-native'
+// import { router } from 'expo-router'
+import { 
+  // Bell,
+  Info, LogOut, Moon, 
+  // Plus, 
+  ShieldCheck, Sparkles, Sun } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -43,7 +47,7 @@ function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
 export default function SettingsScreen() {
   const { theme, themeMode, setThemeMode } = useThemeStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
-  const { data: customPushCount = 0 } = useCustomPushCount()
+  // const { data: customPushCount = 0 } = useCustomPushCount()
   const [aiConfig, setLocalAIConfig] = useState<AIConfig | null>(null)
   const [showAISettings, setShowAISettings] = useState(false)
   const [showPermissionSettings, setShowPermissionSettings] = useState(false)
@@ -378,7 +382,7 @@ export default function SettingsScreen() {
                 <SwitchBtn value={pushEnabled} onValueChange={handleTogglePush} />
               </View>
             </View>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -418,7 +422,7 @@ export default function SettingsScreen() {
                 )}
                 <Plus size={16} color={theme.textSecondary} />
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         )}
       </View>
