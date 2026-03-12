@@ -36,7 +36,66 @@ impl ResourceService {
     }
 
     fn build_thumbnail_url(&self, resource: &Resource) -> Option<String> {
-        thumbnail_storage_path(&resource.metadata).map(|_| build_thumbnail_route(resource.id))
+        if resource.mime_type.starts_with("video/") {
+            Some(build_thumbnail_route(resource.id))
+        } else {
+            None
+        }
+    }
+
+    fn extract_user_id_from_storage_path(storage_path: &str) -> Option<&str> {
+        let mut segments = storage_path.split('/');
+        match (segments.next(), segments.next()) {
+            (Some("resources"), Some(user_id)) => Some(user_id),
+            _ => None,
+        }
+    }
+
+    async fn ensure_thumbnail_metadata(
+        &self,
+        resource: &mut Resource,
+    ) -> Result<Option<(String, String)>, AppError> {
+        if !resource.mime_type.starts_with("video/") {
+            return Ok(None);
+        }
+
+        if let Some(thumbnail_path) = thumbnail_storage_path(&resource.metadata) {
+            let mime_type = thumbnail_mime_type(&resource.metadata)
+                .unwrap_or("image/jpeg")
+                .to_string();
+            return Ok(Some((thumbnail_path.to_string(), mime_type)));
+        }
+
+        let Some(user_id) = Self::extract_user_id_from_storage_path(&resource.storage_path) else {
+            return Ok(None);
+        };
+
+        let original_data = self
+            .storage
+            .download(&resource.storage_path)
+            .await
+            .map_err(|e| AppError::Storage(e.to_string()))?;
+
+        let Some(thumbnail_path) = self
+            .try_generate_thumbnail(user_id, resource.id, &resource.mime_type, &original_data)
+            .await
+        else {
+            return Ok(None);
+        };
+
+        resource.metadata = with_thumbnail_metadata(
+            resource.metadata.clone(),
+            thumbnail_path.clone(),
+            "image/jpeg".to_string(),
+        );
+
+        sqlx::query("UPDATE resources SET metadata = $1 WHERE id = $2")
+            .bind(&resource.metadata)
+            .bind(resource.id)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(Some((thumbnail_path, "image/jpeg".to_string())))
     }
 
     async fn build_resource_response(
@@ -290,7 +349,7 @@ impl ResourceService {
         &self,
         resource_id: Uuid,
     ) -> Result<(Bytes, String), AppError> {
-        let resource = sqlx::query_as::<_, Resource>(
+        let mut resource = sqlx::query_as::<_, Resource>(
             "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
              FROM resources r
              WHERE r.id = $1",
@@ -300,15 +359,14 @@ impl ResourceService {
         .await?
         .ok_or(AppError::ResourceNotFound)?;
 
-        let thumbnail_path = thumbnail_storage_path(&resource.metadata)
+        let (thumbnail_path, mime_type) = self
+            .ensure_thumbnail_metadata(&mut resource)
+            .await?
             .ok_or(AppError::ResourceNotFound)?;
-        let mime_type = thumbnail_mime_type(&resource.metadata)
-            .unwrap_or("image/jpeg")
-            .to_string();
 
         let data = self
             .storage
-            .download(thumbnail_path)
+            .download(&thumbnail_path)
             .await
             .map_err(|e| AppError::Storage(e.to_string()))?;
 
@@ -532,7 +590,7 @@ impl ResourceService {
         req: ConfirmUploadRequest,
     ) -> Result<ResourceResponse, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
-        let mut resource = sqlx::query_as::<_, Resource>(
+        let resource = sqlx::query_as::<_, Resource>(
             "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
              FROM resources r
              JOIN memos m ON r.memo_id = m.id
@@ -544,32 +602,7 @@ impl ResourceService {
         .await?
         .ok_or(AppError::ResourceNotFound)?;
 
-        if resource.mime_type.starts_with("video/")
-            && thumbnail_storage_path(&resource.metadata).is_none()
-        {
-            let original_data = self
-                .storage
-                .download(&resource.storage_path)
-                .await
-                .map_err(|e| AppError::Storage(e.to_string()))?;
-
-            if let Some(thumbnail_path) = self
-                .try_generate_thumbnail(user_id, resource.id, &resource.mime_type, &original_data)
-                .await
-            {
-                resource.metadata = with_thumbnail_metadata(
-                    resource.metadata,
-                    thumbnail_path,
-                    "image/jpeg".to_string(),
-                );
-
-                sqlx::query("UPDATE resources SET metadata = $1 WHERE id = $2")
-                    .bind(&resource.metadata)
-                    .bind(resource.id)
-                    .execute(&self.pool)
-                    .await?;
-            }
-        }
+        let _ = user_id;
 
         self.build_resource_response(resource).await
     }
