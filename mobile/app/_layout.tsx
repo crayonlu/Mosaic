@@ -1,7 +1,7 @@
 import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
-import { registerCustomNotifications } from '@/lib/services/local-push/custom'
+import { LocalPushService } from '@/lib/services/local-push'
 import { useAuthStore } from '@/stores/auth-store'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useMoodStore } from '@/stores/mood-store'
@@ -29,13 +29,14 @@ export default function RootLayout() {
   const { isAuthenticated, isInitialized, isLoading, initialize: initAuth } = useAuthStore()
   const segments = useSegments()
   const router = useRouter()
+  const localPushService = LocalPushService.getInstance()
 
   useThemeInit()
 
   useEffect(() => {
     initAuth()
     initialize()
-    registerCustomNotifications()
+    localPushService.registerAll()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
