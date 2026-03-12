@@ -3,7 +3,7 @@ import { resolveApiUrl } from '@/lib/shared-api'
 import { cn } from '@/lib/utils'
 import type { Resource } from '@mosaic/api'
 import { FileText, Image as ImageIcon, MoreHorizontal, Video as VideoIcon } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 interface ResourceThumbnailsProps {
   resources: Resource[]
@@ -18,6 +18,7 @@ export function ResourceThumbnails({
 }: ResourceThumbnailsProps) {
   const displayResources = useMemo(() => resources.slice(0, maxImages), [resources, maxImages])
   const hasMoreResources = resources.length > maxImages
+  const [videoThumbnailLoading, setVideoThumbnailLoading] = useState<Record<string, boolean>>({})
 
   if (resources.length === 0) {
     return null
@@ -40,6 +41,22 @@ export function ResourceThumbnails({
                   <AuthImage
                     src={previewUrl}
                     alt={resource.filename}
+                    onLoadingChange={(isLoading) => {
+                      if (resource.resourceType !== 'video') {
+                        return
+                      }
+
+                      setVideoThumbnailLoading((prev) => {
+                        if (prev[resource.id] === isLoading) {
+                          return prev
+                        }
+
+                        return {
+                          ...prev,
+                          [resource.id]: isLoading,
+                        }
+                      })
+                    }}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -53,7 +70,7 @@ export function ResourceThumbnails({
                     )}
                   </div>
                 )}
-                {resource.resourceType === 'video' && (
+                {resource.resourceType === 'video' && previewUrl && videoThumbnailLoading[resource.id] === false && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/15">
                     <VideoIcon className="w-3 h-3 text-white" />
                   </div>

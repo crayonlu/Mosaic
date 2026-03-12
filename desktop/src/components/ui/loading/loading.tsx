@@ -1,5 +1,4 @@
 export { DataLoading } from './data-loading'
-export { FileUploadLoading } from './file-upload-loading'
 export { LoadingButton } from './loading-button'
 export { LoadingOverlay } from './loading-overlay'
 export { LoadingCard, LoadingList, LoadingSkeleton } from './loading-skeleton'

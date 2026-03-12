@@ -7,13 +7,14 @@ type NativeImgProps = React.ComponentPropsWithoutRef<'img'>
 
 interface AuthImageProps extends NativeImgProps {
   withAuth?: boolean
+  onLoadingChange?: (isLoading: boolean) => void
 }
 
 function isBypassSource(src: string): boolean {
   return src.startsWith('blob:') || src.startsWith('data:')
 }
 
-export function AuthImage({ src, withAuth = true, ...props }: AuthImageProps) {
+export function AuthImage({ src, withAuth = true, onLoadingChange, ...props }: AuthImageProps) {
   const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(undefined)
 
   const [isLoading, setIsLoading] = useState(true)
@@ -80,6 +81,10 @@ export function AuthImage({ src, withAuth = true, ...props }: AuthImageProps) {
       controller.abort()
     }
   }, [source, withAuth])
+
+  useEffect(() => {
+    onLoadingChange?.(isLoading)
+  }, [isLoading, onLoadingChange])
 
   const { className, ...restProps } = props
 

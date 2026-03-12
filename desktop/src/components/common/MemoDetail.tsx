@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { FileUploadLoading } from '@/components/ui/loading/file-upload-loading'
 import {
   Sheet,
   SheetContent,
@@ -604,7 +603,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                   </>
                 )}
               </div>
-              <FileUploadLoading files={uploadingFiles} />
               <MemoImageGrid
                 resources={[...imageResources, ...videoResources]}
                 imageUrls={imageUrls}

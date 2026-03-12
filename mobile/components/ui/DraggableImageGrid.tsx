@@ -2,8 +2,8 @@ import { useThemeStore } from '@/stores/theme-store'
 import { Image } from 'expo-image'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { Play, X } from 'lucide-react-native'
-import { useCallback, useMemo, useState } from 'react'
-import { Dimensions, Modal, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { DraggableGrid } from 'react-native-draggable-grid'
 import ImageViewing from 'react-native-image-viewing'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -345,6 +345,8 @@ function ActiveVideoPreview({
   authHeaders?: Record<string, string>
   onClose: () => void
 }) {
+  const videoViewRef = useRef<VideoView>(null)
+
   const player = useVideoPlayer(
     {
       uri: item.uri,
@@ -352,24 +354,26 @@ function ActiveVideoPreview({
     },
     player => {
       player.loop = false
+      player.play()
     }
   )
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      videoViewRef.current?.enterFullscreen()
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
-    <Modal visible={true} transparent animationType="fade" onRequestClose={onClose}>
-      <SafeAreaView style={styles.videoModal} edges={['top', 'right', 'bottom', 'left']}>
-        <TouchableOpacity style={styles.videoCloseButton} onPress={onClose}>
-          <X size={20} color="#fff" />
-        </TouchableOpacity>
-        <VideoView
-          player={player}
-          style={styles.videoPlayer}
-          nativeControls
-          allowsFullscreen
-          contentFit="contain"
-        />
-      </SafeAreaView>
-    </Modal>
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <VideoView
+        ref={videoViewRef}
+        player={player}
+        style={[StyleSheet.absoluteFill, { opacity: 0 }]}
+        onFullscreenExit={onClose}
+      />
+    </View>
   )
 }
 
@@ -423,26 +427,5 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  videoModal: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.96)',
-    justifyContent: 'center',
-  },
-  videoCloseButton: {
-    position: 'absolute',
-    top: 24,
-    right: 20,
-    zIndex: 2,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  videoPlayer: {
-    width: '100%',
-    aspectRatio: 16 / 9,
   },
 })
