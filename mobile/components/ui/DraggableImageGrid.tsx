@@ -12,7 +12,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const GRID_GAP = 0
 
 const getImageSize = (count: number) => {
-  const containerWidth = SCREEN_WIDTH - 26
+  const containerWidth = SCREEN_WIDTH - 24
   if (count === 1) {
     return { width: containerWidth, height: 300 }
   }
@@ -24,14 +24,6 @@ const getImageSize = (count: number) => {
   return { width: size, height: size }
 }
 
-interface GridItem {
-  key: string
-  uri: string
-  type: 'image' | 'video'
-  thumbnailUri?: string
-  headers?: Record<string, string>
-}
-
 export interface MediaGridItem {
   key: string
   uri: string
@@ -40,14 +32,18 @@ export interface MediaGridItem {
   headers?: Record<string, string>
 }
 
+type GridItem = MediaGridItem
+
 interface DraggableImageGridProps {
   items?: MediaGridItem[]
   images?: string[]
   authHeaders?: Record<string, string>
+  uploadProgressById?: Record<string, number>
   onImagesChange?: (images: string[]) => void
   onItemsChange?: (items: MediaGridItem[]) => void
-  maxImages?: number
-  onAddImage?: () => void
+  onDragActivate?: () => void
+  onDragStart?: () => void
+  onDragEnd?: () => void
   draggable?: boolean
   onRemove?: (index: number) => void
   onImagePress?: (index: number) => void
@@ -57,10 +53,12 @@ export function DraggableImageGrid({
   items,
   images = [],
   authHeaders,
+  uploadProgressById,
   onImagesChange,
   onItemsChange,
-  maxImages = 9,
-  onAddImage,
+  onDragActivate,
+  onDragStart,
+  onDragEnd,
   draggable = true,
   onRemove,
   onImagePress,
@@ -156,15 +154,13 @@ export function DraggableImageGrid({
     (item: GridItem, order: number) => {
       const index = order
       const previewUri = item.type === 'video' ? item.thumbnailUri : item.uri
+      const progress = uploadProgressById?.[item.key]
+      const isUploading = typeof progress === 'number'
 
       return (
         <View style={[styles.imageWrapper, { width: imageSize.width, height: imageSize.height }]}>
           <View style={styles.imageContainer}>
-            <TouchableOpacity
-              style={styles.imageContainer}
-              onPress={() => handleImagePress(index)}
-              activeOpacity={0.9}
-            >
+            <View style={styles.imageContainer}>
               {previewUri ? (
                 <Image
                   source={{ uri: previewUri, headers: item.headers ?? authHeaders }}
@@ -186,7 +182,21 @@ export function DraggableImageGrid({
                   <Play size={14} color="#fff" fill="#fff" />
                 </View>
               )}
-            </TouchableOpacity>
+              {isUploading && <View style={styles.uploadOverlay} pointerEvents="none" />}
+              {isUploading && (
+                <View style={styles.progressTrack} pointerEvents="none">
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {
+                        backgroundColor: theme.primary,
+                        width: `${Math.max(6, Math.min(progress, 100))}%`,
+                      },
+                    ]}
+                  />
+                </View>
+              )}
+            </View>
           </View>
           {(onRemove || onImagesChange || onItemsChange) && (
             <TouchableOpacity
@@ -201,13 +211,13 @@ export function DraggableImageGrid({
     },
     [
       authHeaders,
-      handleImagePress,
       handleRemove,
       imageSize,
       onImagesChange,
       onItemsChange,
       onRemove,
       theme,
+      uploadProgressById,
     ]
   )
 
@@ -249,6 +259,22 @@ export function DraggableImageGrid({
                     <Play size={14} color="#fff" fill="#fff" />
                   </View>
                 )}
+                {typeof uploadProgressById?.[item.key] === 'number' && (
+                  <View style={styles.uploadOverlay} pointerEvents="none" />
+                )}
+                {typeof uploadProgressById?.[item.key] === 'number' && (
+                  <View style={styles.progressTrack} pointerEvents="none">
+                    <View
+                      style={[
+                        styles.progressFill,
+                        {
+                          backgroundColor: theme.primary,
+                          width: `${Math.max(6, Math.min(uploadProgressById[item.key] ?? 0, 100))}%`,
+                        },
+                      ]}
+                    />
+                  </View>
+                )}
               </TouchableOpacity>
               {(onRemove || onItemsChange || onImagesChange) && (
                 <TouchableOpacity
@@ -286,16 +312,26 @@ export function DraggableImageGrid({
   return (
     <View style={styles.container}>
       <DraggableGrid
-        numColumns={resolvedItems.length <= 2 ? resolvedItems.length : 3}
+        numColumns={resolvedItems.length <= 2 ? Math.max(1, resolvedItems.length) : 3}
         data={gridData}
         renderItem={renderItem}
+        delayLongPress={220}
+        onDragItemActive={(item: GridItem) => {
+          onDragActivate?.()
+        }}
+        onDragStart={(item: GridItem) => {
+          onDragStart?.()
+        }}
         onItemPress={(item: GridItem) => {
           const index = resolvedItems.findIndex(candidate => candidate.key === item.key)
           if (index >= 0) {
             handleImagePress(index)
           }
         }}
-        onDragRelease={handleDragRelease}
+        onDragRelease={data => {
+          handleDragRelease(data)
+          onDragEnd?.()
+        }}
         style={styles.grid}
       />
 
@@ -399,6 +435,24 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+  uploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  progressTrack: {
+    position: 'absolute',
+    left: 6,
+    right: 6,
+    bottom: 6,
+    height: 3,
+    borderRadius: 999,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
   },
   videoFallback: {
     width: '100%',

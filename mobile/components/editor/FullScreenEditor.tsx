@@ -1,4 +1,4 @@
-import { Button, toast, UploadProgressList } from '@/components/ui'
+import { Button, toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { DraggableImageGrid } from '@/components/ui/DraggableImageGrid'
 import { useConnection } from '@/hooks/use-connection'
@@ -8,7 +8,7 @@ import {
   type SelectedMediaItem,
 } from '@/lib/media/upload'
 import { useThemeStore } from '@/stores/theme-store'
-import { ImagePlus, X } from 'lucide-react-native'
+import { X } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import {
   KeyboardAvoidingView,
@@ -54,6 +54,10 @@ export function FullScreenEditor({
     { id: string; name: string; type: 'image' | 'video'; progress: number }[]
   >([])
   const [showPreview, setShowPreview] = useState(false)
+  const [isDraggingMedia, setIsDraggingMedia] = useState(false)
+  const uploadProgressById = Object.fromEntries(
+    uploadProgressItems.map(item => [item.id, item.progress])
+  )
 
   useEffect(() => {
     if (visible) {
@@ -62,6 +66,7 @@ export function FullScreenEditor({
       setResources([])
       setMediaItems([])
       setUploadProgressItems([])
+      setIsDraggingMedia(false)
     }
   }, [visible, initialContent, initialTags])
 
@@ -169,12 +174,7 @@ export function FullScreenEditor({
             </TouchableOpacity>
             <Text style={[styles.headerTitle, { color: theme.text }]}>Memo</Text>
             <View style={styles.headerActions}>
-              <Button
-                onPress={handlePickMedia}
-                variant="ghost"
-                size="medium"
-                leftIcon={<ImagePlus size={16} color={theme.text} />}
-              />
+              <Button onPress={handlePickMedia} variant="ghost" size="medium" title="上传" />
               <Button
                 title="预览"
                 onPress={() => setShowPreview(true)}
@@ -194,7 +194,7 @@ export function FullScreenEditor({
             </View>
           </View>
 
-          <ScrollView style={styles.contentContainer}>
+          <ScrollView style={styles.contentContainer} scrollEnabled={!isDraggingMedia}>
             <View style={styles.tagContainer}>
               <TagInput
                 tags={tags}
@@ -210,15 +210,20 @@ export function FullScreenEditor({
             </View>
 
             <View style={styles.imageContainer}>
-              <UploadProgressList items={uploadProgressItems} />
-
               {mediaItems.length > 0 && (
-                <DraggableImageGrid
-                  items={mediaItems}
-                  onItemsChange={handleMediaItemsChange}
-                  maxImages={9}
-                  onAddImage={handlePickMedia}
-                />
+                <>
+                  <Text style={[styles.mediaHint, { color: theme.textSecondary }]}>
+                    长按图片拖拽调整顺序
+                  </Text>
+                  <DraggableImageGrid
+                    items={mediaItems}
+                    uploadProgressById={uploadProgressById}
+                    onItemsChange={handleMediaItemsChange}
+                    onDragActivate={() => setIsDraggingMedia(true)}
+                    onDragStart={() => setIsDraggingMedia(true)}
+                    onDragEnd={() => setIsDraggingMedia(false)}
+                  />
+                </>
               )}
             </View>
           </ScrollView>
@@ -281,6 +286,11 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     padding: 8,
+  },
+  mediaHint: {
+    fontSize: 12,
+    marginBottom: 8,
+    paddingHorizontal: 4,
   },
   footer: {
     flexDirection: 'row',

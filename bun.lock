@@ -108,6 +108,7 @@
         "dayjs": "^1.11.19",
         "expo": "~54.0.33",
         "expo-constants": "~18.0.13",
+        "expo-file-system": "~19.0.21",
         "expo-image": "~3.0.11",
         "expo-image-manipulator": "~14.0.8",
         "expo-image-picker": "~17.0.10",
