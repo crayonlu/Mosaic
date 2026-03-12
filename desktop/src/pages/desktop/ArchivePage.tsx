@@ -26,6 +26,11 @@ import { Archive, Calendar, CheckSquare, Square, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 type Mode = 'view' | 'select'
+type SelectedMemoResource = {
+  id: string
+  previewUrl: string
+  type: 'image' | 'video'
+}
 
 export default function ArchivePage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -379,9 +384,17 @@ export default function ArchivePage() {
             .filter(m => selectedMemos.has(m.id) && !m.isArchived)
             .flatMap(
               m =>
-                m.resources
-                  ?.filter(r => r.resourceType === 'image')
-                  .map(r => ({ id: r.id, url: `/api/resources/${r.id}/download` })) ?? []
+                m.resources?.flatMap((r): SelectedMemoResource[] => {
+                  if (r.resourceType === 'image') {
+                    return [{ id: r.id, previewUrl: r.url, type: 'image' }]
+                  }
+
+                  if (r.thumbnailUrl) {
+                    return [{ id: r.id, previewUrl: r.thumbnailUrl, type: 'video' }]
+                  }
+
+                  return []
+                }) ?? []
             )}
         />
 

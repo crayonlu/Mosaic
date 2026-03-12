@@ -14,7 +14,15 @@ import { useRef, useState } from 'react'
 export default function DeskTopHome() {
   const isInputExpanded = useInputStore(state => state.isExpanded)
   const { formattedDate } = useTime()
-  const { addResource, clearResources, getPendingFiles } = useInputStore()
+  const {
+    addResource,
+    addUploadingFile,
+    clearResources,
+    clearUploadingFiles,
+    getPendingFiles,
+    removeUploadingFile,
+    updateUploadingFileProgress,
+  } = useInputStore()
   const [selectedMemo, setSelectedMemo] = useState<MemoWithResources | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const memoListRef = useRef<MemoListRef>(null)
@@ -33,7 +41,26 @@ export default function DeskTopHome() {
       let resourceIds: string[] = []
 
       if (pendingFiles.length > 0) {
-        resourceIds = await uploadFilesAndGetResourceIds(pendingFiles)
+        pendingFiles.forEach(file => {
+          addUploadingFile({
+            name: file.name,
+            size: file.size,
+            type: file.type.startsWith('video/') ? 'video' : 'image',
+            progress: 0,
+          })
+        })
+
+        resourceIds = await uploadFilesAndGetResourceIds(pendingFiles, undefined, {
+          onFileProgress: (file, progress) => {
+            updateUploadingFileProgress(file.name, progress.percent)
+          },
+          onFileComplete: file => {
+            removeUploadingFile(file.name)
+          },
+          onFileError: file => {
+            removeUploadingFile(file.name)
+          },
+        })
       }
 
       await createMemo.mutateAsync({
@@ -51,6 +78,8 @@ export default function DeskTopHome() {
     } catch (error) {
       console.error('创建memo失败:', error)
       toast.error('Memo创建失败')
+    } finally {
+      clearUploadingFiles()
     }
   }
 

@@ -32,7 +32,7 @@ interface ArchiveDialogProps {
   ) => Promise<void>
   isLoading: boolean
   selectedMemosContent?: string
-  selectedMemosResources?: Array<{ id: string; url: string }>
+  selectedMemosResources?: Array<{ id: string; previewUrl: string; type: 'image' | 'video' }>
 }
 
 export function ArchiveDialog({
@@ -114,7 +114,7 @@ export function ArchiveDialog({
   const isUpdate = !!existingDiary
   const allImages = selectedMemosResources.map(r => ({
     ...r,
-    url: resolveApiUrl(r.url) || r.url,
+    previewUrl: resolveApiUrl(r.previewUrl) || r.previewUrl,
   }))
 
   return (
@@ -230,7 +230,7 @@ export function ArchiveDialog({
                     onClick={() => setCoverImageId(resource.id)}
                   >
                     <AuthImage
-                      src={resource.url}
+                      src={resource.previewUrl}
                       alt="cover"
                       className="w-full h-full object-cover"
                     />

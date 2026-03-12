@@ -12,6 +12,7 @@ interface UploadingFile {
   name: string
   size: number
   type: 'image' | 'video'
+  progress?: number
 }
 
 interface InputState {
@@ -29,6 +30,7 @@ interface InputState {
   removeResource: (filename: string) => void
   clearResources: () => void
   addUploadingFile: (file: UploadingFile) => void
+  updateUploadingFileProgress: (name: string, progress: number) => void
   removeUploadingFile: (name: string) => void
   clearUploadingFiles: () => void
   getPendingFiles: () => File[]
@@ -94,7 +96,13 @@ export const useInputStore = create<InputState>((set, get) => ({
   },
   addUploadingFile: file =>
     set(state => ({
-      uploadingFiles: [...state.uploadingFiles, file],
+      uploadingFiles: [...state.uploadingFiles.filter(item => item.name !== file.name), file],
+    })),
+  updateUploadingFileProgress: (name, progress) =>
+    set(state => ({
+      uploadingFiles: state.uploadingFiles.map(file =>
+        file.name === name ? { ...file, progress } : file
+      ),
     })),
   removeUploadingFile: name =>
     set(state => ({

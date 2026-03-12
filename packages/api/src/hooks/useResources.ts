@@ -24,8 +24,8 @@ export function useResource(id: string) {
 export function useUploadResource() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ file, memoId }: { file: UploadFile; memoId: string }) =>
-      resourcesApi.upload(file, memoId),
+    mutationFn: ({ file, memoId }: { file: UploadFile; memoId?: string }) =>
+      resourcesApi.upload(file, { memoId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resources'] })
     },

@@ -1,14 +1,25 @@
 import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
 import { Badge, DraggableImageGrid } from '@/components/ui'
+import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { normalizeContent } from '@/lib/utils/content'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@mosaic/api'
-import { resourcesApi } from '@mosaic/api'
+import { apiClient, resourcesApi } from '@mosaic/api'
 import { Trash2 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+
+function toAbsoluteUrl(url?: string): string | undefined {
+  if (!url) return undefined
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+
+  const baseUrl = apiClient.getBaseUrl()
+  return baseUrl ? `${baseUrl}${url}` : url
+}
 
 interface MemoCardProps {
   memo: MemoWithResources
@@ -42,8 +53,13 @@ export function MemoCard({
 
   const displayContent = normalizeContent(memo.content || '')
   const formattedTime = stringUtils.formatRelativeTime(memo.createdAt)
-  const imageResources = memo.resources.filter(r => r.resourceType === 'image')
-  const imageUrls = imageResources.map(r => resourcesApi.getDownloadUrl(r.id))
+  const mediaItems: MediaGridItem[] = memo.resources.map(resource => ({
+    key: resource.id,
+    uri: resourcesApi.getDownloadUrl(resource.id),
+    type: resource.resourceType,
+    thumbnailUri:
+      resource.resourceType === 'video' ? toAbsoluteUrl(resource.thumbnailUrl) : undefined,
+  }))
 
   const handleDelete = () => {
     onDelete?.(memo.id)
@@ -72,9 +88,9 @@ export function MemoCard({
           </View>
         )}
 
-        {imageUrls.length > 0 && (
+        {mediaItems.length > 0 && (
           <View style={styles.imageGridContainer}>
-            <DraggableImageGrid images={imageUrls} authHeaders={authHeaders} draggable={false} />
+            <DraggableImageGrid items={mediaItems} authHeaders={authHeaders} draggable={false} />
           </View>
         )}
       </View>

@@ -1,10 +1,15 @@
-import { Button, toast } from '@/components/ui'
+import { Button, toast, UploadProgressList } from '@/components/ui'
+import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { DraggableImageGrid } from '@/components/ui/DraggableImageGrid'
 import { useConnection } from '@/hooks/use-connection'
+import {
+  createSelectedMediaItems,
+  uploadSelectedMedia,
+  type SelectedMediaItem,
+} from '@/lib/media/upload'
 import { useThemeStore } from '@/stores/theme-store'
-import { resourcesApi } from '@mosaic/api'
-import { Image, X } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { ImagePlus, X } from 'lucide-react-native'
+import { useCallback, useEffect, useState } from 'react'
 import {
   KeyboardAvoidingView,
   Modal,
@@ -43,8 +48,11 @@ export function FullScreenEditor({
   const [content, setContent] = useState(initialContent)
   const [tags, setTags] = useState<string[]>(initialTags)
   const [resources, setResources] = useState<string[]>([])
-  const [imageUris, setImageUris] = useState<string[]>([])
+  const [mediaItems, setMediaItems] = useState<SelectedMediaItem[]>([])
   const [uploading, setUploading] = useState(false)
+  const [uploadProgressItems, setUploadProgressItems] = useState<
+    { id: string; name: string; type: 'image' | 'video'; progress: number }[]
+  >([])
   const [showPreview, setShowPreview] = useState(false)
 
   useEffect(() => {
@@ -52,43 +60,76 @@ export function FullScreenEditor({
       setContent(initialContent)
       setTags(initialTags)
       setResources([])
-      setImageUris([])
+      setMediaItems([])
+      setUploadProgressItems([])
     }
   }, [visible, initialContent, initialTags])
 
-  const handlePickImage = async () => {
-    const result = await selectImages()
-    if (result.length > 0) {
-      setImageUris([...imageUris, ...result].slice(0, 9))
+  const handleMediaItemsChange = useCallback((nextItems: MediaGridItem[]) => {
+    setMediaItems(prev =>
+      nextItems
+        .map(item => prev.find(candidate => candidate.key === item.key))
+        .filter((item): item is SelectedMediaItem => Boolean(item))
+    )
+  }, [])
+
+  const selectMedia = async () => {
+    const { launchImageLibraryAsync } = await import('expo-image-picker')
+    const result = await launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'],
+      allowsMultipleSelection: true,
+      quality: 0.8,
+    })
+
+    if (result.canceled) {
+      return []
+    }
+
+    return createSelectedMediaItems(result.assets)
+  }
+
+  const handlePickMedia = async () => {
+    const selectedItems = await selectMedia()
+    if (selectedItems.length > 0) {
+      setMediaItems(prev => [...prev, ...selectedItems].slice(0, 9))
     }
   }
 
   const handleSubmit = async () => {
-    const uploadedResources = [...resources]
-    if (imageUris.length > 0 && canUseNetwork) {
+    const uploadedResourceIds = [...resources]
+    if (mediaItems.length > 0 && canUseNetwork) {
+      setUploadProgressItems(
+        mediaItems.map(item => ({
+          id: item.key,
+          name: item.filename,
+          type: item.type,
+          progress: 0,
+        }))
+      )
       setUploading(true)
       try {
-        for (const uri of imageUris) {
-          const resource = await resourcesApi.upload(
-            {
-              uri,
-              name: `image_${Date.now()}.jpg`,
-              type: 'image/jpeg',
-            },
-            'new'
-          )
-          uploadedResources.push(resource.id)
-        }
+        const uploadedResources = await uploadSelectedMedia(mediaItems, {
+          onFileProgress: (item, progress) => {
+            setUploadProgressItems(prev =>
+              prev.map(entry =>
+                entry.id === item.key ? { ...entry, progress: progress.percent } : entry
+              )
+            )
+          },
+        })
+        uploadedResourceIds.push(...uploadedResources.map(resource => resource.id))
       } catch (error) {
-        console.error('Image upload failed:', error)
-        toast.error('Error', 'Image upload failed')
+        console.error('Media upload failed:', error)
+        toast.error('Error', 'Media upload failed')
         setUploading(false)
+        setUploadProgressItems([])
         return
       }
       setUploading(false)
+      setUploadProgressItems([])
     }
 
-    onSubmit(content, tags, uploadedResources)
+    onSubmit(content, tags, uploadedResourceIds)
     handleClose()
   }
 
@@ -96,27 +137,14 @@ export function FullScreenEditor({
     setContent('')
     setTags([])
     setResources([])
-    setImageUris([])
+    setMediaItems([])
+    setUploadProgressItems([])
     onClose()
   }
 
   const handlePost = async () => {
     setShowPreview(false)
     await handleSubmit()
-  }
-
-  const selectImages = async () => {
-    const { launchImageLibraryAsync } = await import('expo-image-picker')
-    const result = await launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      quality: 0.8,
-    })
-
-    if (!result.canceled) {
-      return result.assets.map(asset => asset.uri)
-    }
-    return []
   }
 
   return (
@@ -142,17 +170,17 @@ export function FullScreenEditor({
             <Text style={[styles.headerTitle, { color: theme.text }]}>Memo</Text>
             <View style={styles.headerActions}>
               <Button
-                onPress={handlePickImage}
+                onPress={handlePickMedia}
                 variant="ghost"
                 size="medium"
-                leftIcon={<Image size={16} color={theme.text} />}
+                leftIcon={<ImagePlus size={16} color={theme.text} />}
               />
               <Button
                 title="预览"
                 onPress={() => setShowPreview(true)}
                 variant="ghost"
                 size="medium"
-                disabled={!content.trim() && imageUris.length === 0}
+                disabled={!content.trim() && mediaItems.length === 0}
               />
               <Button
                 title="创建"
@@ -160,7 +188,7 @@ export function FullScreenEditor({
                 variant="ghost"
                 size="medium"
                 disabled={
-                  (!content.trim() && imageUris.length === 0) || !canUseNetwork || uploading
+                  (!content.trim() && mediaItems.length === 0) || !canUseNetwork || uploading
                 }
               />
             </View>
@@ -181,23 +209,25 @@ export function FullScreenEditor({
               <TextEditor value={content} onChange={setContent} placeholder={placeholder} />
             </View>
 
-            {imageUris.length > 0 && (
-              <View style={styles.imageContainer}>
+            <View style={styles.imageContainer}>
+              <UploadProgressList items={uploadProgressItems} />
+
+              {mediaItems.length > 0 && (
                 <DraggableImageGrid
-                  images={imageUris}
-                  onImagesChange={setImageUris}
+                  items={mediaItems}
+                  onItemsChange={handleMediaItemsChange}
                   maxImages={9}
-                  onAddImage={handlePickImage}
+                  onAddImage={handlePickMedia}
                 />
-              </View>
-            )}
+              )}
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
 
         <PostPreview
           visible={showPreview}
           content={content}
-          images={imageUris}
+          items={mediaItems}
           tags={tags}
           onClose={() => setShowPreview(false)}
           onPost={handlePost}

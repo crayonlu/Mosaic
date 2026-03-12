@@ -2,10 +2,10 @@ import { AuthImage } from '@/components/common/AuthImage'
 import { AuthVideo } from '@/components/common/AuthVideo'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
-import type { Resource } from '@mosaic/api'
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core'
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import type { Resource } from '@mosaic/api'
 import { ChevronLeft, ChevronRight, Plus, Trash2, Upload, Video, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -13,6 +13,7 @@ interface MemoImageGridProps {
   resources: Resource[]
   imageUrls: Map<string, string>
   videoUrls?: Map<string, string>
+  thumbnailUrls?: Map<string, string>
   isEditing: boolean
   isUploading?: boolean
   onReorder?: (reordered: Resource[]) => void
@@ -26,6 +27,7 @@ interface SortableMediaProps {
   index: number
   imageUrl?: string
   videoUrl?: string
+  thumbnailUrl?: string
   isEditing: boolean
   isLarge: boolean
   onDelete?: (resourceId: string) => void
@@ -40,6 +42,7 @@ const SortableMedia = ({
   resource,
   imageUrl,
   videoUrl,
+  thumbnailUrl,
   isEditing,
   isLarge,
   onDelete,
@@ -56,6 +59,7 @@ const SortableMedia = ({
   }
 
   const isVideo = resource.resourceType === 'video'
+  const previewUrl = isVideo ? thumbnailUrl : imageUrl
 
   return (
     <div
@@ -69,19 +73,19 @@ const SortableMedia = ({
       }`}
       onClick={onClick}
     >
-      {isVideo && videoUrl ? (
+      {previewUrl ? (
+        <AuthImage
+          src={previewUrl}
+          className={`w-full h-full object-cover ${isLarge ? 'aspect-4/3' : 'aspect-square'}`}
+          alt={resource.filename}
+          draggable={false}
+        />
+      ) : isVideo && videoUrl ? (
         <AuthVideo
           src={videoUrl}
           className={`w-full h-full object-cover ${isLarge ? 'aspect-4/3' : 'aspect-square'}`}
           muted
           playsInline
-        />
-      ) : imageUrl ? (
-        <AuthImage
-          src={imageUrl}
-          alt={resource.filename}
-          className={`w-full h-full object-cover ${isLarge ? 'aspect-4/3' : 'aspect-square'}`}
-          draggable={false}
         />
       ) : null}
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
@@ -311,6 +315,7 @@ export function MemoImageGrid({
   resources,
   imageUrls,
   videoUrls,
+  thumbnailUrls,
   isEditing,
   isUploading,
   onReorder,
@@ -361,9 +366,10 @@ export function MemoImageGrid({
       {displayResources.map((resource, index) => {
         const isVideo = resource.resourceType === 'video'
         const videoUrl = isVideo ? videoUrls?.get(resource.id) : undefined
+        const thumbnailUrl = isVideo ? thumbnailUrls?.get(resource.id) : undefined
         const imageUrl = !isVideo ? imageUrls.get(resource.id) : undefined
 
-        if ((isVideo && !videoUrl) || (!isVideo && !imageUrl)) return null
+        if ((isVideo && !thumbnailUrl && !videoUrl) || (!isVideo && !imageUrl)) return null
 
         return (
           <SortableMedia
@@ -372,6 +378,7 @@ export function MemoImageGrid({
             index={index}
             imageUrl={imageUrl}
             videoUrl={videoUrl}
+            thumbnailUrl={thumbnailUrl}
             isEditing={isEditing}
             isLarge={isLarge}
             onDelete={onDelete}

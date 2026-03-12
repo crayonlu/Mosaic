@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { FileUploadLoading } from '@/components/ui/loading/file-upload-loading'
 import {
   Sheet,
   SheetContent,
@@ -66,6 +67,10 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [hasResourceChanges, setHasResourceChanges] = useState(false)
   const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
   const [videoUrls, setVideoUrls] = useState<Map<string, string>>(new Map())
+  const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map())
+  const [uploadingFiles, setUploadingFiles] = useState<
+    { name: string; type: 'image' | 'video'; size?: number; progress?: number }[]
+  >([])
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const { suggestTags, loading: aiLoading } = useAI()
   const updateMemo = useUpdateMemo()
@@ -94,6 +99,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     const loadResources = async () => {
       const newImageUrls = new Map<string, string>()
       const newVideoUrls = new Map<string, string>()
+      const newThumbnailUrls = new Map<string, string>()
 
       for (const resource of displayResources) {
         const url = resolveApiUrl(resource.url)
@@ -104,10 +110,18 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
         } else if (resource.resourceType === 'video') {
           newVideoUrls.set(resource.id, url)
         }
+
+        if (resource.thumbnailUrl) {
+          const thumbnailUrl = resolveApiUrl(resource.thumbnailUrl)
+          if (thumbnailUrl) {
+            newThumbnailUrls.set(resource.id, thumbnailUrl)
+          }
+        }
       }
 
       setImageUrls(newImageUrls)
       setVideoUrls(newVideoUrls)
+      setThumbnailUrls(newThumbnailUrls)
     }
 
     loadResources()
@@ -115,6 +129,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     return () => {
       setImageUrls(new Map())
       setVideoUrls(new Map())
+      setThumbnailUrls(new Map())
     }
   }, [memo, isEditing, displayResources])
 
@@ -262,6 +277,11 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
         next.delete(resourceToDelete)
         return next
       })
+      setThumbnailUrls(prev => {
+        const next = new Map(prev)
+        next.delete(resourceToDelete)
+        return next
+      })
       setHasResourceChanges(true)
       onUpdate?.()
       toast.success('资源删除成功')
@@ -277,9 +297,26 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const handleUploadResources = async (files: FileList) => {
     if (!memo || isUploading) return
 
+    const filesToUpload = Array.from(files)
     setIsUploading(true)
+    setUploadingFiles(
+      filesToUpload.map(file => ({
+        name: file.name,
+        type: file.type.startsWith('video/') ? 'video' : 'image',
+        size: file.size,
+        progress: 0,
+      }))
+    )
     try {
-      const uploadedResources = await uploadFiles(Array.from(files), memo.id)
+      const uploadedResources = await uploadFiles(filesToUpload, memo.id, {
+        onFileProgress: (file, progress) => {
+          setUploadingFiles(prev =>
+            prev.map(entry =>
+              entry.name === file.name ? { ...entry, progress: progress.percent } : entry
+            )
+          )
+        },
+      })
 
       if (uploadedResources.length > 0) {
         setEditingResources(prev => [...prev, ...uploadedResources])
@@ -308,6 +345,18 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
           return next
         })
 
+        setThumbnailUrls(prev => {
+          const next = new Map(prev)
+          for (const resource of uploadedResources) {
+            if (!resource.thumbnailUrl) continue
+            const url = resolveApiUrl(resource.thumbnailUrl)
+            if (url) {
+              next.set(resource.id, url)
+            }
+          }
+          return next
+        })
+
         setHasResourceChanges(true)
         onUpdate?.()
         toast.success(`成功添加 ${uploadedResources.length} 个资源`)
@@ -317,6 +366,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       toast.error('上传资源失败')
     } finally {
       setIsUploading(false)
+      setUploadingFiles([])
     }
   }
 
@@ -524,7 +574,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
               <div className="flex items-center justify-between gap-2 text-sm font-medium text-foreground">
                 <div className="flex items-center gap-2">
                   <ImageIcon className="h-4 w-4" />
-                  <span>图片 ({imageResources.length})</span>
+                  <span>媒体 ({displayResources.length})</span>
                 </div>
                 {isEditing && (
                   <>
@@ -553,10 +603,12 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                   </>
                 )}
               </div>
+              <FileUploadLoading files={uploadingFiles} />
               <MemoImageGrid
                 resources={[...imageResources, ...videoResources]}
                 imageUrls={imageUrls}
                 videoUrls={videoUrls}
+                thumbnailUrls={thumbnailUrls}
                 isEditing={isEditing}
                 isUploading={isUploading}
                 onReorder={handleReorder}

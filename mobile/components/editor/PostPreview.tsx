@@ -1,4 +1,5 @@
 import { Badge, DraggableImageGrid } from '@/components/ui'
+import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { useThemeStore } from '@/stores/theme-store'
 import { X } from 'lucide-react-native'
@@ -10,13 +11,13 @@ import { MarkdownRenderer } from './MarkdownRenderer'
 interface PostPreviewProps {
   visible: boolean
   content: string
-  images: string[]
+  items: MediaGridItem[]
   tags: string[]
   onClose: () => void
   onPost: () => void
 }
 
-export function PostPreview({ visible, content, images, tags, onClose, onPost }: PostPreviewProps) {
+export function PostPreview({ visible, content, items, tags, onClose, onPost }: PostPreviewProps) {
   const { theme } = useThemeStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
@@ -48,9 +49,9 @@ export function PostPreview({ visible, content, images, tags, onClose, onPost }:
             <Text style={[styles.emptyText, { color: theme.textSecondary }]}>无内容</Text>
           )}
 
-          {images.length > 0 && (
+          {items.length > 0 && (
             <View style={styles.imageGridContainer}>
-              <DraggableImageGrid images={images} authHeaders={authHeaders} draggable={false} />
+              <DraggableImageGrid items={items} authHeaders={authHeaders} draggable={false} />
             </View>
           )}
 
