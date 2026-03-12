@@ -1,6 +1,6 @@
 use crate::error::AppError;
 use crate::models::{
-    build_thumbnail_route, thumbnail_storage_path,
+    build_thumbnail_route,
     CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse, MemoWithResources,
     PaginatedResponse, Resource, TagResponse, UpdateMemoRequest,
 };
@@ -173,6 +173,7 @@ impl MemoService {
             .into_iter()
             .map(|r| {
                 let url = format!("/api/resources/{}/download", r.id);
+                let is_video = r.mime_type.starts_with("video/");
                 ResourceResponse {
                     id: r.id,
                     memo_id: r.memo_id,
@@ -183,8 +184,11 @@ impl MemoService {
                     storage_type: Some(r.storage_type),
                     storage_path: Some(r.storage_path),
                     url,
-                    thumbnail_url: thumbnail_storage_path(&r.metadata)
-                        .map(|_| build_thumbnail_route(r.id)),
+                    thumbnail_url: if is_video {
+                        Some(build_thumbnail_route(r.id))
+                    } else {
+                        None
+                    },
                     metadata: r.metadata,
                     created_at: r.created_at,
                 }

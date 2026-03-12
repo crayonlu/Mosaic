@@ -21,6 +21,7 @@ import { useAI } from '@/hooks/use-ai'
 import { uploadFiles } from '@/hooks/use-file-upload'
 import { toast } from '@/hooks/use-toast'
 import { resolveApiUrl } from '@/lib/shared-api'
+import { normalizeContent } from '@/utils/content'
 import type { MemoWithResources, Resource } from '@mosaic/api'
 import { resourcesApi, useDeleteMemo, useUpdateMemo } from '@mosaic/api'
 import dayjs from 'dayjs'
@@ -556,7 +557,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
             </div>
           ) : (
             <div className="prose prose-sm max-w-none">
-              {memo.content ? (
+              {normalizeContent(memo.content) ? (
                 <RichTextEditor
                   content={memo.content}
                   onChange={() => {}}

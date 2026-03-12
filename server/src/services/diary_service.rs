@@ -1,6 +1,6 @@
 use crate::error::AppError;
 use crate::models::{
-    build_thumbnail_route, thumbnail_storage_path,
+    build_thumbnail_route,
     CreateDiaryRequest, Diary, DiaryResponse, MemoResourceResponse as ResourceResponse,
     MemoWithResources, PaginatedResponse, Resource, UpdateDiaryRequest,
 };
@@ -231,20 +231,26 @@ impl DiaryService {
 
         Ok(resources
             .into_iter()
-            .map(|r| ResourceResponse {
-                id: r.id,
-                memo_id: r.memo_id,
-                filename: r.filename,
-                resource_type: r.resource_type,
-                mime_type: r.mime_type,
-                size: r.file_size,
-                storage_type: Some(r.storage_type),
-                storage_path: Some(r.storage_path),
-                url: format!("/api/resources/{}/download", r.id),
-                thumbnail_url: thumbnail_storage_path(&r.metadata)
-                    .map(|_| build_thumbnail_route(r.id)),
-                metadata: r.metadata,
-                created_at: r.created_at,
+            .map(|r| {
+                let is_video = r.mime_type.starts_with("video/");
+                ResourceResponse {
+                    id: r.id,
+                    memo_id: r.memo_id,
+                    filename: r.filename,
+                    resource_type: r.resource_type,
+                    mime_type: r.mime_type,
+                    size: r.file_size,
+                    storage_type: Some(r.storage_type),
+                    storage_path: Some(r.storage_path),
+                    url: format!("/api/resources/{}/download", r.id),
+                    thumbnail_url: if is_video {
+                        Some(build_thumbnail_route(r.id))
+                    } else {
+                        None
+                    },
+                    metadata: r.metadata,
+                    created_at: r.created_at,
+                }
             })
             .collect())
     }

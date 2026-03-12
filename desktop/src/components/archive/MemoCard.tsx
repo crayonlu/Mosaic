@@ -1,12 +1,12 @@
 import { AuthImage } from '@/components/common/AuthImage'
 import { RichTextEditor } from '@/components/common/RichTextEditor'
-import { resolveApiUrl } from '@/lib/shared-api'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { resolveApiUrl } from '@/lib/shared-api'
 import { cn } from '@/lib/utils'
 import type { MemoWithResources } from '@mosaic/api'
 import dayjs from 'dayjs'
-import { Archive, Image as ImageIcon, X } from 'lucide-react'
+import { Archive, Image as ImageIcon, Video, X } from 'lucide-react'
 import { memo } from 'react'
 
 interface MemoCardProps {
@@ -21,7 +21,9 @@ interface MemoCardProps {
 export const MemoCard = memo<MemoCardProps>(
   ({ memo, mode, selected, onSelect, onClick, onUnarchive }) => {
     const getMediaResources = () => {
-      return memo.resources.filter(r => r.resourceType === 'image')
+      return memo.resources.filter(
+        r => r.resourceType === 'image' || (r.resourceType === 'video' && !!r.thumbnailUrl)
+      )
     }
 
     const renderMediaGrid = () => {
@@ -53,22 +55,30 @@ export const MemoCard = memo<MemoCardProps>(
       return (
         <div className={`mt-3 grid ${gridClass} gap-1 rounded-lg overflow-hidden`}>
           {mediaResources.slice(0, 9).map((resource, index) => {
-            const imageUrl = resolveApiUrl(resource.url)
+            const previewUrl = resolveApiUrl(
+              resource.resourceType === 'video' ? resource.thumbnailUrl : resource.url
+            )
+            const isVideo = resource.resourceType === 'video'
 
             return (
               <div
                 key={resource.id}
                 className={`relative ${itemClass} bg-muted flex items-center justify-center group`}
               >
-                {imageUrl ? (
+                {previewUrl ? (
                   <AuthImage
-                    src={imageUrl}
+                    src={previewUrl}
                     alt={resource.filename}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
-                    <ImageIcon className="h-8 w-8" />
+                    {isVideo ? <Video className="h-8 w-8" /> : <ImageIcon className="h-8 w-8" />}
+                  </div>
+                )}
+                {isVideo && previewUrl && (
+                  <div className="absolute right-2 bottom-2 rounded-full bg-black/55 p-1.5 text-white">
+                    <Video className="h-3.5 w-3.5" />
                   </div>
                 )}
                 {count > 9 && index === 8 && (

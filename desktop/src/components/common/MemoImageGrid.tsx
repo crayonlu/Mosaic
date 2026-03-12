@@ -89,9 +89,9 @@ const SortableMedia = ({
         />
       ) : null}
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-      {isVideo && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <Video className="h-8 w-8 text-white drop-shadow-lg" />
+      {isVideo && previewUrl && (
+        <div className="absolute right-2 bottom-2 flex items-center justify-center pointer-events-none rounded-full bg-black/55 p-1.5">
+          <Video className="h-4 w-4 text-white" />
         </div>
       )}
       {isEditing && onDelete && (
