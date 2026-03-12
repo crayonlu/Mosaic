@@ -41,12 +41,12 @@ export function ResourceThumbnails({
                   <AuthImage
                     src={previewUrl}
                     alt={resource.filename}
-                    onLoadingChange={(isLoading) => {
+                    onLoadingChange={isLoading => {
                       if (resource.resourceType !== 'video') {
                         return
                       }
 
-                      setVideoThumbnailLoading((prev) => {
+                      setVideoThumbnailLoading(prev => {
                         if (prev[resource.id] === isLoading) {
                           return prev
                         }
@@ -70,11 +70,13 @@ export function ResourceThumbnails({
                     )}
                   </div>
                 )}
-                {resource.resourceType === 'video' && previewUrl && videoThumbnailLoading[resource.id] === false && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/15">
-                    <VideoIcon className="w-3 h-3 text-white" />
-                  </div>
-                )}
+                {resource.resourceType === 'video' &&
+                  previewUrl &&
+                  videoThumbnailLoading[resource.id] === false && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/15">
+                      <VideoIcon className="w-3 h-3 text-white" />
+                    </div>
+                  )}
                 {hasMoreResources && index === displayResources.length - 1 && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <MoreHorizontal className="w-3 h-3 text-white" />

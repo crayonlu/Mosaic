@@ -74,7 +74,8 @@ export interface UploadResourceEntry<TFile extends UploadFile = UploadFile> {
 export interface UploadResourceBatchOptions<TFile extends UploadFile = UploadFile> {
   memoId?: string
   resolveMetadata?: (
-    file: TFile
+    file: TFile,
+    entry: UploadResourceEntry<TFile>
   ) => Promise<ResourceMetadata | undefined> | ResourceMetadata | undefined
   onFileStart?: (entry: UploadResourceEntry<TFile>) => void
   onFileProgress?: (entry: UploadResourceEntry<TFile>, progress: UploadProgress) => void

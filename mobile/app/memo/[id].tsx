@@ -1,7 +1,7 @@
 import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
 import { TextEditor } from '@/components/editor/TextEditor'
 import { TagInput } from '@/components/tag/TagInput'
-import { Button, DraggableImageGrid, Loading, UploadProgressList, toast } from '@/components/ui'
+import { Button, DraggableImageGrid, Loading, toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
@@ -45,6 +45,9 @@ export default function MemoDetailScreen() {
     { id: string; name: string; type: 'image' | 'video'; progress: number }[]
   >([])
   const wasEditingRef = useRef(false)
+  const uploadProgressById = Object.fromEntries(
+    uploadProgressItems.map(item => [item.id, item.progress])
+  )
 
   const isPending = isUpdating || isDeleting || uploading
 
@@ -289,7 +292,7 @@ export default function MemoDetailScreen() {
               <View style={styles.imageUploadHeader}>
                 <Text style={{ color: theme.textSecondary }}>媒体</Text>
                 <Button
-                  title="添加媒体"
+                  title="添加"
                   onPress={selectMedia}
                   variant="ghost"
                   size="small"
@@ -297,15 +300,13 @@ export default function MemoDetailScreen() {
                   disabled={!canUseNetwork || editingResources.length >= 9 || uploading}
                 />
               </View>
-              <UploadProgressList items={uploadProgressItems} />
               {editingMediaItems.length > 0 && (
                 <DraggableImageGrid
                   key={`edit-grid-${editingMediaItems.map(item => item.key).join('|')}`}
                   items={editingMediaItems}
                   authHeaders={authHeaders}
+                  uploadProgressById={uploadProgressById}
                   onItemsChange={handleMediaChange}
-                  maxImages={9}
-                  onAddImage={selectMedia}
                 />
               )}
             </View>

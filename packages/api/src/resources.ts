@@ -71,7 +71,7 @@ export async function uploadResourceFiles<TFile extends UploadFile>(
     options.onFileStart?.(entry)
 
     try {
-      const metadata = await options.resolveMetadata?.(entry.file)
+      const metadata = await options.resolveMetadata?.(entry.file, entry)
       const resource = await resourcesApi.upload(entry.file, {
         memoId: options.memoId,
         metadata,

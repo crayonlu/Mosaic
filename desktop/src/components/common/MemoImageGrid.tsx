@@ -325,6 +325,7 @@ export function MemoImageGrid({
 }: MemoImageGridProps) {
   const [reorderedResources, setReorderedResources] = useState<Resource[]>(resources)
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewResources, setPreviewResources] = useState<Resource[]>([])
   const [previewIndex, setPreviewIndex] = useState(0)
 
   useEffect(() => {
@@ -346,7 +347,20 @@ export function MemoImageGrid({
   }
 
   const openPreview = (index: number) => {
-    setPreviewIndex(index)
+    const selectedResource = displayResources[index]
+    if (!selectedResource) {
+      return
+    }
+
+    const sameTypeResources = displayResources.filter(
+      resource => resource.resourceType === selectedResource.resourceType
+    )
+    const sameTypeIndex = sameTypeResources.findIndex(
+      resource => resource.id === selectedResource.id
+    )
+
+    setPreviewResources(sameTypeResources)
+    setPreviewIndex(sameTypeIndex === -1 ? 0 : sameTypeIndex)
     setPreviewOpen(true)
     onImageClick?.(index)
   }
@@ -410,7 +424,7 @@ export function MemoImageGrid({
       <MediaPreviewDialog
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
-        resources={displayResources}
+        resources={previewResources}
         imageUrls={imageUrls}
         videoUrls={videoUrls}
         initialIndex={previewIndex}

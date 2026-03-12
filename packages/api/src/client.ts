@@ -3,11 +3,15 @@ import axios from 'axios'
 import type { ApiError, RefreshTokenResponse, UploadFile, UploadFileOptions } from './types'
 
 const REQUEST_TIMEOUT = 30000
-const UPLOAD_TIMEOUT = 60000
+const UPLOAD_TIMEOUT = 300000
 const REFRESH_COOLDOWN = 5000
 
 function isNativeUploadFile(file: UploadFile): file is Extract<UploadFile, { uri: string }> {
   return 'uri' in file
+}
+
+function isReactNativeRuntime(): boolean {
+  return typeof navigator !== 'undefined' && navigator.product === 'ReactNative'
 }
 
 function getUploadFileSize(file: UploadFile): number | null {
@@ -20,6 +24,23 @@ function getUploadFileSize(file: UploadFile): number | null {
   }
 
   return null
+}
+
+function tryParseJson<T>(value: string): T | undefined {
+  try {
+    return JSON.parse(value) as T
+  } catch {
+    return undefined
+  }
+}
+
+function summarizeTextResponse(value: string): string {
+  const normalized = value.replace(/\s+/g, ' ').trim()
+  if (!normalized) {
+    return 'empty response body'
+  }
+
+  return normalized.slice(0, 160)
 }
 
 export interface TokenStorage {
@@ -143,6 +164,121 @@ export class ApiClient {
     }
   }
 
+  private buildAbsoluteUrl(path: string): string {
+    if (/^https?:\/\//i.test(path)) {
+      return path
+    }
+
+    return `${this.baseUrl}${path.startsWith('/') ? path : `/${path}`}`
+  }
+
+  private async uploadNativeFileWithXhr<T>(
+    path: string,
+    file: Extract<UploadFile, { uri: string }>,
+    options: UploadFileOptions = {}
+  ): Promise<T> {
+    const { additionalFields, onProgress } = options
+    const formData = new FormData()
+
+    formData.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.type,
+    } as unknown as Blob)
+
+    if (additionalFields) {
+      Object.entries(additionalFields).forEach(([key, value]) => {
+        formData.append(key, value)
+      })
+    }
+
+    const url = this.buildAbsoluteUrl(path)
+    const token = this.tokenStorage ? await this.tokenStorage.getAccessToken() : null
+
+    return new Promise<T>((resolve, reject) => {
+      const XmlHttpRequest = globalThis.XMLHttpRequest
+      if (typeof XmlHttpRequest !== 'function') {
+        reject({ error: 'Do not support native upload', status: 0 } as ApiError)
+        return
+      }
+
+      const xhr = new XmlHttpRequest()
+      xhr.open('POST', url)
+      xhr.timeout = UPLOAD_TIMEOUT
+      xhr.responseType = 'text'
+      xhr.setRequestHeader('Accept', 'application/json')
+
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+      }
+
+      if (xhr.upload && onProgress) {
+        xhr.upload.onprogress = event => {
+          const total = event.lengthComputable ? event.total : getUploadFileSize(file)
+          onProgress({
+            loaded: event.loaded,
+            total: total ?? null,
+            percent:
+              total && total > 0 ? Math.min(100, Math.round((event.loaded / total) * 100)) : 0,
+          })
+        }
+      }
+
+      xhr.onerror = () => {
+        reject({ error: 'Network Error', status: 0 } as ApiError)
+      }
+
+      xhr.ontimeout = () => {
+        reject({ error: 'Upload Timeout', status: 408 } as ApiError)
+      }
+
+      xhr.onload = () => {
+        const rawResponse = typeof xhr.response === 'string' ? xhr.response : xhr.responseText
+        const responseText = rawResponse?.trim() ?? ''
+        const parsedBody = responseText ? tryParseJson<T | ApiError>(responseText) : undefined
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          if (parsedBody !== undefined) {
+            resolve(parsedBody as T)
+            return
+          }
+
+          reject({
+            error: `Unexpected non-JSON upload response: ${summarizeTextResponse(responseText)}`,
+            status: xhr.status || 0,
+          } as ApiError)
+          return
+        }
+
+        if (parsedBody && typeof parsedBody === 'object' && 'error' in parsedBody) {
+          reject(parsedBody)
+          return
+        }
+
+        reject({
+          error:
+            xhr.statusText ||
+            (responseText
+              ? `Upload Failed: ${summarizeTextResponse(responseText)}`
+              : 'Upload Failed'),
+          status: xhr.status || 0,
+        } as ApiError)
+      }
+
+      try {
+        xhr.send(formData)
+      } catch (error) {
+        if ((error as ApiError).error) {
+          reject(error)
+          return
+        }
+
+        const message = error instanceof Error ? error.message : 'Upload Failed'
+        reject({ error: message, status: 0 } as ApiError)
+      }
+    })
+  }
+
   async request<T>(
     method: string,
     path: string,
@@ -182,7 +318,7 @@ export class ApiClient {
       }
 
       if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
-        throw { error: '请求超时', status: 408 } as ApiError
+        throw { error: 'Request Timeout', status: 408 } as ApiError
       }
 
       if (axios.isAxiosError(error) && error.response) {
@@ -192,7 +328,7 @@ export class ApiClient {
         }
 
         throw {
-          error: error.response.statusText || '请求失败',
+          error: error.response.statusText || 'Request Failed',
           status: error.response.status,
         } as ApiError
       }
@@ -201,11 +337,27 @@ export class ApiClient {
         throw error
       }
 
-      throw { error: '网络错误', status: 0 } as ApiError
+      throw { error: 'Network Error', status: 0 } as ApiError
     }
   }
 
   async uploadFile<T>(path: string, file: UploadFile, options: UploadFileOptions = {}): Promise<T> {
+    if (isReactNativeRuntime() && isNativeUploadFile(file)) {
+      try {
+        return await this.uploadNativeFileWithXhr<T>(path, file, options)
+      } catch (error) {
+        if ((error as ApiError).status === 401) {
+          const refreshed = await this.refreshTokenIfNeeded()
+          if (refreshed) {
+            return this.uploadFile<T>(path, file, options)
+          }
+          throw { error: 'Unauthorized', status: 401 } as ApiError
+        }
+
+        throw error
+      }
+    }
+
     const { additionalFields, onProgress } = options
     const formData = new FormData()
 
@@ -266,7 +418,7 @@ export class ApiClient {
       }
 
       if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
-        throw { error: '上传超时', status: 408 } as ApiError
+        throw { error: 'Upload Timeout', status: 408 } as ApiError
       }
 
       if (axios.isAxiosError(error) && error.response) {
@@ -276,8 +428,15 @@ export class ApiClient {
         }
 
         throw {
-          error: error.response.statusText || '上传失败',
+          error: error.response.statusText || 'Upload Failed',
           status: error.response.status,
+        } as ApiError
+      }
+
+      if (axios.isAxiosError(error)) {
+        throw {
+          error: error.message || 'Network Error',
+          status: 0,
         } as ApiError
       }
 
@@ -285,7 +444,7 @@ export class ApiClient {
         throw error
       }
 
-      throw { error: '上传失败', status: 0 } as ApiError
+      throw { error: 'Upload Failed', status: 0 } as ApiError
     }
   }
 
