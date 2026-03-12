@@ -128,9 +128,9 @@ export class LocalPushService {
     if (await this.isPushDisabledByUser()) return
 
     const { registerSystemNotifications } = await import('./system')
-    const { registerCustomNotifications } = await import('./custom')
+    // const { registerCustomNotifications } = await import('./custom')
 
     await registerSystemNotifications()
-    await registerCustomNotifications()
+    // await registerCustomNotifications()
   }
 }
