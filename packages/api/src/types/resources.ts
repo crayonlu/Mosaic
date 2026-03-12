@@ -1,14 +1,25 @@
+import type { UploadFile, UploadProgress } from './client'
+
 export type ResourceType = 'image' | 'video'
+
+export interface ResourceMetadata {
+  width?: number
+  height?: number
+  durationMs?: number
+  thumbnailTimeMs?: number
+}
 
 export interface Resource {
   id: string
-  memoId: string
+  memoId: string | null
   filename: string
   resourceType: ResourceType
   mimeType: string
   fileSize: number
   storageType: string
   url: string
+  thumbnailUrl?: string
+  metadata: ResourceMetadata
   createdAt: number
 }
 
@@ -28,10 +39,11 @@ export interface ListResourcesQuery {
 }
 
 export interface CreateResourceRequest {
-  memoId: string
+  memoId?: string
   filename: string
   mimeType: string
   fileSize: number
+  metadata?: ResourceMetadata
 }
 
 export interface PresignedUploadResponse {
@@ -46,4 +58,26 @@ export interface ConfirmUploadRequest {
 
 export interface PresignedUrlResponse {
   url: string
+}
+
+export interface UploadResourceOptions {
+  memoId?: string
+  metadata?: ResourceMetadata
+  onProgress?: (progress: UploadProgress) => void
+}
+
+export interface UploadResourceEntry<TFile extends UploadFile = UploadFile> {
+  id: string
+  file: TFile
+}
+
+export interface UploadResourceBatchOptions<TFile extends UploadFile = UploadFile> {
+  memoId?: string
+  resolveMetadata?: (
+    file: TFile
+  ) => Promise<ResourceMetadata | undefined> | ResourceMetadata | undefined
+  onFileStart?: (entry: UploadResourceEntry<TFile>) => void
+  onFileProgress?: (entry: UploadResourceEntry<TFile>, progress: UploadProgress) => void
+  onFileComplete?: (entry: UploadResourceEntry<TFile>, resource: ResourceResponse) => void
+  onFileError?: (entry: UploadResourceEntry<TFile>, error: unknown) => void
 }

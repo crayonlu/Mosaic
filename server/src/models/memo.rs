@@ -1,5 +1,6 @@
 use serde::de::{self, MapAccess, Visitor};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sqlx::FromRow;
 use std::fmt;
 use uuid::Uuid;
@@ -36,6 +37,8 @@ pub struct ResourceResponse {
     pub storage_type: Option<String>,
     pub storage_path: Option<String>,
     pub url: String,
+    pub thumbnail_url: Option<String>,
+    pub metadata: Value,
     pub created_at: i64,
 }
 

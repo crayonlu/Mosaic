@@ -7,6 +7,7 @@ pub struct Config {
     pub jwt_secret: String,
     pub port: u16,
     pub storage_type: StorageType,
+    pub ffmpeg_binary: String,
     pub local_storage_path: String,
     pub r2_endpoint: Option<String>,
     pub r2_bucket: Option<String>,
@@ -49,6 +50,7 @@ impl Config {
                 .parse()
                 .unwrap_or(8080),
             storage_type,
+            ffmpeg_binary: env::var("FFMPEG_BINARY").unwrap_or_else(|_| "ffmpeg".to_string()),
             local_storage_path: env::var("LOCAL_STORAGE_PATH")
                 .unwrap_or_else(|_| "./storage".to_string()),
             r2_endpoint,

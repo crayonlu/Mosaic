@@ -1,5 +1,6 @@
 use crate::error::AppError;
 use crate::models::{
+    build_thumbnail_route, thumbnail_storage_path,
     CreateDiaryRequest, Diary, DiaryResponse, MemoResourceResponse as ResourceResponse,
     MemoWithResources, PaginatedResponse, Resource, UpdateDiaryRequest,
 };
@@ -221,7 +222,7 @@ impl DiaryService {
 
     async fn get_memo_resources(&self, memo_id: Uuid) -> Result<Vec<ResourceResponse>, AppError> {
         let resources = sqlx::query_as::<_, Resource>(
-            "SELECT id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, created_at
+            "SELECT id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, created_at
              FROM resources WHERE memo_id = $1 ORDER BY created_at ASC",
         )
         .bind(memo_id)
@@ -240,6 +241,9 @@ impl DiaryService {
                 storage_type: Some(r.storage_type),
                 storage_path: Some(r.storage_path),
                 url: format!("/api/resources/{}/download", r.id),
+                thumbnail_url: thumbnail_storage_path(&r.metadata)
+                    .map(|_| build_thumbnail_route(r.id)),
+                metadata: r.metadata,
                 created_at: r.created_at,
             })
             .collect())

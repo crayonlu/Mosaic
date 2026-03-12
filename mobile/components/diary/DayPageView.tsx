@@ -5,10 +5,20 @@ import { toast } from '@/components/ui/Toast'
 import { useDiary, useUpdateDiary } from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { useThemeStore } from '@/stores/theme-store'
-import { resourcesApi } from '@mosaic/api'
+import { apiClient, resourcesApi } from '@mosaic/api'
 import { Image } from 'expo-image'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+
+function toAbsoluteUrl(url?: string): string | undefined {
+  if (!url) return undefined
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+
+  const baseUrl = apiClient.getBaseUrl()
+  return baseUrl ? `${baseUrl}${url}` : url
+}
 
 interface DayPageViewProps {
   date: string
@@ -46,11 +56,24 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
   }, [date])
 
   const displayCoverImageId = isEditing ? coverImageIdDraft : diary?.coverImageId
+  const coverResource = useMemo(
+    () =>
+      archivedMemos
+        .flatMap(memo => memo.resources)
+        .find(resource => resource.id === displayCoverImageId),
+    [archivedMemos, displayCoverImageId]
+  )
 
   const coverImageUrl = useMemo(() => {
     if (!displayCoverImageId) return undefined
+    if (coverResource?.resourceType === 'video') {
+      return toAbsoluteUrl(coverResource.thumbnailUrl)
+    }
+    if (coverResource) {
+      return resourcesApi.getDownloadUrl(coverResource.id)
+    }
     return resourcesApi.getDownloadUrl(displayCoverImageId)
-  }, [displayCoverImageId])
+  }, [coverResource, displayCoverImageId])
 
   const hasChanges =
     summaryDraft.trim() !== (diary?.summary ?? '').trim() ||

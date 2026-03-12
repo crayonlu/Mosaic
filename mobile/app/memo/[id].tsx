@@ -1,18 +1,30 @@
 import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
 import { TextEditor } from '@/components/editor/TextEditor'
 import { TagInput } from '@/components/tag/TagInput'
-import { Button, DraggableImageGrid, Loading, toast } from '@/components/ui'
+import { Button, DraggableImageGrid, Loading, UploadProgressList, toast } from '@/components/ui'
+import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { useConnection } from '@/hooks/use-connection'
 import { useErrorHandler } from '@/hooks/use-error-handler'
+import { createSelectedMediaItems, uploadSelectedMedia } from '@/lib/media/upload'
 import { useDeleteMemo, useMemo as useQueryMemo, useUpdateMemo } from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/theme-store'
-import { resourcesApi, type ResourceResponse } from '@mosaic/api'
+import { apiClient, resourcesApi, type ResourceResponse } from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
-import { ArrowLeft, Image } from 'lucide-react-native'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ImagePlus } from 'lucide-react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+
+function toAbsoluteUrl(url?: string): string | undefined {
+  if (!url) return undefined
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+
+  const baseUrl = apiClient.getBaseUrl()
+  return baseUrl ? `${baseUrl}${url}` : url
+}
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -27,8 +39,11 @@ export default function MemoDetailScreen() {
   const [content, setContent] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
-  const [editingImageResources, setEditingImageResources] = useState<ResourceResponse[]>([])
+  const [editingResources, setEditingResources] = useState<ResourceResponse[]>([])
   const [uploading, setUploading] = useState(false)
+  const [uploadProgressItems, setUploadProgressItems] = useState<
+    { id: string; name: string; type: 'image' | 'video'; progress: number }[]
+  >([])
   const wasEditingRef = useRef(false)
 
   const isPending = isUpdating || isDeleting || uploading
@@ -38,36 +53,49 @@ export default function MemoDetailScreen() {
       const headers = await getBearerAuthHeaders()
       setAuthHeaders(headers)
     }
+
     loadAuthHeaders()
   }, [])
 
   useEffect(() => {
     if (editing && !wasEditingRef.current && memo?.resources) {
-      const existingImages = memo.resources.filter(r => r.resourceType === 'image')
-      setEditingImageResources(existingImages)
+      setEditingResources(memo.resources)
     }
 
     wasEditingRef.current = editing
   }, [editing, memo?.resources])
 
-  const getImageUrl = useCallback((resource: ResourceResponse) => {
-    return resourcesApi.getDownloadUrl(resource.id)
-  }, [])
+  const toMediaItem = useCallback(
+    (resource: ResourceResponse): MediaGridItem => ({
+      key: resource.id,
+      uri: resourcesApi.getDownloadUrl(resource.id),
+      type: resource.resourceType,
+      thumbnailUri:
+        resource.resourceType === 'video' ? toAbsoluteUrl(resource.thumbnailUrl) : undefined,
+    }),
+    []
+  )
 
-  const imageUris = editingImageResources.map(getImageUrl)
+  const editingMediaItems = useMemo(
+    () => editingResources.map(toMediaItem),
+    [editingResources, toMediaItem]
+  )
 
-  const handleImagesChange = useCallback(
-    (nextImageUris: string[]) => {
-      const nextImageSet = new Set(nextImageUris)
-      const nextResources = nextImageUris
-        .map(uri => editingImageResources.find(resource => getImageUrl(resource) === uri))
+  const memoMediaItems = useMemo(
+    () => (memo?.resources ?? []).map(toMediaItem),
+    [memo?.resources, toMediaItem]
+  )
+
+  const handleMediaChange = useCallback(
+    (nextItems: MediaGridItem[]) => {
+      const nextIds = new Set(nextItems.map(item => item.key))
+      const nextResources = nextItems
+        .map(item => editingResources.find(resource => resource.id === item.key))
         .filter((resource): resource is ResourceResponse => Boolean(resource))
 
-      const removedResources = editingImageResources.filter(
-        resource => !nextImageSet.has(getImageUrl(resource))
-      )
+      const removedResources = editingResources.filter(resource => !nextIds.has(resource.id))
 
-      setEditingImageResources(nextResources)
+      setEditingResources(nextResources)
 
       if (removedResources.length > 0 && canUseNetwork) {
         void (async () => {
@@ -76,53 +104,63 @@ export default function MemoDetailScreen() {
               await resourcesApi.delete(resource.id)
             } catch (error) {
               handleError(error)
-              toast.error('错误', '删除图片失败')
+              toast.error('错误', '删除媒体失败')
             }
           }
         })()
       }
     },
-    [editingImageResources, canUseNetwork, getImageUrl, handleError]
+    [editingResources, canUseNetwork, handleError]
   )
 
-  const selectImages = async () => {
+  const selectMedia = async () => {
     const { launchImageLibraryAsync } = await import('expo-image-picker')
     const result = await launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ['images', 'videos'],
       allowsMultipleSelection: true,
       quality: 0.8,
     })
 
-    if (!result.canceled) {
-      const newUris = result.assets.map(asset => asset.uri)
-      if (!memo || !canUseNetwork || newUris.length === 0) {
-        return
-      }
+    if (result.canceled) {
+      return
+    }
 
-      setUploading(true)
-      try {
-        const uploadedResources: ResourceResponse[] = []
-        for (const uri of newUris) {
-          const resource = await resourcesApi.upload(
-            {
-              uri,
-              name: `image_${Date.now()}.jpg`,
-              type: 'image/jpeg',
-            },
-            memo.id
+    const remainingSlots = Math.max(0, 9 - editingResources.length)
+    const selectedItems = await createSelectedMediaItems(result.assets.slice(0, remainingSlots))
+
+    if (!memo || !canUseNetwork || selectedItems.length === 0) {
+      return
+    }
+
+    setUploadProgressItems(
+      selectedItems.map(item => ({
+        id: item.key,
+        name: item.filename,
+        type: item.type,
+        progress: 0,
+      }))
+    )
+
+    setUploading(true)
+    try {
+      const uploadedResources = await uploadSelectedMedia(selectedItems, {
+        memoId: memo.id,
+        onFileProgress: (item, progress) => {
+          setUploadProgressItems(prev =>
+            prev.map(entry =>
+              entry.id === item.key ? { ...entry, progress: progress.percent } : entry
+            )
           )
-          uploadedResources.push(resource)
-        }
+        },
+      })
 
-        setEditingImageResources(prev => [...prev, ...uploadedResources].slice(0, 9))
-      } catch (error) {
-        handleError(error)
-        toast.error('错误', '上传图片失败')
-      } finally {
-        setUploading(false)
-      }
-    } else {
-      console.log('[MemoEditUpload] selectImages canceled')
+      setEditingResources(prev => [...prev, ...uploadedResources].slice(0, 9))
+    } catch (error) {
+      handleError(error)
+      toast.error('错误', '上传媒体失败')
+    } finally {
+      setUploading(false)
+      setUploadProgressItems([])
     }
   }
 
@@ -130,11 +168,13 @@ export default function MemoDetailScreen() {
     if (!memo || !canUseNetwork || isPending) return
 
     try {
-      const allResourceIds = editingImageResources.map(resource => resource.id)
-
       await updateMemo({
         id: memo.id,
-        data: { content: content.trim(), tags, resourceIds: allResourceIds },
+        data: {
+          content: content.trim(),
+          tags,
+          resourceIds: editingResources.map(resource => resource.id),
+        },
       })
       setEditing(false)
       toast.success('成功', '已更新')
@@ -142,16 +182,8 @@ export default function MemoDetailScreen() {
       handleError(error)
       toast.error('错误', '更新失败')
     }
-  }, [
-    memo,
-    content,
-    tags,
-    editingImageResources,
-    canUseNetwork,
-    isPending,
-    updateMemo,
-    handleError,
-  ])
+  }, [memo, canUseNetwork, isPending, updateMemo, content, tags, editingResources, handleError])
+
   const handleDelete = useCallback(() => {
     if (!memo) return
 
@@ -255,24 +287,25 @@ export default function MemoDetailScreen() {
             </View>
             <View style={styles.imageUploadContainer}>
               <View style={styles.imageUploadHeader}>
-                <Text style={{ color: theme.textSecondary }}>图片</Text>
+                <Text style={{ color: theme.textSecondary }}>媒体</Text>
                 <Button
-                  title="添加图片"
-                  onPress={selectImages}
+                  title="添加媒体"
+                  onPress={selectMedia}
                   variant="ghost"
                   size="small"
-                  leftIcon={<Image size={16} color={theme.text} />}
-                  disabled={!canUseNetwork || imageUris.length >= 9 || uploading}
+                  leftIcon={<ImagePlus size={16} color={theme.text} />}
+                  disabled={!canUseNetwork || editingResources.length >= 9 || uploading}
                 />
               </View>
-              {imageUris.length > 0 && (
+              <UploadProgressList items={uploadProgressItems} />
+              {editingMediaItems.length > 0 && (
                 <DraggableImageGrid
-                  key={`edit-grid-${imageUris.join('|')}`}
-                  images={imageUris}
+                  key={`edit-grid-${editingMediaItems.map(item => item.key).join('|')}`}
+                  items={editingMediaItems}
                   authHeaders={authHeaders}
-                  onImagesChange={handleImagesChange}
+                  onItemsChange={handleMediaChange}
                   maxImages={9}
-                  onAddImage={selectImages}
+                  onAddImage={selectMedia}
                 />
               )}
             </View>
@@ -282,12 +315,10 @@ export default function MemoDetailScreen() {
             <View style={{ minHeight: 150, padding: 16 }}>
               <MarkdownRenderer content={memo.content} />
             </View>
-            {memo.resources && memo.resources.length > 0 && (
+            {memo.resources.length > 0 && (
               <View style={styles.resourcesContainer}>
                 <DraggableImageGrid
-                  images={memo.resources
-                    .filter(r => r.resourceType === 'image')
-                    .map(r => resourcesApi.getDownloadUrl(r.id))}
+                  items={memoMediaItems}
                   authHeaders={authHeaders}
                   draggable={false}
                 />
@@ -296,7 +327,7 @@ export default function MemoDetailScreen() {
           </>
         )}
 
-        {!editing && memo.tags && memo.tags.length > 0 && (
+        {!editing && memo.tags.length > 0 && (
           <View style={styles.tagsContainer}>
             {memo.tags.map((tag, index) => (
               <View

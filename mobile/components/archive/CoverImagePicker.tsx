@@ -1,20 +1,36 @@
 import { getBearerAuthHeaders } from '@/lib/services/api-auth'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@mosaic/api'
-import { resourcesApi } from '@mosaic/api'
+import { apiClient, resourcesApi } from '@mosaic/api'
 import { Image } from 'expo-image'
-import { Check } from 'lucide-react-native'
+import { Check, Play } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 
 const { width } = Dimensions.get('window')
 const IMAGE_SIZE = (width - 48) / 3
 
+function toAbsoluteUrl(url?: string): string | undefined {
+  if (!url) return undefined
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+
+  const baseUrl = apiClient.getBaseUrl()
+  return baseUrl ? `${baseUrl}${url}` : url
+}
+
 interface CoverImagePickerProps {
   memos: MemoWithResources[]
   selectedCoverId?: string
   onSelect: (resourceId: string) => void
   onClear: () => void
+}
+
+type CoverMediaItem = {
+  resourceId: string
+  type: 'image' | 'video'
+  url: string
 }
 
 export function CoverImagePicker({
@@ -34,17 +50,34 @@ export function CoverImagePicker({
     loadAuthHeaders()
   }, [])
 
-  const allImages = memos.flatMap(memo =>
-    memo.resources
-      .filter(r => r.resourceType === 'image')
-      .map(resource => ({
-        resourceId: resource.id,
-        memoId: memo.id,
-        url: resourcesApi.getDownloadUrl(resource.id),
-      }))
+  const allImages: CoverMediaItem[] = memos.flatMap(memo =>
+    memo.resources.flatMap((resource): CoverMediaItem[] => {
+      if (resource.resourceType === 'image') {
+        return [
+          {
+            resourceId: resource.id,
+            type: 'image',
+            url: resourcesApi.getDownloadUrl(resource.id),
+          },
+        ]
+      }
+
+      const thumbnailUrl = toAbsoluteUrl(resource.thumbnailUrl)
+      if (!thumbnailUrl) {
+        return []
+      }
+
+      return [
+        {
+          resourceId: resource.id,
+          type: 'video',
+          url: thumbnailUrl,
+        },
+      ]
+    })
   )
 
-  const renderImage = ({ item }: { item: { resourceId: string; memoId: string; url: string } }) => {
+  const renderImage = ({ item }: { item: CoverMediaItem }) => {
     const isSelected = item.resourceId === selectedCoverId
     return (
       <Pressable onPress={() => onSelect(item.resourceId)} style={[styles.imageContainer]}>
@@ -60,6 +93,11 @@ export function CoverImagePicker({
               <Check size={12} color="#fff" strokeWidth={3} />
             </View>
           </>
+        )}
+        {item.type === 'video' && (
+          <View style={styles.videoBadge}>
+            <Play size={12} color="#fff" fill="#fff" />
+          </View>
         )}
       </Pressable>
     )
@@ -138,6 +176,17 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoBadge: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
     alignItems: 'center',
     justifyContent: 'center',
   },

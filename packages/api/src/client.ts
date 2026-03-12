@@ -1,10 +1,26 @@
 import type { QueryClient } from '@tanstack/react-query'
 import axios from 'axios'
-import type { ApiError, RefreshTokenResponse, UploadFile } from './types'
+import type { ApiError, RefreshTokenResponse, UploadFile, UploadFileOptions } from './types'
 
 const REQUEST_TIMEOUT = 30000
 const UPLOAD_TIMEOUT = 60000
 const REFRESH_COOLDOWN = 5000
+
+function isNativeUploadFile(file: UploadFile): file is Extract<UploadFile, { uri: string }> {
+  return 'uri' in file
+}
+
+function getUploadFileSize(file: UploadFile): number | null {
+  if (typeof file.size === 'number' && Number.isFinite(file.size)) {
+    return file.size
+  }
+
+  if (!isNativeUploadFile(file) && typeof file.data.size === 'number') {
+    return file.data.size
+  }
+
+  return null
+}
 
 export interface TokenStorage {
   getAccessToken(): Promise<string | null>
@@ -189,17 +205,19 @@ export class ApiClient {
     }
   }
 
-  async uploadFile<T>(
-    path: string,
-    file: UploadFile,
-    additionalFields?: Record<string, string>
-  ): Promise<T> {
+  async uploadFile<T>(path: string, file: UploadFile, options: UploadFileOptions = {}): Promise<T> {
+    const { additionalFields, onProgress } = options
     const formData = new FormData()
-    formData.append('file', {
-      uri: file.uri,
-      name: file.name,
-      type: file.type,
-    } as unknown as Blob)
+
+    if (isNativeUploadFile(file)) {
+      formData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
+      } as unknown as Blob)
+    } else {
+      formData.append('file', file.data, file.name)
+    }
 
     if (additionalFields) {
       Object.entries(additionalFields).forEach(([key, value]) => {
@@ -215,56 +233,6 @@ export class ApiClient {
       }
     }
 
-    const isReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative'
-    const requestUrl = path.startsWith('http') ? path : `${this.baseUrl}${path}`
-
-    if (isReactNative) {
-      const AbortControllerCtor = globalThis.AbortController
-      const controller = AbortControllerCtor ? new AbortControllerCtor() : undefined
-      const timeout = setTimeout(() => controller?.abort(), UPLOAD_TIMEOUT)
-
-      try {
-        const response = await fetch(requestUrl, {
-          method: 'POST',
-          headers,
-          body: formData,
-          signal: controller?.signal,
-        })
-
-        if (response.status === 204) {
-          return undefined as T
-        }
-
-        const responseText = await response.text()
-        const responseData = responseText ? JSON.parse(responseText) : undefined
-
-        if (!response.ok) {
-          if (responseData && typeof responseData.error === 'string') {
-            throw responseData as ApiError
-          }
-
-          throw {
-            error: response.statusText || '上传失败',
-            status: response.status,
-          } as ApiError
-        }
-
-        return responseData as T
-      } catch (error) {
-        if ((error as { name?: string }).name === 'AbortError') {
-          throw { error: '上传超时', status: 408 } as ApiError
-        }
-
-        if ((error as ApiError).error) {
-          throw error
-        }
-
-        throw { error: '上传失败', status: 0 } as ApiError
-      } finally {
-        clearTimeout(timeout)
-      }
-    }
-
     try {
       const response = await this.httpClient.request<T>({
         url: path,
@@ -272,10 +240,31 @@ export class ApiClient {
         headers,
         data: formData,
         timeout: UPLOAD_TIMEOUT,
+        onUploadProgress: event => {
+          if (!onProgress) {
+            return
+          }
+
+          const total = event.total ?? getUploadFileSize(file)
+          onProgress({
+            loaded: event.loaded,
+            total: total ?? null,
+            percent:
+              total && total > 0 ? Math.min(100, Math.round((event.loaded / total) * 100)) : 0,
+          })
+        },
       })
 
       return response.data
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        const refreshed = await this.refreshTokenIfNeeded()
+        if (refreshed) {
+          return this.uploadFile<T>(path, file, options)
+        }
+        throw { error: 'Unauthorized', status: 401 } as ApiError
+      }
+
       if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
         throw { error: '上传超时', status: 408 } as ApiError
       }

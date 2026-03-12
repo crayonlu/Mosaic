@@ -1,49 +1,70 @@
 import { toast } from '@/hooks/use-toast'
-import type { ResourceResponse } from '@mosaic/api'
-import { apiClient } from '@mosaic/api'
+import { extractBrowserMediaMetadata, toBrowserUploadFile } from '@/utils/media-file'
+import type { ResourceResponse, UploadProgress } from '@mosaic/api'
+import { uploadResourceFiles } from '@mosaic/api'
 
-export async function uploadFiles(files: File[], memoId?: string): Promise<ResourceResponse[]> {
+interface DesktopUploadCallbacks {
+  onFileStart?: (file: File) => void
+  onFileProgress?: (file: File, progress: UploadProgress) => void
+  onFileComplete?: (file: File, resource: ResourceResponse) => void
+  onFileError?: (file: File, error: unknown) => void
+}
+
+export async function uploadFiles(
+  files: File[],
+  memoId?: string,
+  callbacks: DesktopUploadCallbacks = {}
+): Promise<ResourceResponse[]> {
   if (files.length === 0) return []
 
-  const accessToken = await apiClient.getTokenStorage()?.getAccessToken()
-  const baseUrl = apiClient.getBaseUrl()
-  const resources: ResourceResponse[] = []
+  const filesById = new Map(files.map(file => [file.name, file]))
+  const entries = files.map(file => ({
+    id: file.name,
+    file: toBrowserUploadFile(file),
+  }))
 
-  for (const file of files) {
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('memoId', memoId || '')
-
-      const response = await fetch(`${baseUrl}/api/resources/upload`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`上传失败: ${errorText}`)
+  return uploadResourceFiles(entries, {
+    memoId,
+    resolveMetadata: file => {
+      const originalFile = filesById.get(file.name)
+      return originalFile ? extractBrowserMediaMetadata(originalFile) : undefined
+    },
+    onFileStart: entry => {
+      const originalFile = filesById.get(entry.id)
+      if (originalFile) {
+        callbacks.onFileStart?.(originalFile)
       }
-
-      const resource: ResourceResponse = await response.json()
-      resources.push(resource)
-    } catch (error) {
-      console.error(`上传文件 ${file.name} 失败:`, error)
-      toast.error(`上传文件 ${file.name} 失败`)
-    }
-  }
-
-  return resources
+    },
+    onFileProgress: (entry, progress) => {
+      const originalFile = filesById.get(entry.id)
+      if (originalFile) {
+        callbacks.onFileProgress?.(originalFile, progress)
+      }
+    },
+    onFileComplete: (entry, resource) => {
+      const originalFile = filesById.get(entry.id)
+      if (originalFile) {
+        callbacks.onFileComplete?.(originalFile, resource)
+      }
+    },
+    onFileError: (entry, error) => {
+      const originalFile = filesById.get(entry.id)
+      const filename = originalFile?.name ?? entry.file.name
+      console.error(`上传文件 ${filename} 失败:`, error)
+      toast.error(`上传文件 ${filename} 失败`)
+      if (originalFile) {
+        callbacks.onFileError?.(originalFile, error)
+      }
+    },
+  })
 }
 
 export async function uploadFilesAndGetResourceIds(
   files: File[],
-  memoId?: string
+  memoId?: string,
+  callbacks?: DesktopUploadCallbacks
 ): Promise<string[]> {
-  const resources = await uploadFiles(files, memoId)
+  const resources = await uploadFiles(files, memoId, callbacks)
   return resources.map(resource => resource.id)
 }
 

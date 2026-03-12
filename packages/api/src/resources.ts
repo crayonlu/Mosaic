@@ -7,6 +7,9 @@ import type {
   PresignedUploadResponse,
   ResourceResponse,
   UploadFile,
+  UploadResourceBatchOptions,
+  UploadResourceEntry,
+  UploadResourceOptions,
   UserResponse,
 } from './types'
 
@@ -19,8 +22,21 @@ export const resourcesApi = {
     return apiClient.get<ResourceResponse>(`/api/resources/${id}`)
   },
 
-  upload(file: UploadFile, memoId: string): Promise<ResourceResponse> {
-    return apiClient.uploadFile<ResourceResponse>('/api/resources/upload', file, { memoId })
+  upload(file: UploadFile, options: UploadResourceOptions = {}): Promise<ResourceResponse> {
+    const additionalFields: Record<string, string> = {}
+
+    if (options.memoId) {
+      additionalFields.memoId = options.memoId
+    }
+
+    if (options.metadata) {
+      additionalFields.metadata = JSON.stringify(options.metadata)
+    }
+
+    return apiClient.uploadFile<ResourceResponse>('/api/resources/upload', file, {
+      additionalFields,
+      onProgress: options.onProgress,
+    })
   },
 
   presignedUpload(data: CreateResourceRequest): Promise<PresignedUploadResponse> {
@@ -43,4 +59,32 @@ export const resourcesApi = {
     const baseUrl = apiClient.getBaseUrl()
     return `${baseUrl}/api/resources/${id}/download`
   },
+}
+
+export async function uploadResourceFiles<TFile extends UploadFile>(
+  entries: UploadResourceEntry<TFile>[],
+  options: UploadResourceBatchOptions<TFile> = {}
+): Promise<ResourceResponse[]> {
+  const uploadedResources: ResourceResponse[] = []
+
+  for (const entry of entries) {
+    options.onFileStart?.(entry)
+
+    try {
+      const metadata = await options.resolveMetadata?.(entry.file)
+      const resource = await resourcesApi.upload(entry.file, {
+        memoId: options.memoId,
+        metadata,
+        onProgress: progress => options.onFileProgress?.(entry, progress),
+      })
+
+      uploadedResources.push(resource)
+      options.onFileComplete?.(entry, resource)
+    } catch (error) {
+      options.onFileError?.(entry, error)
+      throw error
+    }
+  }
+
+  return uploadedResources
 }
