@@ -19,6 +19,7 @@ FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y \
     libpq5 \
+    ffmpeg \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -s /bin/bash appuser
