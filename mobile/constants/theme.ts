@@ -14,7 +14,7 @@ export interface Theme {
 
 export const LightTheme: Theme = {
   background: '#FFF5EB',
-  surface: '#FFF7EF',
+  surface: '#F4E7DA',
   text: '#2D2D2D',
   textSecondary: '#757575',
   border: 'rgba(0, 0, 0, 0.08)',
