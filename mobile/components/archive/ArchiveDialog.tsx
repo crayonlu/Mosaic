@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    maxHeight: '90%',
+    maxHeight: '70%',
     overflow: 'hidden',
     borderTopWidth: 1,
   },

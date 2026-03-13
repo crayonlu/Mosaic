@@ -22,9 +22,17 @@ import {
   Sun,
 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated'
 
 const appVersion = Constants.expoConfig?.version ?? 'unknown'
+const expandLayoutTransition = LinearTransition.duration(220)
 
 const localPush = LocalPushService.getInstance()
 
@@ -64,6 +72,10 @@ export default function SettingsScreen() {
     loadAIConfig()
     loadPushStatus()
   }, [])
+
+  const toggleSectionWithAnimation = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+    setter(prev => !prev)
+  }
 
   const loadAIConfig = async () => {
     const config = await getAIConfig()
@@ -211,7 +223,7 @@ export default function SettingsScreen() {
                   duration: 10000,
                 })
               }}
-              leftIcon={<LogOut size={18} color="#FFFFFF" />}
+              leftIcon={<LogOut size={18} color={theme.text} />}
             />
           </TouchableOpacity>
         </View>
@@ -233,7 +245,7 @@ export default function SettingsScreen() {
           </Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              {themeMode === 'light' ? '使用浅色主题' : '使用深色主题'}
+              点击切换主题
             </Text>
           </View>
         </TouchableOpacity>
@@ -246,7 +258,7 @@ export default function SettingsScreen() {
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <TouchableOpacity
           style={[styles.menuItem, showAISettings && { borderBottomColor: theme.border }]}
-          onPress={() => setShowAISettings(!showAISettings)}
+          onPress={() => toggleSectionWithAnimation(setShowAISettings)}
         >
           <Sparkles size={18} color={theme.text} />
           <Text style={[styles.menuItemText, { color: theme.text }]}>AI 配置</Text>
@@ -257,7 +269,12 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
         {showAISettings && aiConfig && (
-          <View style={styles.aiSettings}>
+          <Animated.View
+            entering={FadeIn.duration(400)}
+            exiting={FadeOut.duration(240)}
+            layout={expandLayoutTransition}
+            style={styles.aiSettings}
+          >
             <View style={styles.settingRow}>
               <View style={styles.providerButtons}>
                 <TouchableOpacity
@@ -326,7 +343,7 @@ export default function SettingsScreen() {
               onPress={handleSaveAIConfig}
               loading={savingAI}
             />
-          </View>
+          </Animated.View>
         )}
       </View>
     </View>
@@ -337,9 +354,7 @@ export default function SettingsScreen() {
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => {
-            setShowPermissionSettings(!showPermissionSettings)
-          }}
+          onPress={() => toggleSectionWithAnimation(setShowPermissionSettings)}
         >
           <ShieldCheck size={18} color={theme.text} />
           <Text style={[styles.menuItemText, { color: theme.text }]}>权限管理</Text>
@@ -350,7 +365,12 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
         {showPermissionSettings && (
-          <View style={styles.permissionSettings}>
+          <Animated.View
+            entering={FadeIn.duration(400)}
+            exiting={FadeOut.duration(240)}
+            layout={expandLayoutTransition}
+            style={styles.permissionSettings}
+          >
             <View>
               <View
                 style={{
@@ -428,7 +448,7 @@ export default function SettingsScreen() {
                 <Plus size={16} color={theme.textSecondary} />
               </View>
             </TouchableOpacity> */}
-          </View>
+          </Animated.View>
         )}
       </View>
     </View>
