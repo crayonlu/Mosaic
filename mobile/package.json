@@ -13,6 +13,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\""
   },
   "dependencies": {
+    "@gorhom/bottom-sheet": "^5.2.8",
     "@mosaic/api": "workspace:*",
     "@mosaic/utils": "workspace:*",
     "@react-native-async-storage/async-storage": "^2.1.0",

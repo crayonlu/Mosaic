@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useMoodStore } from '@/stores/mood-store'
 import { useThemeInit, useThemeStore } from '@/stores/theme-store'
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { getMoodColorWithIntensity } from '@mosaic/utils'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -123,40 +124,42 @@ export default function RootLayout() {
               </>
             )}
             <StatusBar style="auto" />
-            <QueryProvider>
-              {isAuthenticated && !isServerReachable && (
-                <View style={[styles.offlineBanner, { backgroundColor: '#EF4444' }]}>
-                  <Text style={styles.offlineText}>无法连接到服务器</Text>
-                </View>
-              )}
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: {
-                    backgroundColor: isDiariesTab ? 'transparent' : theme.background,
-                  },
-                }}
-              >
-                <Stack.Screen name="setup" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="modal"
-                  options={{
-                    presentation: 'modal',
-                    animation: 'slide_from_bottom',
+            <BottomSheetModalProvider>
+              <QueryProvider>
+                {isAuthenticated && !isServerReachable && (
+                  <View style={[styles.offlineBanner, { backgroundColor: '#EF4444' }]}>
+                    <Text style={styles.offlineText}>无法连接到服务器</Text>
+                  </View>
+                )}
+                <Stack
+                  screenOptions={{
                     headerShown: false,
+                    contentStyle: {
+                      backgroundColor: isDiariesTab ? 'transparent' : theme.background,
+                    },
                   }}
-                />
-              </Stack>
-              <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.noiseOverlay]}>
-                <Image
-                  source={require('../assets/images/noise.png')}
-                  contentFit="cover"
-                  style={[styles.noiseImage, { opacity: 0.6 }]}
-                />
-              </View>
-              <ToastContainer />
-            </QueryProvider>
+                >
+                  <Stack.Screen name="setup" options={{ headerShown: false }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="modal"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                      headerShown: false,
+                    }}
+                  />
+                </Stack>
+                <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.noiseOverlay]}>
+                  <Image
+                    source={require('../assets/images/noise.png')}
+                    contentFit="cover"
+                    style={[styles.noiseImage, { opacity: 0.6 }]}
+                  />
+                </View>
+                <ToastContainer />
+              </QueryProvider>
+            </BottomSheetModalProvider>
           </SafeAreaView>
         </View>
       </SafeAreaProvider>

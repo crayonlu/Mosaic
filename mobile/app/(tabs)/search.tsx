@@ -1,7 +1,7 @@
 import { SearchFilters } from '@/components/search/SearchFilters'
 import { SearchInput } from '@/components/search/SearchInput'
 import { SearchResults } from '@/components/search/SearchResults'
-import { useSearchMemos } from '@/lib/query'
+import { useMemoTags, useSearchMemos } from '@/lib/query'
 import { useThemeStore } from '@/stores/theme-store'
 import type { MemoWithResources } from '@mosaic/api'
 import { router } from 'expo-router'
@@ -46,17 +46,15 @@ export default function SearchScreen() {
     refetch,
   } = useSearchMemos(searchParams)
 
+  const { data: tagsData } = useMemoTags()
+
   const results = useMemo(() => {
     return paginatedData?.pages.flatMap(page => page.items) || []
   }, [paginatedData])
 
   const allTags = useMemo(() => {
-    const tagSet = new Set<string>()
-    results.forEach(memo => {
-      memo.tags.forEach(tag => tagSet.add(tag))
-    })
-    return Array.from(tagSet).sort()
-  }, [results])
+    return (tagsData || []).map(item => item.tag)
+  }, [tagsData])
 
   const handleRefresh = useCallback(() => {
     refetch()
