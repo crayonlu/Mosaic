@@ -1,10 +1,16 @@
 import { Badge } from '@/components/ui'
 import { useThemeStore } from '@/stores/theme-store'
+import {
+    BottomSheetBackdrop,
+    BottomSheetModal,
+    BottomSheetScrollView,
+    type BottomSheetBackdropProps,
+} from '@gorhom/bottom-sheet'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import dayjs from 'dayjs'
-import { Calendar, Filter, X } from 'lucide-react-native'
-import { useState } from 'react'
-import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Calendar, Filter } from 'lucide-react-native'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface SearchFiltersProps {
   selectedTags: string[]
@@ -28,7 +34,7 @@ export function SearchFilters({
   onArchivedChange,
 }: SearchFiltersProps) {
   const { theme } = useThemeStore()
-  const [showFilters, setShowFilters] = useState(false)
+  const sheetRef = useRef<BottomSheetModal>(null)
   const [showStartDatePicker, setShowStartDatePicker] = useState(false)
   const [showEndDatePicker, setShowEndDatePicker] = useState(false)
 
@@ -40,12 +46,27 @@ export function SearchFilters({
   const hasActiveFilters =
     selectedTags.length > 0 || startDate || endDate || isArchived !== undefined
 
+  const snapPoints = useMemo(() => ['50%'], [])
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        opacity={0.35}
+        pressBehavior="close"
+      />
+    ),
+    []
+  )
+
   const handleOpenFilters = () => {
     setTempSelectedTags(selectedTags)
     setTempIsArchived(isArchived)
     setTempStartDate(startDate)
     setTempEndDate(endDate)
-    setShowFilters(true)
+    sheetRef.current?.present()
   }
 
   const toggleTag = (tag: string) => {
@@ -67,11 +88,7 @@ export function SearchFilters({
     onTagsChange(tempSelectedTags)
     onDateRangeChange?.(tempStartDate, tempEndDate)
     onArchivedChange(tempIsArchived)
-    setShowFilters(false)
-  }
-
-  const handleCloseModal = () => {
-    setShowFilters(false)
+    sheetRef.current?.dismiss()
   }
 
   const archiveOptions = [
@@ -136,147 +153,138 @@ export function SearchFilters({
         </TouchableOpacity>
       </View>
 
-      <Modal
-        visible={showFilters}
-        animationType="slide"
-        transparent
-        onRequestClose={handleCloseModal}
+      <BottomSheetModal
+        ref={sheetRef}
+        index={0}
+        snapPoints={snapPoints}
+        enablePanDownToClose
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{ backgroundColor: theme.background }}
+        handleIndicatorStyle={{ backgroundColor: theme.textSecondary }}
+        keyboardBehavior="interactive"
       >
-        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
-          <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>筛选条件</Text>
-              <TouchableOpacity onPress={handleCloseModal}>
-                <X size={24} color={theme.textSecondary} />
-              </TouchableOpacity>
+        <BottomSheetScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>
+          <View style={{flex: 1}}>
+            <View style={styles.filterSection}>
+              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>归档状态</Text>
+              <View style={styles.archiveOptions}>
+                {archiveOptions.map(option => (
+                  <TouchableOpacity
+                    key={String(option.value)}
+                    style={[
+                      styles.archiveOption,
+                      {
+                        backgroundColor: tempIsArchived === option.value ? theme.primary : theme.surface,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                    onPress={() => setTempIsArchived(option.value as boolean | undefined)}
+                  >
+                    <Text
+                      style={[
+                        styles.archiveOptionText,
+                        { color: tempIsArchived === option.value ? '#FFFFFF' : theme.text },
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
-            <ScrollView style={styles.modalBody}>
+            {availableTags.length > 0 && (
               <View style={styles.filterSection}>
-                <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>归档状态</Text>
-                <View style={styles.archiveOptions}>
-                  {archiveOptions.map(option => (
-                    <TouchableOpacity
-                      key={String(option.value)}
-                      style={[
-                        styles.archiveOption,
-                        {
-                          backgroundColor:
-                            tempIsArchived === option.value ? theme.primary : theme.surface,
-                          borderColor: theme.border,
-                        },
-                      ]}
-                      onPress={() => setTempIsArchived(option.value as boolean | undefined)}
-                    >
-                      <Text
-                        style={[
-                          styles.archiveOptionText,
-                          { color: tempIsArchived === option.value ? '#FFFFFF' : theme.text },
-                        ]}
-                      >
-                        {option.label}
-                      </Text>
+                <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>标签</Text>
+                <View style={styles.tagsContainer}>
+                  {availableTags.map(tag => (
+                    <TouchableOpacity key={tag} onPress={() => toggleTag(tag)}>
+                      <Badge text={tag} variant={tempSelectedTags.includes(tag) ? 'solid' : 'outline'} />
                     </TouchableOpacity>
                   ))}
                 </View>
               </View>
+            )}
 
-              {availableTags.length > 0 && (
-                <View style={styles.filterSection}>
-                  <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>标签</Text>
-                  <View style={styles.tagsContainer}>
-                    {availableTags.map(tag => (
-                      <TouchableOpacity key={tag} onPress={() => toggleTag(tag)}>
-                        <Badge
-                          text={tag}
-                          variant={tempSelectedTags.includes(tag) ? 'solid' : 'outline'}
-                        />
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
+            <View style={styles.filterSection}>
+              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>日期范围</Text>
+              <View style={styles.dateRangeContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.dateButton,
+                    { backgroundColor: theme.surface, borderColor: theme.border },
+                  ]}
+                  onPress={() => setShowStartDatePicker(true)}
+                >
+                  <Calendar size={16} color={theme.textSecondary} />
+                  <Text
+                    style={[
+                      styles.dateButtonText,
+                      { color: tempStartDate ? theme.text : theme.textSecondary },
+                    ]}
+                  >
+                    {formatDate(tempStartDate) || '开始日期'}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={[styles.dateSeparator, { color: theme.textSecondary }]}>至</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.dateButton,
+                    { backgroundColor: theme.surface, borderColor: theme.border },
+                  ]}
+                  onPress={() => setShowEndDatePicker(true)}
+                >
+                  <Calendar size={16} color={theme.textSecondary} />
+                  <Text
+                    style={[
+                      styles.dateButtonText,
+                      { color: tempEndDate ? theme.text : theme.textSecondary },
+                    ]}
+                  >
+                    {formatDate(tempEndDate) || '结束日期'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {showStartDatePicker && (
+                <DateTimePicker
+                  value={tempStartDate ? new Date(tempStartDate) : new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={onStartDateChange}
+                  maximumDate={tempEndDate ? new Date(tempEndDate) : new Date()}
+                />
               )}
 
-              <View style={styles.filterSection}>
-                <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>日期范围</Text>
-                <View style={styles.dateRangeContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.dateButton,
-                      { backgroundColor: theme.surface, borderColor: theme.border },
-                    ]}
-                    onPress={() => setShowStartDatePicker(true)}
-                  >
-                    <Calendar size={16} color={theme.textSecondary} />
-                    <Text
-                      style={[
-                        styles.dateButtonText,
-                        { color: tempStartDate ? theme.text : theme.textSecondary },
-                      ]}
-                    >
-                      {formatDate(tempStartDate) || '开始日期'}
-                    </Text>
-                  </TouchableOpacity>
-                  <Text style={[styles.dateSeparator, { color: theme.textSecondary }]}>至</Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.dateButton,
-                      { backgroundColor: theme.surface, borderColor: theme.border },
-                    ]}
-                    onPress={() => setShowEndDatePicker(true)}
-                  >
-                    <Calendar size={16} color={theme.textSecondary} />
-                    <Text
-                      style={[
-                        styles.dateButtonText,
-                        { color: tempEndDate ? theme.text : theme.textSecondary },
-                      ]}
-                    >
-                      {formatDate(tempEndDate) || '结束日期'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {showStartDatePicker && (
-                  <DateTimePicker
-                    value={tempStartDate ? new Date(tempStartDate) : new Date()}
-                    mode="date"
-                    display="default"
-                    onChange={onStartDateChange}
-                    maximumDate={tempEndDate ? new Date(tempEndDate) : new Date()}
-                  />
-                )}
-
-                {showEndDatePicker && (
-                  <DateTimePicker
-                    value={tempEndDate ? new Date(tempEndDate) : new Date()}
-                    mode="date"
-                    display="default"
-                    onChange={onEndDateChange}
-                    minimumDate={tempStartDate ? new Date(tempStartDate) : undefined}
-                    maximumDate={new Date()}
-                  />
-                )}
-              </View>
-            </ScrollView>
-
-            <View style={[styles.modalFooter, { borderTopColor: theme.border }]}>
-              <TouchableOpacity
-                style={[styles.resetButton, { borderColor: theme.border }]}
-                onPress={clearFilters}
-              >
-                <Text style={[styles.resetButtonText, { color: theme.text }]}>重置</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.applyButton, { backgroundColor: theme.primary }]}
-                onPress={handleApplyFilters}
-              >
-                <Text style={styles.applyButtonText}>应用</Text>
-              </TouchableOpacity>
+              {showEndDatePicker && (
+                <DateTimePicker
+                  value={tempEndDate ? new Date(tempEndDate) : new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={onEndDateChange}
+                  minimumDate={tempStartDate ? new Date(tempStartDate) : undefined}
+                  maximumDate={new Date()}
+                />
+              )}
             </View>
           </View>
-        </View>
-      </Modal>
+          <View style={[styles.modalFooter, { borderTopColor: theme.border }]}>
+            <TouchableOpacity
+              style={[styles.resetButton, { borderColor: theme.border }]}
+              onPress={clearFilters}
+            >
+              <Text style={[styles.resetButtonText, { color: theme.text }]}>重置</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.applyButton, { backgroundColor: theme.primary }]}
+              onPress={handleApplyFilters}
+            >
+              <Text style={styles.applyButtonText}>应用</Text>
+            </TouchableOpacity>
+          </View>
+        </BottomSheetScrollView>
+
+      </BottomSheetModal>
     </>
   )
 }
@@ -312,33 +320,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
   modalBody: {
-    padding: 16,
-    paddingBottom: 0,
+    paddingHorizontal: 16,
+  },
+  modalBodyContent: {
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   modalFooter: {
     flexDirection: 'row',
-    padding: 16,
+    paddingVertical: 16,
     gap: 12,
     borderTopWidth: 1,
   },

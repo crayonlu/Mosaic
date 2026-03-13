@@ -1,23 +1,19 @@
 import { MoodDragBar } from '@/components/diary/MoodDragBar'
-import { KeyboardAvoidProvider } from '@/components/KeyboardAvoidProvider'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { toast } from '@/components/ui/Toast'
 import { useThemeStore } from '@/stores/theme-store'
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetScrollView,
+  BottomSheetTextInput,
+  type BottomSheetBackdropProps,
+} from '@gorhom/bottom-sheet'
 import { diariesApi, memosApi, type DiaryResponse, type MemoWithResources } from '@mosaic/api'
 import { MOODS, type MoodKey } from '@mosaic/utils'
 import { useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
-import {
-  Animated,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { CoverImagePicker } from './CoverImagePicker'
 
 interface ArchiveDialogProps {
@@ -39,11 +35,35 @@ export function ArchiveDialog({
 }: ArchiveDialogProps) {
   const { theme } = useThemeStore()
   const queryClient = useQueryClient()
+  const sheetRef = useRef<BottomSheetModal>(null)
   const [summary, setSummary] = useState(existingDiary?.summary || '')
   const [moodKey, setMoodKey] = useState<MoodKey | undefined>(existingDiary?.moodKey as MoodKey)
   const [moodScore, setMoodScore] = useState(existingDiary?.moodScore || 5)
   const [coverImageId, setCoverImageId] = useState<string | undefined>(existingDiary?.coverImageId)
   const [loading, setLoading] = useState(false)
+
+  const snapPoints = useMemo(() => ['40%', '70%'], [])
+
+  useEffect(() => {
+    if (visible) {
+      sheetRef.current?.present()
+    } else {
+      sheetRef.current?.dismiss()
+    }
+  }, [visible])
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        opacity={0.35}
+        pressBehavior="close"
+      />
+    ),
+    []
+  )
 
   const handleConfirm = async () => {
     if (selectedMemos.length === 0) {
@@ -71,6 +91,7 @@ export function ArchiveDialog({
       ])
 
       toast.success('归档成功')
+      sheetRef.current?.dismiss()
       onSuccess()
     } catch (error) {
       console.error('归档失败:', error)
@@ -85,127 +106,114 @@ export function ArchiveDialog({
   )
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onCancel}>
-      <KeyboardAvoidProvider style={styles.overlay} enabled={visible}>
-        <View
-          style={[
-            styles.container,
-            { backgroundColor: theme.background, borderTopColor: theme.border },
-          ]}
-        >
-          <View style={[styles.header, { borderBottomColor: theme.border }]}>
-            <Text style={[styles.title, { color: theme.text }]}>归档Memo</Text>
-            <Pressable onPress={onCancel}>
-              <Text style={[styles.cancelButton, { color: theme.primary }]}>取消</Text>
-            </Pressable>
-          </View>
-
-          <ScrollView style={styles.content}>
-            <View style={styles.info}>
-              <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-                将 {selectedMemos.length} 条Memo归档到 {targetDate}
-              </Text>
-            </View>
-
-            <Input
-              label="日记总结（可选）"
-              placeholder="写下今天的心情或总结..."
-              value={summary}
-              onChangeText={setSummary}
-              multiline
-              numberOfLines={3}
-              style={styles.summaryInput}
-            />
-
-            <View style={styles.moodSection}>
-              <Text style={[styles.label, { color: theme.text }]}>心情</Text>
-              <View style={styles.moodSelector}>
-                {MOODS.map(mood => (
-                  <TouchableOpacity
-                    key={mood.key}
-                    style={[
-                      styles.moodOption,
-                      { backgroundColor: mood.color },
-                      moodKey === mood.key && {
-                        borderColor: theme.text,
-                      },
-                    ]}
-                    onPress={() => setMoodKey(mood.key)}
-                  >
-                    <Text style={styles.moodLabelText}>{mood.label[0]}</Text>
-                    <Text style={styles.moodLabelText}>{mood.label[1]}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {moodKey && (
-                <View style={styles.intensitySection}>
-                  <Text style={[styles.intensityLabel, { color: theme.textSecondary }]}>
-                    强度: {moodScore}/10
-                  </Text>
-                  <MoodDragBar value={moodScore} onChange={setMoodScore} />
-                </View>
-              )}
-            </View>
-
-            {allImages.length > 0 && (
-              <CoverImagePicker
-                memos={selectedMemos}
-                selectedCoverId={coverImageId}
-                onSelect={setCoverImageId}
-                onClear={() => setCoverImageId(undefined)}
-              />
-            )}
-          </ScrollView>
-
-          <View style={[styles.footer, { borderTopColor: theme.border }]}>
-            <Button
-              title="取消"
-              variant="secondary"
-              onPress={onCancel}
-              style={styles.footerButton}
-            />
-            <Button
-              title={loading ? '归档中...' : '确认归档'}
-              onPress={handleConfirm}
-              loading={loading}
-              disabled={loading}
-              style={styles.footerButton}
-            />
-          </View>
+    <BottomSheetModal
+      ref={sheetRef}
+      index={0}
+      snapPoints={snapPoints}
+      enableDynamicSizing={false}
+      enablePanDownToClose
+      onDismiss={onCancel}
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{ backgroundColor: theme.background }}
+      handleIndicatorStyle={{ backgroundColor: theme.textSecondary }}
+      keyboardBehavior="extend"
+      keyboardBlurBehavior="restore"
+      enableBlurKeyboardOnGesture
+      android_keyboardInputMode="adjustResize"
+    >
+      <BottomSheetScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.info}>
+          <Text style={[styles.infoText, { color: theme.textSecondary }]}> 
+            将 {selectedMemos.length} 条Memo归档到 {targetDate}
+          </Text>
         </View>
-        <Animated.View />
-      </KeyboardAvoidProvider>
-    </Modal>
+
+        <View style={styles.summarySection}>
+          <Text style={[styles.label, { color: theme.text }]}>日记总结（可选）</Text>
+          <BottomSheetTextInput
+            placeholder="写下今天的心情或总结..."
+            value={summary}
+            onChangeText={setSummary}
+            multiline
+            numberOfLines={3}
+            style={[
+              styles.summaryInput,
+              {
+                backgroundColor: theme.surface,
+                color: theme.text,
+                borderColor: theme.border,
+              },
+            ]}
+            placeholderTextColor={theme.textSecondary}
+          />
+        </View>
+
+        <View style={styles.moodSection}>
+          <Text style={[styles.label, { color: theme.text }]}>心情</Text>
+          <View style={styles.moodSelector}>
+            {MOODS.map(mood => (
+              <TouchableOpacity
+                key={mood.key}
+                style={[
+                  styles.moodOption,
+                  { backgroundColor: mood.color },
+                  moodKey === mood.key && {
+                    borderColor: theme.text,
+                  },
+                ]}
+                onPress={() => setMoodKey(mood.key)}
+              >
+                <Text style={styles.moodLabelText}>{mood.label[0]}</Text>
+                <Text style={styles.moodLabelText}>{mood.label[1]}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {moodKey && (
+            <View style={styles.intensitySection}>
+              <Text style={[styles.intensityLabel, { color: theme.textSecondary }]}> 
+                强度: {moodScore}/10
+              </Text>
+              <MoodDragBar value={moodScore} onChange={setMoodScore} />
+            </View>
+          )}
+        </View>
+
+        {allImages.length > 0 && (
+          <CoverImagePicker
+            memos={selectedMemos}
+            selectedCoverId={coverImageId}
+            onSelect={setCoverImageId}
+            onClear={() => setCoverImageId(undefined)}
+          />
+        )}
+      </BottomSheetScrollView>
+
+      <View style={[styles.footer, { borderTopColor: theme.border }]}> 
+        <Button title="取消" variant="secondary" onPress={onCancel} style={styles.footerButton} />
+        <Button
+          title={loading ? '归档中...' : '确认归档'}
+          onPress={handleConfirm}
+          loading={loading}
+          disabled={loading}
+          style={styles.footerButton}
+        />
+      </View>
+    </BottomSheetModal>
   )
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  container: {
-    maxHeight: '70%',
-    overflow: 'hidden',
-    borderTopWidth: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  cancelButton: {
-    fontSize: 16,
-  },
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
+  },
+  contentContainer: {
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   info: {
     marginBottom: 16,
@@ -215,8 +223,14 @@ const styles = StyleSheet.create({
   },
   summaryInput: {
     height: 100,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 16,
     textAlignVertical: 'top',
     paddingTop: 12,
+  },
+  summarySection: {
+    marginBottom: 4,
   },
   moodSection: {
     marginTop: 16,

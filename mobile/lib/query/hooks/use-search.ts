@@ -1,6 +1,6 @@
 import type { SearchMemosQuery } from '@mosaic/api'
 import { memosApi } from '@mosaic/api'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 
 export function useSearchMemos(query: SearchMemosQuery) {
   return useInfiniteQuery({
@@ -13,5 +13,12 @@ export function useSearchMemos(query: SearchMemosQuery) {
       }
       return undefined
     },
+  })
+}
+
+export function useMemoTags() {
+  return useQuery({
+    queryKey: ['memos', 'tags'],
+    queryFn: () => memosApi.getAllTags(),
   })
 }
