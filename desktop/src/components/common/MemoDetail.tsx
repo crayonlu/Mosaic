@@ -68,9 +68,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
   const [videoUrls, setVideoUrls] = useState<Map<string, string>>(new Map())
   const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map())
-  const [uploadingFiles, setUploadingFiles] = useState<
-    { name: string; type: 'image' | 'video'; size?: number; progress?: number }[]
-  >([])
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const { suggestTags, loading: aiLoading } = useAI()
   const updateMemo = useUpdateMemo()
@@ -299,24 +296,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
     const filesToUpload = Array.from(files)
     setIsUploading(true)
-    setUploadingFiles(
-      filesToUpload.map(file => ({
-        name: file.name,
-        type: file.type.startsWith('video/') ? 'video' : 'image',
-        size: file.size,
-        progress: 0,
-      }))
-    )
     try {
-      const uploadedResources = await uploadFiles(filesToUpload, memo.id, {
-        onFileProgress: (file, progress) => {
-          setUploadingFiles(prev =>
-            prev.map(entry =>
-              entry.name === file.name ? { ...entry, progress: progress.percent } : entry
-            )
-          )
-        },
-      })
+      const uploadedResources = await uploadFiles(filesToUpload, memo.id)
 
       if (uploadedResources.length > 0) {
         setEditingResources(prev => [...prev, ...uploadedResources])
@@ -366,7 +347,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       toast.error('上传资源失败')
     } finally {
       setIsUploading(false)
-      setUploadingFiles([])
     }
   }
 
