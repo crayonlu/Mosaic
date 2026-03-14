@@ -1,0 +1,52 @@
+{
+  "name": "@mosaic/cache",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "bun run tsup",
+    "dev": "bun run tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "realm": "^12.14.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/api": "^2.2.0",
+    "@tauri-apps/plugin-fs": "^2.2.0",
+    "@types/bun": "^1.1.0",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  },
+  "peerDependencies": {
+    "@tauri-apps/api": "^2.2.0",
+    "@tauri-apps/plugin-fs": "^2.2.0"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": ["../../eslint.config.js"],
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    }
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "printWidth": 100
+  }
+}
