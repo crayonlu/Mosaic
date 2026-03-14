@@ -76,6 +76,7 @@ const SortableMedia = ({
       {previewUrl ? (
         <AuthImage
           src={previewUrl}
+          variant="thumb"
           className={`w-full h-full object-cover ${isLarge ? 'aspect-4/3' : 'aspect-square'}`}
           alt={resource.filename}
           draggable={false}
@@ -83,6 +84,7 @@ const SortableMedia = ({
       ) : isVideo && videoUrl ? (
         <AuthVideo
           src={videoUrl}
+          variant="thumb"
           className={`w-full h-full object-cover ${isLarge ? 'aspect-4/3' : 'aspect-square'}`}
           muted
           playsInline

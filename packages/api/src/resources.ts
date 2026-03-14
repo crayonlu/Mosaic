@@ -55,9 +55,10 @@ export const resourcesApi = {
     return apiClient.delete<void>(`/api/resources/${id}`)
   },
 
-  getDownloadUrl(id: string): string {
+  getDownloadUrl(id: string, variant?: 'thumb' | 'opt'): string {
     const baseUrl = apiClient.getBaseUrl()
-    return `${baseUrl}/api/resources/${id}/download`
+    const variantParam = variant ? `?variant=${variant}` : ''
+    return `${baseUrl}/api/resources/${id}/download${variantParam}`
   },
 }
 

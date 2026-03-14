@@ -35,6 +35,7 @@ export function ResourcePreview({
         <div className="group relative rounded-lg border bg-card overflow-hidden">
           <AuthVideo
             src={previewUrl}
+            variant="thumb"
             className="w-full h-18 object-cover cursor-pointer transition-opacity hover:opacity-90"
             onClick={() => setPreviewOpen(true)}
           />
@@ -60,6 +61,7 @@ export function ResourcePreview({
         <div className="group relative rounded-lg border bg-card overflow-hidden">
           <AuthImage
             src={previewUrl}
+            variant="thumb"
             alt={filename}
             className="w-full h-18 object-cover cursor-pointer transition-opacity hover:opacity-90"
             onClick={() => setPreviewOpen(true)}
@@ -89,6 +91,7 @@ export function ResourcePreview({
           {type === 'video' ? (
             <AuthVideo
               src={previewUrl}
+              variant="opt"
               className="w-full h-auto max-h-[80vh] object-contain"
               controls
               playsInline
@@ -96,6 +99,7 @@ export function ResourcePreview({
           ) : (
             <AuthImage
               src={previewUrl}
+              variant="opt"
               alt={filename}
               className="w-full h-auto max-h-[80vh] object-contain"
             />
