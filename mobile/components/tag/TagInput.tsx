@@ -1,6 +1,6 @@
 import { Loading } from '@/components/ui'
 import { Badge } from '@/components/ui/Badge'
-import { useAIConfig } from '@/hooks/use-ai-config'
+import { useAIConfig } from '@/hooks/useAIConfig'
 import { useAITags } from '@/hooks/useAITags'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useThemeStore } from '@/stores/themeStore'

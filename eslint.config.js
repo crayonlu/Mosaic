@@ -59,6 +59,13 @@ export default [
         KeyboardEvent: 'readonly',
         MouseEvent: 'readonly',
         Event: 'readonly',
+        RequestInit: 'readonly',
+        Response: 'readonly',
+        BodyInit: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        atob: 'readonly',
+        btoa: 'readonly',
         // React (for types)
         React: 'readonly',
       },

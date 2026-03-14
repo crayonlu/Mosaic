@@ -22,6 +22,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { initializeMobileCache } from '../lib/cache'
 
 export default function RootLayout() {
   const { theme } = useThemeStore()
@@ -38,6 +39,7 @@ export default function RootLayout() {
     initAuth()
     initialize()
     localPushService.registerAll()
+    initializeMobileCache()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

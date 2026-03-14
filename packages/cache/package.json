@@ -27,6 +27,7 @@
     "@tauri-apps/plugin-fs": "^2.2.0",
     "@types/bun": "^1.1.0",
     "eslint": "^9.17.0",
+    "expo-file-system": "^18.0.0",
     "prettier": "^3.4.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0"
@@ -40,6 +41,15 @@
     "extends": ["../../eslint.config.js"],
     "parserOptions": {
       "project": "./tsconfig.json"
+    },
+    "globals": {
+      "RequestInit": "readonly",
+      "Response": "readonly",
+      "BodyInit": "readonly",
+      "fetch": "readonly",
+      "URL": "readonly",
+      "atob": "readonly",
+      "btoa": "readonly"
     }
   },
   "prettier": {

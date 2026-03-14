@@ -1,5 +1,4 @@
-import { getCachedResource, setCachedResource } from '@/utils/resourceCache'
-import { apiClient } from '@mosaic/api'
+import { getResourceLoader } from '@mosaic/cache'
 import { useEffect, useMemo, useState } from 'react'
 import { LoadingSpinner } from '../ui/loading/loading-spinner'
 
@@ -44,29 +43,24 @@ export function AuthImage({ src, withAuth = true, onLoadingChange, ...props }: A
         setIsLoading(true)
         setHasError(false)
 
-        const cachedUrl = await getCachedResource(source, 'images')
-        if (cachedUrl) {
-          setResolvedSrc(cachedUrl)
+        const loader = await getResourceLoader()
+        const result = await loader.load(source, { forceRefresh: false, allowCache: true })
+        
+        if (result.path) {
+          setResolvedSrc(result.path)
           setIsLoading(false)
           return
         }
 
-        const token = await apiClient.getTokenStorage()?.getAccessToken()
-        const response = await fetch(source, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          signal: controller.signal,
-        })
-
-        if (!response.ok) {
-          throw new Error(`Image request failed with status ${response.status}`)
+        if (result.data) {
+          const blob = new Blob([result.data])
+          const objectUrl = URL.createObjectURL(blob)
+          setResolvedSrc(objectUrl)
+          setIsLoading(false)
+          return
         }
 
-        const blob = await response.blob()
-
-        await setCachedResource(source, blob, 'images')
-
-        const objectUrl = URL.createObjectURL(blob)
-        setResolvedSrc(objectUrl)
+        setHasError(true)
         setIsLoading(false)
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
@@ -86,29 +80,15 @@ export function AuthImage({ src, withAuth = true, onLoadingChange, ...props }: A
     onLoadingChange?.(isLoading)
   }, [isLoading, onLoadingChange])
 
-  const { className, ...restProps } = props
+  const { className: classNameRest, ...imgProps } = props
 
   if (isLoading) {
-    return (
-      <div
-        {...restProps}
-        className={`w-full h-full flex items-center justify-center ${className || ''}`}
-      >
-        <LoadingSpinner size="md" />
-      </div>
-    )
+    return <LoadingSpinner className={classNameRest} {...imgProps} />
   }
 
   if (hasError || !resolvedSrc) {
-    return (
-      <div
-        {...restProps}
-        className={`w-full h-full flex items-center justify-center bg-muted ${className || ''}`}
-      >
-        <LoadingSpinner size="md" />
-      </div>
-    )
+    return null
   }
 
-  return <img src={resolvedSrc} {...restProps} className={className} />
+  return <img className={classNameRest} src={resolvedSrc} {...imgProps} />
 }
