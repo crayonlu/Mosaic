@@ -4,11 +4,11 @@ export {
   useDeleteMemo,
   useArchiveMemo,
   useUnarchiveMemo,
-} from './memo-mutations'
+} from './memoMutations'
 
 export {
   useCreateDiary,
   useUpdateDiary,
   useUpdateDiarySummary,
   useUpdateDiaryMood,
-} from './diary-mutations'
+} from './diaryMutations'

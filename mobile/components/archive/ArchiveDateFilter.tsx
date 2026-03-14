@@ -1,4 +1,4 @@
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import dayjs from 'dayjs'
 import { Calendar, Check, X } from 'lucide-react-native'

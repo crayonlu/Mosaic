@@ -1,5 +1,5 @@
-import { useAuthStore } from '@/stores/auth-store'
-import { configCommands } from '@/utils/call-rust'
+import { useAuthStore } from '@/stores/authStore'
+import { configCommands } from '@/utils/callRust'
 import { apiClient } from '@mosaic/api'
 
 async function syncTokensFromBackend(): Promise<void> {

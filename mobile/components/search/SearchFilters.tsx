@@ -1,10 +1,10 @@
 import { Badge } from '@/components/ui'
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import {
-    BottomSheetBackdrop,
-    BottomSheetModal,
-    BottomSheetScrollView,
-    type BottomSheetBackdropProps,
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetScrollView,
+  type BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import dayjs from 'dayjs'

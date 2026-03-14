@@ -16,8 +16,8 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
-import { useTheme } from '@/hooks/use-theme'
-import { resolveApiUrl } from '@/lib/shared-api'
+import { useTheme } from '@/hooks/useTheme'
+import { resolveApiUrl } from '@/lib/sharedApi'
 import { useUser } from '@mosaic/api'
 import { Inbox, Moon, PenBox, Search, Settings, Sun } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'

@@ -1,4 +1,4 @@
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export interface BadgeProps {

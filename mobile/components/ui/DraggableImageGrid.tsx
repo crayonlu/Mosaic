@@ -1,4 +1,4 @@
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { Play, X } from 'lucide-react-native'

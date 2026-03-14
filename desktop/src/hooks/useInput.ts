@@ -1,6 +1,6 @@
-import { useCallback, useRef } from 'react'
-import { useInputStore } from '@/stores/input-store'
+import { useInputStore } from '@/stores/inputStore'
 import { extractTextFromHtml } from '@mosaic/utils'
+import { useCallback, useRef } from 'react'
 
 interface UseInputOptions {
   onSubmit?: (value: string, resourceFilenames?: string[], clearInput?: () => void) => void

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { createAIClient, type TagSuggestion } from '../lib/ai'
-import { useConnectionStore } from '../stores/connection-store'
+import { useConnectionStore } from '../stores/connectionStore'
 import { useAIConfig } from './use-ai-config'
 
 export function useAITags() {

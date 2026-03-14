@@ -1,5 +1,5 @@
 import { Loading } from '@/components/ui'
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { statsApi } from '@mosaic/api'
 import { MOODS, getMoodColor } from '@mosaic/utils'
 import dayjs from 'dayjs'

@@ -3,7 +3,7 @@
  * A modal screen for displaying overlay content
  */
 
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { router } from 'expo-router'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 

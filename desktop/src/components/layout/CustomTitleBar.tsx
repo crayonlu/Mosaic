@@ -1,9 +1,9 @@
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { useTime } from '@/hooks/use-time'
+import { useTime } from '@/hooks/useTime'
+import { hideWindow, isMaximized, minimizeWindow, toggleMaximize } from '@/utils/windowControls'
 import { useUser } from '@mosaic/api'
-import { minimizeWindow, toggleMaximize, hideWindow, isMaximized } from '@/utils/window-controls'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { Minimize, Maximize, Minimize2, X } from 'lucide-react'
+import { Maximize, Minimize, Minimize2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export function CustomTitleBar() {

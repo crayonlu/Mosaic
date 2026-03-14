@@ -1,6 +1,6 @@
 import { MemoCard } from '@/components/memo/MemoCard'
 import { Loading } from '@/components/ui'
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
 import { FileX, Search } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'

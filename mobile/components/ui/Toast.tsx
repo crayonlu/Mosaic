@@ -1,4 +1,4 @@
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { X } from 'lucide-react-native'
 import { useEffect, useRef } from 'react'

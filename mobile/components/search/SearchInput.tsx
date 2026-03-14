@@ -1,4 +1,4 @@
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { Search, X } from 'lucide-react-native'
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
 

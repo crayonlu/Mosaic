@@ -1,5 +1,5 @@
-import { getBearerAuthHeaders } from '@/lib/services/api-auth'
-import { useThemeStore } from '@/stores/theme-store'
+import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
+import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
 import { apiClient, resourcesApi } from '@mosaic/api'
 import { Image } from 'expo-image'

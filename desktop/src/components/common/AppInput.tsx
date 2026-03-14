@@ -12,10 +12,10 @@ import {
   InputGroupText,
 } from '@/components/ui/input-group'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { useAI } from '@/hooks/use-ai'
-import { useInput } from '@/hooks/use-input'
+import { useInput } from '@/hooks/useInput'
+import { useAI } from '@/hooks/useAI'
 import { cn } from '@/lib/utils'
-import { useInputStore } from '@/stores/input-store'
+import { useInputStore } from '@/stores/inputStore'
 
 export interface AppInputRef {
   clearTags: () => void
