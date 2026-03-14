@@ -1,11 +1,15 @@
 use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
 use serde::Serialize;
+use std::io;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
+
+    #[error("IO error: {0}")]
+    Io(#[from] io::Error),
 
     #[error("Authentication failed")]
     Unauthorized,
@@ -36,6 +40,9 @@ pub enum AppError {
 
     #[error("Internal server error: {0}")]
     Internal(String),
+
+    #[error("Processing error: {0}")]
+    Processing(String),
 }
 
 #[derive(Serialize)]
@@ -57,6 +64,8 @@ impl ResponseError for AppError {
             AppError::InvalidInput(_) => StatusCode::BAD_REQUEST,
             AppError::Storage(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Processing(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
