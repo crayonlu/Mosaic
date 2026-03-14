@@ -1,5 +1,5 @@
+import { useTheme } from '@/hooks/useTheme'
 import { Switch } from 'react-native'
-import { useTheme } from '@/hooks/use-theme'
 
 export interface SwitchBtnProps {
   value: boolean

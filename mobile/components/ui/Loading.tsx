@@ -3,7 +3,7 @@
  * Displays a loading indicator with optional text
  */
 
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 
 interface LoadingProps {

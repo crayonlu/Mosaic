@@ -1,4 +1,4 @@
-import { useAppStore } from '@/stores/app-store'
+import { useAppStore } from '@/stores/appStore'
 
 export function useSidebar() {
   const sidebarOpen = useAppStore(state => state.sidebarOpen)

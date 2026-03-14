@@ -1,7 +1,7 @@
 import { Loading } from '@/components/ui'
 import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
 import { stringUtils } from '@/lib/utils/string'
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
 import { FileX } from 'lucide-react-native'
 import { useCallback, useMemo, useRef, useState } from 'react'

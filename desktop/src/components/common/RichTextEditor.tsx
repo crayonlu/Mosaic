@@ -1,4 +1,4 @@
-import { useAI } from '@/hooks/use-ai'
+import { useAI } from '@/hooks/useAI'
 import { cn } from '@/lib/utils'
 import { Code } from '@tiptap/extension-code'
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'

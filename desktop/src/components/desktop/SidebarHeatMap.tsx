@@ -1,6 +1,6 @@
 import { MoodHeatMap } from '@/components/common/MoodHeatMap'
+import { useHeatmapQuery } from '@/stores/statsStore'
 import { MOODS } from '@mosaic/utils'
-import { useHeatmapQuery } from '@/stores/stats-store'
 
 export function SidebarHeatMap() {
   const { data: heatmapData, isLoading: heatmapLoading } = useHeatmapQuery()

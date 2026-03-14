@@ -16,10 +16,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { useAI } from '@/hooks/use-ai'
-import { uploadFiles } from '@/hooks/use-file-upload'
-import { toast } from '@/hooks/use-toast'
-import { resolveApiUrl } from '@/lib/shared-api'
+import { useAI } from '@/hooks/useAI'
+import { uploadFiles } from '@/hooks/useFileUpload'
+import { toast } from '@/hooks/useToast'
+import { resolveApiUrl } from '@/lib/sharedApi'
 import { normalizeContent } from '@/utils/content'
 import type { MemoWithResources, Resource } from '@mosaic/api'
 import { resourcesApi, useDeleteMemo, useUpdateMemo } from '@mosaic/api'

@@ -4,7 +4,7 @@
  */
 
 import { Tabs as TabItems } from '@/constants/common'
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { diariesApi } from '@mosaic/api'
 import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'

@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/desktop/AppSidebar'
-import { useSidebar } from '@/hooks/use-sidebar'
+import { useSidebar } from '@/hooks/useSidebar'
 import { CustomTitleBar } from './CustomTitleBar'
 
 export default function Layout({

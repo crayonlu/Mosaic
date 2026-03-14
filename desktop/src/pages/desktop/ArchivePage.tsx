@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
-import { toast } from '@/hooks/use-toast'
+import { toast } from '@/hooks/useToast'
 import type { MemoWithResources, MoodKey } from '@mosaic/api'
 import {
   useArchiveMemo,

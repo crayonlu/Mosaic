@@ -1,4 +1,4 @@
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { StyleSheet, Text, View } from 'react-native'
 import { WebView } from 'react-native-webview'
 

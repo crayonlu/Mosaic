@@ -1,7 +1,7 @@
 import { MoodDragBar } from '@/components/diary/MoodDragBar'
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import {
   BottomSheetBackdrop,
   BottomSheetModal,

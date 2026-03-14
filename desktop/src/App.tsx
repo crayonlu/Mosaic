@@ -17,7 +17,7 @@ import SetupWizard from './pages/desktop/SetupWizard'
 import { Toaster } from './components/ui/toaster'
 
 // Stores
-import { useServerConfig } from './hooks/use-server-config'
+import { useServerConfig } from './hooks/useServerConfig'
 
 function App() {
   const { isConfigured, loading: configLoading } = useServerConfig()

@@ -1,4 +1,4 @@
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { Eye, EyeOff } from 'lucide-react-native'
 import { useState } from 'react'
 import { StyleSheet, Text, TextInput, TextInputProps, TouchableOpacity, View } from 'react-native'

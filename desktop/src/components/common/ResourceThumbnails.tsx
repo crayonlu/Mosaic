@@ -1,5 +1,5 @@
 import { AuthImage } from '@/components/common/AuthImage'
-import { resolveApiUrl } from '@/lib/shared-api'
+import { resolveApiUrl } from '@/lib/sharedApi'
 import { cn } from '@/lib/utils'
 import type { Resource } from '@mosaic/api'
 import { FileText, Image as ImageIcon, MoreHorizontal, Video as VideoIcon } from 'lucide-react'

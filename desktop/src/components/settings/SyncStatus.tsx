@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useServerConfig } from '@/hooks/use-server-config'
+import { useServerConfig } from '@/hooks/useServerConfig'
 import { AlertCircle, Cloud, CloudOff, LogOutIcon, RefreshCw } from 'lucide-react'
 
 export function SyncStatusDisplay() {

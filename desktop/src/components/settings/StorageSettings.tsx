@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { clearCache, getCacheCount, getCacheSize } from '@/utils/resource-cache'
+import { clearCache, getCacheCount, getCacheSize } from '@/utils/resourceCache'
 import { Label } from '@radix-ui/react-label'
 import { Image, Loader2, Video } from 'lucide-react'
 import { useEffect, useState } from 'react'

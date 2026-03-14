@@ -1,5 +1,5 @@
-import { toast } from '@/hooks/use-toast'
-import { extractBrowserMediaMetadata, toBrowserUploadFile } from '@/utils/media-file'
+import { toast } from '@/hooks/useToast'
+import { extractBrowserMediaMetadata, toBrowserUploadFile } from '@/utils/mediaFile'
 import type { ResourceResponse, UploadProgress } from '@mosaic/api'
 import { uploadResourceFiles } from '@mosaic/api'
 

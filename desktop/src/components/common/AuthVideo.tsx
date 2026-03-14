@@ -1,4 +1,4 @@
-import { getCachedResource, setCachedResource } from '@/utils/resource-cache'
+import { getCachedResource, setCachedResource } from '@/utils/resourceCache'
 import { apiClient } from '@mosaic/api'
 import { useEffect, useMemo, useState } from 'react'
 import { LoadingSpinner } from '../ui/loading/loading-spinner'
