@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { createAIClient, type TagSuggestion } from '../lib/ai'
 import { useConnectionStore } from '../stores/connectionStore'
-import { useAIConfig } from './use-ai-config'
+import { useAIConfig } from './useAIConfig'
 
 export function useAITags() {
   const [suggestions, setSuggestions] = useState<TagSuggestion[]>([])

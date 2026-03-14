@@ -89,6 +89,7 @@ export interface ICacheManager {
   clear(): Promise<void>;
   getUsage(): Promise<CacheUsage>;
   prune(): Promise<number>;
+  touch(url: string): Promise<void>;
   on<T extends CacheEventType>(type: T, handler: CacheEventHandler<T>): () => void;
 }
 

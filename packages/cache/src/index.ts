@@ -2,6 +2,10 @@ export * from './abstract.js';
 export * from './implementations/memory-cache.js';
 export * from './implementations/realm-cache.js';
 export * from './implementations/tauri-cache.js';
+export * from './platform/adapter.js';
+export * from './platform/mobileAdapter.js';
+export * from './platform/tauriAdapter.js';
+export * from './services/resourceLoader.js';
 export * from './types.js';
 export * from './utils/hash.js';
 export * from './utils/policy.js';
@@ -49,3 +53,17 @@ export const createAutoCacheManager = async (
   const platform = detectPlatform();
   return createCacheManagerWithConfig(platform, config);
 };
+
+import { ResourceLoader } from './services/resourceLoader.js';
+
+let resourceLoaderInstance: ResourceLoader | null = null;
+
+export const getResourceLoader = async (): Promise<ResourceLoader> => {
+  if (!resourceLoaderInstance) {
+    resourceLoaderInstance = new ResourceLoader();
+    await resourceLoaderInstance.initialize();
+  }
+  return resourceLoaderInstance;
+};
+
+export { ResourceLoader };
