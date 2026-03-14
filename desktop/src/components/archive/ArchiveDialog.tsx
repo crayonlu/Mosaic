@@ -231,6 +231,7 @@ export function ArchiveDialog({
                   >
                     <AuthImage
                       src={resource.previewUrl}
+                      variant="thumb"
                       alt="cover"
                       className="w-full h-full object-cover"
                     />

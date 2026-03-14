@@ -32,6 +32,12 @@ export interface MediaGridItem {
   headers?: Record<string, string>
 }
 
+function getOptimizedImageUri(uri: string, variant?: 'thumb' | 'opt'): string {
+  if (!variant) return uri
+  const separator = uri.includes('?') ? '&' : '?'
+  return `${uri}${separator}variant=${variant}`
+}
+
 type GridItem = MediaGridItem
 
 interface DraggableImageGridProps {
@@ -91,7 +97,7 @@ export function DraggableImageGrid({
     () =>
       resolvedItems
         .filter(item => item.type === 'image')
-        .map(item => ({ uri: item.uri, headers: item.headers ?? authHeaders })),
+        .map(item => ({ uri: getOptimizedImageUri(item.uri, 'opt'), headers: item.headers ?? authHeaders })),
     [resolvedItems, authHeaders]
   )
 
@@ -153,7 +159,7 @@ export function DraggableImageGrid({
   const renderItem = useCallback(
     (item: GridItem, order: number) => {
       const index = order
-      const previewUri = item.type === 'video' ? item.thumbnailUri : item.uri
+      const previewUri = item.type === 'video' ? item.thumbnailUri : getOptimizedImageUri(item.uri, 'thumb')
       const progress = uploadProgressById?.[item.key]
       const isUploading = typeof progress === 'number'
 
@@ -247,7 +253,7 @@ export function DraggableImageGrid({
                 ) : (
                   <Image
                     source={{
-                      uri: item.thumbnailUri ?? item.uri,
+                      uri: item.thumbnailUri ?? (item.type === 'image' ? getOptimizedImageUri(item.uri, 'thumb') : item.uri),
                       headers: item.headers ?? authHeaders,
                     }}
                     style={styles.image}
@@ -385,7 +391,7 @@ function ActiveVideoPreview({
 
   const player = useVideoPlayer(
     {
-      uri: item.uri,
+      uri: getOptimizedImageUri(item.uri, 'opt'),
       headers: item.headers ?? authHeaders,
     },
     player => {

@@ -68,6 +68,7 @@ export const MemoCard = memo<MemoCardProps>(
                 {previewUrl ? (
                   <AuthImage
                     src={previewUrl}
+                    variant="thumb"
                     alt={resource.filename}
                     className="w-full h-full object-cover"
                   />

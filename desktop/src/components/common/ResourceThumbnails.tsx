@@ -40,6 +40,7 @@ export function ResourceThumbnails({
                 {previewUrl ? (
                   <AuthImage
                     src={previewUrl}
+                    variant="thumb"
                     alt={resource.filename}
                     onLoadingChange={isLoading => {
                       if (resource.resourceType !== 'video') {
