@@ -1,7 +1,6 @@
 export * from './abstract';
 export * from './hooks/useResourceCache';
 export * from './implementations/memoryCache';
-export * from './implementations/realmCache';
 export * from './implementations/tauriCache';
 export * from './platform/adapter';
 export * from './platform/mobileAdapter';
@@ -11,18 +10,29 @@ export * from './types';
 export * from './utils/hash';
 export * from './utils/policy';
 
+export * from './implementations/realmCache';
+
 import { MemoryCacheManager } from './implementations/memoryCache';
-import { RealmCacheManager } from './implementations/realmCache';
 import { TauriCacheManager } from './implementations/tauriCache';
 import type { CacheConfig, ICacheManager, Platform } from './types';
 import { DEFAULT_CACHE_CONFIG } from './types';
 
-export const createCacheManager = (platform: Platform): ICacheManager => {
+let RealmCacheManagerClass: new () => ICacheManager | undefined;
+
+const getRealmCacheManager = async (): Promise<ICacheManager> => {
+  if (!RealmCacheManagerClass) {
+    const module = await import('./implementations/realmCache');
+    RealmCacheManagerClass = module.RealmCacheManager;
+  }
+  return new (RealmCacheManagerClass as new () => ICacheManager)();
+};
+
+export const createCacheManager = (platform: Platform): ICacheManager | Promise<ICacheManager> => {
   switch (platform) {
     case 'desktop':
       return new TauriCacheManager();
     case 'mobile':
-      return new RealmCacheManager();
+      return getRealmCacheManager();
     case 'web':
       return new MemoryCacheManager();
     default:
@@ -35,7 +45,10 @@ export const createCacheManagerWithConfig = async (
   config?: Partial<CacheConfig>
 ): Promise<ICacheManager> => {
   const fullConfig = { ...DEFAULT_CACHE_CONFIG[platform], ...config };
-  const manager = createCacheManager(platform);
+  const managerOrPromise = createCacheManager(platform);
+
+  const manager = managerOrPromise instanceof Promise ? await managerOrPromise : managerOrPromise;
+
   await manager.initialize(fullConfig);
   return manager;
 };
