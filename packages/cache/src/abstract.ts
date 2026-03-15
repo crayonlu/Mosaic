@@ -18,7 +18,7 @@ export abstract class AbstractCacheManager {
   private handlers: Map<CacheEventType, Set<(event: any) => void>> = new Map();
   abstract initialize(config: CacheConfig): Promise<void>;
   abstract get(url: string): Promise<string | null>;
-  abstract set(url: string, data: ArrayBuffer, options?: CacheWriteOptions): Promise<void>;
+  abstract set(url: string, data: ArrayBuffer, options?: CacheWriteOptions): Promise<string | null>;
   abstract delete(url: string): Promise<void>;
   abstract has(url: string): Promise<boolean>;
   abstract getMetadata(url: string): Promise<CacheEntry | null>;

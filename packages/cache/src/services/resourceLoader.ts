@@ -62,22 +62,28 @@ export class ResourceLoader {
       const etag = response.headers.get('ETag');
       const maxAge = parseMaxAge(cacheControl);
 
+      let localPath: string | null = null;
+
       if (allowCache && this.cacheManager) {
-        await this.cacheManager.set(url, data, {
+        localPath = await this.cacheManager.set(url, data, {
           mimeType,
           etag: etag ?? undefined,
           maxAge: maxAge ?? undefined,
         });
       }
 
+      if (localPath) {
+        return { source: 'network', data, path: localPath };
+      }
+
       if (this.platformAdapter) {
         const cacheDir = await this.platformAdapter.getCacheDir();
         const fileName = this.getFileNameFromUrl(url);
-        const filePath = `${cacheDir}/${fileName}`;
+        const fallbackPath = `${cacheDir}/${fileName}`;
 
-        await this.platformAdapter.writeFile(filePath, new Uint8Array(data));
+        await this.platformAdapter.writeFile(fallbackPath, new Uint8Array(data));
 
-        return { source: 'network', data, path: filePath };
+        return { source: 'network', data, path: fallbackPath };
       }
 
       return { source: 'network', data };

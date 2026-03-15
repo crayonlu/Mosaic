@@ -169,7 +169,7 @@ export class TauriCacheManager extends AbstractCacheManager {
     }
   }
 
-  async set(url: string, data: ArrayBuffer, options?: CacheWriteOptions): Promise<void> {
+  async set(url: string, data: ArrayBuffer, options?: CacheWriteOptions): Promise<string | null> {
     this.ensureInitialized();
 
     const dir = this.getStorageDir(options?.mimeType ?? 'application/octet-stream');
@@ -189,6 +189,8 @@ export class TauriCacheManager extends AbstractCacheManager {
     await this.saveIndex();
 
     await this.enforceLimit();
+
+    return localPath;
   }
 
   async delete(url: string): Promise<void> {

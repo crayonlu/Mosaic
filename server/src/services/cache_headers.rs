@@ -1,13 +1,13 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
+use sha2::{Sha256, Digest};
 
 pub struct CacheHeaders;
 
 impl CacheHeaders {
     pub fn generate_etag(data: &[u8]) -> String {
-        let mut hasher = DefaultHasher::new();
-        data.hash(&mut hasher);
-        format!("\"{:x}\"", hasher.finish())
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        let result = hasher.finalize();
+        format!("\"{:x}\"", result)
     }
 
     pub fn for_original() -> Vec<(&'static str, String)> {

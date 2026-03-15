@@ -1,11 +1,12 @@
 import { RealmCacheManager } from '../implementations/realm-cache.js';
 import type { ICacheManager } from '../types.js';
 import { DEFAULT_CACHE_CONFIG } from '../types.js';
-import type { HttpClient, PlatformAdapter, PlatformType } from './adapter.js';
+import type { AuthHeaderProvider, HttpClient, PlatformAdapter, PlatformType } from './adapter.js';
 
 export class MobilePlatformAdapter implements PlatformAdapter {
   private cacheManager: ICacheManager | null = null;
   private platform: PlatformType = 'mobile';
+  private authHeaderProvider: AuthHeaderProvider | null = null;
 
   async getCacheManager(): Promise<ICacheManager> {
     if (!this.cacheManager) {
@@ -15,20 +16,35 @@ export class MobilePlatformAdapter implements PlatformAdapter {
     return this.cacheManager;
   }
 
+  setAuthHeaderProvider(provider: AuthHeaderProvider): void {
+    this.authHeaderProvider = provider;
+  }
+
+  private async getAuthHeaders(): Promise<Record<string, string>> {
+    if (this.authHeaderProvider) {
+      return await this.authHeaderProvider();
+    }
+    return {};
+  }
+
   getHttpClient(): HttpClient {
     return {
       get: async (url: string, options?: RequestInit): Promise<Response> => {
+        const authHeaders = await this.getAuthHeaders();
         const response = await fetch(url, {
           ...options,
           method: 'GET',
+          headers: { ...authHeaders, ...options?.headers },
         });
         return response;
       },
       post: async (url: string, data?: BodyInit, options?: RequestInit): Promise<Response> => {
+        const authHeaders = await this.getAuthHeaders();
         const response = await fetch(url, {
           ...options,
           method: 'POST',
           body: data,
+          headers: { ...authHeaders, ...options?.headers },
         });
         return response;
       },

@@ -8,6 +8,8 @@ export interface HttpClient {
   post(url: string, data?: BodyInit, options?: RequestInit): Promise<Response>;
 }
 
+export type AuthHeaderProvider = () => Promise<Record<string, string>>;
+
 export interface PlatformAdapter {
   getCacheManager(): Promise<ICacheManager>;
   getHttpClient(): HttpClient;
@@ -17,6 +19,7 @@ export interface PlatformAdapter {
   readFile(path: string): Promise<Uint8Array>;
   writeFile(path: string, data: Uint8Array): Promise<void>;
   deleteFile(path: string): Promise<void>;
+  setAuthHeaderProvider(provider: AuthHeaderProvider): void;
 }
 
 let platformAdapter: PlatformAdapter | null = null;

@@ -20,8 +20,9 @@ impl VideoProcessor {
 
     pub async fn create_thumbnail(&self, input: &[u8]) -> Result<Vec<u8>, AppError> {
         let temp_dir = std::env::temp_dir();
-        let input_path = temp_dir.join("mosaic_input_video");
-        let output_path = temp_dir.join("mosaic_thumb.jpg");
+        let id = uuid::Uuid::new_v4();
+        let input_path = temp_dir.join(format!("mosaic_{}_input.mp4", id));
+        let output_path = temp_dir.join(format!("mosaic_{}_thumb.jpg", id));
 
         tokio::fs::write(&input_path, input)
             .await
@@ -67,8 +68,9 @@ impl VideoProcessor {
 
     pub async fn create_optimized(&self, input: &[u8]) -> Result<Vec<u8>, AppError> {
         let temp_dir = std::env::temp_dir();
-        let input_path = temp_dir.join("mosaic_input_video");
-        let output_path = temp_dir.join("mosaic_opt.mp4");
+        let id = uuid::Uuid::new_v4();
+        let input_path = temp_dir.join(format!("mosaic_{}_input.mp4", id));
+        let output_path = temp_dir.join(format!("mosaic_{}_opt.mp4", id));
 
         tokio::fs::write(&input_path, input)
             .await
