@@ -54,6 +54,11 @@ impl Storage for LocalStorage {
         Ok(())
     }
 
+    async fn exists(&self, path: &str) -> bool {
+        let full_path = self.get_full_path(path);
+        tokio_fs::try_exists(&full_path).await.unwrap_or(false)
+    }
+
     async fn get_presigned_url(&self, path: &str, _expires_secs: u64) -> anyhow::Result<String> {
         Ok(format!("/api/resources/download/{}", path))
     }

@@ -52,8 +52,12 @@ impl ImageProcessor {
 
         match format {
             ImageFormat::WebP => {
-                processed
-                    .write_to(&mut cursor, ImageFormat::WebP)
+                let rgb = processed.to_rgb8();
+                let (width, height) = rgb.dimensions();
+                let encoder =
+                    image::codecs::webp::WebPEncoder::new_lossless(&mut cursor);
+                encoder
+                    .encode(rgb.as_raw(), width, height, image::ExtendedColorType::Rgb8)
                     .map_err(|e| AppError::Processing(e.to_string()))?;
             }
             _ => {

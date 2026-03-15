@@ -11,18 +11,30 @@ impl CacheHeaders {
     }
 
     pub fn for_original() -> Vec<(&'static str, String)> {
-        vec![("Cache-Control", "public, max-age=31536000".to_string())]
+        vec![
+            ("Cache-Control", "private, max-age=31536000".to_string()),
+            ("Vary", "Authorization".to_string()),
+        ]
     }
 
     pub fn for_optimized() -> Vec<(&'static str, String)> {
-        vec![("Cache-Control", "public, max-age=2592000".to_string())]
+        vec![
+            ("Cache-Control", "private, max-age=2592000".to_string()),
+            ("Vary", "Authorization".to_string()),
+        ]
     }
 
     pub fn for_thumbnail() -> Vec<(&'static str, String)> {
-        vec![("Cache-Control", "public, max-age=86400".to_string())]
+        vec![
+            ("Cache-Control", "private, max-age=86400".to_string()),
+            ("Vary", "Authorization".to_string()),
+        ]
     }
 
     pub fn for_avatar() -> Vec<(&'static str, String)> {
-        vec![("Cache-Control", "public, max-age=3600".to_string())]
+        vec![
+            ("Cache-Control", "private, max-age=3600".to_string()),
+            ("Vary", "Authorization".to_string()),
+        ]
     }
 }

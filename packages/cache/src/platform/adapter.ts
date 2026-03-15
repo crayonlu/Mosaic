@@ -25,7 +25,7 @@ export interface PlatformAdapter {
 let platformAdapter: PlatformAdapter | null = null;
 let cacheManager: ICacheManager | null = null;
 
-export const detectPlatform = (): PlatformType => {
+export const detectPlatformFromUA = (): PlatformType => {
   if (typeof window === 'undefined') return 'web';
   if ('__TAURI__' in window) return 'desktop';
   const userAgent = navigator.userAgent.toLowerCase();
@@ -58,6 +58,6 @@ export const resetCacheManager = (): void => {
 };
 
 export const getDefaultConfig = (platform?: PlatformType): CacheConfig => {
-  const targetPlatform = platform ?? detectPlatform();
+  const targetPlatform = platform ?? detectPlatformFromUA();
   return DEFAULT_CACHE_CONFIG[targetPlatform];
 };

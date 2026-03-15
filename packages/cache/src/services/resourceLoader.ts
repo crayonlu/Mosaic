@@ -50,6 +50,29 @@ export class ResourceLoader {
         if (cachedPath) {
           return { source: 'cache', path: cachedPath };
         }
+        // 304 response but cache entry is missing - re-request without If-None-Match
+        const freshResponse = await httpClient.get(url);
+        if (!freshResponse.ok) {
+          throw new Error(`HTTP error: ${freshResponse.status}`);
+        }
+        const data = await freshResponse.arrayBuffer();
+        const mimeType = freshResponse.headers.get('Content-Type') ?? 'application/octet-stream';
+        const cacheControl = freshResponse.headers.get('Cache-Control');
+        const etag = freshResponse.headers.get('ETag');
+        const maxAge = parseMaxAge(cacheControl);
+
+        let localPath: string | null = null;
+        if (this.cacheManager) {
+          localPath = await this.cacheManager.set(url, data, {
+            mimeType,
+            etag: etag ?? undefined,
+            maxAge: maxAge ?? undefined,
+          });
+        }
+        if (localPath) {
+          return { source: 'network', data, path: localPath };
+        }
+        return { source: 'network', data, path: '' };
       }
 
       if (!response.ok) {

@@ -39,7 +39,7 @@ export const createCacheManagerWithConfig = async (
   return manager;
 };
 
-export const detectPlatform = (): Platform => {
+export const detectPlatformFromUA = (): Platform => {
   if (typeof window === 'undefined') return 'web';
   if ('__TAURI__' in window) return 'desktop';
   const userAgent = navigator.userAgent.toLowerCase();
@@ -50,7 +50,7 @@ export const detectPlatform = (): Platform => {
 export const createAutoCacheManager = async (
   config?: Partial<CacheConfig>
 ): Promise<ICacheManager> => {
-  const platform = detectPlatform();
+  const platform = detectPlatformFromUA();
   return createCacheManagerWithConfig(platform, config);
 };
 
@@ -58,7 +58,7 @@ import { ResourceLoader } from './services/resourceLoader';
 
 let resourceLoaderInstance: ResourceLoader | null = null;
 
-export const getResourceLoader = async (): Promise<ResourceLoader> => {
+export const createResourceLoader = async (): Promise<ResourceLoader> => {
   if (!resourceLoaderInstance) {
     resourceLoaderInstance = new ResourceLoader();
     await resourceLoaderInstance.initialize();
@@ -67,4 +67,7 @@ export const getResourceLoader = async (): Promise<ResourceLoader> => {
 };
 
 export { ResourceLoader };
+
+// Aliases for backward compatibility
+  export { detectPlatformFromUA as detectPlatform, createResourceLoader as getResourceLoader };
 

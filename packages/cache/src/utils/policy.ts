@@ -21,10 +21,10 @@ export const sortEntries = (entries: CacheEntry[], strategy: StorageStrategy): C
   }
 };
 
-export const filterExpired = (entries: CacheEntry[], now: number = Date.now()): CacheEntry[] =>
+export const filterNotExpired = (entries: CacheEntry[], now: number = Date.now()): CacheEntry[] =>
   entries.filter((e) => e.expiresAt === undefined || e.expiresAt > now);
 
-export const filterPinned = (entries: CacheEntry[]): CacheEntry[] =>
+export const filterUnpinned = (entries: CacheEntry[]): CacheEntry[] =>
   entries.filter((e) => !e.isPinned);
 
 export const calculateTotalSize = (entries: CacheEntry[]): number =>
@@ -36,20 +36,35 @@ export const selectEvictionCandidates = (
   targetSize: number,
   now: number = Date.now()
 ): CacheEntry[] => {
-  const unpinned = filterPinned(entries);
+  const unpinned = filterUnpinned(entries);
   const sorted = sortEntries(unpinned, strategy);
   const candidates: CacheEntry[] = [];
 
   let currentSize = calculateTotalSize(entries);
+
+  // First pass: evict all expired entries (regardless of policy order)
+  const expired: CacheEntry[] = [];
+  const notExpired: CacheEntry[] = [];
   for (const entry of sorted) {
-    if (currentSize <= targetSize) break;
     if (entry.expiresAt && entry.expiresAt < now) {
-      candidates.push(entry);
-      currentSize -= entry.size;
-    } else if (entry.expiresAt === undefined) {
-      candidates.push(entry);
-      currentSize -= entry.size;
+      expired.push(entry);
+    } else {
+      notExpired.push(entry);
     }
+  }
+
+  // Add expired entries first
+  for (const entry of expired) {
+    if (currentSize <= targetSize) break;
+    candidates.push(entry);
+    currentSize -= entry.size;
+  }
+
+  // Second pass: if still over target, evict by policy regardless of expiration
+  for (const entry of notExpired) {
+    if (currentSize <= targetSize) break;
+    candidates.push(entry);
+    currentSize -= entry.size;
   }
 
   return candidates;
@@ -74,3 +89,6 @@ export const formatBytes = (bytes: number): string => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
+
+// Backward compatibility aliases
+export { filterNotExpired as filterExpired, filterUnpinned as filterPinned };
