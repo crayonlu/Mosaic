@@ -88,25 +88,27 @@ export function CoverImagePicker({
         <Pressable onPress={() => onSelect(item.resourceId)} style={[styles.imageContainer]}>
           <Image
             source={{ uri: imageUri }}
-          style={[styles.image, isSelected && styles.imageSelected]}
-          contentFit="cover"
-        />
-        {isSelected && (
-          <>
-            <View style={[styles.selectedOverlay, { backgroundColor: `${theme.primary}22` }]} />
-            <View style={[styles.selectedBadge, { backgroundColor: theme.primary }]}>
-              <Check size={12} color="#fff" strokeWidth={3} />
+            style={[styles.image, isSelected && styles.imageSelected]}
+            contentFit="cover"
+          />
+          {isSelected && (
+            <>
+              <View style={[styles.selectedOverlay, { backgroundColor: `${theme.primary}22` }]} />
+              <View style={[styles.selectedBadge, { backgroundColor: theme.primary }]}>
+                <Check size={12} color="#fff" strokeWidth={3} />
+              </View>
+            </>
+          )}
+          {item.type === 'video' && (
+            <View style={styles.videoBadge}>
+              <Play size={12} color="#fff" fill="#fff" />
             </View>
-          </>
-        )}
-        {item.type === 'video' && (
-          <View style={styles.videoBadge}>
-            <Play size={12} color="#fff" fill="#fff" />
-          </View>
-        )}
-      </Pressable>
-    )
-  }, [cachedUris, onSelect, selectedCoverId, theme])
+          )}
+        </Pressable>
+      )
+    },
+    [cachedUris, onSelect, selectedCoverId, theme]
+  )
 
   if (allImages.length === 0) {
     return (

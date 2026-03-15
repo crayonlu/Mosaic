@@ -21,7 +21,7 @@ import {
   ShieldCheck,
   Sparkles,
   Sun,
-  Trash
+  Trash,
 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
@@ -36,12 +36,7 @@ function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
   const { cachedUris } = useResourceCache([avatarUrl])
   const cachedAvatarUrl = cachedUris[avatarUrl] || avatarUrl
 
-  return (
-    <Image
-      source={{ uri: cachedAvatarUrl }}
-      style={styles.avatarImage}
-    />
-  )
+  return <Image source={{ uri: cachedAvatarUrl }} style={styles.avatarImage} />
 }
 
 export default function SettingsScreen() {

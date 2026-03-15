@@ -87,7 +87,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
   const { cachedUris } = useResourceCache(coverImageUrls)
 
   // Get cached URL or fall back to original
-  const cachedCoverImageUrl = coverImageUrl ? (cachedUris[coverImageUrl] || coverImageUrl) : undefined
+  const cachedCoverImageUrl = coverImageUrl ? cachedUris[coverImageUrl] || coverImageUrl : undefined
 
   const hasChanges =
     summaryDraft.trim() !== (diary?.summary ?? '').trim() ||
