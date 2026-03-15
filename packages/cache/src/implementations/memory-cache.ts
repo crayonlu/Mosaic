@@ -6,7 +6,7 @@ import type {
   CacheUsage,
   CacheWriteOptions,
   EvictReason,
-} from '../types.js';
+} from '../types';
 
 export class MemoryCacheManager extends AbstractCacheManager {
   private cache: Map<string, CacheEntry> = new Map();
@@ -40,7 +40,7 @@ export class MemoryCacheManager extends AbstractCacheManager {
     return entry.localPath;
   }
 
-  async set(url: string, data: ArrayBuffer, options?: CacheWriteOptions): Promise<void> {
+  async set(url: string, data: ArrayBuffer, options?: CacheWriteOptions): Promise<string | null> {
     this.ensureInitialized();
 
     const localPath = `memory://${this.hashUrl(url)}`;
@@ -48,6 +48,8 @@ export class MemoryCacheManager extends AbstractCacheManager {
     this.cache.set(url, entry);
 
     await this.enforceLimit();
+
+    return localPath;
   }
 
   private hashUrl(url: string): string {

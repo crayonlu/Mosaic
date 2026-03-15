@@ -132,18 +132,30 @@ export class RealmCacheManager extends AbstractCacheManager {
     return cached.localPath;
   }
 
-  async set(url: string, data: ArrayBuffer, options?: CacheWriteOptions): Promise<void> {
+  async touch(url: string): Promise<void> {
+    this.ensureInitialized();
+    const cached = this.realm!.objectForPrimaryKey<RealmObject>('ResourceCache', url);
+    if (!cached) return;
+
+    this.realm!.write(() => {
+      cached.lastAccessed = new Date();
+      cached.accessCount += 1;
+    });
+  }
+
+  async set(url: string, data: ArrayBuffer, options?: CacheWriteOptions): Promise<string | null> {
     this.ensureInitialized();
 
     const now = new Date();
     const expiresAt = options?.maxAge ? new Date(now.getTime() + options.maxAge) : null;
+    const localPath = `cache/${this.hashUrl(url)}`;
 
     this.realm!.write(() => {
       this.realm!.create(
         'ResourceCache',
         {
           url,
-          localPath: `cache/${this.hashUrl(url)}`,
+          localPath,
           mimeType: options?.mimeType ?? 'application/octet-stream',
           fileSize: data.byteLength,
           etag: options?.etag ?? null,
@@ -159,6 +171,8 @@ export class RealmCacheManager extends AbstractCacheManager {
     });
 
     await this.enforceLimit();
+
+    return localPath;
   }
 
   private hashUrl(url: string): string {

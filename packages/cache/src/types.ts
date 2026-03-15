@@ -81,7 +81,7 @@ export type CacheEventHandler<T extends CacheEventType> = (event: CacheEventMap[
 export interface ICacheManager {
   initialize(config: CacheConfig): Promise<void>;
   get(url: string): Promise<string | null>;
-  set(url: string, data: ArrayBuffer, options?: CacheWriteOptions): Promise<void>;
+  set(url: string, data: ArrayBuffer, options?: CacheWriteOptions): Promise<string | null>;
   delete(url: string): Promise<void>;
   has(url: string): Promise<boolean>;
   getMetadata(url: string): Promise<CacheEntry | null>;

@@ -2,7 +2,6 @@ import {
   getResourceLoader,
   setPlatformAdapter,
   TauriPlatformAdapter,
-  type PlatformAdapter,
   type ResourceLoader,
 } from '@mosaic/cache'
 
@@ -10,7 +9,14 @@ let resourceLoader: ResourceLoader | null = null
 
 const initLoader = async (): Promise<ResourceLoader> => {
   if (!resourceLoader) {
-    const adapter: PlatformAdapter = new TauriPlatformAdapter()
+    const adapter = new TauriPlatformAdapter()
+
+    adapter.setAuthHeaderProvider(async (): Promise<Record<string, string>> => {
+      const token = localStorage.getItem('auth_token')
+      if (!token) return {}
+      return { Authorization: `Bearer ${token}` }
+    })
+
     setPlatformAdapter(adapter)
     resourceLoader = await getResourceLoader()
   }
@@ -28,7 +34,7 @@ export async function getCachedResource(
   const metadata = await loader.getCachedMetadata(src)
   if (!metadata) return null
 
-  return metadata.url
+  return metadata.localPath
 }
 
 export async function setCachedResource(

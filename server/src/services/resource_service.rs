@@ -290,17 +290,21 @@ impl ResourceService {
             .await
             .map_err(|e| AppError::Storage(e.to_string()))?;
 
+        let storage = self.storage.clone();
+        let config = self.config.clone();
         let user_id_owned = user_id.to_string();
         let resource_id_owned = resource_id;
-        let data_owned = data.clone();
+        let data_owned = data.clone().to_vec();
         let mime_type_owned = req.mime_type.clone();
 
         tokio::spawn(async move {
             let _ = Self::process_transcoding(
-                &user_id_owned,
+                storage,
+                config,
+                user_id_owned,
                 resource_id_owned,
-                &mime_type_owned,
-                &data_owned,
+                mime_type_owned,
+                data_owned,
             )
             .await;
         });
@@ -385,37 +389,45 @@ impl ResourceService {
         .await?
         .ok_or(AppError::ResourceNotFound)?;
 
+        let user_id = Self::extract_user_id_from_storage_path(&resource.storage_path)
+            .ok_or(AppError::ResourceNotFound)?;
+
         match variant {
             "thumb" => {
-                let thumb_path = format!(
-                    "resources/{}/{}_thumb.jpg",
-                    resource.storage_path.split('/').nth(1).unwrap_or(""),
-                    resource_id
-                );
-                match self.storage.download(&thumb_path).await {
-                    Ok(data) => Ok(Some((data, "image/jpeg".to_string()))),
-                    Err(_) => Ok(None),
+                if let Some((thumb_path, mime_type)) = self.ensure_thumbnail_metadata(&mut resource.clone()).await? {
+                    match self.storage.download(&thumb_path).await {
+                        Ok(data) => Ok(Some((data, mime_type))),
+                        Err(e) => {
+                            let err_msg = e.to_string();
+                            if err_msg.contains("not found") || err_msg.contains("No such file") || err_msg.contains("does not exist") {
+                                Ok(None)
+                            } else {
+                                Err(AppError::Storage(err_msg))
+                            }
+                        }
+                    }
+                } else {
+                    Ok(None)
                 }
             }
             "opt" => {
                 let is_image = resource.mime_type.starts_with("image/");
                 let opt_path = if is_image {
-                    format!(
-                        "resources/{}/{}_opt.webp",
-                        resource.storage_path.split('/').nth(1).unwrap_or(""),
-                        resource_id
-                    )
+                    format!("resources/{}/{}_opt.webp", user_id, resource_id)
                 } else {
-                    format!(
-                        "resources/{}/{}_opt.mp4",
-                        resource.storage_path.split('/').nth(1).unwrap_or(""),
-                        resource_id
-                    )
+                    format!("resources/{}/{}_opt.mp4", user_id, resource_id)
                 };
                 let mime_type = if is_image { "image/webp" } else { "video/mp4" };
                 match self.storage.download(&opt_path).await {
                     Ok(data) => Ok(Some((data, mime_type.to_string()))),
-                    Err(_) => Ok(None),
+                    Err(e) => {
+                        let err_msg = e.to_string();
+                        if err_msg.contains("not found") || err_msg.contains("No such file") || err_msg.contains("does not exist") {
+                            Ok(None)
+                        } else {
+                            Err(AppError::Storage(err_msg))
+                        }
+                    }
                 }
             }
             _ => {
@@ -664,51 +676,37 @@ impl ResourceService {
     }
 
     async fn process_transcoding(
-        user_id: &str,
+        storage: Arc<dyn Storage>,
+        config: Config,
+        user_id: String,
         resource_id: Uuid,
-        mime_type: &str,
-        data: &[u8],
+        mime_type: String,
+        data: Vec<u8>,
     ) -> Result<(), AppError> {
-        use crate::storage::local::LocalStorage;
-
-        let storage = LocalStorage::new_sync("./storage");
         let base_path = format!("resources/{}", user_id);
 
         if mime_type.starts_with("image/") {
-            if let Ok(thumb) = ImageProcessor::create_thumbnail(data).await {
+            if let Ok(thumb) = ImageProcessor::create_thumbnail(&data).await {
                 let _ = storage
-                    .upload(&format!("{}/{}_thumb.jpg", base_path, resource_id), vec_to_bytes(thumb), "image/jpeg")
+                    .upload(&format!("{}/{}_thumb.jpg", base_path, resource_id), Bytes::from(thumb), "image/jpeg")
                     .await;
             }
-            if let Ok(optimized) = ImageProcessor::create_optimized(data).await {
+            if let Ok(optimized) = ImageProcessor::create_optimized(&data).await {
                 let _ = storage
-                    .upload(&format!("{}/{}_opt.webp", base_path, resource_id), vec_to_bytes(optimized), "image/webp")
+                    .upload(&format!("{}/{}_opt.webp", base_path, resource_id), Bytes::from(optimized), "image/webp")
                     .await;
             }
         } else if mime_type.starts_with("video/") {
-            let processor = VideoProcessor::new(&Config {
-                database_url: String::new(),
-                jwt_secret: String::new(),
-                port: 8080,
-                storage_type: crate::config::StorageType::Local,
-                ffmpeg_binary: "ffmpeg".to_string(),
-                local_storage_path: "./storage".to_string(),
-                r2_endpoint: None,
-                r2_bucket: None,
-                r2_access_key_id: None,
-                r2_secret_access_key: None,
-                admin_username: "admin".to_string(),
-                admin_password: "admin".to_string(),
-            });
+            let processor = VideoProcessor::new(&config);
 
-            if let Ok(thumb) = processor.create_thumbnail(data).await {
+            if let Ok(thumb) = processor.create_thumbnail(&data).await {
                 let _ = storage
-                    .upload(&format!("{}/{}_thumb.jpg", base_path, resource_id), vec_to_bytes(thumb), "image/jpeg")
+                    .upload(&format!("{}/{}_thumb.jpg", base_path, resource_id), Bytes::from(thumb), "image/jpeg")
                     .await;
             }
-            if let Ok(optimized) = processor.create_optimized(data).await {
+            if let Ok(optimized) = processor.create_optimized(&data).await {
                 let _ = storage
-                    .upload(&format!("{}/{}_opt.mp4", base_path, resource_id), vec_to_bytes(optimized), "video/mp4")
+                    .upload(&format!("{}/{}_opt.mp4", base_path, resource_id), Bytes::from(optimized), "video/mp4")
                     .await;
             }
         }

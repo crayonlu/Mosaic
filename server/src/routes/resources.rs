@@ -5,6 +5,7 @@ use actix_multipart::Multipart;
 use actix_web::http::header;
 use actix_web::{web, HttpRequest, HttpResponse};
 use futures_util::StreamExt;
+use serde::Deserialize;
 use serde_json::{Map, Value};
 
 fn empty_metadata() -> Value {
@@ -138,8 +139,14 @@ pub async fn upload_resource(
     }
 }
 
+#[derive(Deserialize)]
+pub(crate) struct VariantQuery {
+    variant: Option<String>,
+}
+
 pub async fn download_resource_proxy(
     path: web::Path<uuid::Uuid>,
+    query: web::Query<VariantQuery>,
     req: HttpRequest,
     resource_service: web::Data<ResourceService>,
 ) -> HttpResponse {
@@ -147,13 +154,7 @@ pub async fn download_resource_proxy(
         return HttpResponse::from_error(e);
     }
 
-    let variant = req
-        .query_string()
-        .split('&')
-        .filter(|pair| pair.starts_with("variant="))
-        .next()
-        .and_then(|pair| pair.get(7..))
-        .unwrap_or("original");
+    let variant = query.variant.as_deref().unwrap_or("original");
 
     let client_etag = req
         .headers()
