@@ -1,7 +1,7 @@
 import { MOOD_INTENSITY_LEVELS } from '@/constants/common'
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { useRef } from 'react'
-import { StyleSheet, View, PanResponder, LayoutChangeEvent } from 'react-native'
+import { LayoutChangeEvent, PanResponder, StyleSheet, View } from 'react-native'
 
 interface MoodDragBarProps {
   value: number

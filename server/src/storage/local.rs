@@ -17,6 +17,12 @@ impl LocalStorage {
         })
     }
 
+    pub fn new_sync(base_path: &str) -> Self {
+        Self {
+            base_path: base_path.to_string(),
+        }
+    }
+
     fn get_full_path(&self, path: &str) -> String {
         format!("{}/{}", self.base_path.trim_end_matches('/'), path)
     }
@@ -46,6 +52,11 @@ impl Storage for LocalStorage {
         let full_path = self.get_full_path(path);
         tokio_fs::remove_file(&full_path).await?;
         Ok(())
+    }
+
+    async fn exists(&self, path: &str) -> bool {
+        let full_path = self.get_full_path(path);
+        tokio_fs::try_exists(&full_path).await.unwrap_or(false)
     }
 
     async fn get_presigned_url(&self, path: &str, _expires_secs: u64) -> anyhow::Result<String> {

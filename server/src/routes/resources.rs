@@ -1,10 +1,11 @@
 use crate::middleware::get_user_id;
 use crate::models::{ConfirmUploadRequest, CreateResourceRequest};
-use crate::services::ResourceService;
+use crate::services::{CacheHeaders, ResourceService};
 use actix_multipart::Multipart;
 use actix_web::http::header;
 use actix_web::{web, HttpRequest, HttpResponse};
 use futures_util::StreamExt;
+use serde::Deserialize;
 use serde_json::{Map, Value};
 
 fn empty_metadata() -> Value {
@@ -138,14 +139,28 @@ pub async fn upload_resource(
     }
 }
 
+#[derive(Deserialize)]
+pub(crate) struct VariantQuery {
+    variant: Option<String>,
+}
+
 pub async fn download_resource_proxy(
     path: web::Path<uuid::Uuid>,
+    query: web::Query<VariantQuery>,
     req: HttpRequest,
     resource_service: web::Data<ResourceService>,
 ) -> HttpResponse {
     if let Err(e) = get_user_id(&req) {
         return HttpResponse::from_error(e);
     }
+
+    let variant = query.variant.as_deref().unwrap_or("original");
+
+    let client_etag = req
+        .headers()
+        .get(header::IF_NONE_MATCH)
+        .and_then(|v| v.to_str().ok())
+        .map(String::from);
 
     let requested_range = req
         .headers()
@@ -154,18 +169,34 @@ pub async fn download_resource_proxy(
         .map(str::to_owned);
 
     match resource_service
-        .download_resource_proxy(path.into_inner())
+        .download_resource_variant(path.into_inner(), variant)
         .await
     {
-        Ok((data, mime_type)) => {
+        Ok(Some((data, mime_type))) => {
+            let etag = CacheHeaders::generate_etag(&data);
+
+            if client_etag.as_ref() == Some(&etag) {
+                return HttpResponse::NotModified()
+                    .insert_header((header::ETAG, etag.as_str()))
+                    .finish();
+            }
+
             let total_size = data.len();
+            let cache_headers = match variant {
+                "thumb" => CacheHeaders::for_thumbnail(),
+                "opt" => CacheHeaders::for_optimized(),
+                _ => CacheHeaders::for_original(),
+            };
 
             if let Some(range_header) = requested_range {
                 if let Some((start, end)) = parse_range_header(&range_header, total_size) {
                     let chunk = data.slice(start..=end);
                     let mut response = HttpResponse::PartialContent();
                     response.insert_header((header::CONTENT_TYPE, mime_type));
-                    response.insert_header((header::CACHE_CONTROL, "private, max-age=3600"));
+                    response.insert_header((header::ETAG, etag.as_str()));
+                    for (key, value) in &cache_headers {
+                        response.insert_header((*key, value.clone()));
+                    }
                     response.insert_header((header::ACCEPT_RANGES, "bytes"));
                     response.insert_header((header::CONTENT_LENGTH, chunk.len().to_string()));
                     response.insert_header((
@@ -182,11 +213,15 @@ pub async fn download_resource_proxy(
 
             let mut response = HttpResponse::Ok();
             response.insert_header((header::CONTENT_TYPE, mime_type));
-            response.insert_header((header::CACHE_CONTROL, "private, max-age=3600"));
+            response.insert_header((header::ETAG, etag.as_str()));
+            for (key, value) in cache_headers {
+                response.insert_header((key, value));
+            }
             response.insert_header((header::ACCEPT_RANGES, "bytes"));
             response.insert_header((header::CONTENT_LENGTH, total_size.to_string()));
             response.body(data)
         }
+        Ok(None) => HttpResponse::NotFound().finish(),
         Err(e) => HttpResponse::from_error(e),
     }
 }
@@ -200,14 +235,32 @@ pub async fn download_resource_thumbnail(
         return HttpResponse::from_error(e);
     }
 
+    let client_etag = req
+        .headers()
+        .get(header::IF_NONE_MATCH)
+        .and_then(|v| v.to_str().ok())
+        .map(String::from);
+
     match resource_service
         .download_resource_thumbnail(path.into_inner())
         .await
     {
         Ok((data, mime_type)) => {
+            let etag = CacheHeaders::generate_etag(&data);
+
+            if client_etag.as_ref() == Some(&etag) {
+                return HttpResponse::NotModified()
+                    .insert_header((header::ETAG, etag.as_str()))
+                    .finish();
+            }
+
+            let cache_headers = CacheHeaders::for_thumbnail();
             let mut response = HttpResponse::Ok();
             response.insert_header((header::CONTENT_TYPE, mime_type));
-            response.insert_header((header::CACHE_CONTROL, "private, max-age=3600"));
+            response.insert_header((header::ETAG, etag.as_str()));
+            for (key, value) in cache_headers {
+                response.insert_header((key, value));
+            }
             response.insert_header((header::CONTENT_LENGTH, data.len().to_string()));
             response.body(data)
         }
@@ -224,11 +277,29 @@ pub async fn download_avatar_proxy(
         return HttpResponse::from_error(e);
     }
 
+    let client_etag = req
+        .headers()
+        .get(header::IF_NONE_MATCH)
+        .and_then(|v| v.to_str().ok())
+        .map(String::from);
+
     match resource_service.download_avatar(path.into_inner()).await {
         Ok(data) => {
+            let etag = CacheHeaders::generate_etag(&data);
+
+            if client_etag.as_ref() == Some(&etag) {
+                return HttpResponse::NotModified()
+                    .insert_header((header::ETAG, etag.as_str()))
+                    .finish();
+            }
+
+            let cache_headers = CacheHeaders::for_avatar();
             let mut response = HttpResponse::Ok();
             response.insert_header(("Content-Type", "image/jpeg"));
-            response.insert_header(("Cache-Control", "private, max-age=3600"));
+            response.insert_header((header::ETAG, etag.as_str()));
+            for (key, value) in cache_headers {
+                response.insert_header((key, value));
+            }
             response.body(data)
         }
         Err(e) => HttpResponse::from_error(e),

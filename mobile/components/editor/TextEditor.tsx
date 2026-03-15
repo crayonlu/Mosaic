@@ -1,4 +1,4 @@
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { StyleSheet, TextInput, View } from 'react-native'
 
 interface TextEditorProps {

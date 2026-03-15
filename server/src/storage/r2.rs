@@ -46,6 +46,10 @@ impl Storage for R2Storage {
         Ok(())
     }
 
+    async fn exists(&self, path: &str) -> bool {
+        self.operator.exists(path).await.unwrap_or(false)
+    }
+
     async fn get_presigned_url(&self, path: &str, expires_secs: u64) -> anyhow::Result<String> {
         let presigned_req = self
             .operator

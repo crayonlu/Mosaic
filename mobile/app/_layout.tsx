@@ -2,10 +2,10 @@ import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
 import { LocalPushService } from '@/lib/services/local-push'
-import { useAuthStore } from '@/stores/auth-store'
-import { useConnectionStore } from '@/stores/connection-store'
-import { useMoodStore } from '@/stores/mood-store'
-import { useThemeInit, useThemeStore } from '@/stores/theme-store'
+import { useAuthStore } from '@/stores/authStore'
+import { useConnectionStore } from '@/stores/connectionStore'
+import { useMoodStore } from '@/stores/moodStore'
+import { useThemeInit, useThemeStore } from '@/stores/themeStore'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { getMoodColorWithIntensity } from '@mosaic/utils'
 import { Image } from 'expo-image'
@@ -22,6 +22,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { initializeMobileCache } from '@/lib/cache'
 
 export default function RootLayout() {
   const { theme } = useThemeStore()
@@ -38,6 +39,7 @@ export default function RootLayout() {
     initAuth()
     initialize()
     localPushService.registerAll()
+    initializeMobileCache()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

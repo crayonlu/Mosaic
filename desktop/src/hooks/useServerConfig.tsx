@@ -1,6 +1,6 @@
-import { clearAuth, initSharedApiClient } from '@/lib/shared-api'
+import { clearAuth, initSharedApiClient } from '@/lib/sharedApi'
 import type { ServerConfig } from '@/types/settings'
-import { configCommands } from '@/utils/call-rust'
+import { configCommands } from '@/utils/callRust'
 import { useEffect, useState } from 'react'
 
 export function useServerConfig() {

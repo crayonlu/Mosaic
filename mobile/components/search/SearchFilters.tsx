@@ -1,10 +1,10 @@
 import { Badge } from '@/components/ui'
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import {
-    BottomSheetBackdrop,
-    BottomSheetModal,
-    BottomSheetScrollView,
-    type BottomSheetBackdropProps,
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetScrollView,
+  type BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import dayjs from 'dayjs'
@@ -163,8 +163,11 @@ export function SearchFilters({
         handleIndicatorStyle={{ backgroundColor: theme.textSecondary }}
         keyboardBehavior="interactive"
       >
-        <BottomSheetScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>
-          <View style={{flex: 1}}>
+        <BottomSheetScrollView
+          style={styles.modalBody}
+          contentContainerStyle={styles.modalBodyContent}
+        >
+          <View style={{ flex: 1 }}>
             <View style={styles.filterSection}>
               <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>归档状态</Text>
               <View style={styles.archiveOptions}>
@@ -174,7 +177,8 @@ export function SearchFilters({
                     style={[
                       styles.archiveOption,
                       {
-                        backgroundColor: tempIsArchived === option.value ? theme.primary : theme.surface,
+                        backgroundColor:
+                          tempIsArchived === option.value ? theme.primary : theme.surface,
                         borderColor: theme.border,
                       },
                     ]}
@@ -199,7 +203,10 @@ export function SearchFilters({
                 <View style={styles.tagsContainer}>
                   {availableTags.map(tag => (
                     <TouchableOpacity key={tag} onPress={() => toggleTag(tag)}>
-                      <Badge text={tag} variant={tempSelectedTags.includes(tag) ? 'solid' : 'outline'} />
+                      <Badge
+                        text={tag}
+                        variant={tempSelectedTags.includes(tag) ? 'solid' : 'outline'}
+                      />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -283,7 +290,6 @@ export function SearchFilters({
             </TouchableOpacity>
           </View>
         </BottomSheetScrollView>
-
       </BottomSheetModal>
     </>
   )

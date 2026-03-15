@@ -1,13 +1,13 @@
 import { Button, toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { DraggableImageGrid } from '@/components/ui/DraggableImageGrid'
-import { useConnection } from '@/hooks/use-connection'
+import { useConnection } from '@/hooks/useConnection'
 import {
   createSelectedMediaItems,
   uploadSelectedMedia,
   type SelectedMediaItem,
 } from '@/lib/media/upload'
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { X } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import {

@@ -1,10 +1,10 @@
-import { getBearerAuthHeaders } from '@/lib/services/api-auth'
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
 import { apiClient, resourcesApi } from '@mosaic/api'
+import { useResourceCache } from '@mosaic/cache'
 import { Image } from 'expo-image'
 import { Check, Play } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 
 const { width } = Dimensions.get('window')
@@ -40,68 +40,75 @@ export function CoverImagePicker({
   onClear,
 }: CoverImagePickerProps) {
   const { theme } = useThemeStore()
-  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    const loadAuthHeaders = async () => {
-      const headers = await getBearerAuthHeaders()
-      setAuthHeaders(headers)
-    }
-    loadAuthHeaders()
-  }, [])
+  const allImages: CoverMediaItem[] = useMemo(
+    () =>
+      memos.flatMap(memo =>
+        memo.resources.flatMap((resource): CoverMediaItem[] => {
+          if (resource.resourceType === 'image') {
+            return [
+              {
+                resourceId: resource.id,
+                type: 'image',
+                url: resourcesApi.getDownloadUrl(resource.id),
+              },
+            ]
+          }
 
-  const allImages: CoverMediaItem[] = memos.flatMap(memo =>
-    memo.resources.flatMap((resource): CoverMediaItem[] => {
-      if (resource.resourceType === 'image') {
-        return [
-          {
-            resourceId: resource.id,
-            type: 'image',
-            url: resourcesApi.getDownloadUrl(resource.id),
-          },
-        ]
-      }
+          const thumbnailUrl = toAbsoluteUrl(resource.thumbnailUrl)
+          if (!thumbnailUrl) {
+            return []
+          }
 
-      const thumbnailUrl = toAbsoluteUrl(resource.thumbnailUrl)
-      if (!thumbnailUrl) {
-        return []
-      }
-
-      return [
-        {
-          resourceId: resource.id,
-          type: 'video',
-          url: thumbnailUrl,
-        },
-      ]
-    })
+          return [
+            {
+              resourceId: resource.id,
+              type: 'video',
+              url: thumbnailUrl,
+            },
+          ]
+        })
+      ),
+    [memos]
   )
 
-  const renderImage = ({ item }: { item: CoverMediaItem }) => {
-    const isSelected = item.resourceId === selectedCoverId
-    return (
-      <Pressable onPress={() => onSelect(item.resourceId)} style={[styles.imageContainer]}>
-        <Image
-          source={{ uri: item.url, headers: authHeaders }}
-          style={[styles.image, isSelected && styles.imageSelected]}
-          contentFit="cover"
-        />
-        {isSelected && (
-          <>
-            <View style={[styles.selectedOverlay, { backgroundColor: `${theme.primary}22` }]} />
-            <View style={[styles.selectedBadge, { backgroundColor: theme.primary }]}>
-              <Check size={12} color="#fff" strokeWidth={3} />
+  // Use the reusable useResourceCache hook for caching images
+  const imageUrls = useMemo(
+    () => allImages.filter(item => item.type === 'image').map(item => item.url),
+    [allImages]
+  )
+  const { cachedUris } = useResourceCache(imageUrls)
+
+  const renderImage = useCallback(
+    ({ item }: { item: CoverMediaItem }) => {
+      const isSelected = item.resourceId === selectedCoverId
+      const imageUri = cachedUris[item.url] || item.url
+
+      return (
+        <Pressable onPress={() => onSelect(item.resourceId)} style={[styles.imageContainer]}>
+          <Image
+            source={{ uri: imageUri }}
+            style={[styles.image, isSelected && styles.imageSelected]}
+            contentFit="cover"
+          />
+          {isSelected && (
+            <>
+              <View style={[styles.selectedOverlay, { backgroundColor: `${theme.primary}22` }]} />
+              <View style={[styles.selectedBadge, { backgroundColor: theme.primary }]}>
+                <Check size={12} color="#fff" strokeWidth={3} />
+              </View>
+            </>
+          )}
+          {item.type === 'video' && (
+            <View style={styles.videoBadge}>
+              <Play size={12} color="#fff" fill="#fff" />
             </View>
-          </>
-        )}
-        {item.type === 'video' && (
-          <View style={styles.videoBadge}>
-            <Play size={12} color="#fff" fill="#fff" />
-          </View>
-        )}
-      </Pressable>
-    )
-  }
+          )}
+        </Pressable>
+      )
+    },
+    [cachedUris, onSelect, selectedCoverId, theme]
+  )
 
   if (allImages.length === 0) {
     return (

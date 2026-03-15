@@ -2,9 +2,10 @@ use crate::config::Config;
 use crate::error::AppError;
 use crate::models::{
     build_download_route, build_thumbnail_route, thumbnail_mime_type, thumbnail_storage_path,
-    with_thumbnail_metadata, ConfirmUploadRequest, CreateResourceRequest,
-    PresignedUploadResponse, Resource, ResourceResponse,
+    with_thumbnail_metadata, ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse,
+    Resource, ResourceResponse,
 };
+use crate::services::{ImageProcessor, VideoProcessor};
 use crate::storage::traits::Storage;
 use bytes::Bytes;
 use chrono::Utc;
@@ -173,9 +174,9 @@ impl ResourceService {
             return Ok(());
         }
 
-        Err(anyhow::anyhow!(
-            String::from_utf8_lossy(&output.stderr).trim().to_string()
-        ))
+        Err(anyhow::anyhow!(String::from_utf8_lossy(&output.stderr)
+            .trim()
+            .to_string()))
     }
 
     async fn generate_thumbnail_bytes(
@@ -285,15 +286,30 @@ impl ResourceService {
             .await
             .map_err(|e| AppError::Storage(e.to_string()))?;
 
+        let storage = self.storage.clone();
+        let config = self.config.clone();
+        let user_id_owned = user_id.to_string();
+        let resource_id_owned = resource_id;
+        let data_owned = data.clone().to_vec();
+        let mime_type_owned = req.mime_type.clone();
+
+        tokio::spawn(async move {
+            let _ = Self::process_transcoding(
+                storage,
+                config,
+                user_id_owned,
+                resource_id_owned,
+                mime_type_owned,
+                data_owned,
+            )
+            .await;
+        });
+
         if let Some(thumbnail_path) = self
             .try_generate_thumbnail(user_id, resource_id, &req.mime_type, &data)
             .await
         {
-            metadata = with_thumbnail_metadata(
-                metadata,
-                thumbnail_path,
-                "image/jpeg".to_string(),
-            );
+            metadata = with_thumbnail_metadata(metadata, thumbnail_path, "image/jpeg".to_string());
         }
 
         let now = Utc::now().timestamp_millis();
@@ -322,29 +338,6 @@ impl ResourceService {
         self.build_resource_response(resource).await
     }
 
-    pub async fn download_resource_proxy(
-        &self,
-        resource_id: Uuid,
-    ) -> Result<(Bytes, String), AppError> {
-        let resource = sqlx::query_as::<_, Resource>(
-              "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
-             FROM resources r
-             WHERE r.id = $1",
-        )
-        .bind(resource_id)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or(AppError::ResourceNotFound)?;
-
-        let data = self
-            .storage
-            .download(&resource.storage_path)
-            .await
-            .map_err(|e| AppError::Storage(e.to_string()))?;
-
-        Ok((data, resource.mime_type))
-    }
-
     pub async fn download_resource_thumbnail(
         &self,
         resource_id: Uuid,
@@ -371,6 +364,97 @@ impl ResourceService {
             .map_err(|e| AppError::Storage(e.to_string()))?;
 
         Ok((data, mime_type))
+    }
+
+    pub async fn download_resource_variant(
+        &self,
+        resource_id: Uuid,
+        variant: &str,
+    ) -> Result<Option<(Bytes, String)>, AppError> {
+        let resource = sqlx::query_as::<_, Resource>(
+            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
+             FROM resources r
+             WHERE r.id = $1",
+        )
+        .bind(resource_id)
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or(AppError::ResourceNotFound)?;
+
+        let user_id = Self::extract_user_id_from_storage_path(&resource.storage_path)
+            .ok_or(AppError::ResourceNotFound)?;
+
+        match variant {
+            "thumb" => {
+                // Check for image thumbnail first
+                let image_thumb_path = format!("resources/{}/{}_thumb.jpg", user_id, resource_id);
+                if self.storage.exists(&image_thumb_path).await {
+                    let data = self
+                        .storage
+                        .download(&image_thumb_path)
+                        .await
+                        .map_err(|e| AppError::Storage(e.to_string()))?;
+                    return Ok(Some((data, "image/jpeg".to_string())));
+                }
+
+                // Fall back to video thumbnail via ensure_thumbnail_metadata
+                if let Some((thumb_path, mime_type)) = self
+                    .ensure_thumbnail_metadata(&mut resource.clone())
+                    .await?
+                {
+                    if self.storage.exists(&thumb_path).await {
+                        let data = self
+                            .storage
+                            .download(&thumb_path)
+                            .await
+                            .map_err(|e| AppError::Storage(e.to_string()))?;
+                        return Ok(Some((data, mime_type)));
+                    }
+                }
+
+                // Fall back to original
+                let data = self
+                    .storage
+                    .download(&resource.storage_path)
+                    .await
+                    .map_err(|e| AppError::Storage(e.to_string()))?;
+                Ok(Some((data, resource.mime_type)))
+            }
+            "opt" => {
+                let is_image = resource.mime_type.starts_with("image/");
+                let opt_path = if is_image {
+                    format!("resources/{}/{}_opt.webp", user_id, resource_id)
+                } else {
+                    format!("resources/{}/{}_opt.mp4", user_id, resource_id)
+                };
+
+                if self.storage.exists(&opt_path).await {
+                    let mime_type = if is_image { "image/webp" } else { "video/mp4" };
+                    let data = self
+                        .storage
+                        .download(&opt_path)
+                        .await
+                        .map_err(|e| AppError::Storage(e.to_string()))?;
+                    return Ok(Some((data, mime_type.to_string())));
+                }
+
+                // Fall back to original
+                let data = self
+                    .storage
+                    .download(&resource.storage_path)
+                    .await
+                    .map_err(|e| AppError::Storage(e.to_string()))?;
+                Ok(Some((data, resource.mime_type)))
+            }
+            _ => {
+                let data = self
+                    .storage
+                    .download(&resource.storage_path)
+                    .await
+                    .map_err(|e| AppError::Storage(e.to_string()))?;
+                Ok(Some((data, resource.mime_type)))
+            }
+        }
     }
 
     pub async fn delete_resource(&self, user_id: &str, resource_id: Uuid) -> Result<(), AppError> {
@@ -605,5 +689,60 @@ impl ResourceService {
         let _ = user_id;
 
         self.build_resource_response(resource).await
+    }
+
+    async fn process_transcoding(
+        storage: Arc<dyn Storage>,
+        config: Config,
+        user_id: String,
+        resource_id: Uuid,
+        mime_type: String,
+        data: Vec<u8>,
+    ) -> Result<(), AppError> {
+        let base_path = format!("resources/{}", user_id);
+
+        if mime_type.starts_with("image/") {
+            if let Ok(thumb) = ImageProcessor::create_thumbnail(&data).await {
+                let _ = storage
+                    .upload(
+                        &format!("{}/{}_thumb.jpg", base_path, resource_id),
+                        Bytes::from(thumb),
+                        "image/jpeg",
+                    )
+                    .await;
+            }
+            if let Ok(optimized) = ImageProcessor::create_optimized(&data).await {
+                let _ = storage
+                    .upload(
+                        &format!("{}/{}_opt.webp", base_path, resource_id),
+                        Bytes::from(optimized),
+                        "image/webp",
+                    )
+                    .await;
+            }
+        } else if mime_type.starts_with("video/") {
+            let processor = VideoProcessor::new(&config);
+
+            if let Ok(thumb) = processor.create_thumbnail(&data).await {
+                let _ = storage
+                    .upload(
+                        &format!("{}/{}_thumb.jpg", base_path, resource_id),
+                        Bytes::from(thumb),
+                        "image/jpeg",
+                    )
+                    .await;
+            }
+            if let Ok(optimized) = processor.create_optimized(&data).await {
+                let _ = storage
+                    .upload(
+                        &format!("{}/{}_opt.mp4", base_path, resource_id),
+                        Bytes::from(optimized),
+                        "video/mp4",
+                    )
+                    .await;
+            }
+        }
+
+        Ok(())
     }
 }

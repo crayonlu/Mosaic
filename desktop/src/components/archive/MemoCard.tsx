@@ -2,7 +2,7 @@ import { AuthImage } from '@/components/common/AuthImage'
 import { RichTextEditor } from '@/components/common/RichTextEditor'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { resolveApiUrl } from '@/lib/shared-api'
+import { resolveApiUrl } from '@/lib/sharedApi'
 import { cn } from '@/lib/utils'
 import type { MemoWithResources } from '@mosaic/api'
 import dayjs from 'dayjs'
@@ -68,6 +68,7 @@ export const MemoCard = memo<MemoCardProps>(
                 {previewUrl ? (
                   <AuthImage
                     src={previewUrl}
+                    variant="thumb"
                     alt={resource.filename}
                     className="w-full h-full object-cover"
                   />

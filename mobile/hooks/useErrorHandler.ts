@@ -1,6 +1,6 @@
-import { useCallback } from 'react'
 import { useRouter } from 'expo-router'
-import { useConnectionStore } from '../stores/connection-store'
+import { useCallback } from 'react'
+import { useConnectionStore } from '../stores/connectionStore'
 
 type ErrorHandler = (error: unknown) => void
 

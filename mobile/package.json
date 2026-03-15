@@ -15,6 +15,7 @@
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.8",
     "@mosaic/api": "workspace:*",
+    "@mosaic/cache": "workspace:*",
     "@mosaic/utils": "workspace:*",
     "@react-native-async-storage/async-storage": "^2.1.0",
     "@react-native-community/datetimepicker": "8.4.4",

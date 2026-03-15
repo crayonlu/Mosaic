@@ -10,15 +10,15 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
-import { useKeyCapture } from '@/hooks/use-key-capture'
-import { toast } from '@/hooks/use-toast'
-import { useSettingsStore } from '@/stores/settings-store'
+import { useKeyCapture } from '@/hooks/useKeyCapture'
+import { toast } from '@/hooks/useToast'
+import { useSettingsStore } from '@/stores/settingsStore'
 import {
   loadShortcutConfig,
   selectDataDirectory,
   settingsCommands,
   storageCommands,
-} from '@/utils/settings-helpers'
+} from '@/utils/settingsHelpers'
 import { Label } from '@radix-ui/react-label'
 import { Keyboard, Settings as SettingsIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'

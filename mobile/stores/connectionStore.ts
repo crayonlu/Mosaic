@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { useAuthStore } from './auth-store'
+import { useAuthStore } from './authStore'
 
 interface ConnectionState {
   isConnected: boolean

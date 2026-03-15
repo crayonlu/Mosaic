@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useConnectionStore } from '../stores/connection-store'
+import { useConnectionStore } from '../stores/connectionStore'
 
 export function useConnection() {
   const { isConnected, isServerReachable, initialize, cleanup } = useConnectionStore()

@@ -1,4 +1,4 @@
-import { tokenStorage } from './token-storage'
+import { tokenStorage } from './tokenStorage'
 
 export async function getBearerAuthHeaders(): Promise<Record<string, string>> {
   const token = await tokenStorage.getAccessToken()
