@@ -184,11 +184,7 @@ export function DraggableImageGrid({
           <View style={styles.imageContainer}>
             <View style={styles.imageContainer}>
               {previewUri ? (
-                <Image
-                  source={{ uri: previewUri }}
-                  style={styles.image}
-                  contentFit="cover"
-                />
+                <Image source={{ uri: previewUri }} style={styles.image} contentFit="cover" />
               ) : (
                 <View
                   style={[
