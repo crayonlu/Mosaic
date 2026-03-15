@@ -1,10 +1,10 @@
-import { getBearerAuthHeaders } from '@/lib/services/apiAuth';
+import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import {
   getResourceLoader,
   MobilePlatformAdapter,
   setPlatformAdapter,
   type ResourceLoader,
-} from '@mosaic/cache';
+} from '@mosaic/cache'
 
 let resourceLoader: ResourceLoader | null = null
 

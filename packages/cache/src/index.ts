@@ -69,5 +69,4 @@ export const createResourceLoader = async (): Promise<ResourceLoader> => {
 export { ResourceLoader };
 
 // Aliases for backward compatibility
-  export { detectPlatformFromUA as detectPlatform, createResourceLoader as getResourceLoader };
-
+export { detectPlatformFromUA as detectPlatform, createResourceLoader as getResourceLoader };

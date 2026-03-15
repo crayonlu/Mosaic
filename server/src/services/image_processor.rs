@@ -12,7 +12,12 @@ impl ImageProcessor {
     pub async fn create_thumbnail(input: &[u8]) -> Result<Vec<u8>, AppError> {
         let input_vec = input.to_vec();
         tokio::task::spawn_blocking(move || {
-            Self::process_sync(&input_vec, THUMBNAIL_WIDTH, ImageFormat::Jpeg, THUMBNAIL_QUALITY)
+            Self::process_sync(
+                &input_vec,
+                THUMBNAIL_WIDTH,
+                ImageFormat::Jpeg,
+                THUMBNAIL_QUALITY,
+            )
         })
         .await
         .map_err(|e| AppError::Processing(e.to_string()))?
@@ -54,8 +59,7 @@ impl ImageProcessor {
             ImageFormat::WebP => {
                 let rgb = processed.to_rgb8();
                 let (width, height) = rgb.dimensions();
-                let encoder =
-                    image::codecs::webp::WebPEncoder::new_lossless(&mut cursor);
+                let encoder = image::codecs::webp::WebPEncoder::new_lossless(&mut cursor);
                 encoder
                     .encode(rgb.as_raw(), width, height, image::ExtendedColorType::Rgb8)
                     .map_err(|e| AppError::Processing(e.to_string()))?;

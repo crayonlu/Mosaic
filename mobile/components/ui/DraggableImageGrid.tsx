@@ -97,7 +97,10 @@ export function DraggableImageGrid({
     () =>
       resolvedItems
         .filter(item => item.type === 'image')
-        .map(item => ({ uri: getOptimizedImageUri(item.uri, 'opt'), headers: item.headers ?? authHeaders })),
+        .map(item => ({
+          uri: getOptimizedImageUri(item.uri, 'opt'),
+          headers: item.headers ?? authHeaders,
+        })),
     [resolvedItems, authHeaders]
   )
 
@@ -159,7 +162,8 @@ export function DraggableImageGrid({
   const renderItem = useCallback(
     (item: GridItem, order: number) => {
       const index = order
-      const previewUri = item.type === 'video' ? item.thumbnailUri : getOptimizedImageUri(item.uri, 'thumb')
+      const previewUri =
+        item.type === 'video' ? item.thumbnailUri : getOptimizedImageUri(item.uri, 'thumb')
       const progress = uploadProgressById?.[item.key]
       const isUploading = typeof progress === 'number'
 
@@ -253,7 +257,11 @@ export function DraggableImageGrid({
                 ) : (
                   <Image
                     source={{
-                      uri: item.thumbnailUri ?? (item.type === 'image' ? getOptimizedImageUri(item.uri, 'thumb') : item.uri),
+                      uri:
+                        item.thumbnailUri ??
+                        (item.type === 'image'
+                          ? getOptimizedImageUri(item.uri, 'thumb')
+                          : item.uri),
                       headers: item.headers ?? authHeaders,
                     }}
                     style={styles.image}

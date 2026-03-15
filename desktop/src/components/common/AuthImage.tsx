@@ -20,7 +20,13 @@ function extractResourceId(url: string): string | null {
   return match ? match[1] : null
 }
 
-export function AuthImage({ src, withAuth = true, variant = 'original', onLoadingChange, ...props }: AuthImageProps) {
+export function AuthImage({
+  src,
+  withAuth = true,
+  variant = 'original',
+  onLoadingChange,
+  ...props
+}: AuthImageProps) {
   const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(undefined)
 
   const [isLoading, setIsLoading] = useState(true)
@@ -51,12 +57,12 @@ export function AuthImage({ src, withAuth = true, variant = 'original', onLoadin
         setHasError(false)
 
         const resourceId = extractResourceId(source)
-        
+
         if (resourceId && variant !== 'original') {
           const variantUrl = resourcesApi.getDownloadUrl(resourceId, variant)
           const loader = await getResourceLoader()
           const result = await loader.load(variantUrl, { forceRefresh: false, allowCache: true })
-          
+
           if (result.path) {
             setResolvedSrc(result.path)
             setIsLoading(false)
@@ -74,7 +80,7 @@ export function AuthImage({ src, withAuth = true, variant = 'original', onLoadin
 
         const loader = await getResourceLoader()
         const result = await loader.load(source, { forceRefresh: false, allowCache: true })
-        
+
         if (result.path) {
           setResolvedSrc(result.path)
           setIsLoading(false)

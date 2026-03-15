@@ -6,6 +6,5 @@ export {
   saveShortcutConfig,
   selectDataDirectory,
   settingsCommands,
-  storageCommands
-} from './callRust';
-
+  storageCommands,
+} from './callRust'

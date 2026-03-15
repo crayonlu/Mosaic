@@ -6,6 +6,5 @@ export {
   useCustomPushCount,
   useCustomPushList,
   useDeleteCustomPush,
-  useSaveCustomPush
+  useSaveCustomPush,
 } from './useCustomPush'
-

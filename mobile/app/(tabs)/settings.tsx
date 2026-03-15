@@ -22,13 +22,7 @@ import {
   Sun,
 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated'
 
 const appVersion = Constants.expoConfig?.version ?? 'unknown'
