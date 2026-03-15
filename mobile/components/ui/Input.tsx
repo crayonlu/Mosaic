@@ -51,7 +51,10 @@ export function Input({ label, error, showPasswordToggle, style, ...props }: Inp
 }
 
 const styles = StyleSheet.create({
-  container: {},
+  container: {
+    flexDirection: 'column',
+    width: '100%',
+  },
   label: {
     fontSize: 14,
     fontWeight: '500',
@@ -60,6 +63,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: '100%',
   },
   input: {
     height: 48,
@@ -67,6 +71,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 16,
     fontSize: 16,
+    width: '100%',
+    minWidth: '100%',
   },
   toggleButton: {
     padding: 12,

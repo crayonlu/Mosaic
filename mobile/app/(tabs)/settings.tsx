@@ -3,11 +3,12 @@ import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
+import { getMobileResourceLoader, initializeMobileCache } from '@/lib/cache'
 import { LocalPushService } from '@/lib/services/local-push'
-import { tokenStorage } from '@/lib/services/tokenStorage'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi } from '@mosaic/api'
+import { useResourceCache } from '@mosaic/cache'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 // import { router } from 'expo-router'
@@ -20,8 +21,9 @@ import {
   ShieldCheck,
   Sparkles,
   Sun,
+  Trash
 } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated'
 
@@ -31,21 +33,12 @@ const expandLayoutTransition = LinearTransition.duration(220)
 const localPush = LocalPushService.getInstance()
 
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
-  const [token, setToken] = useState<string | null>(null)
+  const { cachedUris } = useResourceCache([avatarUrl])
+  const cachedAvatarUrl = cachedUris[avatarUrl] || avatarUrl
 
-  useEffect(() => {
-    tokenStorage.getAccessToken().then(setToken)
-  }, [])
-
-  if (!token) return null
   return (
     <Image
-      source={{
-        uri: avatarUrl,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }}
+      source={{ uri: cachedAvatarUrl }}
       style={styles.avatarImage}
     />
   )
@@ -61,11 +54,64 @@ export default function SettingsScreen() {
   const [savingAI, setSavingAI] = useState(false)
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushPermissionGranted, setPushPermissionGranted] = useState(false)
+  const [showCacheSettings, setShowCacheSettings] = useState(false)
+  const [cacheSize, setCacheSize] = useState(0)
+  const [cacheCount, setCacheCount] = useState(0)
+  const [isLoadingCache, setIsLoadingCache] = useState(false)
 
   useEffect(() => {
     loadAIConfig()
     loadPushStatus()
+    loadCacheInfo()
+  })
+
+  const loadCacheInfo = useCallback(async () => {
+    setIsLoadingCache(true)
+    try {
+      let loader = getMobileResourceLoader()
+      if (!loader) {
+        loader = await initializeMobileCache()
+      }
+      const usage = await loader.getCacheUsage()
+      setCacheSize(usage?.totalSize ?? 0)
+      setCacheCount(usage?.itemCount ?? 0)
+    } catch (error) {
+      console.error('Failed to load cache info:', error)
+    } finally {
+      setIsLoadingCache(false)
+    }
   }, [])
+
+  const handleClearCache = useCallback(async () => {
+    toast.show({
+      type: 'warning',
+      title: '确认清除缓存',
+      message: '确定要清除所有缓存图片和视频吗？',
+      actionLabel: '确定',
+      onAction: async () => {
+        try {
+          const loader = getMobileResourceLoader()
+          if (loader) {
+            await loader.clearCache()
+            await loadCacheInfo()
+            toast.show({
+              type: 'success',
+              title: '缓存已清除',
+              message: '所有缓存图片和视频已被清除',
+            })
+          }
+        } catch (error) {
+          console.error('Failed to clear cache:', error)
+          toast.show({
+            type: 'error',
+            title: '清除失败',
+            message: '清除缓存时发生错误',
+          })
+        }
+      },
+      duration: 10000,
+    })
+  }, [loadCacheInfo])
 
   const toggleSectionWithAnimation = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
     setter(prev => !prev)
@@ -307,16 +353,16 @@ export default function SettingsScreen() {
               </View>
             </View>
             <View style={styles.settingRow}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>API URL</Text>
               <Input
+                label="API URL"
                 value={aiConfig.baseUrl}
                 onChangeText={text => setLocalAIConfig({ ...aiConfig, baseUrl: text })}
                 placeholder="https://api.openai.com/v1"
               />
             </View>
             <View style={styles.settingRow}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>API Key</Text>
               <Input
+                label="API Key"
                 value={aiConfig.apiKey}
                 onChangeText={text => setLocalAIConfig({ ...aiConfig, apiKey: text })}
                 placeholder="sk-..."
@@ -324,8 +370,8 @@ export default function SettingsScreen() {
               />
             </View>
             <View style={styles.settingRow}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>模型</Text>
               <Input
+                label="模型"
                 value={aiConfig.model}
                 onChangeText={text => setLocalAIConfig({ ...aiConfig, model: text })}
                 placeholder={aiConfig.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'}
@@ -468,6 +514,59 @@ export default function SettingsScreen() {
     await logout()
   }
 
+  const formatSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const renderCacheSection = () => (
+    <View style={[styles.section]}>
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <TouchableOpacity
+          style={[styles.menuItem, showCacheSettings && { borderBottomColor: theme.border }]}
+          onPress={() => toggleSectionWithAnimation(setShowCacheSettings)}
+        >
+          <Trash size={18} color={theme.text} />
+          <Text style={[styles.menuItemText, { color: theme.text }]}>存储缓存</Text>
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
+              {showCacheSettings ? '隐藏设置' : '显示设置'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+        {showCacheSettings && (
+          <Animated.View
+            entering={FadeIn.duration(400)}
+            exiting={FadeOut.duration(240)}
+            layout={expandLayoutTransition}
+            style={styles.permissionSettings}
+          >
+            <View style={styles.settingRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, color: theme.text }}>
+                  当前缓存: {isLoadingCache ? '加载中...' : formatSize(cacheSize)}
+                </Text>
+                <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4 }}>
+                  共 {cacheCount} 个文件
+                </Text>
+              </View>
+              <Button
+                variant="ghost"
+                size="small"
+                onPress={handleClearCache}
+                disabled={isLoadingCache || cacheCount === 0}
+                title="清除缓存"
+              />
+            </View>
+          </Animated.View>
+        )}
+      </View>
+    </View>
+  )
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.content}>
@@ -475,6 +574,7 @@ export default function SettingsScreen() {
         {renderAppearanceSection()}
         {renderAISettings()}
         {renderPermissionSection()}
+        {renderCacheSection()}
         {renderAboutSection()}
       </View>
     </ScrollView>
@@ -559,6 +659,8 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(0, 0, 0, 0.05)',
   },
   settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   providerButtons: {
@@ -574,10 +676,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   providerButtonText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  label: {
     fontSize: 13,
     fontWeight: '500',
   },

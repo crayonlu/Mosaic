@@ -4,6 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["react", "react-native"],
     "declaration": true,
     "declarationMap": true,
     "strict": true,
