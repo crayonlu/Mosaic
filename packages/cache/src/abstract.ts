@@ -1,14 +1,14 @@
 import type {
-  CacheConfig,
-  CacheEntry,
-  CacheEventHandler,
-  CacheEventMap,
-  CacheEventType,
-  CacheFilter,
-  CacheUsage,
-  CacheWriteOptions,
-  EvictReason,
-} from './types.js';
+    CacheConfig,
+    CacheEntry,
+    CacheEventHandler,
+    CacheEventMap,
+    CacheEventType,
+    CacheFilter,
+    CacheUsage,
+    CacheWriteOptions,
+    EvictReason,
+} from './types';
 
 export abstract class AbstractCacheManager {
   protected config!: CacheConfig;

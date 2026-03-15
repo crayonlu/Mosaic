@@ -1,20 +1,20 @@
-export * from './abstract.js';
-export * from './implementations/memory-cache.js';
-export * from './implementations/realmCache.js';
-export * from './implementations/tauriCache.js';
-export * from './platform/adapter.js';
-export * from './platform/mobileAdapter.js';
-export * from './platform/tauriAdapter.js';
-export * from './services/resourceLoader.js';
-export * from './types.js';
-export * from './utils/hash.js';
-export * from './utils/policy.js';
+export * from './abstract';
+export * from './implementations/memoryCache';
+export * from './implementations/realmCache';
+export * from './implementations/tauriCache';
+export * from './platform/adapter';
+export * from './platform/mobileAdapter';
+export * from './platform/tauriAdapter';
+export * from './services/resourceLoader';
+export * from './types';
+export * from './utils/hash';
+export * from './utils/policy';
 
-import { MemoryCacheManager } from './implementations/memory-cache.js';
-import { RealmCacheManager } from './implementations/realmCache.js';
-import { TauriCacheManager } from './implementations/tauriCache.js';
-import type { CacheConfig, ICacheManager, Platform } from './types.js';
-import { DEFAULT_CACHE_CONFIG } from './types.js';
+import { MemoryCacheManager } from './implementations/memoryCache';
+import { RealmCacheManager } from './implementations/realmCache';
+import { TauriCacheManager } from './implementations/tauriCache';
+import type { CacheConfig, ICacheManager, Platform } from './types';
+import { DEFAULT_CACHE_CONFIG } from './types';
 
 export const createCacheManager = (platform: Platform): ICacheManager => {
   switch (platform) {
@@ -54,7 +54,7 @@ export const createAutoCacheManager = async (
   return createCacheManagerWithConfig(platform, config);
 };
 
-import { ResourceLoader } from './services/resourceLoader.js';
+import { ResourceLoader } from './services/resourceLoader';
 
 let resourceLoaderInstance: ResourceLoader | null = null;
 

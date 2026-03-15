@@ -1,6 +1,6 @@
-import { getCacheManager, getPlatformAdapter, type PlatformAdapter } from '../platform/adapter.js';
-import type { CacheEntry, ICacheManager, LoadedResource } from '../types.js';
-import { parseMaxAge } from '../utils/policy.js';
+import { getCacheManager, getPlatformAdapter, type PlatformAdapter } from '../platform/adapter';
+import type { CacheEntry, ICacheManager, LoadedResource } from '../types';
+import { parseMaxAge } from '../utils/policy';
 
 export interface ResourceLoaderOptions {
   forceRefresh?: boolean;

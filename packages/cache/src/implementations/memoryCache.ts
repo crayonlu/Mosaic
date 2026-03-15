@@ -1,11 +1,11 @@
-import { AbstractCacheManager } from '../abstract.js';
+import { AbstractCacheManager } from '../abstract';
 import type {
-  CacheConfig,
-  CacheEntry,
-  CacheFilter,
-  CacheUsage,
-  CacheWriteOptions,
-  EvictReason,
+    CacheConfig,
+    CacheEntry,
+    CacheFilter,
+    CacheUsage,
+    CacheWriteOptions,
+    EvictReason,
 } from '../types';
 
 export class MemoryCacheManager extends AbstractCacheManager {
