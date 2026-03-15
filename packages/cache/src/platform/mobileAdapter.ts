@@ -1,4 +1,4 @@
-import { RealmCacheManager } from '../implementations/realm-cache.js';
+import { RealmCacheManager } from '../implementations/realmCache.js';
 import type { ICacheManager } from '../types.js';
 import { DEFAULT_CACHE_CONFIG } from '../types.js';
 import type { AuthHeaderProvider, HttpClient, PlatformAdapter, PlatformType } from './adapter.js';

@@ -1,7 +1,7 @@
 export * from './abstract.js';
 export * from './implementations/memory-cache.js';
-export * from './implementations/realm-cache.js';
-export * from './implementations/tauri-cache.js';
+export * from './implementations/realmCache.js';
+export * from './implementations/tauriCache.js';
 export * from './platform/adapter.js';
 export * from './platform/mobileAdapter.js';
 export * from './platform/tauriAdapter.js';
@@ -11,8 +11,8 @@ export * from './utils/hash.js';
 export * from './utils/policy.js';
 
 import { MemoryCacheManager } from './implementations/memory-cache.js';
-import { RealmCacheManager } from './implementations/realm-cache.js';
-import { TauriCacheManager } from './implementations/tauri-cache.js';
+import { RealmCacheManager } from './implementations/realmCache.js';
+import { TauriCacheManager } from './implementations/tauriCache.js';
 import type { CacheConfig, ICacheManager, Platform } from './types.js';
 import { DEFAULT_CACHE_CONFIG } from './types.js';
 
@@ -67,3 +67,4 @@ export const getResourceLoader = async (): Promise<ResourceLoader> => {
 };
 
 export { ResourceLoader };
+
