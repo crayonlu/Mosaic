@@ -38,8 +38,8 @@ pub use memo::{
 };
 pub use resource::{
     build_download_route, build_thumbnail_route, thumbnail_mime_type, thumbnail_storage_path,
-    with_thumbnail_metadata, ConfirmUploadRequest, CreateResourceRequest,
-    PresignedUploadResponse, Resource, ResourceResponse,
+    with_thumbnail_metadata, ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse,
+    Resource, ResourceResponse,
 };
 pub use stats::{
     HeatMapData, MoodData, SummaryData, TagData, TimelineData, TimelineEntry, TrendsData,

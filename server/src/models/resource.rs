@@ -22,10 +22,7 @@ pub fn thumbnail_storage_path(metadata: &Value) -> Option<&str> {
 }
 
 pub fn thumbnail_mime_type(metadata: &Value) -> Option<&str> {
-    metadata
-        .as_object()?
-        .get(THUMBNAIL_MIME_TYPE_KEY)?
-        .as_str()
+    metadata.as_object()?.get(THUMBNAIL_MIME_TYPE_KEY)?.as_str()
 }
 
 pub fn with_thumbnail_metadata(metadata: Value, storage_path: String, mime_type: String) -> Value {
@@ -38,7 +35,10 @@ pub fn with_thumbnail_metadata(metadata: Value, storage_path: String, mime_type:
         THUMBNAIL_STORAGE_PATH_KEY.to_string(),
         Value::String(storage_path),
     );
-    map.insert(THUMBNAIL_MIME_TYPE_KEY.to_string(), Value::String(mime_type));
+    map.insert(
+        THUMBNAIL_MIME_TYPE_KEY.to_string(),
+        Value::String(mime_type),
+    );
 
     Value::Object(map)
 }

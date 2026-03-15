@@ -127,7 +127,7 @@ export function ArchiveDialog({
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.info}>
-          <Text style={[styles.infoText, { color: theme.textSecondary }]}> 
+          <Text style={[styles.infoText, { color: theme.textSecondary }]}>
             将 {selectedMemos.length} 条Memo归档到 {targetDate}
           </Text>
         </View>
@@ -175,7 +175,7 @@ export function ArchiveDialog({
 
           {moodKey && (
             <View style={styles.intensitySection}>
-              <Text style={[styles.intensityLabel, { color: theme.textSecondary }]}> 
+              <Text style={[styles.intensityLabel, { color: theme.textSecondary }]}>
                 强度: {moodScore}/10
               </Text>
               <MoodDragBar value={moodScore} onChange={setMoodScore} />
@@ -193,7 +193,7 @@ export function ArchiveDialog({
         )}
       </BottomSheetScrollView>
 
-      <View style={[styles.footer, { borderTopColor: theme.border }]}> 
+      <View style={[styles.footer, { borderTopColor: theme.border }]}>
         <Button title="取消" variant="secondary" onPress={onCancel} style={styles.footerButton} />
         <Button
           title={loading ? '归档中...' : '确认归档'}
