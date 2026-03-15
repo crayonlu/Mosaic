@@ -1,5 +1,5 @@
 import { ResourcePreview } from '@/components/common/ResourcePreview'
-import { useInputStore } from '@/stores/input-store'
+import { useInputStore } from '@/stores/inputStore'
 
 export function InputResources() {
   const { resourcePreviews, uploadingFiles, removeResource } = useInputStore()

@@ -1,4 +1,5 @@
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
+import { useResourceCache } from '@mosaic/cache'
 import { Image } from 'expo-image'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { Play, X } from 'lucide-react-native'
@@ -30,6 +31,12 @@ export interface MediaGridItem {
   type: 'image' | 'video'
   thumbnailUri?: string
   headers?: Record<string, string>
+}
+
+function getOptimizedImageUri(uri: string, variant?: 'thumb' | 'opt'): string {
+  if (!variant) return uri
+  const separator = uri.includes('?') ? '&' : '?'
+  return `${uri}${separator}variant=${variant}`
 }
 
 type GridItem = MediaGridItem
@@ -67,6 +74,7 @@ export function DraggableImageGrid({
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   const [videoPreviewItem, setVideoPreviewItem] = useState<MediaGridItem | null>(null)
 
+  // resolvedItems must be defined before useEffects that depend on it
   const resolvedItems: MediaGridItem[] = useMemo(
     () =>
       items ??
@@ -77,6 +85,15 @@ export function DraggableImageGrid({
       })),
     [images, items]
   )
+
+  const imageUrls = useMemo(
+    () =>
+      resolvedItems
+        .filter(item => item.type === 'image')
+        .map(item => getOptimizedImageUri(item.uri, 'thumb')),
+    [resolvedItems]
+  )
+  const { cachedUris } = useResourceCache(imageUrls)
 
   const gridData: GridItem[] = useMemo(
     () =>
@@ -91,8 +108,10 @@ export function DraggableImageGrid({
     () =>
       resolvedItems
         .filter(item => item.type === 'image')
-        .map(item => ({ uri: item.uri, headers: item.headers ?? authHeaders })),
-    [resolvedItems, authHeaders]
+        .map(item => ({
+          uri: cachedUris[item.uri] || getOptimizedImageUri(item.uri, 'opt'),
+        })),
+    [resolvedItems, cachedUris]
   )
 
   const handleDragRelease = useCallback(
@@ -153,7 +172,10 @@ export function DraggableImageGrid({
   const renderItem = useCallback(
     (item: GridItem, order: number) => {
       const index = order
-      const previewUri = item.type === 'video' ? item.thumbnailUri : item.uri
+      const previewUri =
+        item.type === 'video'
+          ? item.thumbnailUri
+          : cachedUris[item.uri] || getOptimizedImageUri(item.uri, 'thumb')
       const progress = uploadProgressById?.[item.key]
       const isUploading = typeof progress === 'number'
 
@@ -162,11 +184,7 @@ export function DraggableImageGrid({
           <View style={styles.imageContainer}>
             <View style={styles.imageContainer}>
               {previewUri ? (
-                <Image
-                  source={{ uri: previewUri, headers: item.headers ?? authHeaders }}
-                  style={styles.image}
-                  contentFit="cover"
-                />
+                <Image source={{ uri: previewUri }} style={styles.image} contentFit="cover" />
               ) : (
                 <View
                   style={[
@@ -210,7 +228,7 @@ export function DraggableImageGrid({
       )
     },
     [
-      authHeaders,
+      cachedUris,
       handleRemove,
       imageSize,
       onImagesChange,
@@ -247,8 +265,11 @@ export function DraggableImageGrid({
                 ) : (
                   <Image
                     source={{
-                      uri: item.thumbnailUri ?? item.uri,
-                      headers: item.headers ?? authHeaders,
+                      uri:
+                        (cachedUris[item.uri] || item.thumbnailUri) ??
+                        (item.type === 'image'
+                          ? getOptimizedImageUri(item.uri, 'thumb')
+                          : item.uri),
                     }}
                     style={styles.image}
                     contentFit="cover"
@@ -385,7 +406,7 @@ function ActiveVideoPreview({
 
   const player = useVideoPlayer(
     {
-      uri: item.uri,
+      uri: getOptimizedImageUri(item.uri, 'opt'),
       headers: item.headers ?? authHeaders,
     },
     player => {

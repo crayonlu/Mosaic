@@ -1,4 +1,4 @@
-import { tokenStorage } from '@/lib/services/token-storage'
+import { tokenStorage } from '@/lib/services/tokenStorage'
 import type { ApiError, User } from '@mosaic/api'
 import { apiClient, authApi } from '@mosaic/api'
 import AsyncStorage from '@react-native-async-storage/async-storage'

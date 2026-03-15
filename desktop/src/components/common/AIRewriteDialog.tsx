@@ -1,9 +1,5 @@
-import { useState } from 'react'
-import { Wand2, Loader2 } from 'lucide-react'
-import { StandardDialog } from '@/components/ui/standard-dialog'
-import { DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
+import { DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -11,7 +7,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useAI } from '@/hooks/use-ai'
+import { StandardDialog } from '@/components/ui/standard-dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { useAI } from '@/hooks/useAI'
+import { Loader2, Wand2 } from 'lucide-react'
+import { useState } from 'react'
 
 interface AIRewriteDialogProps {
   open: boolean

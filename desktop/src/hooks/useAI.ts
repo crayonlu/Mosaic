@@ -1,4 +1,4 @@
-import { toast } from '@/hooks/use-toast'
+import { toast } from '@/hooks/useToast'
 import type {
   CompleteTextRequest,
   CompleteTextResponse,
@@ -9,8 +9,8 @@ import type {
   SummarizeTextRequest,
   SummarizeTextResponse,
 } from '@/types/ai'
-import { aiCommands } from '@/utils/call-rust'
-import { loadAIConfig } from '@/utils/settings-helpers'
+import { aiCommands } from '@/utils/callRust'
+import { loadAIConfig } from '@/utils/settingsHelpers'
 import { useCallback, useState } from 'react'
 
 let aiConfigCache: { config: unknown; timestamp: number } | null = null

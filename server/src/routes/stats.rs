@@ -19,8 +19,7 @@ pub async fn get_heatmap(
     let start_date = match chrono::NaiveDate::parse_from_str(&query.start_date, "%Y-%m-%d") {
         Ok(date) => date,
         Err(_) => {
-            return HttpResponse::BadRequest()
-                .json("Invalid startDate format, expected YYYY-MM-DD")
+            return HttpResponse::BadRequest().json("Invalid startDate format, expected YYYY-MM-DD")
         }
     };
 
@@ -56,8 +55,7 @@ pub async fn get_timeline(
     let start_date = match chrono::NaiveDate::parse_from_str(&query.start_date, "%Y-%m-%d") {
         Ok(date) => date,
         Err(_) => {
-            return HttpResponse::BadRequest()
-                .json("Invalid startDate format, expected YYYY-MM-DD")
+            return HttpResponse::BadRequest().json("Invalid startDate format, expected YYYY-MM-DD")
         }
     };
 
@@ -93,8 +91,7 @@ pub async fn get_trends(
     let start_date = match chrono::NaiveDate::parse_from_str(&query.start_date, "%Y-%m-%d") {
         Ok(date) => date,
         Err(_) => {
-            return HttpResponse::BadRequest()
-                .json("Invalid startDate format, expected YYYY-MM-DD")
+            return HttpResponse::BadRequest().json("Invalid startDate format, expected YYYY-MM-DD")
         }
     };
 

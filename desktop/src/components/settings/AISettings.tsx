@@ -1,18 +1,3 @@
-import { useState, useEffect } from 'react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@radix-ui/react-label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { settingsCommands, loadAIConfig, saveAIConfig } from '@/utils/settings-helpers'
-import type { AIConfig } from '@/types/settings'
-import { CheckCircle2, XCircle, Bot } from 'lucide-react'
-import { LoadingButton } from '@/components/ui/loading/loading-button'
-import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
 import {
   Card,
   CardContent,
@@ -21,6 +6,21 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { LoadingButton } from '@/components/ui/loading/loading-button'
+import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import type { AIConfig } from '@/types/settings'
+import { loadAIConfig, saveAIConfig, settingsCommands } from '@/utils/settingsHelpers'
+import { Label } from '@radix-ui/react-label'
+import { Bot, CheckCircle2, XCircle } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 const DEFAULT_BASE_URLS = {
   openai: 'https://api.openai.com',

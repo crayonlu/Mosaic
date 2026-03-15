@@ -1,4 +1,4 @@
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { Check, ChevronDown } from 'lucide-react-native'
 import { useState } from 'react'
 import {

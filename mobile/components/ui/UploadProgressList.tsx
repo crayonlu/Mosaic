@@ -1,4 +1,4 @@
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { Image as ImageIcon, Play } from 'lucide-react-native'
 import { StyleSheet, Text, View } from 'react-native'
 

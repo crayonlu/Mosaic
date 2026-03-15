@@ -1,6 +1,4 @@
-import { Label } from '@radix-ui/react-label'
-import { useTheme } from '@/hooks/use-theme'
-import { useAppStore } from '@/stores/app-store'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -8,7 +6,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useTheme } from '@/hooks/useTheme'
+import { useAppStore } from '@/stores/appStore'
+import { Label } from '@radix-ui/react-label'
 import { Monitor } from 'lucide-react'
 
 export function AppSettings() {

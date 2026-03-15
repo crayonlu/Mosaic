@@ -3,9 +3,10 @@ import { MemoCard } from '@/components/memo/MemoCard'
 import { Loading } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
 import { useDiary, useUpdateDiary } from '@/lib/query'
-import { getBearerAuthHeaders } from '@/lib/services/api-auth'
-import { useThemeStore } from '@/stores/theme-store'
+import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
+import { useThemeStore } from '@/stores/themeStore'
 import { apiClient, resourcesApi } from '@mosaic/api'
+import { useResourceCache } from '@mosaic/cache'
 import { Image } from 'expo-image'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
@@ -74,6 +75,19 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
     }
     return resourcesApi.getDownloadUrl(displayCoverImageId)
   }, [coverResource, displayCoverImageId])
+
+  // Cache the cover image if it's a direct URL (not a video thumbnail)
+  const coverImageUrls = useMemo(() => {
+    if (!coverImageUrl) return []
+    // Only cache non-video thumbnails (video thumbnails use different URL pattern)
+    if (coverResource?.resourceType === 'video') return []
+    return [coverImageUrl]
+  }, [coverImageUrl, coverResource?.resourceType])
+
+  const { cachedUris } = useResourceCache(coverImageUrls)
+
+  // Get cached URL or fall back to original
+  const cachedCoverImageUrl = coverImageUrl ? cachedUris[coverImageUrl] || coverImageUrl : undefined
 
   const hasChanges =
     summaryDraft.trim() !== (diary?.summary ?? '').trim() ||
@@ -181,7 +195,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
           {coverImageUrl && (
             <View style={styles.coverCard}>
               <Image
-                source={{ uri: coverImageUrl, headers: authHeaders }}
+                source={{ uri: cachedCoverImageUrl, headers: authHeaders }}
                 style={styles.coverImage}
                 contentFit="cover"
               />

@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui'
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import { Maximize2 } from 'lucide-react-native'
 import { useState } from 'react'
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'

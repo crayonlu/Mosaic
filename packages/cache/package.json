@@ -1,0 +1,66 @@
+{
+  "name": "@mosaic/cache",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "bun run tsup",
+    "dev": "bun run tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "realm": "^12.14.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/api": "^2.2.0",
+    "@tauri-apps/plugin-fs": "^2.2.0",
+    "@types/bun": "^1.1.0",
+    "@types/react": "^18.3.1",
+    "eslint": "^9.17.0",
+    "expo-file-system": "^18.0.0",
+    "prettier": "^3.4.0",
+    "react-native": "^0.76.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  },
+  "peerDependencies": {
+    "@tauri-apps/api": "^2.2.0",
+    "@tauri-apps/plugin-fs": "^2.2.0",
+    "react": ">=18"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": ["../../eslint.config.js"],
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    },
+    "globals": {
+      "RequestInit": "readonly",
+      "Response": "readonly",
+      "BodyInit": "readonly",
+      "fetch": "readonly",
+      "URL": "readonly",
+      "atob": "readonly",
+      "btoa": "readonly"
+    }
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "printWidth": 100
+  }
+}

@@ -1,8 +1,7 @@
 use crate::error::AppError;
 use crate::models::{
-    build_thumbnail_route,
-    CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse, MemoWithResources,
-    PaginatedResponse, Resource, TagResponse, UpdateMemoRequest,
+    build_thumbnail_route, CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse,
+    MemoWithResources, PaginatedResponse, Resource, TagResponse, UpdateMemoRequest,
 };
 use chrono::Utc;
 use serde_json::json;

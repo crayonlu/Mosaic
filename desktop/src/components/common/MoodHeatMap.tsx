@@ -1,5 +1,5 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { useTheme } from '@/hooks/use-theme'
+import { useTheme } from '@/hooks/useTheme'
 import type { HeatMapCell, HeatMapDataExtended } from '@/types/stats'
 import { getMoodLabel } from '@mosaic/utils'
 import dayjs from 'dayjs'

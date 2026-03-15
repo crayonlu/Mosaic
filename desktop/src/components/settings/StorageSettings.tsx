@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { clearCache, getCacheCount, getCacheSize } from '@/utils/resource-cache'
+import { getResourceLoader } from '@mosaic/cache'
 import { Label } from '@radix-ui/react-label'
 import { Image, Loader2, Video } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -13,15 +13,10 @@ function formatSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-interface CacheInfo {
-  size: number
-  count: number
-}
-
 export function StorageSettings() {
-  const [imageCache, setImageCache] = useState<CacheInfo>({ size: 0, count: 0 })
-  const [videoCache, setVideoCache] = useState<CacheInfo>({ size: 0, count: 0 })
-  const [isClearing, setIsClearing] = useState<string | null>(null)
+  const [cacheSize, setCacheSize] = useState(0)
+  const [cacheCount, setCacheCount] = useState(0)
+  const [isClearing, setIsClearing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -31,14 +26,10 @@ export function StorageSettings() {
   const loadCacheInfo = async () => {
     setIsLoading(true)
     try {
-      const [imgSize, imgCount, vidSize, vidCount] = await Promise.all([
-        getCacheSize('images'),
-        getCacheCount('images'),
-        getCacheSize('videos'),
-        getCacheCount('videos'),
-      ])
-      setImageCache({ size: imgSize, count: imgCount })
-      setVideoCache({ size: vidSize, count: vidCount })
+      const loader = await getResourceLoader()
+      const usage = await loader.getCacheUsage()
+      setCacheSize(usage?.totalSize ?? 0)
+      setCacheCount(usage?.itemCount ?? 0)
     } catch (error) {
       console.error('Failed to load cache info:', error)
     } finally {
@@ -46,24 +37,18 @@ export function StorageSettings() {
     }
   }
 
-  const handleClear = async (type: 'images' | 'videos' | 'all') => {
-    setIsClearing(type)
+  const handleClear = async () => {
+    setIsClearing(true)
     try {
-      if (type === 'images' || type === 'all') {
-        await clearCache('images')
-      }
-      if (type === 'videos' || type === 'all') {
-        await clearCache('videos')
-      }
+      const loader = await getResourceLoader()
+      await loader.clearCache()
       await loadCacheInfo()
     } catch (error) {
       console.error('Failed to clear cache:', error)
     } finally {
-      setIsClearing(null)
+      setIsClearing(false)
     }
   }
-
-  const totalFrontendSize = imageCache.size + videoCache.size
 
   return (
     <Card>
@@ -78,61 +63,48 @@ export function StorageSettings() {
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Image className="h-5 w-5 text-muted-foreground" />
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="flex items-center gap-4">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Image className="h-5 w-5 text-primary" />
+                </div>
                 <div>
                   <Label className="text-sm font-medium">图片缓存</Label>
-                  <p className="text-xs text-muted-foreground">
-                    {formatSize(imageCache.size)} ({imageCache.count} 张)
-                  </p>
+                  <p className="text-xs text-muted-foreground">已缓存 {cacheCount} 个资源</p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleClear('images')}
-                disabled={isClearing !== null || imageCache.count === 0}
-              >
-                {isClearing === 'images' ? <Loader2 className="h-4 w-4 animate-spin" /> : '清理'}
-              </Button>
+              <div className="text-sm font-medium">{formatSize(cacheSize)}</div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Video className="h-5 w-5 text-muted-foreground" />
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="flex items-center gap-4">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Video className="h-5 w-5 text-primary" />
+                </div>
                 <div>
                   <Label className="text-sm font-medium">视频缓存</Label>
-                  <p className="text-xs text-muted-foreground">
-                    {formatSize(videoCache.size)} ({videoCache.count} 个)
-                  </p>
+                  <p className="text-xs text-muted-foreground">通过统一缓存管理</p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleClear('videos')}
-                disabled={isClearing !== null || videoCache.count === 0}
-              >
-                {isClearing === 'videos' ? <Loader2 className="h-4 w-4 animate-spin" /> : '清理'}
-              </Button>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t">
+            <div className="flex items-center justify-between rounded-lg border p-4">
               <div>
-                <Label className="text-sm font-medium">前端缓存总计</Label>
-                <p className="text-xs text-muted-foreground">{formatSize(totalFrontendSize)}</p>
+                <Label className="text-sm font-medium">总缓存大小</Label>
+                <p className="text-xs text-muted-foreground">所有缓存资源占用的空间</p>
               </div>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => handleClear('all')}
-                disabled={isClearing !== null || (imageCache.count === 0 && videoCache.count === 0)}
-              >
-                {isClearing === 'all' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                {isClearing === 'all' ? '清理中...' : '清理全部'}
-              </Button>
+              <div className="text-sm font-medium">{formatSize(cacheSize)}</div>
             </div>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleClear}
+              disabled={isClearing || cacheSize === 0}
+            >
+              {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              清理缓存
+            </Button>
           </>
         )}
       </CardContent>

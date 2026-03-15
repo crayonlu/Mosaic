@@ -4,9 +4,9 @@ import {
   useCustomPushList,
   useDeleteCustomPush,
   useSaveCustomPush,
-} from '@/lib/query/hooks/use-custom-push'
+} from '@/lib/query/hooks/useCustomPush'
 import { CustomPushData } from '@/lib/services/local-push/custom'
-import { useThemeStore } from '@/stores/theme-store'
+import { useThemeStore } from '@/stores/themeStore'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { router } from 'expo-router'
 import { ArrowLeft, Bell, Clock, Trash2 } from 'lucide-react-native'
