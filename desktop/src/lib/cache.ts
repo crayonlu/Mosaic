@@ -1,11 +1,25 @@
-import { getResourceLoader, setPlatformAdapter, TauriPlatformAdapter, type ResourceLoader } from '@mosaic/cache'
+import {
+  getResourceLoader,
+  setPlatformAdapter,
+  TauriPlatformAdapter,
+  type ResourceLoader,
+} from '@mosaic/cache'
 
 let resourceLoader: ResourceLoader | null = null
 
 export const initializeDesktopCache = async (): Promise<ResourceLoader> => {
-  const adapter = new TauriPlatformAdapter()
-  setPlatformAdapter(adapter)
-  resourceLoader = await getResourceLoader()
+  if (!resourceLoader) {
+    const adapter = new TauriPlatformAdapter()
+
+    adapter.setAuthHeaderProvider(async (): Promise<Record<string, string>> => {
+      const token = localStorage.getItem('auth_token')
+      if (!token) return {}
+      return { Authorization: `Bearer ${token}` }
+    })
+
+    setPlatformAdapter(adapter)
+    resourceLoader = await getResourceLoader()
+  }
   return resourceLoader
 }
 

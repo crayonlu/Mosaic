@@ -22,7 +22,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
-import { initializeMobileCache } from '../lib/cache'
+import { initializeMobileCache } from '@/lib/cache'
 
 export default function RootLayout() {
   const { theme } = useThemeStore()

@@ -16,10 +16,6 @@ use std::sync::Arc;
 use tokio::process::Command;
 use uuid::Uuid;
 
-fn vec_to_bytes(vec: Vec<u8>) -> Bytes {
-    Bytes::from(vec)
-}
-
 fn empty_metadata() -> Value {
     Value::Object(Map::new())
 }
@@ -394,21 +390,27 @@ impl ResourceService {
 
         match variant {
             "thumb" => {
-                if let Some((thumb_path, mime_type)) = self.ensure_thumbnail_metadata(&mut resource.clone()).await? {
-                    match self.storage.download(&thumb_path).await {
-                        Ok(data) => Ok(Some((data, mime_type))),
-                        Err(e) => {
-                            let err_msg = e.to_string();
-                            if err_msg.contains("not found") || err_msg.contains("No such file") || err_msg.contains("does not exist") {
-                                Ok(None)
-                            } else {
-                                Err(AppError::Storage(err_msg))
-                            }
-                        }
-                    }
-                } else {
-                    Ok(None)
+                // Check for image thumbnail first
+                let image_thumb_path = format!("resources/{}/{}_thumb.jpg", user_id, resource_id);
+                if self.storage.exists(&image_thumb_path).await {
+                    let data = self.storage.download(&image_thumb_path).await
+                        .map_err(|e| AppError::Storage(e.to_string()))?;
+                    return Ok(Some((data, "image/jpeg".to_string())));
                 }
+                
+                // Fall back to video thumbnail via ensure_thumbnail_metadata
+                if let Some((thumb_path, mime_type)) = self.ensure_thumbnail_metadata(&mut resource.clone()).await? {
+                    if self.storage.exists(&thumb_path).await {
+                        let data = self.storage.download(&thumb_path).await
+                            .map_err(|e| AppError::Storage(e.to_string()))?;
+                        return Ok(Some((data, mime_type)));
+                    }
+                }
+                
+                // Fall back to original
+                let data = self.storage.download(&resource.storage_path).await
+                    .map_err(|e| AppError::Storage(e.to_string()))?;
+                Ok(Some((data, resource.mime_type)))
             }
             "opt" => {
                 let is_image = resource.mime_type.starts_with("image/");
@@ -417,24 +419,21 @@ impl ResourceService {
                 } else {
                     format!("resources/{}/{}_opt.mp4", user_id, resource_id)
                 };
-                let mime_type = if is_image { "image/webp" } else { "video/mp4" };
-                match self.storage.download(&opt_path).await {
-                    Ok(data) => Ok(Some((data, mime_type.to_string()))),
-                    Err(e) => {
-                        let err_msg = e.to_string();
-                        if err_msg.contains("not found") || err_msg.contains("No such file") || err_msg.contains("does not exist") {
-                            Ok(None)
-                        } else {
-                            Err(AppError::Storage(err_msg))
-                        }
-                    }
+                
+                if self.storage.exists(&opt_path).await {
+                    let mime_type = if is_image { "image/webp" } else { "video/mp4" };
+                    let data = self.storage.download(&opt_path).await
+                        .map_err(|e| AppError::Storage(e.to_string()))?;
+                    return Ok(Some((data, mime_type.to_string())));
                 }
+                
+                // Fall back to original
+                let data = self.storage.download(&resource.storage_path).await
+                    .map_err(|e| AppError::Storage(e.to_string()))?;
+                Ok(Some((data, resource.mime_type)))
             }
             _ => {
-                let data = self
-                    .storage
-                    .download(&resource.storage_path)
-                    .await
+                let data = self.storage.download(&resource.storage_path).await
                     .map_err(|e| AppError::Storage(e.to_string()))?;
                 Ok(Some((data, resource.mime_type)))
             }
