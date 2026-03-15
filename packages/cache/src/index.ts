@@ -1,4 +1,5 @@
 export * from './abstract';
+export * from './hooks/useResourceCache';
 export * from './implementations/memoryCache';
 export * from './implementations/realmCache';
 export * from './implementations/tauriCache';
@@ -69,4 +70,5 @@ export const createResourceLoader = async (): Promise<ResourceLoader> => {
 export { ResourceLoader };
 
 // Aliases for backward compatibility
-export { detectPlatformFromUA as detectPlatform, createResourceLoader as getResourceLoader };
+  export { detectPlatformFromUA as detectPlatform, createResourceLoader as getResourceLoader };
+
