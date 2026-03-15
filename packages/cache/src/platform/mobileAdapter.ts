@@ -1,7 +1,7 @@
-import { RealmCacheManager } from '../implementations/realmCache.js';
-import type { ICacheManager } from '../types.js';
-import { DEFAULT_CACHE_CONFIG } from '../types.js';
-import type { AuthHeaderProvider, HttpClient, PlatformAdapter, PlatformType } from './adapter.js';
+import { RealmCacheManager } from '../implementations/realmCache';
+import type { ICacheManager } from '../types';
+import { DEFAULT_CACHE_CONFIG } from '../types';
+import type { AuthHeaderProvider, HttpClient, PlatformAdapter, PlatformType } from './adapter';
 
 export class MobilePlatformAdapter implements PlatformAdapter {
   private cacheManager: ICacheManager | null = null;

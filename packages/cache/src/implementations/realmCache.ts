@@ -1,4 +1,4 @@
-import { AbstractCacheManager } from '../abstract.js';
+import { AbstractCacheManager } from '../abstract';
 import type {
   CacheConfig,
   CacheEntry,
@@ -6,7 +6,7 @@ import type {
   CacheUsage,
   CacheWriteOptions,
   EvictReason,
-} from '../types.js';
+} from '../types';
 
 interface RealmObject {
   url: string;

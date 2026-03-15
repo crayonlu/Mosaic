@@ -1,7 +1,7 @@
-import { TauriCacheManager } from '../implementations/tauriCache.js';
-import type { ICacheManager } from '../types.js';
-import { DEFAULT_CACHE_CONFIG } from '../types.js';
-import type { AuthHeaderProvider, HttpClient, PlatformAdapter, PlatformType } from './adapter.js';
+import { TauriCacheManager } from '../implementations/tauriCache';
+import type { ICacheManager } from '../types';
+import { DEFAULT_CACHE_CONFIG } from '../types';
+import type { AuthHeaderProvider, HttpClient, PlatformAdapter, PlatformType } from './adapter';
 
 export class TauriPlatformAdapter implements PlatformAdapter {
   private cacheManager: ICacheManager | null = null;

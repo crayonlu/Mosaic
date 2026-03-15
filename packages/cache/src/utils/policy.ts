@@ -1,4 +1,4 @@
-import type { CacheEntry, StorageStrategy } from '../types.js';
+import type { CacheEntry, StorageStrategy } from '../types';
 
 export const compareByLRU = (a: CacheEntry, b: CacheEntry): number =>
   a.lastAccessed - b.lastAccessed;

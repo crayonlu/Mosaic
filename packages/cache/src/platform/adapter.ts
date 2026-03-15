@@ -1,5 +1,5 @@
-import type { CacheConfig, ICacheManager } from '../types.js';
-import { DEFAULT_CACHE_CONFIG } from '../types.js';
+import type { CacheConfig, ICacheManager } from '../types';
+import { DEFAULT_CACHE_CONFIG } from '../types';
 
 export type PlatformType = 'desktop' | 'mobile' | 'web';
 
