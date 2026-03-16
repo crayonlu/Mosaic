@@ -5,6 +5,7 @@ import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
 import { getMobileResourceLoader, initializeMobileCache } from '@/lib/cache'
 import { LocalPushService } from '@/lib/services/local-push'
+import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi } from '@mosaic/api'
@@ -35,8 +36,20 @@ const localPush = LocalPushService.getInstance()
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
   const { cachedUris } = useResourceCache([avatarUrl])
   const cachedAvatarUrl = cachedUris[avatarUrl] || avatarUrl
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
-  return <Image source={{ uri: cachedAvatarUrl }} style={styles.avatarImage} />
+  useEffect(() => {
+    const loadAuthHeaders = async () => {
+      const headers = await getBearerAuthHeaders()
+      setAuthHeaders(headers)
+    }
+
+    loadAuthHeaders()
+  }, [])
+
+  return (
+    <Image source={{ uri: cachedAvatarUrl, headers: authHeaders }} style={styles.avatarImage} />
+  )
 }
 
 export default function SettingsScreen() {

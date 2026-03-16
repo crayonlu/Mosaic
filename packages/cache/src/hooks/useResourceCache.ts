@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ResourceLoader } from '../services/resourceLoader';
 
+function isRenderableLocalUri(uri: string): boolean {
+  return /^(file|content|asset|data):/i.test(uri) || /^https?:/i.test(uri);
+}
+
 /**
  * Hook for caching resources using ResourceLoader
  * This provides a reusable way to load and cache images/videos
@@ -31,7 +35,6 @@ export function useResourceCache(
 
     const loadCache = async () => {
       try {
-        // Dynamically import to avoid circular dependencies
         const { ResourceLoader } = await import('../services/resourceLoader');
 
         if (!resourceLoader) {
@@ -44,7 +47,6 @@ export function useResourceCache(
         setIsLoading(true);
         const newCachedUris: Record<string, string> = {};
 
-        // Load all URLs in parallel
         const loadPromises = urls.map(async (url) => {
           try {
             const result = await resourceLoader!.load(url, {
@@ -52,6 +54,8 @@ export function useResourceCache(
               allowCache: true,
             });
             if (result.path) {
+              if (!isRenderableLocalUri(result.path)) return;
+
               newCachedUris[url] = result.path;
             }
           } catch {

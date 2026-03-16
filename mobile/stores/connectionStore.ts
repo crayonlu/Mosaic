@@ -43,7 +43,7 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
   },
 
   initialize: async () => {
-    get().checkServerReachability()
+    await get().checkServerReachability()
   },
 
   cleanup: () => {},

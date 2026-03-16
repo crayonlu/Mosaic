@@ -110,8 +110,9 @@ export function DraggableImageGrid({
         .filter(item => item.type === 'image')
         .map(item => ({
           uri: cachedUris[item.uri] || getOptimizedImageUri(item.uri, 'opt'),
+          headers: item.headers ?? authHeaders,
         })),
-    [resolvedItems, cachedUris]
+    [resolvedItems, cachedUris, authHeaders]
   )
 
   const handleDragRelease = useCallback(
@@ -184,7 +185,11 @@ export function DraggableImageGrid({
           <View style={styles.imageContainer}>
             <View style={styles.imageContainer}>
               {previewUri ? (
-                <Image source={{ uri: previewUri }} style={styles.image} contentFit="cover" />
+                <Image
+                  source={{ uri: previewUri, headers: item.headers ?? authHeaders }}
+                  style={styles.image}
+                  contentFit="cover"
+                />
               ) : (
                 <View
                   style={[
@@ -270,6 +275,7 @@ export function DraggableImageGrid({
                         (item.type === 'image'
                           ? getOptimizedImageUri(item.uri, 'thumb')
                           : item.uri),
+                      headers: item.headers ?? authHeaders,
                     }}
                     style={styles.image}
                     contentFit="cover"
