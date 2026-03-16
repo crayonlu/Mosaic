@@ -1,6 +1,7 @@
 import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
+import { initializeMobileCache } from '@/lib/cache'
 import { LocalPushService } from '@/lib/services/local-push'
 import { useAuthStore } from '@/stores/authStore'
 import { useConnectionStore } from '@/stores/connectionStore'
@@ -22,7 +23,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
-import { initializeMobileCache } from '@/lib/cache'
 
 export default function RootLayout() {
   const { theme } = useThemeStore()
@@ -32,14 +32,42 @@ export default function RootLayout() {
   const segments = useSegments()
   const router = useRouter()
   const localPushService = LocalPushService.getInstance()
+  const [isCacheReady, setIsCacheReady] = useState(false)
 
   useThemeInit()
 
   useEffect(() => {
-    initAuth()
-    initialize()
-    localPushService.registerAll()
-    initializeMobileCache()
+    const bootstrap = async () => {
+      try {
+        await initAuth()
+      } catch (error) {
+        console.warn('Auth initialization failed:', error)
+      }
+
+      try {
+        await initialize()
+      } catch (error) {
+        console.warn('Connection initialization failed:', error)
+      }
+
+      try {
+        if (useConnectionStore.getState().isServerReachable) {
+          await localPushService.registerAll()
+        }
+      } catch (error) {
+        console.warn('Push registration failed:', error)
+      }
+
+      try {
+        await initializeMobileCache()
+      } catch (error) {
+        console.warn('Mobile cache initialization failed:', error)
+      } finally {
+        setIsCacheReady(true)
+      }
+    }
+
+    bootstrap()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -87,7 +115,7 @@ export default function RootLayout() {
     })
   }, [baseMoodColor, completeGradientTransition, moodColor, overlayOpacity])
 
-  if (!isInitialized || isLoading) {
+  if (!isInitialized || isLoading || !isCacheReady) {
     return (
       <SafeAreaProvider>
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>

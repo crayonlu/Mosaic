@@ -13,11 +13,12 @@ import {
   type ICacheManager,
   type PlatformAdapter,
 } from '@mosaic/cache'
+import { Directory, File, Paths } from 'expo-file-system'
 import Realm from 'realm'
 
 let resourceLoader: ResourceLoader | null = null
+const CACHE_DIR_NAME = 'mosaic-cache'
 
-// Realm schema for cache entries
 const CacheEntrySchema: Realm.ObjectSchema = {
   name: 'CacheEntry',
   primaryKey: 'url',
@@ -36,14 +37,84 @@ const CacheEntrySchema: Realm.ObjectSchema = {
   },
 }
 
-// RealmCacheManager - Mobile-specific cache using Realm
 class RealmCacheManager implements ICacheManager {
   private realm: Realm | null = null
   private config: CacheConfig = DEFAULT_CACHE_CONFIG.mobile
   private listeners: Map<CacheEventType, Set<CacheEventHandler<any>>> = new Map()
+  private cacheDir: Directory | null = null
+
+  private isRenderableLocalPath(path: string): boolean {
+    return /^(file|content|asset|data):/i.test(path)
+  }
+
+  private ensureReady(): { realm: Realm; cacheDir: Directory } {
+    if (!this.realm || !this.cacheDir) {
+      throw new Error('Realm cache manager not initialized')
+    }
+
+    return {
+      realm: this.realm,
+      cacheDir: this.cacheDir,
+    }
+  }
+
+  private hashUrl(url: string): string {
+    let hash = 5381
+    for (let i = 0; i < url.length; i++) {
+      hash = (hash * 33) ^ url.charCodeAt(i)
+    }
+    return (hash >>> 0).toString(36)
+  }
+
+  private getExtension(url: string, mimeType?: string): string {
+    const urlExtMatch = url.match(/\.([a-zA-Z0-9]+)(?:\?|#|$)/)
+    if (urlExtMatch?.[1]) {
+      return urlExtMatch[1].toLowerCase()
+    }
+
+    if (mimeType) {
+      const mimeExt = mimeType.split('/')[1]?.split(';')[0]?.trim().toLowerCase()
+      if (mimeExt) {
+        return mimeExt === 'jpeg' ? 'jpg' : mimeExt
+      }
+    }
+
+    return 'bin'
+  }
+
+  private getFile(url: string, mimeType?: string): File {
+    const { cacheDir } = this.ensureReady()
+    return new File(cacheDir, `${this.hashUrl(url)}.${this.getExtension(url, mimeType)}`)
+  }
+
+  private async removeEntry(url: string): Promise<void> {
+    if (!this.realm) return
+
+    const entry = this.realm.objectForPrimaryKey<CacheEntry>('CacheEntry', url)
+    if (!entry) return
+
+    const file = new File(entry.localPath)
+
+    this.realm.write(() => {
+      const staleEntry = this.realm!.objectForPrimaryKey('CacheEntry', url)
+      if (staleEntry) {
+        this.realm!.delete(staleEntry)
+      }
+    })
+
+    try {
+      if (file.exists) {
+        file.delete()
+      }
+    } catch {
+      // Ignore missing or already-deleted files while cleaning stale entries.
+    }
+  }
 
   async initialize(config: CacheConfig): Promise<void> {
     this.config = config
+    this.cacheDir = new Directory(Paths.cache, CACHE_DIR_NAME)
+    this.cacheDir.create({ idempotent: true, intermediates: true })
 
     this.realm = await Realm.open({
       schema: [CacheEntrySchema],
@@ -54,13 +125,25 @@ class RealmCacheManager implements ICacheManager {
   async get(url: string): Promise<string | null> {
     if (!this.realm) return null
 
-    const entry = this.realm.objectForPrimaryKey<CacheEntry & { localPath: string }>(
-      'CacheEntry',
-      url
-    )
+    const entry = this.realm.objectForPrimaryKey<CacheEntry>('CacheEntry', url)
     if (!entry) return null
 
-    // Update access time
+    if (entry.expiresAt && entry.expiresAt < Date.now()) {
+      await this.removeEntry(url)
+      return null
+    }
+
+    if (!this.isRenderableLocalPath(entry.localPath)) {
+      await this.removeEntry(url)
+      return null
+    }
+
+    const file = new File(entry.localPath)
+    if (!file.exists) {
+      await this.removeEntry(url)
+      return null
+    }
+
     this.realm.write(() => {
       entry.lastAccessed = Date.now()
       entry.accessCount += 1
@@ -70,64 +153,80 @@ class RealmCacheManager implements ICacheManager {
   }
 
   async set(url: string, data: ArrayBuffer, options?: CacheWriteOptions): Promise<string | null> {
-    if (!this.realm) return null
+    const { realm } = this.ensureReady()
 
-    const localPath = this.getLocalPath(url)
-    const size = data.byteLength
+    const file = this.getFile(url, options?.mimeType)
+    file.parentDirectory.create({ idempotent: true, intermediates: true })
+    if (!file.exists) {
+      file.create({ intermediates: true })
+    }
+    file.write(new Uint8Array(data))
 
-    // Write to file system would be done here
-    // For now, we store metadata in Realm
+    const entry: CacheEntry = {
+      url,
+      localPath: file.uri,
+      mimeType: options?.mimeType || 'application/octet-stream',
+      size: data.byteLength,
+      createdAt: Date.now(),
+      lastAccessed: Date.now(),
+      accessCount: 1,
+      etag: options?.etag,
+      expiresAt: options?.maxAge ? Date.now() + options.maxAge : undefined,
+      isPinned: options?.isPinned || false,
+    }
 
-    this.realm.write(() => {
-      this.realm!.create<CacheEntry & { localPath: string }>(
-        'CacheEntry',
-        {
-          url,
-          localPath,
-          size,
-          mimeType: options?.mimeType,
-          etag: options?.etag,
-          lastAccessed: Date.now(),
-          accessCount: 1,
-          createdAt: Date.now(),
-          expiresAt: options?.expiresAt,
-          metadata: options?.metadata ? JSON.stringify(options.metadata) : undefined,
-          isPinned: false,
-        },
-        Realm.UpdateMode.Modified
-      )
+    realm.write(() => {
+      realm.create<CacheEntry>('CacheEntry', entry, Realm.UpdateMode.Modified)
     })
 
     await this.prune()
-    return localPath
+    return file.uri
   }
 
   async delete(url: string): Promise<void> {
-    if (!this.realm) return
-
-    this.realm.write(() => {
-      const entry = this.realm!.objectForPrimaryKey('CacheEntry', url)
-      if (entry) {
-        this.realm!.delete(entry)
-      }
-    })
+    await this.removeEntry(url)
   }
 
   async has(url: string): Promise<boolean> {
     if (!this.realm) return false
-    return this.realm.objectForPrimaryKey('CacheEntry', url) !== null
+
+    const entry = this.realm.objectForPrimaryKey<CacheEntry>('CacheEntry', url)
+    if (!entry) return false
+
+    if (entry.expiresAt && entry.expiresAt < Date.now()) {
+      await this.removeEntry(url)
+      return false
+    }
+
+    const file = new File(entry.localPath)
+    if (!file.exists) {
+      await this.removeEntry(url)
+      return false
+    }
+
+    return true
   }
 
   async getMetadata(url: string): Promise<CacheEntry | null> {
     if (!this.realm) return null
 
-    const entry = this.realm.objectForPrimaryKey<
-      CacheEntry & { localPath: string; metadata: string }
-    >('CacheEntry', url)
+    const entry = this.realm.objectForPrimaryKey<CacheEntry>('CacheEntry', url)
     if (!entry) return null
+
+    if (entry.expiresAt && entry.expiresAt < Date.now()) {
+      await this.removeEntry(url)
+      return null
+    }
+
+    const file = new File(entry.localPath)
+    if (!file.exists) {
+      await this.removeEntry(url)
+      return null
+    }
 
     return {
       url: entry.url,
+      localPath: entry.localPath,
       size: entry.size,
       mimeType: entry.mimeType ?? undefined,
       etag: entry.etag ?? undefined,
@@ -136,34 +235,35 @@ class RealmCacheManager implements ICacheManager {
       createdAt: entry.createdAt,
       expiresAt: entry.expiresAt ?? undefined,
       isPinned: entry.isPinned,
-      metadata: entry.metadata ? JSON.parse(entry.metadata) : undefined,
     }
   }
 
   async list(filter?: CacheFilter): Promise<CacheEntry[]> {
     if (!this.realm) return []
 
-    let entries = this.realm.objects<CacheEntry & { localPath: string; metadata: string }>(
-      'CacheEntry'
-    )
+    let entries = this.realm.objects<CacheEntry>('CacheEntry')
 
     if (filter) {
       if (filter.mimeType) {
         entries = entries.filtered('mimeType == $0', filter.mimeType)
       }
-      if (filter.minSize) {
+      if (filter.minSize !== undefined) {
         entries = entries.filtered('size >= $0', filter.minSize)
       }
-      if (filter.maxSize) {
+      if (filter.maxSize !== undefined) {
         entries = entries.filtered('size <= $0', filter.maxSize)
       }
-      if (filter.isPinned !== undefined) {
-        entries = entries.filtered('isPinned == $0', filter.isPinned)
+      if (filter.accessedBefore !== undefined) {
+        entries = entries.filtered('lastAccessed < $0', filter.accessedBefore)
+      }
+      if (filter.accessedAfter !== undefined) {
+        entries = entries.filtered('lastAccessed > $0', filter.accessedAfter)
       }
     }
 
     return entries.map(entry => ({
       url: entry.url,
+      localPath: entry.localPath,
       size: entry.size,
       mimeType: entry.mimeType ?? undefined,
       etag: entry.etag ?? undefined,
@@ -172,16 +272,25 @@ class RealmCacheManager implements ICacheManager {
       createdAt: entry.createdAt,
       expiresAt: entry.expiresAt ?? undefined,
       isPinned: entry.isPinned,
-      metadata: entry.metadata ? JSON.parse(entry.metadata) : undefined,
     }))
   }
 
   async clear(): Promise<void> {
     if (!this.realm) return
 
-    this.realm.write(() => {
-      this.realm!.deleteAll()
-    })
+    const entries = this.realm.objects<CacheEntry>('CacheEntry')
+    for (const entry of entries) {
+      try {
+        const file = new File(entry.localPath)
+        if (file.exists) {
+          file.delete()
+        }
+      } catch {
+        // Ignore file cleanup failures during full cache reset.
+      }
+    }
+
+    this.realm.write(() => this.realm!.deleteAll())
   }
 
   async getUsage(): Promise<CacheUsage> {
@@ -191,11 +300,21 @@ class RealmCacheManager implements ICacheManager {
 
     const entries = this.realm.objects<CacheEntry>('CacheEntry')
     const totalSize = entries.reduce((sum: number, entry: any) => sum + entry.size, 0)
+    const byType: CacheUsage['byType'] = {}
+
+    for (const entry of entries) {
+      const type = entry.mimeType?.split('/')[0] ?? 'other'
+      if (!byType[type]) {
+        byType[type] = { count: 0, size: 0 }
+      }
+      byType[type]!.count += 1
+      byType[type]!.size += entry.size
+    }
 
     return {
       totalSize,
       itemCount: entries.length,
-      byType: {},
+      byType,
     }
   }
 
@@ -230,7 +349,7 @@ class RealmCacheManager implements ICacheManager {
     if (!this.realm) return
 
     this.realm.write(() => {
-      const entry = this.realm!.objectForPrimaryKey('CacheEntry', url)
+      const entry = this.realm!.objectForPrimaryKey<CacheEntry>('CacheEntry', url)
       if (entry) {
         entry.lastAccessed = Date.now()
       }
@@ -247,17 +366,11 @@ class RealmCacheManager implements ICacheManager {
     }
   }
 
-  private getLocalPath(url: string): string {
-    const hash = url.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 64)
-    return `cache/${hash}`
-  }
-
   private emit(type: CacheEventType, event: any): void {
     this.listeners.get(type)?.forEach(handler => handler(event))
   }
 }
 
-// Local MobilePlatformAdapter
 class MobilePlatformAdapter implements PlatformAdapter {
   private authHeaderProvider: (() => Promise<Record<string, string>>) | null = null
   private cacheManager: ICacheManager | null = null
@@ -278,21 +391,19 @@ class MobilePlatformAdapter implements PlatformAdapter {
     return {
       async get(url: string, options?: RequestInit): Promise<Response> {
         const headers = self.authHeaderProvider ? await self.authHeaderProvider() : {}
-        const response = await fetch(url, {
+        return await fetch(url, {
           ...options,
           headers: { ...headers, ...options?.headers },
         })
-        return response
       },
       async post(url: string, data?: BodyInit, options?: RequestInit): Promise<Response> {
         const headers = self.authHeaderProvider ? await self.authHeaderProvider() : {}
-        const response = await fetch(url, {
+        return await fetch(url, {
           method: 'POST',
           body: data,
           ...options,
           headers: { ...headers, ...options?.headers },
         })
-        return response
       },
     }
   }
@@ -302,24 +413,33 @@ class MobilePlatformAdapter implements PlatformAdapter {
   }
 
   async getCacheDir(): Promise<string> {
-    return 'cache'
+    const targetDir = new Directory(Paths.cache, CACHE_DIR_NAME)
+    targetDir.create({ idempotent: true, intermediates: true })
+    return targetDir.uri
   }
 
-  async fileExists(_path: string): Promise<boolean> {
-    // File system check would go here
-    return false
+  async fileExists(path: string): Promise<boolean> {
+    return new File(path).exists
   }
 
-  async readFile(_path: string): Promise<Uint8Array> {
-    return new Uint8Array(0)
+  async readFile(path: string): Promise<Uint8Array> {
+    return await new File(path).bytes()
   }
 
-  async writeFile(_path: string, _data: Uint8Array): Promise<void> {
-    // File write would go here
+  async writeFile(path: string, data: Uint8Array): Promise<void> {
+    const file = new File(path)
+    file.parentDirectory.create({ idempotent: true, intermediates: true })
+    if (!file.exists) {
+      file.create({ intermediates: true })
+    }
+    file.write(data)
   }
 
-  async deleteFile(_path: string): Promise<void> {
-    // File delete would go here
+  async deleteFile(path: string): Promise<void> {
+    const file = new File(path)
+    if (file.exists) {
+      file.delete()
+    }
   }
 
   setAuthHeaderProvider(provider: () => Promise<Record<string, string>>): void {
@@ -345,5 +465,4 @@ export const getMobileResourceLoader = (): ResourceLoader | null => {
   return resourceLoader
 }
 
-// Re-export for type compatibility
 export { RealmCacheManager }

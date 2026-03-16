@@ -1,10 +1,11 @@
+import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
 import { apiClient, resourcesApi } from '@mosaic/api'
 import { useResourceCache } from '@mosaic/cache'
 import { Image } from 'expo-image'
 import { Check, Play } from 'lucide-react-native'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 
 const { width } = Dimensions.get('window')
@@ -40,6 +41,16 @@ export function CoverImagePicker({
   onClear,
 }: CoverImagePickerProps) {
   const { theme } = useThemeStore()
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    const loadAuthHeaders = async () => {
+      const headers = await getBearerAuthHeaders()
+      setAuthHeaders(headers)
+    }
+
+    loadAuthHeaders()
+  }, [])
 
   const allImages: CoverMediaItem[] = useMemo(
     () =>
@@ -87,7 +98,7 @@ export function CoverImagePicker({
       return (
         <Pressable onPress={() => onSelect(item.resourceId)} style={[styles.imageContainer]}>
           <Image
-            source={{ uri: imageUri }}
+            source={{ uri: imageUri, headers: authHeaders }}
             style={[styles.image, isSelected && styles.imageSelected]}
             contentFit="cover"
           />
@@ -107,7 +118,7 @@ export function CoverImagePicker({
         </Pressable>
       )
     },
-    [cachedUris, onSelect, selectedCoverId, theme]
+    [authHeaders, cachedUris, onSelect, selectedCoverId, theme]
   )
 
   if (allImages.length === 0) {
