@@ -6,12 +6,13 @@ import { Image } from 'expo-image'
 import { CheckCircle, XCircle } from 'lucide-react-native'
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error'
 
 export default function SetupScreen() {
   const { theme, themeMode } = useThemeStore()
+  const insets = useSafeAreaInsets()
   const { login, testConnection, isLoading } = useAuthStore()
 
   const [serverUrl, setServerUrl] = useState('')
@@ -61,7 +62,18 @@ export default function SetupScreen() {
   const canLogin = isFormValid && connectionStatus === 'success'
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.background,
+          paddingTop: insets.top,
+          paddingRight: insets.right,
+          paddingBottom: insets.bottom,
+          paddingLeft: insets.left,
+        },
+      ]}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -175,7 +187,7 @@ export default function SetupScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   )
 }
 

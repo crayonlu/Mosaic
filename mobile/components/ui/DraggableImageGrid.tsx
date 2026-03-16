@@ -1,99 +1,90 @@
-import { useThemeStore } from '@/stores/themeStore'
 import { useResourceCache } from '@mosaic/cache'
-import { Image } from 'expo-image'
-import { useVideoPlayer, VideoView } from 'expo-video'
-import { Play, X } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { useCallback, useMemo, useState } from 'react'
+import { StyleSheet, View } from 'react-native'
 import { DraggableGrid } from 'react-native-draggable-grid'
-import ImageViewing from 'react-native-image-viewing'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const GRID_GAP = 0
+import { MediaGridTile } from './media/MediaGridTile'
+import { MediaPreviewModal } from './media/MediaPreviewModal'
+import {
+  getMediaTileSize,
+  getOptimizedMediaUri,
+  resolveMediaSource,
+} from './media/mediaPreviewUtils'
+import type { MediaCacheMaps, MediaGridItem } from './media/types'
 
-const getImageSize = (count: number) => {
-  const containerWidth = SCREEN_WIDTH - 24
-  if (count === 1) {
-    return { width: containerWidth, height: 300 }
-  }
-  if (count === 2) {
-    const size = (containerWidth - GRID_GAP) / 2
-    return { width: size, height: 150 }
-  }
-  const size = (containerWidth - GRID_GAP * 2) / 3
-  return { width: size, height: size }
-}
-
-export interface MediaGridItem {
-  key: string
-  uri: string
-  type: 'image' | 'video'
-  thumbnailUri?: string
-  headers?: Record<string, string>
-}
-
-function getOptimizedImageUri(uri: string, variant?: 'thumb' | 'opt'): string {
-  if (!variant) return uri
-  const separator = uri.includes('?') ? '&' : '?'
-  return `${uri}${separator}variant=${variant}`
-}
+export type { MediaGridItem } from './media/types'
 
 type GridItem = MediaGridItem
 
 interface DraggableImageGridProps {
-  items?: MediaGridItem[]
-  images?: string[]
+  items: MediaGridItem[]
   authHeaders?: Record<string, string>
   uploadProgressById?: Record<string, number>
-  onImagesChange?: (images: string[]) => void
   onItemsChange?: (items: MediaGridItem[]) => void
   onDragActivate?: () => void
   onDragStart?: () => void
   onDragEnd?: () => void
   draggable?: boolean
-  onRemove?: (index: number) => void
-  onImagePress?: (index: number) => void
 }
 
 export function DraggableImageGrid({
   items,
-  images = [],
   authHeaders,
   uploadProgressById,
-  onImagesChange,
   onItemsChange,
   onDragActivate,
   onDragStart,
   onDragEnd,
   draggable = true,
-  onRemove,
-  onImagePress,
 }: DraggableImageGridProps) {
-  const { theme } = useThemeStore()
-  const [previewIndex, setPreviewIndex] = useState<number | null>(null)
-  const [videoPreviewItem, setVideoPreviewItem] = useState<MediaGridItem | null>(null)
+  const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null)
 
-  // resolvedItems must be defined before useEffects that depend on it
-  const resolvedItems: MediaGridItem[] = useMemo(
-    () =>
-      items ??
-      images.map(uri => ({
-        key: `img_${uri}`,
-        uri,
-        type: 'image' as const,
-      })),
-    [images, items]
-  )
+  const resolvedItems: MediaGridItem[] = useMemo(() => items, [items])
 
-  const imageUrls = useMemo(
+  const imageThumbUrls = useMemo(
     () =>
       resolvedItems
         .filter(item => item.type === 'image')
-        .map(item => getOptimizedImageUri(item.uri, 'thumb')),
+        .map(item => getOptimizedMediaUri(item.uri, 'thumb')),
     [resolvedItems]
   )
-  const { cachedUris } = useResourceCache(imageUrls)
+  const imageOptUrls = useMemo(
+    () =>
+      resolvedItems
+        .filter(item => item.type === 'image')
+        .map(item => getOptimizedMediaUri(item.uri, 'opt')),
+    [resolvedItems]
+  )
+  const videoThumbUrls = useMemo(
+    () =>
+      resolvedItems
+        .filter(item => item.type === 'video')
+        .map(item => item.thumbnailUri)
+        .filter((url): url is string => Boolean(url)),
+    [resolvedItems]
+  )
+  const videoOptUrls = useMemo(
+    () =>
+      resolvedItems
+        .filter(item => item.type === 'video')
+        .map(item => getOptimizedMediaUri(item.uri, 'opt')),
+    [resolvedItems]
+  )
+
+  const { cachedUris: cachedImageThumbUris } = useResourceCache(imageThumbUrls)
+  const { cachedUris: cachedImageOptUris } = useResourceCache(imageOptUrls)
+  const { cachedUris: cachedVideoThumbUris } = useResourceCache(videoThumbUrls)
+  const { cachedUris: cachedVideoOptUris } = useResourceCache(videoOptUrls)
+
+  const cacheMaps = useMemo<MediaCacheMaps>(
+    () => ({
+      imageThumbUris: cachedImageThumbUris,
+      imageOptUris: cachedImageOptUris,
+      videoThumbUris: cachedVideoThumbUris,
+      videoOptUris: cachedVideoOptUris,
+    }),
+    [cachedImageOptUris, cachedImageThumbUris, cachedVideoOptUris, cachedVideoThumbUris]
+  )
 
   const gridData: GridItem[] = useMemo(
     () =>
@@ -103,339 +94,112 @@ export function DraggableImageGrid({
     [resolvedItems]
   )
 
-  const imageSize = getImageSize(resolvedItems.length)
-  const imageImages = useMemo(
-    () =>
-      resolvedItems
-        .filter(item => item.type === 'image')
-        .map(item => ({
-          uri: cachedUris[item.uri] || getOptimizedImageUri(item.uri, 'opt'),
-          headers: item.headers ?? authHeaders,
-        })),
-    [resolvedItems, cachedUris, authHeaders]
+  const mediaTileSize = getMediaTileSize(resolvedItems.length)
+  const resolvedMediaSources = useMemo(
+    () => resolvedItems.map(item => resolveMediaSource(item, cacheMaps, authHeaders)),
+    [authHeaders, cacheMaps, resolvedItems]
   )
+  const showRemoveButton = Boolean(onItemsChange)
 
   const handleDragRelease = useCallback(
     (data: GridItem[]) => {
       if (onItemsChange) {
         onItemsChange(data)
       }
-
-      if (onImagesChange && data.every(item => item.type === 'image')) {
-        onImagesChange(data.map(item => item.uri))
-      }
     },
-    [onImagesChange, onItemsChange]
+    [onItemsChange]
   )
 
   const handleRemove = useCallback(
     (index: number) => {
       if (onItemsChange) {
         onItemsChange(resolvedItems.filter((_, itemIndex) => itemIndex !== index))
-      } else if (onImagesChange) {
-        onImagesChange(
-          resolvedItems.filter((_, itemIndex) => itemIndex !== index).map(item => item.uri)
-        )
-      } else if (onRemove) {
-        onRemove(index)
       }
     },
-    [onImagesChange, onItemsChange, onRemove, resolvedItems]
+    [onItemsChange, resolvedItems]
   )
 
-  const handleImagePress = useCallback(
+  const handleItemPress = useCallback(
     (index: number) => {
-      if (onImagePress) {
-        onImagePress(index)
-        return
-      }
-
-      const item = resolvedItems[index]
-      if (!item) {
-        return
-      }
-
-      if (item.type === 'video') {
-        setVideoPreviewItem(item)
-      } else {
-        const imageIndex = resolvedItems
-          .filter(candidate => candidate.type === 'image')
-          .findIndex(candidate => candidate.key === item.key)
-
-        if (imageIndex >= 0) {
-          setPreviewIndex(imageIndex)
-        }
+      if (resolvedMediaSources[index]) {
+        setActivePreviewIndex(index)
       }
     },
-    [onImagePress, resolvedItems]
+    [resolvedMediaSources]
   )
 
-  const renderItem = useCallback(
-    (item: GridItem, order: number) => {
-      const index = order
-      const previewUri =
-        item.type === 'video'
-          ? item.thumbnailUri
-          : cachedUris[item.uri] || getOptimizedImageUri(item.uri, 'thumb')
-      const progress = uploadProgressById?.[item.key]
-      const isUploading = typeof progress === 'number'
+  const renderGridItem = useCallback(
+    (item: GridItem, index: number, pressable: boolean) => {
+      const source = resolvedMediaSources[index] ?? resolveMediaSource(item, cacheMaps, authHeaders)
 
       return (
-        <View style={[styles.imageWrapper, { width: imageSize.width, height: imageSize.height }]}>
-          <View style={styles.imageContainer}>
-            <View style={styles.imageContainer}>
-              {previewUri ? (
-                <Image
-                  source={{ uri: previewUri, headers: item.headers ?? authHeaders }}
-                  style={styles.image}
-                  contentFit="cover"
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.videoFallback,
-                    { backgroundColor: theme.surface, borderColor: theme.border },
-                  ]}
-                >
-                  <Play size={20} color={theme.textSecondary} fill={theme.textSecondary} />
-                </View>
-              )}
-              {item.type === 'video' && (
-                <View style={styles.videoBadge}>
-                  <Play size={14} color="#fff" fill="#fff" />
-                </View>
-              )}
-              {isUploading && <View style={styles.uploadOverlay} pointerEvents="none" />}
-              {isUploading && (
-                <View style={styles.progressTrack} pointerEvents="none">
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        backgroundColor: theme.primary,
-                        width: `${Math.max(6, Math.min(progress, 100))}%`,
-                      },
-                    ]}
-                  />
-                </View>
-              )}
-            </View>
-          </View>
-          {(onRemove || onImagesChange || onItemsChange) && (
-            <TouchableOpacity
-              style={[styles.removeButton, { backgroundColor: theme.background }]}
-              onPress={() => handleRemove(index)}
-            >
-              <X size={14} color={theme.text} />
-            </TouchableOpacity>
-          )}
+        <View key={`${item.key}_${index}`} style={styles.tileMargin}>
+          <MediaGridTile
+            item={item}
+            width={mediaTileSize.width}
+            height={mediaTileSize.height}
+            previewUri={source.gridUri}
+            previewHeaders={source.gridHeaders}
+            uploadProgress={uploadProgressById?.[item.key]}
+            onPress={pressable ? () => handleItemPress(index) : undefined}
+            onRemove={showRemoveButton ? () => handleRemove(index) : undefined}
+            showRemoveButton={showRemoveButton}
+          />
         </View>
       )
     },
     [
-      cachedUris,
+      authHeaders,
+      cacheMaps,
+      handleItemPress,
       handleRemove,
-      imageSize,
-      onImagesChange,
-      onItemsChange,
-      onRemove,
-      theme,
+      mediaTileSize.height,
+      mediaTileSize.width,
+      resolvedMediaSources,
+      showRemoveButton,
       uploadProgressById,
     ]
   )
 
-  if (!draggable) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.grid}>
-          {resolvedItems.map((item, index) => (
-            <View
-              key={item.key}
-              style={[styles.imageWrapper, { width: imageSize.width, height: imageSize.height }]}
-            >
-              <TouchableOpacity
-                style={styles.imageContainer}
-                onPress={() => handleImagePress(index)}
-                activeOpacity={0.9}
-              >
-                {item.type === 'video' && !item.thumbnailUri ? (
-                  <View
-                    style={[
-                      styles.videoFallback,
-                      { backgroundColor: theme.surface, borderColor: theme.border },
-                    ]}
-                  >
-                    <Play size={24} color={theme.textSecondary} fill={theme.textSecondary} />
-                  </View>
-                ) : (
-                  <Image
-                    source={{
-                      uri:
-                        (cachedUris[item.uri] || item.thumbnailUri) ??
-                        (item.type === 'image'
-                          ? getOptimizedImageUri(item.uri, 'thumb')
-                          : item.uri),
-                      headers: item.headers ?? authHeaders,
-                    }}
-                    style={styles.image}
-                    contentFit="cover"
-                  />
-                )}
-                {item.type === 'video' && (
-                  <View style={styles.videoBadge}>
-                    <Play size={14} color="#fff" fill="#fff" />
-                  </View>
-                )}
-                {typeof uploadProgressById?.[item.key] === 'number' && (
-                  <View style={styles.uploadOverlay} pointerEvents="none" />
-                )}
-                {typeof uploadProgressById?.[item.key] === 'number' && (
-                  <View style={styles.progressTrack} pointerEvents="none">
-                    <View
-                      style={[
-                        styles.progressFill,
-                        {
-                          backgroundColor: theme.primary,
-                          width: `${Math.max(6, Math.min(uploadProgressById[item.key] ?? 0, 100))}%`,
-                        },
-                      ]}
-                    />
-                  </View>
-                )}
-              </TouchableOpacity>
-              {(onRemove || onItemsChange || onImagesChange) && (
-                <TouchableOpacity
-                  style={[styles.removeButton, { backgroundColor: theme.background }]}
-                  onPress={() => handleRemove(index)}
-                >
-                  <X size={14} color={theme.text} />
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
-        </View>
-
-        {previewIndex !== null && (
-          <SafeAreaView style={StyleSheet.absoluteFill} edges={['top', 'right', 'bottom', 'left']}>
-            <ImageViewing
-              images={imageImages}
-              imageIndex={previewIndex}
-              visible={true}
-              onRequestClose={() => setPreviewIndex(null)}
-              presentationStyle="fullScreen"
-            />
-          </SafeAreaView>
-        )}
-
-        <VideoPreviewModal
-          item={videoPreviewItem}
-          authHeaders={authHeaders}
-          onClose={() => setVideoPreviewItem(null)}
-        />
-      </View>
-    )
-  }
-
   return (
     <View style={styles.container}>
-      <DraggableGrid
-        numColumns={resolvedItems.length <= 2 ? Math.max(1, resolvedItems.length) : 3}
-        data={gridData}
-        renderItem={renderItem}
-        delayLongPress={220}
-        onDragItemActive={(item: GridItem) => {
-          onDragActivate?.()
-        }}
-        onDragStart={(item: GridItem) => {
-          onDragStart?.()
-        }}
-        onItemPress={(item: GridItem) => {
-          const index = resolvedItems.findIndex(candidate => candidate.key === item.key)
-          if (index >= 0) {
-            handleImagePress(index)
-          }
-        }}
-        onDragRelease={data => {
-          handleDragRelease(data)
-          onDragEnd?.()
-        }}
-        style={styles.grid}
-      />
-
-      {previewIndex !== null && (
-        <SafeAreaView style={StyleSheet.absoluteFill} edges={['top', 'right', 'bottom', 'left']}>
-          <ImageViewing
-            images={imageImages}
-            imageIndex={previewIndex}
-            visible={true}
-            onRequestClose={() => setPreviewIndex(null)}
-            presentationStyle="fullScreen"
-          />
-        </SafeAreaView>
+      {draggable ? (
+        <DraggableGrid
+          numColumns={resolvedItems.length <= 2 ? Math.max(1, resolvedItems.length) : 3}
+          data={gridData}
+          renderItem={(item: GridItem, order: number) => renderGridItem(item, order, false)}
+          delayLongPress={220}
+          onDragItemActive={() => {
+            onDragActivate?.()
+          }}
+          onDragStart={() => {
+            onDragStart?.()
+          }}
+          onItemPress={(item: GridItem) => {
+            const index = resolvedItems.findIndex(candidate => candidate.key === item.key)
+            if (index >= 0) {
+              handleItemPress(index)
+            }
+          }}
+          onDragRelease={data => {
+            handleDragRelease(data)
+            onDragEnd?.()
+          }}
+          style={styles.grid}
+        />
+      ) : (
+        <View style={styles.grid}>
+          {resolvedItems.map((item, index) => renderGridItem(item, index, true))}
+        </View>
       )}
 
-      <VideoPreviewModal
-        item={videoPreviewItem}
-        authHeaders={authHeaders}
-        onClose={() => setVideoPreviewItem(null)}
-      />
-    </View>
-  )
-}
-
-function VideoPreviewModal({
-  item,
-  authHeaders,
-  onClose,
-}: {
-  item: MediaGridItem | null
-  authHeaders?: Record<string, string>
-  onClose: () => void
-}) {
-  if (!item) {
-    return null
-  }
-
-  return <ActiveVideoPreview item={item} authHeaders={authHeaders} onClose={onClose} />
-}
-
-function ActiveVideoPreview({
-  item,
-  authHeaders,
-  onClose,
-}: {
-  item: MediaGridItem
-  authHeaders?: Record<string, string>
-  onClose: () => void
-}) {
-  const videoViewRef = useRef<VideoView>(null)
-
-  const player = useVideoPlayer(
-    {
-      uri: getOptimizedImageUri(item.uri, 'opt'),
-      headers: item.headers ?? authHeaders,
-    },
-    player => {
-      player.loop = false
-      player.play()
-    }
-  )
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      videoViewRef.current?.enterFullscreen()
-    }, 50)
-    return () => clearTimeout(timer)
-  }, [])
-
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <VideoView
-        ref={videoViewRef}
-        player={player}
-        style={[StyleSheet.absoluteFill, { opacity: 0 }]}
-        onFullscreenExit={onClose}
-      />
+      {activePreviewIndex !== null ? (
+        <MediaPreviewModal
+          items={resolvedMediaSources}
+          initialIndex={activePreviewIndex}
+          onRequestClose={() => setActivePreviewIndex(null)}
+        />
+      ) : null}
     </View>
   )
 }
@@ -450,63 +214,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
-  imageWrapper: {
-    margin: GRID_GAP / 2,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  imageContainer: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  uploadOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
-  },
-  progressTrack: {
-    position: 'absolute',
-    left: 6,
-    right: 6,
-    bottom: 6,
-    height: 3,
-    borderRadius: 999,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
-  },
-  videoFallback: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  videoBadge: {
-    position: 'absolute',
-    right: 8,
-    bottom: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeButton: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+  tileMargin: {
+    margin: 0,
   },
 })

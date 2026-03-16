@@ -20,7 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TagInput } from '../tag/TagInput'
 import { PostPreview } from './PostPreview'
 import { TextEditor } from './TextEditor'
@@ -44,6 +44,7 @@ export function FullScreenEditor({
   onSubmit,
 }: FullScreenEditorProps) {
   const { theme } = useThemeStore()
+  const insets = useSafeAreaInsets()
   const { canUseNetwork } = useConnection()
   const [content, setContent] = useState(initialContent)
   const [tags, setTags] = useState<string[]>(initialTags)
@@ -159,12 +160,17 @@ export function FullScreenEditor({
       presentationStyle="fullScreen"
       onRequestClose={handleClose}
     >
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: theme.background }]}
-        edges={['top', 'left', 'right', 'bottom']}
-      >
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         <KeyboardAvoidingView
-          style={styles.keyboardView}
+          style={[
+            styles.keyboardView,
+            {
+              paddingTop: insets.top,
+              paddingRight: insets.right,
+              paddingBottom: insets.bottom,
+              paddingLeft: insets.left,
+            },
+          ]}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
@@ -237,7 +243,7 @@ export function FullScreenEditor({
           onClose={() => setShowPreview(false)}
           onPost={handlePost}
         />
-      </SafeAreaView>
+      </View>
     </Modal>
   )
 }

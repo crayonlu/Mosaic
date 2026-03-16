@@ -13,7 +13,7 @@ import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { useCallback, useEffect, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, {
@@ -22,7 +22,32 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
+
+function SafeAreaContainer({
+  children,
+  backgroundColor,
+}: {
+  children: ReactNode
+  backgroundColor: string
+}) {
+  const insets = useSafeAreaInsets()
+
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor,
+        paddingTop: insets.top,
+        paddingRight: insets.right,
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left,
+      }}
+    >
+      {children}
+    </View>
+  )
+}
 
 export default function RootLayout() {
   const { theme } = useThemeStore()
@@ -118,9 +143,9 @@ export default function RootLayout() {
   if (!isInitialized || isLoading || !isCacheReady) {
     return (
       <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+        <SafeAreaContainer backgroundColor={theme.background}>
           <ThemeAwareSplash />
-        </SafeAreaView>
+        </SafeAreaContainer>
       </SafeAreaProvider>
     )
   }
@@ -129,12 +154,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <View style={{ flex: 1, backgroundColor: theme.background }}>
-          <SafeAreaView
-            style={{
-              flex: 1,
-              backgroundColor: isDiariesTab ? 'transparent' : theme.background,
-            }}
-          >
+          <SafeAreaContainer backgroundColor={isDiariesTab ? 'transparent' : theme.background}>
             {isDiariesTab && (
               <>
                 <LinearGradient
@@ -190,7 +210,7 @@ export default function RootLayout() {
                 <ToastContainer />
               </QueryProvider>
             </BottomSheetModalProvider>
-          </SafeAreaView>
+          </SafeAreaContainer>
         </View>
       </SafeAreaProvider>
     </GestureHandlerRootView>

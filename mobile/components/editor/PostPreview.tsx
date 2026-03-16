@@ -5,7 +5,7 @@ import { useThemeStore } from '@/stores/themeStore'
 import { X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MarkdownRenderer } from './MarkdownRenderer'
 
 interface PostPreviewProps {
@@ -19,6 +19,7 @@ interface PostPreviewProps {
 
 export function PostPreview({ visible, content, items, tags, onClose, onPost }: PostPreviewProps) {
   const { theme } = useThemeStore()
+  const insets = useSafeAreaInsets()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -31,7 +32,18 @@ export function PostPreview({ visible, content, items, tags, onClose, onPost }: 
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.background,
+            paddingTop: insets.top,
+            paddingRight: insets.right,
+            paddingBottom: insets.bottom,
+            paddingLeft: insets.left,
+          },
+        ]}
+      >
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <TouchableOpacity onPress={onClose} style={styles.headerButton}>
             <X size={24} color={theme.text} />
@@ -63,7 +75,7 @@ export function PostPreview({ visible, content, items, tags, onClose, onPost }: 
             </View>
           )}
         </View>
-      </SafeAreaView>
+      </View>
     </Modal>
   )
 }
