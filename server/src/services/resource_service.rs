@@ -149,21 +149,18 @@ impl ResourceService {
         &self,
         input_path: &Path,
         output_path: &Path,
-        seek_seconds: u32,
     ) -> anyhow::Result<()> {
         let output = Command::new(&self.config.ffmpeg_binary)
             .arg("-hide_banner")
             .arg("-loglevel")
             .arg("error")
             .arg("-y")
-            .arg("-ss")
-            .arg(seek_seconds.to_string())
             .arg("-i")
             .arg(input_path)
             .arg("-frames:v")
             .arg("1")
             .arg("-vf")
-            .arg("thumbnail=30,scale=640:-1:force_original_aspect_ratio=decrease")
+            .arg("scale=640:-1:force_original_aspect_ratio=decrease")
             .arg("-q:v")
             .arg("4")
             .arg(output_path)
@@ -195,25 +192,17 @@ impl ResourceService {
 
         tokio::fs::write(&input_path, data).await?;
 
-        let mut last_error = None;
-        for seek_seconds in [1_u32, 0_u32] {
-            match self
-                .run_thumbnail_command(&input_path, &output_path, seek_seconds)
-                .await
-            {
-                Ok(()) => {
-                    let generated = tokio::fs::read(&output_path).await?;
-                    Self::cleanup_temp_files(&[input_path.clone(), output_path.clone()]).await;
-                    return Ok(Bytes::from(generated));
-                }
-                Err(error) => {
-                    last_error = Some(error);
-                }
+        match self.run_thumbnail_command(&input_path, &output_path).await {
+            Ok(()) => {
+                let generated = tokio::fs::read(&output_path).await?;
+                Self::cleanup_temp_files(&[input_path.clone(), output_path.clone()]).await;
+                Ok(Bytes::from(generated))
+            }
+            Err(error) => {
+                Self::cleanup_temp_files(&[input_path, output_path]).await;
+                Err(error)
             }
         }
-
-        Self::cleanup_temp_files(&[input_path, output_path]).await;
-        Err(last_error.unwrap_or_else(|| anyhow::anyhow!("thumbnail generation failed")))
     }
 
     async fn try_generate_thumbnail(

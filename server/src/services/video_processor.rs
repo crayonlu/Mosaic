@@ -34,8 +34,6 @@ impl VideoProcessor {
                 "-loglevel",
                 "error",
                 "-y",
-                "-ss",
-                "1",
                 "-i",
                 input_path.to_str().unwrap(),
                 "-frames:v",
