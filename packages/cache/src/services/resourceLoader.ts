@@ -12,9 +12,22 @@ export class ResourceLoader {
   private cacheManager: ICacheManager | null = null;
   private platformAdapter: PlatformAdapter | null = null;
 
+  constructor(cacheManager?: ICacheManager, platformAdapter?: PlatformAdapter) {
+    if (cacheManager) {
+      this.cacheManager = cacheManager;
+    }
+    if (platformAdapter) {
+      this.platformAdapter = platformAdapter;
+    }
+  }
+
   async initialize(): Promise<void> {
-    this.cacheManager = await getCacheManager();
-    this.platformAdapter = getPlatformAdapter();
+    if (!this.cacheManager) {
+      this.cacheManager = await getCacheManager();
+    }
+    if (!this.platformAdapter) {
+      this.platformAdapter = getPlatformAdapter();
+    }
   }
 
   async load(url: string, options?: ResourceLoaderOptions): Promise<LoadedResource> {

@@ -1,24 +1,10 @@
-import {
-  getResourceLoader,
-  setPlatformAdapter,
-  TauriPlatformAdapter,
-  type ResourceLoader,
-} from '@mosaic/cache'
+import { initializeDesktopCache } from '@/lib/cache'
 
-let resourceLoader: ResourceLoader | null = null
+let resourceLoader: ReturnType<typeof initializeDesktopCache> | null = null
 
-const initLoader = async (): Promise<ResourceLoader> => {
+const initLoader = async () => {
   if (!resourceLoader) {
-    const adapter = new TauriPlatformAdapter()
-
-    adapter.setAuthHeaderProvider(async (): Promise<Record<string, string>> => {
-      const token = localStorage.getItem('auth_token')
-      if (!token) return {}
-      return { Authorization: `Bearer ${token}` }
-    })
-
-    setPlatformAdapter(adapter)
-    resourceLoader = await getResourceLoader()
+    resourceLoader = initializeDesktopCache()
   }
   return resourceLoader
 }

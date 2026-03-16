@@ -20,6 +20,12 @@
       }
     ],
     "security": {
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPCACHE/mosaic-cache/**"
+        ]
+      },
       "csp": null
     }
   },

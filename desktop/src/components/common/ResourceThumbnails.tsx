@@ -35,7 +35,7 @@ export function ResourceThumbnails({
             return (
               <div
                 key={resource.id}
-                className="relative w-8 h-8 rounded border bg-muted/50 overflow-hidden"
+                className="relative flex justify-center items-center w-8 h-8 rounded border bg-muted/50 overflow-hidden"
               >
                 {previewUrl ? (
                   <AuthImage

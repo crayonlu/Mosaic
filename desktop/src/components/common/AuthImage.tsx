@@ -118,7 +118,11 @@ export function AuthImage({
   const { className: classNameRest, ...imgProps } = props
 
   if (isLoading) {
-    return <LoadingSpinner className={classNameRest} {...imgProps} />
+    return (
+      <div className="min-w-16 min-h-16 flex justify-center items-center">
+        <LoadingSpinner className={classNameRest} {...imgProps} />
+      </div>
+    )
   }
 
   if (hasError || !resolvedSrc) {
