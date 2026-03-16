@@ -6,7 +6,7 @@ import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core'
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Resource } from '@mosaic/api'
-import { ChevronLeft, ChevronRight, Plus, Trash2, Upload, Video, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Trash2, Upload, Video } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 interface MemoImageGridProps {
@@ -38,6 +38,11 @@ type ResourceWithOptionalSize = Resource & {
   size?: number
 }
 
+const isVideoResource = (resource: Resource | undefined): boolean => {
+  if (!resource) return false
+  return resource.resourceType === 'video' || resource.mimeType.startsWith('video/')
+}
+
 const SortableMedia = ({
   resource,
   imageUrl,
@@ -58,7 +63,7 @@ const SortableMedia = ({
     transition,
   }
 
-  const isVideo = resource.resourceType === 'video'
+  const isVideo = isVideoResource(resource)
   const previewUrl = isVideo ? thumbnailUrl : imageUrl
 
   return (
@@ -216,6 +221,7 @@ interface MediaPreviewDialogProps {
   resources: Resource[]
   imageUrls: Map<string, string>
   videoUrls?: Map<string, string>
+  thumbnailUrls?: Map<string, string>
   initialIndex: number
 }
 
@@ -225,6 +231,7 @@ function MediaPreviewDialog({
   resources,
   imageUrls,
   videoUrls,
+  thumbnailUrls,
   initialIndex,
 }: MediaPreviewDialogProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
@@ -234,9 +241,10 @@ function MediaPreviewDialog({
   }, [initialIndex])
 
   const currentResource = resources[currentIndex]
-  const isVideo = currentResource?.resourceType === 'video'
+  const isVideo = isVideoResource(currentResource)
   const imageUrl = !isVideo ? imageUrls.get(currentResource?.id || '') : undefined
   const videoUrl = isVideo ? videoUrls?.get(currentResource?.id || '') : undefined
+  const thumbnailUrl = isVideo ? thumbnailUrls?.get(currentResource?.id || '') : undefined
 
   const goToPrev = () => {
     setCurrentIndex(prev => (prev > 0 ? prev - 1 : resources.length - 1))
@@ -253,15 +261,6 @@ function MediaPreviewDialog({
         className="max-w-4xl w-auto p-0 overflow-hidden bg-black/95 border-none"
       >
         <div className="relative flex items-center justify-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 z-50 text-white hover:bg-white/20"
-            onClick={onClose}
-          >
-            <X className="h-6 w-6" />
-          </Button>
-
           {resources.length > 1 && (
             <>
               <Button
@@ -287,9 +286,13 @@ function MediaPreviewDialog({
             <>
               {isVideo && videoUrl ? (
                 <AuthVideo
+                  key={currentResource.id}
                   src={videoUrl}
                   className="max-w-full max-h-[80vh] object-contain"
                   controls
+                  autoPlay
+                  preload="metadata"
+                  poster={thumbnailUrl}
                   playsInline
                 />
               ) : imageUrl ? (
@@ -380,7 +383,7 @@ export function MemoImageGrid({
   const gridContent = (
     <>
       {displayResources.map((resource, index) => {
-        const isVideo = resource.resourceType === 'video'
+        const isVideo = isVideoResource(resource)
         const videoUrl = isVideo ? videoUrls?.get(resource.id) : undefined
         const thumbnailUrl = isVideo ? thumbnailUrls?.get(resource.id) : undefined
         const imageUrl = !isVideo ? imageUrls.get(resource.id) : undefined
@@ -429,6 +432,7 @@ export function MemoImageGrid({
         resources={previewResources}
         imageUrls={imageUrls}
         videoUrls={videoUrls}
+        thumbnailUrls={thumbnailUrls}
         initialIndex={previewIndex}
       />
     </>

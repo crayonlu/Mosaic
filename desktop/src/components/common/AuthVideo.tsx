@@ -112,7 +112,11 @@ export function AuthVideo({
   const { className, style, ...restVideoProps } = props
 
   if (isLoading) {
-    return <LoadingSpinner className={className} />
+    return (
+      <div className="min-w-16 min-h-16 flex justify-center items-center">
+        <LoadingSpinner className={className} />
+      </div>
+    )
   }
 
   if (hasError || !resolvedSrc) {

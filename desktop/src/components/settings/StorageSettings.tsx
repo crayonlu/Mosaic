@@ -14,8 +14,12 @@ function formatSize(bytes: number): string {
 }
 
 export function StorageSettings() {
-  const [cacheSize, setCacheSize] = useState(0)
-  const [cacheCount, setCacheCount] = useState(0)
+  const [totalCacheSize, setTotalCacheSize] = useState(0)
+  const [totalCacheCount, setTotalCacheCount] = useState(0)
+  const [imageCacheSize, setImageCacheSize] = useState(0)
+  const [imageCacheCount, setImageCacheCount] = useState(0)
+  const [videoCacheSize, setVideoCacheSize] = useState(0)
+  const [videoCacheCount, setVideoCacheCount] = useState(0)
   const [isClearing, setIsClearing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -28,8 +32,15 @@ export function StorageSettings() {
     try {
       const loader = await getResourceLoader()
       const usage = await loader.getCacheUsage()
-      setCacheSize(usage?.totalSize ?? 0)
-      setCacheCount(usage?.itemCount ?? 0)
+      const imageUsage = usage?.byType?.image
+      const videoUsage = usage?.byType?.video
+
+      setTotalCacheSize(usage?.totalSize ?? 0)
+      setTotalCacheCount(usage?.itemCount ?? 0)
+      setImageCacheSize(imageUsage?.size ?? 0)
+      setImageCacheCount(imageUsage?.count ?? 0)
+      setVideoCacheSize(videoUsage?.size ?? 0)
+      setVideoCacheCount(videoUsage?.count ?? 0)
     } catch (error) {
       console.error('Failed to load cache info:', error)
     } finally {
@@ -70,10 +81,10 @@ export function StorageSettings() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium">图片缓存</Label>
-                  <p className="text-xs text-muted-foreground">已缓存 {cacheCount} 个资源</p>
+                  <p className="text-xs text-muted-foreground">已缓存 {imageCacheCount} 个资源</p>
                 </div>
               </div>
-              <div className="text-sm font-medium">{formatSize(cacheSize)}</div>
+              <div className="text-sm font-medium">{formatSize(imageCacheSize)}</div>
             </div>
 
             <div className="flex items-center justify-between rounded-lg border p-4">
@@ -83,24 +94,25 @@ export function StorageSettings() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium">视频缓存</Label>
-                  <p className="text-xs text-muted-foreground">通过统一缓存管理</p>
+                  <p className="text-xs text-muted-foreground">已缓存 {videoCacheCount} 个资源</p>
                 </div>
               </div>
+              <div className="text-sm font-medium">{formatSize(videoCacheSize)}</div>
             </div>
 
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div>
                 <Label className="text-sm font-medium">总缓存大小</Label>
-                <p className="text-xs text-muted-foreground">所有缓存资源占用的空间</p>
+                <p className="text-xs text-muted-foreground">共 {totalCacheCount} 个缓存资源</p>
               </div>
-              <div className="text-sm font-medium">{formatSize(cacheSize)}</div>
+              <div className="text-sm font-medium">{formatSize(totalCacheSize)}</div>
             </div>
 
             <Button
               variant="outline"
               className="w-full"
               onClick={handleClear}
-              disabled={isClearing || cacheSize === 0}
+              disabled={isClearing || totalCacheSize === 0}
             >
               {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               清理缓存
