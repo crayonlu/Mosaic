@@ -69,18 +69,23 @@ export default function RootLayout() {
         console.warn('Auth initialization failed:', error)
       }
 
-      try {
-        await initialize()
-      } catch (error) {
-        console.warn('Connection initialization failed:', error)
-      }
+      const authState = useAuthStore.getState()
+      const shouldInitNetwork = authState.isAuthenticated && !!authState.serverUrl
 
-      try {
-        if (useConnectionStore.getState().isServerReachable) {
-          await localPushService.registerAll()
+      if (shouldInitNetwork) {
+        try {
+          await initialize()
+        } catch (error) {
+          console.warn('Connection initialization failed:', error)
         }
-      } catch (error) {
-        console.warn('Push registration failed:', error)
+
+        try {
+          if (useConnectionStore.getState().isServerReachable) {
+            await localPushService.registerAll()
+          }
+        } catch (error) {
+          console.warn('Push registration failed:', error)
+        }
       }
 
       try {
