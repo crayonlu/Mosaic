@@ -1,6 +1,6 @@
 {
   "name": "@mosaic/mobile",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "version": "2.1.3",
   "scripts": {
     "start": "expo start",
