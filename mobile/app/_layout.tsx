@@ -1,8 +1,6 @@
 import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
-import { initializeMobileCache } from '@/lib/cache'
-import { LocalPushService } from '@/lib/services/local-push'
 import { useAuthStore } from '@/stores/authStore'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useMoodStore } from '@/stores/moodStore'
@@ -12,8 +10,9 @@ import { getMoodColorWithIntensity } from '@mosaic/utils'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
+import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
-import { type ReactNode, useCallback, useEffect, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, {
@@ -23,6 +22,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Ignore repeated calls while the root layout mounts.
+})
 
 function SafeAreaContainer({
   children,
@@ -56,12 +58,22 @@ export default function RootLayout() {
   const { isAuthenticated, isInitialized, isLoading, initialize: initAuth } = useAuthStore()
   const segments = useSegments()
   const router = useRouter()
-  const localPushService = LocalPushService.getInstance()
   const [isCacheReady, setIsCacheReady] = useState(false)
+  const hasHiddenNativeSplash = useRef(false)
 
   useThemeInit()
 
+  const hideNativeSplash = useCallback(() => {
+    if (hasHiddenNativeSplash.current) return
+    hasHiddenNativeSplash.current = true
+    SplashScreen.hideAsync().catch(() => {
+      // Ignore hide races during startup.
+    })
+  }, [])
+
   useEffect(() => {
+    let isMounted = true
+
     const bootstrap = async () => {
       try {
         await initAuth()
@@ -81,6 +93,8 @@ export default function RootLayout() {
 
         try {
           if (useConnectionStore.getState().isServerReachable) {
+            const { LocalPushService } = await import('../lib/services/local-push')
+            const localPushService = LocalPushService.getInstance()
             await localPushService.registerAll()
           }
         } catch (error) {
@@ -88,21 +102,35 @@ export default function RootLayout() {
         }
 
         try {
+          const { initializeMobileCache } = await import('../lib/cache')
           await initializeMobileCache()
         } catch (error) {
           console.warn('Mobile cache initialization failed:', error)
         } finally {
-          setIsCacheReady(true)
+          if (isMounted) {
+            setIsCacheReady(true)
+          }
         }
         return
       }
 
-      setIsCacheReady(true)
+      if (isMounted) {
+        setIsCacheReady(true)
+      }
     }
 
     bootstrap()
+
+    return () => {
+      isMounted = false
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    const timeoutId = setTimeout(hideNativeSplash, 80)
+    return () => clearTimeout(timeoutId)
+  }, [hideNativeSplash])
 
   useEffect(() => {
     if (!isInitialized) return
@@ -148,20 +176,18 @@ export default function RootLayout() {
     })
   }, [baseMoodColor, completeGradientTransition, moodColor, overlayOpacity])
 
-  if (!isInitialized || isLoading || (isAuthenticated && !isCacheReady)) {
-    return (
-      <SafeAreaProvider>
-        <SafeAreaContainer backgroundColor={theme.background}>
-          <ThemeAwareSplash />
-        </SafeAreaContainer>
-      </SafeAreaProvider>
-    )
-  }
+  const isAppReady = isInitialized && !isLoading && (!isAuthenticated || isCacheReady)
+
+  useEffect(() => {
+    if (isAppReady) {
+      hideNativeSplash()
+    }
+  }, [hideNativeSplash, isAppReady])
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <View style={{ flex: 1, backgroundColor: theme.background }}>
+        <View style={{ flex: 1, backgroundColor: theme.background }} onLayout={hideNativeSplash}>
           <SafeAreaContainer backgroundColor={isDiariesTab ? 'transparent' : theme.background}>
             {isDiariesTab && (
               <>
@@ -216,6 +242,11 @@ export default function RootLayout() {
                   />
                 </View>
                 <ToastContainer />
+                {!isAppReady && (
+                  <View style={styles.splashOverlay}>
+                    <ThemeAwareSplash />
+                  </View>
+                )}
               </QueryProvider>
             </BottomSheetModalProvider>
           </SafeAreaContainer>
@@ -243,5 +274,9 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
+  },
+  splashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
   },
 })
