@@ -70,9 +70,9 @@ export default function RootLayout() {
       }
 
       const authState = useAuthStore.getState()
-      const shouldInitNetwork = authState.isAuthenticated && !!authState.serverUrl
+      const shouldInitAppServices = authState.isAuthenticated && !!authState.serverUrl
 
-      if (shouldInitNetwork) {
+      if (shouldInitAppServices) {
         try {
           await initialize()
         } catch (error) {
@@ -86,15 +86,18 @@ export default function RootLayout() {
         } catch (error) {
           console.warn('Push registration failed:', error)
         }
+
+        try {
+          await initializeMobileCache()
+        } catch (error) {
+          console.warn('Mobile cache initialization failed:', error)
+        } finally {
+          setIsCacheReady(true)
+        }
+        return
       }
 
-      try {
-        await initializeMobileCache()
-      } catch (error) {
-        console.warn('Mobile cache initialization failed:', error)
-      } finally {
-        setIsCacheReady(true)
-      }
+      setIsCacheReady(true)
     }
 
     bootstrap()
@@ -145,7 +148,7 @@ export default function RootLayout() {
     })
   }, [baseMoodColor, completeGradientTransition, moodColor, overlayOpacity])
 
-  if (!isInitialized || isLoading || !isCacheReady) {
+  if (!isInitialized || isLoading || (isAuthenticated && !isCacheReady)) {
     return (
       <SafeAreaProvider>
         <SafeAreaContainer backgroundColor={theme.background}>
