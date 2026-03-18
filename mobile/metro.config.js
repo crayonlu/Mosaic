@@ -5,11 +5,13 @@ const projectRoot = __dirname
 const workspaceRoot = path.resolve(projectRoot, '..')
 const workspacePackages = path.resolve(workspaceRoot, 'packages')
 const projectNodeModules = path.resolve(projectRoot, 'node_modules')
+const workspaceNodeModules = path.resolve(workspaceRoot, 'node_modules')
 
 const config = getDefaultConfig(projectRoot)
 
-config.watchFolders = [workspacePackages]
-config.resolver.nodeModulesPaths = [projectNodeModules, path.resolve(workspaceRoot, 'node_modules')]
+config.watchFolders = [workspacePackages, workspaceNodeModules]
+config.resolver.nodeModulesPaths = [projectNodeModules, workspaceNodeModules]
+config.resolver.unstable_enableSymlinks = true
 config.resolver.extraNodeModules = {
   ...(config.resolver.extraNodeModules || {}),
   react: path.resolve(projectNodeModules, 'react'),
