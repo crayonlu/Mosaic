@@ -3,11 +3,12 @@ const { getDefaultConfig } = require('expo/metro-config')
 
 const projectRoot = __dirname
 const workspaceRoot = path.resolve(projectRoot, '..')
+const workspacePackages = path.resolve(workspaceRoot, 'packages')
 const projectNodeModules = path.resolve(projectRoot, 'node_modules')
 
 const config = getDefaultConfig(projectRoot)
 
-config.watchFolders = [workspaceRoot]
+config.watchFolders = [workspacePackages]
 config.resolver.nodeModulesPaths = [projectNodeModules, path.resolve(workspaceRoot, 'node_modules')]
 config.resolver.extraNodeModules = {
   ...(config.resolver.extraNodeModules || {}),

@@ -14,7 +14,7 @@
     },
     "desktop": {
       "name": "@mosaic/desktop",
-      "version": "2.0.0",
+      "version": "2.1.3",
       "dependencies": {
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
@@ -100,13 +100,13 @@
     },
     "mobile": {
       "name": "@mosaic/mobile",
-      "version": "2.0.0",
+      "version": "2.1.3",
       "dependencies": {
         "@gorhom/bottom-sheet": "^5.2.8",
         "@mosaic/api": "workspace:*",
         "@mosaic/cache": "workspace:*",
         "@mosaic/utils": "workspace:*",
-        "@react-native-async-storage/async-storage": "^2.1.0",
+        "@react-native-async-storage/async-storage": "^2.1.1",
         "@react-native-community/datetimepicker": "8.4.4",
         "@tanstack/react-query": "^5.90.20",
         "dayjs": "^1.11.19",
@@ -139,7 +139,7 @@
         "react-native-web": "~0.21.0",
         "react-native-webview": "13.15.0",
         "react-native-worklets": "0.5.1",
-        "realm": "^12.0.0",
+        "realm": "^20.2.0",
         "zustand": "^5.0.9",
       },
       "devDependencies": {
@@ -2415,7 +2415,7 @@
 
     "readdirp": ["readdirp@4.1.2", "", {}, "sha512-GDhwkLfywWL2s6vEjyhri+eXmfH6j1L7JE27WhqLeYzoh/A3DBaYGEj2H/HFZCn/kMfim73FXxEJTw06WtxQwg=="],
 
-    "realm": ["realm@12.15.0", "", { "dependencies": { "@realm/fetch": "^0.1.1", "bson": "^4.7.2", "debug": "^4.3.4", "node-machine-id": "^1.1.12", "path-browserify": "^1.0.1", "prebuild-install": "^7.1.2" }, "peerDependencies": { "react-native": ">=0.71.0" }, "optionalPeers": ["react-native"] }, "sha512-YTrMJ4NvY2rNSS56y6GMwfoOa7Z1CU6hU+3n1oh89noI2ETMzktmiEgddj4Tsm/jodpcxC8GwIMbWuED0mY05A=="],
+    "realm": ["realm@20.2.0", "", { "dependencies": { "@realm/fetch": "^0.1.1", "bson": "^4.7.2", "debug": "^4.3.4", "node-machine-id": "^1.1.12", "path-browserify": "^1.0.1", "prebuild-install": "^7.1.2" }, "peerDependencies": { "react-native": ">=0.71.0" }, "optionalPeers": ["react-native"] }, "sha512-xkfczMrxnZK1KlJ5JBWGMe2Cs48+p1D8T9r8TO6FrZhnm2KUUhBJPOpOIoJ4h1O20fCxlfJ2pIg3mplJTUgF6g=="],
 
     "recast": ["recast@0.23.11", "", { "dependencies": { "ast-types": "^0.16.1", "esprima": "~4.0.0", "source-map": "~0.6.1", "tiny-invariant": "^1.3.3", "tslib": "^2.0.1" } }, "sha512-YTUo+Flmw4ZXiWfQKGcwwc11KnoRAYgzAE2E7mXKCjSviTKShtxBsN6YUUBB2gtaBzKzeKunxhUwNHQuRryhWA=="],
 
