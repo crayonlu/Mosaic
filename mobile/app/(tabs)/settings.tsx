@@ -4,6 +4,7 @@ import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
+import { formatBytes, getStorageSummary, type StorageItem } from '@/lib/storage/storageManager'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi } from '@mosaic/api'
@@ -58,67 +59,100 @@ export default function SettingsScreen() {
   const [savingAI, setSavingAI] = useState(false)
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushPermissionGranted, setPushPermissionGranted] = useState(false)
-  const [showCacheSettings, setShowCacheSettings] = useState(false)
-  const [cacheSize, setCacheSize] = useState(0)
-  const [cacheCount, setCacheCount] = useState(0)
-  const [isLoadingCache, setIsLoadingCache] = useState(false)
+  const [showStorageSettings, setShowStorageSettings] = useState(false)
+  const [storageItems, setStorageItems] = useState<StorageItem[]>([])
+  const [totalStorageSize, setTotalStorageSize] = useState(0)
+  const [isLoadingStorage, setIsLoadingStorage] = useState(false)
+  const [clearingId, setClearingId] = useState<string | null>(null)
 
   useEffect(() => {
     loadAIConfig()
     loadPushStatus()
-    loadCacheInfo()
+    loadStorageInfo()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const loadCacheInfo = useCallback(async () => {
-    setIsLoadingCache(true)
+  const loadStorageInfo = useCallback(async () => {
+    setIsLoadingStorage(true)
     try {
-      const { getMobileResourceLoader, initializeMobileCache } = await import('@/lib/cache')
-      let loader = getMobileResourceLoader()
-      if (!loader) {
-        loader = await initializeMobileCache()
-      }
-      const usage = await loader.getCacheUsage()
-      setCacheSize(usage?.totalSize ?? 0)
-      setCacheCount(usage?.itemCount ?? 0)
+      const summary = await getStorageSummary()
+      setStorageItems(summary.items)
+      setTotalStorageSize(summary.totalSize)
     } catch (error) {
-      console.error('Failed to load cache info:', error)
+      console.error('Failed to load storage info:', error)
     } finally {
-      setIsLoadingCache(false)
+      setIsLoadingStorage(false)
     }
   }, [])
 
-  const handleClearCache = useCallback(async () => {
-    toast.show({
-      type: 'warning',
-      title: '确认清除缓存',
-      message: '确定要清除所有缓存图片和视频吗？',
-      actionLabel: '确定',
-      onAction: async () => {
-        try {
-          const { getMobileResourceLoader } = await import('@/lib/cache')
-          const loader = getMobileResourceLoader()
-          if (loader) {
-            await loader.clearCache()
-            await loadCacheInfo()
+  const handleClearStorage = useCallback(
+    (item: StorageItem) => {
+      if (!item.clearable) return
+
+      const messages: Record<
+        string,
+        { title: string; message: string; requiresRestart?: boolean }
+      > = {
+        'resource-cache': {
+          title: '确认清除缓存',
+          message: '清除后图片和视频需要重新加载，确定吗？',
+        },
+        sqlite: {
+          title: '确认清除本地数据',
+          message: '清除后需要重启应用才能正常使用，确定吗？',
+          requiresRestart: true,
+        },
+      }
+      const { title, message, requiresRestart } = messages[item.id] ?? {
+        title: '确认清除',
+        message: `确定要清除「${item.label}」吗？`,
+      }
+
+      toast.show({
+        type: 'warning',
+        title,
+        message,
+        actionLabel: '确定',
+        onAction: async () => {
+          setClearingId(item.id)
+          try {
+            await item.clear()
+            await loadStorageInfo()
+
+            if (requiresRestart) {
+              toast.show({
+                type: 'success',
+                title: '清除成功',
+                message: '应用将在 1 秒后重启',
+                duration: 1000,
+              })
+              setTimeout(async () => {
+                const { reloadAppAsync } = await import('expo')
+                await reloadAppAsync()
+              }, 1000)
+            } else {
+              toast.show({
+                type: 'success',
+                title: '清除成功',
+                message: `「${item.label}」已清除`,
+              })
+            }
+          } catch (error) {
+            console.error('Failed to clear storage:', error)
             toast.show({
-              type: 'success',
-              title: '缓存已清除',
-              message: '所有缓存图片和视频已被清除',
+              type: 'error',
+              title: '清除失败',
+              message: String((error as Error).message),
             })
+          } finally {
+            setClearingId(null)
           }
-        } catch (error) {
-          console.error('Failed to clear cache:', error)
-          toast.show({
-            type: 'error',
-            title: '清除失败',
-            message: '清除缓存时发生错误',
-          })
-        }
-      },
-      duration: 10000,
-    })
-  }, [loadCacheInfo])
+        },
+        duration: 10000,
+      })
+    },
+    [loadStorageInfo]
+  )
 
   const toggleSectionWithAnimation = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
     setter(prev => !prev)
@@ -526,53 +560,63 @@ export default function SettingsScreen() {
     await logout()
   }
 
-  const formatSize = (bytes: number): string => {
-    if (bytes === 0) return '0 B'
-    const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
-
-  const renderCacheSection = () => (
+  const renderStorageSection = () => (
     <View style={[styles.section]}>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <TouchableOpacity
-          style={[styles.menuItem, showCacheSettings && { borderBottomColor: theme.border }]}
-          onPress={() => toggleSectionWithAnimation(setShowCacheSettings)}
+          style={[styles.menuItem, showStorageSettings && { borderBottomColor: theme.border }]}
+          onPress={() => toggleSectionWithAnimation(setShowStorageSettings)}
         >
           <Trash size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>存储缓存</Text>
+          <Text style={[styles.menuItemText, { color: theme.text }]}>存储管理</Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              {showCacheSettings ? '隐藏设置' : '显示设置'}
+              {showStorageSettings ? '隐藏' : '显示'} · 共{' '}
+              {isLoadingStorage ? '...' : formatBytes(totalStorageSize)}
             </Text>
           </View>
         </TouchableOpacity>
-        {showCacheSettings && (
+        {showStorageSettings && (
           <Animated.View
             entering={FadeIn.duration(400)}
             exiting={FadeOut.duration(240)}
             layout={expandLayoutTransition}
-            style={styles.permissionSettings}
+            style={styles.storageSettings}
           >
-            <View style={styles.settingRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, color: theme.text }}>
-                  当前缓存: {isLoadingCache ? '加载中...' : formatSize(cacheSize)}
-                </Text>
-                <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4 }}>
-                  共 {cacheCount} 个文件
-                </Text>
+            {storageItems.map(item => (
+              <View
+                key={item.id}
+                style={[
+                  styles.storageItem,
+                  item !== storageItems[0] && {
+                    borderTopWidth: 1,
+                    borderTopColor: theme.border,
+                  },
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, color: theme.text, fontWeight: '500' }}>
+                    {item.label}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
+                    {item.description}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
+                    {item.size > 0 ? formatBytes(item.size) : '—'}
+                    {item.itemCount != null && item.itemCount > 0 ? ` · ${item.itemCount} 项` : ''}
+                  </Text>
+                </View>
+                {item.clearable && (
+                  <Button
+                    variant="ghost"
+                    size="small"
+                    onPress={() => handleClearStorage(item)}
+                    disabled={clearingId === item.id}
+                    title={clearingId === item.id ? '清除中...' : '清除'}
+                  />
+                )}
               </View>
-              <Button
-                variant="ghost"
-                size="small"
-                onPress={handleClearCache}
-                disabled={isLoadingCache || cacheCount === 0}
-                title="清除缓存"
-              />
-            </View>
+            ))}
           </Animated.View>
         )}
       </View>
@@ -586,7 +630,7 @@ export default function SettingsScreen() {
         {renderAppearanceSection()}
         {renderAISettings()}
         {renderPermissionSection()}
-        {renderCacheSection()}
+        {renderStorageSection()}
         {renderAboutSection()}
       </View>
     </ScrollView>
@@ -669,6 +713,19 @@ const styles = StyleSheet.create({
     gap: 10,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  storageSettings: {
+    paddingHorizontal: 12,
+    gap: 0,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  storageItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    gap: 12,
   },
   settingRow: {
     flexDirection: 'row',

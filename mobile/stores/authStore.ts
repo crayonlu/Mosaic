@@ -1,7 +1,7 @@
 import { tokenStorage } from '@/lib/services/tokenStorage'
+import { mmkvZustandStorage } from '@/lib/storage/mmkv'
 import type { ApiError, User } from '@mosaic/api'
 import { apiClient, authApi } from '@mosaic/api'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
@@ -53,7 +53,7 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true })
 
         try {
-          const serverUrl = await tokenStorage.getServerUrl()
+          const serverUrl = tokenStorage.getServerUrl()
           const hasTokens = await tokenStorage.hasTokens()
 
           if (!serverUrl || !hasTokens) {
@@ -107,8 +107,8 @@ export const useAuthStore = create<AuthStore>()(
           const response = await authApi.login({ username, password })
 
           await tokenStorage.setTokens(response.accessToken, response.refreshToken)
-          await tokenStorage.setServerUrl(normalizedUrl)
-          await tokenStorage.setUsername(username)
+          tokenStorage.setServerUrl(normalizedUrl)
+          tokenStorage.setUsername(username)
 
           set({
             isAuthenticated: true,
@@ -157,7 +157,7 @@ export const useAuthStore = create<AuthStore>()(
     }),
     {
       name: 'mosaic-auth-store',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => mmkvZustandStorage),
       partialize: state => ({
         serverUrl: state.serverUrl,
       }),

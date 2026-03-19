@@ -1,5 +1,5 @@
 import { DarkTheme, LightTheme, ThemeMode, type Theme } from '@/constants/theme'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { mmkvZustandStorage } from '@/lib/storage/mmkv'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { useColorScheme } from 'react-native'
@@ -46,7 +46,7 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: 'mosaic-theme-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => mmkvZustandStorage),
     }
   )
 )

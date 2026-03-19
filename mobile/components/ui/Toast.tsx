@@ -1,5 +1,5 @@
+import { mmkvZustandStorage } from '@/lib/storage/mmkv'
 import { useThemeStore } from '@/stores/themeStore'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { X } from 'lucide-react-native'
 import { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
@@ -71,7 +71,7 @@ export const useToastStore = create<ToastState>()(
     }),
     {
       name: 'mosaic-toast-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => mmkvZustandStorage),
     }
   )
 )

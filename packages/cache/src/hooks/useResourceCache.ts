@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { ResourceLoader } from '../services/resourceLoader';
+import { getResourceLoader, type ResourceLoader } from '../services/resourceLoader';
 
 function isRenderableLocalUri(uri: string): boolean {
   return /^(file|content|asset|data):/i.test(uri) || /^https?:/i.test(uri);
 }
 
-/**
- * Hook for caching resources using ResourceLoader
- * This provides a reusable way to load and cache images/videos
- */
+const INITIALIZATION_POLL_INTERVAL = 100;
+const MAX_INITIALIZATION_WAIT = 5000;
+
 export function useResourceCache(
   urls: string[],
   options?: { forceRefresh?: boolean }
@@ -28,49 +27,66 @@ export function useResourceCache(
   );
 
   useEffect(() => {
-    if (!urls.length) return;
+    if (!urls.length) {
+      return;
+    }
 
     let isMounted = true;
-    let resourceLoader: ResourceLoader | null = null;
+    let cancelled = false;
+    let loader: ResourceLoader | null = null;
 
     const loadCache = async () => {
       try {
-        const { ResourceLoader } = await import('../services/resourceLoader');
+        const startTime = Date.now();
 
-        if (!resourceLoader) {
-          resourceLoader = new ResourceLoader();
-          await resourceLoader.initialize();
+        while (Date.now() - startTime < MAX_INITIALIZATION_WAIT) {
+          try {
+            const obtainedLoader = await getResourceLoader();
+            if (obtainedLoader) {
+              loader = obtainedLoader;
+              break;
+            }
+          } catch {
+            await new Promise((resolve) => setTimeout(resolve, INITIALIZATION_POLL_INTERVAL));
+            continue;
+          }
         }
 
-        if (!isMounted) return;
+        if (!loader) {
+          return;
+        }
+
+        if (cancelled || !isMounted) {
+          return;
+        }
 
         setIsLoading(true);
         const newCachedUris: Record<string, string> = {};
 
         const loadPromises = urls.map(async (url) => {
           try {
-            const result = await resourceLoader!.load(url, {
+            const result = await loader!.load(url, {
               forceRefresh: options?.forceRefresh ?? false,
               allowCache: true,
             });
-            if (result.path) {
-              if (!isRenderableLocalUri(result.path)) return;
 
+            if (result.path && isRenderableLocalUri(result.path)) {
               newCachedUris[url] = result.path;
             }
-          } catch {
-            // Fall back to original URL on error
+          } catch (error) {
+            console.warn('[useResourceCache] Failed to load URL:', url, error);
           }
         });
 
         await Promise.all(loadPromises);
 
-        if (isMounted) {
-          setCachedUris(newCachedUris);
+        if (isMounted && !cancelled) {
+          setCachedUris((prev) => ({ ...prev, ...newCachedUris }));
           setIsLoading(false);
         }
-      } catch {
-        if (isMounted) {
+      } catch (error) {
+        console.error('[useResourceCache] Unexpected error:', error);
+        if (isMounted && !cancelled) {
           setIsLoading(false);
         }
       }
@@ -80,6 +96,7 @@ export function useResourceCache(
 
     return () => {
       isMounted = false;
+      cancelled = true;
     };
   }, [urls, options?.forceRefresh]);
 

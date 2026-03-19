@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { mmkv } from '@/lib/storage/mmkv'
 import { SchedulableTriggerInputTypes } from 'expo-notifications/build/Notifications.types'
 import { LocalPushService } from '.'
 
@@ -12,9 +12,9 @@ export type CustomPushData = {
 const STORAGE_KEY = 'mosaic_custom_push_list'
 
 class CustomPushStorage {
-  async getAllPushes(): Promise<CustomPushData[]> {
+  getAllPushes(): CustomPushData[] {
     try {
-      const jsonValue = await AsyncStorage.getItem(STORAGE_KEY)
+      const jsonValue = mmkv.getString(STORAGE_KEY)
       return jsonValue != null ? JSON.parse(jsonValue) : []
     } catch (e) {
       console.error('Failed to fetch pushes', e)
@@ -22,9 +22,9 @@ class CustomPushStorage {
     }
   }
 
-  async saveCustomPush(data: CustomPushData) {
+  saveCustomPush(data: CustomPushData) {
     try {
-      const list = await this.getAllPushes()
+      const list = this.getAllPushes()
       const index = list.findIndex(item => item.name === data.name)
 
       if (index > -1) {
@@ -33,41 +33,40 @@ class CustomPushStorage {
         list.push(data)
       }
 
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+      mmkv.set(STORAGE_KEY, JSON.stringify(list))
     } catch (e) {
       console.error('Save failed', e)
     }
   }
 
-  async deleteOneCustomPush(name: string) {
+  deleteOneCustomPush(name: string) {
     try {
-      const list = await this.getAllPushes()
+      const list = this.getAllPushes()
       const newList = list.filter(item => item.name !== name)
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList))
+      mmkv.set(STORAGE_KEY, JSON.stringify(newList))
     } catch (e) {
       console.error('Delete failed', e)
     }
   }
 
-  async hasCustomPush(name: string): Promise<boolean> {
-    const list = await this.getAllPushes()
+  hasCustomPush(name: string): boolean {
+    const list = this.getAllPushes()
     return list.some(item => item.name === name)
   }
 
-  async clearAllPushes() {
-    await AsyncStorage.removeItem(STORAGE_KEY)
+  clearAllPushes() {
+    mmkv.remove(STORAGE_KEY)
   }
 }
 
 export const customPushStorage = new CustomPushStorage()
 
 export const registerCustomNotifications = async () => {
-  const pushes = await customPushStorage.getAllPushes()
+  const pushes = customPushStorage.getAllPushes()
   for (const data of pushes) {
-    // Parse trigger date string (format: YYYY-MM-DDTHH:mm)
     const triggerDate = new Date(data.trigger)
     const year = triggerDate.getFullYear()
-    const month = triggerDate.getMonth() + 1 // getMonth() returns 0-indexed
+    const month = triggerDate.getMonth() + 1
     const day = triggerDate.getDate()
     const hour = triggerDate.getHours()
     const minute = triggerDate.getMinutes()

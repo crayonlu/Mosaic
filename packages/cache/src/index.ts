@@ -10,7 +10,7 @@ export * from './utils/hash';
 export * from './utils/policy';
 
 // ResourceLoader service (core caching logic)
-export { getResourceLoader, ResourceLoader } from './services/resourceLoader';
+export { getResourceLoader, setResourceLoader, ResourceLoader } from './services/resourceLoader';
 
 // React hooks for resource caching
 export * from './hooks/useResourceCache';
@@ -23,4 +23,4 @@ export { MemoryCacheManager } from './implementations/memoryCache';
 
 // Platform-specific cache managers must be provided by the app:
 // - Desktop: TauriCacheManager from desktop/src/lib/cache.ts
-// - Mobile: RealmCacheManager from mobile/lib/cache.ts
+// - Mobile: SQLiteCacheManager from mobile/lib/cache.ts

@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { mmkv } from '@/lib/storage/mmkv'
 import type {
   NotificationContentInput,
   SchedulableNotificationTriggerInput,
@@ -55,12 +55,8 @@ export class LocalPushService {
     return newStatus === 'granted'
   }
 
-  /**
-   * @brief Returns true if user disabled push notifications in app settings.
-   */
-  isPushDisabledByUser = async () => {
-    const value = await AsyncStorage.getItem(STORAGE_KEY)
-    return value === DISABLED_VALUE
+  isPushDisabledByUser = () => {
+    return mmkv.getString(STORAGE_KEY) === DISABLED_VALUE
   }
 
   /**
@@ -68,11 +64,11 @@ export class LocalPushService {
    */
   setPushEnabled = async (enabled: boolean) => {
     if (enabled) {
-      await AsyncStorage.removeItem(STORAGE_KEY)
+      mmkv.remove(STORAGE_KEY)
       return
     }
 
-    await AsyncStorage.setItem(STORAGE_KEY, DISABLED_VALUE)
+    mmkv.set(STORAGE_KEY, DISABLED_VALUE)
     await Notifications.cancelAllScheduledNotificationsAsync()
   }
 
@@ -80,23 +76,15 @@ export class LocalPushService {
    * @brief Returns effective push status (system permission + app-level switch).
    */
   isPushEnabled = async () => {
-    const [granted, disabledByUser] = await Promise.all([
-      this.getNotificationPermissionStatus(),
-      this.isPushDisabledByUser(),
-    ])
-    return granted && !disabledByUser
+    const granted = await this.getNotificationPermissionStatus()
+    return granted && !this.isPushDisabledByUser()
   }
 
-  /**
-   * @brief Schedules a local notification.
-   * @param content Notification content.
-   * @param trigger Notification trigger.
-   */
   registerNotification = async (
     content: NotificationContentInput,
     trigger: SchedulableNotificationTriggerInput
   ) => {
-    if (await this.isPushDisabledByUser()) return
+    if (this.isPushDisabledByUser()) return
 
     if (!(await this.getNotificationPermissionStatus())) {
       const isGranted = await this.requestNotificationPermission()
@@ -125,7 +113,7 @@ export class LocalPushService {
   }
 
   async registerAll() {
-    if (await this.isPushDisabledByUser()) return
+    if (this.isPushDisabledByUser()) return
 
     const { registerSystemNotifications } = await import('./system')
     // const { registerCustomNotifications } = await import('./custom')
