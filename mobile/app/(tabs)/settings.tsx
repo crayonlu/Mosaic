@@ -3,8 +3,6 @@ import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
-import { getMobileResourceLoader, initializeMobileCache } from '@/lib/cache'
-import { LocalPushService } from '@/lib/services/local-push'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
@@ -30,8 +28,6 @@ import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanim
 
 const appVersion = Constants.expoConfig?.version ?? 'unknown'
 const expandLayoutTransition = LinearTransition.duration(220)
-
-const localPush = LocalPushService.getInstance()
 
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
   const { cachedUris } = useResourceCache([avatarUrl])
@@ -71,11 +67,13 @@ export default function SettingsScreen() {
     loadAIConfig()
     loadPushStatus()
     loadCacheInfo()
-  })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const loadCacheInfo = useCallback(async () => {
     setIsLoadingCache(true)
     try {
+      const { getMobileResourceLoader, initializeMobileCache } = await import('@/lib/cache')
       let loader = getMobileResourceLoader()
       if (!loader) {
         loader = await initializeMobileCache()
@@ -98,6 +96,7 @@ export default function SettingsScreen() {
       actionLabel: '确定',
       onAction: async () => {
         try {
+          const { getMobileResourceLoader } = await import('@/lib/cache')
           const loader = getMobileResourceLoader()
           if (loader) {
             await loader.clearCache()
@@ -131,6 +130,8 @@ export default function SettingsScreen() {
   }
 
   const loadPushStatus = async () => {
+    const { LocalPushService } = await import('@/lib/services/local-push')
+    const localPush = LocalPushService.getInstance()
     const [enabled, granted] = await Promise.all([
       localPush.isPushEnabled(),
       localPush.getNotificationPermissionStatus(),
@@ -141,6 +142,9 @@ export default function SettingsScreen() {
 
   const handleTogglePush = async (nextEnabled: boolean) => {
     try {
+      const { LocalPushService } = await import('@/lib/services/local-push')
+      const localPush = LocalPushService.getInstance()
+
       if (!nextEnabled) {
         await localPush.setPushEnabled(false)
         setPushEnabled(false)
