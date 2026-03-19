@@ -1,55 +1,52 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { mmkv } from '@/lib/storage/mmkv'
+import * as secureStorage from '@/lib/storage/secure'
 
 const KEYS = {
-  ACCESS_TOKEN: 'mosaic_access_token',
-  REFRESH_TOKEN: 'mosaic_refresh_token',
   SERVER_URL: 'mosaic_server_url',
   USERNAME: 'mosaic_username',
-}
+} as const
 
 class TokenStorage {
-  async getAccessToken(): Promise<string | null> {
-    return AsyncStorage.getItem(KEYS.ACCESS_TOKEN)
+  getAccessToken(): Promise<string | null> {
+    return secureStorage.getAccessToken()
   }
 
-  async getRefreshToken(): Promise<string | null> {
-    return AsyncStorage.getItem(KEYS.REFRESH_TOKEN)
+  getRefreshToken(): Promise<string | null> {
+    return secureStorage.getRefreshToken()
   }
 
   async setTokens(accessToken: string, refreshToken: string): Promise<void> {
-    await AsyncStorage.multiSet([
-      [KEYS.ACCESS_TOKEN, accessToken],
-      [KEYS.REFRESH_TOKEN, refreshToken],
-    ])
+    await secureStorage.setTokens(accessToken, refreshToken)
   }
 
   async clearTokens(): Promise<void> {
-    await AsyncStorage.multiRemove([KEYS.ACCESS_TOKEN, KEYS.REFRESH_TOKEN])
+    await secureStorage.clearTokens()
   }
 
-  async getServerUrl(): Promise<string | null> {
-    return AsyncStorage.getItem(KEYS.SERVER_URL)
+  getServerUrl(): string | null {
+    return mmkv.getString(KEYS.SERVER_URL) ?? null
   }
 
-  async setServerUrl(url: string): Promise<void> {
-    await AsyncStorage.setItem(KEYS.SERVER_URL, url)
+  setServerUrl(url: string): void {
+    mmkv.set(KEYS.SERVER_URL, url)
   }
 
-  async getUsername(): Promise<string | null> {
-    return AsyncStorage.getItem(KEYS.USERNAME)
+  getUsername(): string | null {
+    return mmkv.getString(KEYS.USERNAME) ?? null
   }
 
-  async setUsername(username: string): Promise<void> {
-    await AsyncStorage.setItem(KEYS.USERNAME, username)
+  setUsername(username: string): void {
+    mmkv.set(KEYS.USERNAME, username)
   }
 
   async clearAll(): Promise<void> {
-    await AsyncStorage.multiRemove(Object.values(KEYS))
+    await secureStorage.clearTokens()
+    mmkv.remove(KEYS.SERVER_URL)
+    mmkv.remove(KEYS.USERNAME)
   }
 
-  async hasTokens(): Promise<boolean> {
-    const token = await this.getAccessToken()
-    return token !== null
+  hasTokens(): Promise<boolean> {
+    return secureStorage.hasTokens()
   }
 }
 

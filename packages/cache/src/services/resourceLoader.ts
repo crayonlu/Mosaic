@@ -211,12 +211,16 @@ export class ResourceLoader {
 
 let resourceLoader: ResourceLoader | null = null;
 
-export const getResourceLoader = async (): Promise<ResourceLoader> => {
+export const getResourceLoader = async (): Promise<ResourceLoader | null> => {
   if (!resourceLoader) {
     resourceLoader = new ResourceLoader();
     await resourceLoader.initialize();
   }
   return resourceLoader;
+};
+
+export const setResourceLoader = (loader: ResourceLoader): void => {
+  resourceLoader = loader;
 };
 
 export const resetResourceLoader = (): void => {
