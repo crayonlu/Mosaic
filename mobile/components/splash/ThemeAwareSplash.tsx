@@ -1,6 +1,6 @@
 import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
-import { StyleSheet, View, Text } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 
 export default function ThemeAwareSplash() {
   const { themeMode, theme } = useThemeStore()
@@ -16,7 +16,6 @@ export default function ThemeAwareSplash() {
         style={styles.logo}
         contentFit="contain"
       />
-      <Text>测试文字</Text>
     </View>
   )
 }

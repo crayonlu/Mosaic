@@ -14,27 +14,56 @@ import {
   type PlatformAdapter,
 } from '@mosaic/cache'
 import { Directory, File, Paths } from 'expo-file-system'
-import Realm from 'realm'
+import { Realm } from '@realm/react'
 
 let resourceLoader: ResourceLoader | null = null
 const CACHE_DIR_NAME = 'mosaic-cache'
 
-const CacheEntrySchema: Realm.ObjectSchema = {
-  name: 'CacheEntry',
-  primaryKey: 'url',
-  properties: {
-    url: 'string',
-    localPath: 'string',
-    size: 'int',
-    mimeType: 'string?',
-    etag: 'string?',
-    lastAccessed: 'int',
-    accessCount: 'int',
-    createdAt: 'int',
-    expiresAt: 'int?',
-    metadata: 'string?',
-    isPinned: { type: 'bool', default: false },
-  },
+class CacheEntryObject extends Realm.Object<CacheEntryObject> {
+  url!: string
+  localPath!: string
+  size!: number
+  mimeType?: string
+  etag?: string
+  lastAccessed!: number
+  accessCount!: number
+  createdAt!: number
+  expiresAt?: number
+  metadata?: string
+  isPinned!: boolean
+
+  static schema: Realm.ObjectSchema = {
+    name: 'CacheEntry',
+    primaryKey: 'url',
+    properties: {
+      url: 'string',
+      localPath: 'string',
+      size: 'int',
+      mimeType: 'string?',
+      etag: 'string?',
+      lastAccessed: 'int',
+      accessCount: 'int',
+      createdAt: 'int',
+      expiresAt: 'int?',
+      metadata: 'string?',
+      isPinned: { type: 'bool', default: false },
+    },
+  }
+
+  toCacheEntry(): CacheEntry {
+    return {
+      url: this.url,
+      localPath: this.localPath,
+      size: this.size,
+      mimeType: this.mimeType ?? 'application/octet-stream',
+      etag: this.etag,
+      lastAccessed: this.lastAccessed,
+      accessCount: this.accessCount,
+      createdAt: this.createdAt,
+      expiresAt: this.expiresAt,
+      isPinned: this.isPinned,
+    }
+  }
 }
 
 class RealmCacheManager implements ICacheManager {
@@ -90,13 +119,13 @@ class RealmCacheManager implements ICacheManager {
   private async removeEntry(url: string): Promise<void> {
     if (!this.realm) return
 
-    const entry = this.realm.objectForPrimaryKey<CacheEntry>('CacheEntry', url)
+    const entry = this.realm.objectForPrimaryKey(CacheEntryObject, url)
     if (!entry) return
 
     const file = new File(entry.localPath)
 
     this.realm.write(() => {
-      const staleEntry = this.realm!.objectForPrimaryKey('CacheEntry', url)
+      const staleEntry = this.realm!.objectForPrimaryKey(CacheEntryObject, url)
       if (staleEntry) {
         this.realm!.delete(staleEntry)
       }
@@ -117,7 +146,7 @@ class RealmCacheManager implements ICacheManager {
     this.cacheDir.create({ idempotent: true, intermediates: true })
 
     this.realm = await Realm.open({
-      schema: [CacheEntrySchema],
+      schema: [CacheEntryObject],
       schemaVersion: 1,
     })
   }
@@ -125,7 +154,7 @@ class RealmCacheManager implements ICacheManager {
   async get(url: string): Promise<string | null> {
     if (!this.realm) return null
 
-    const entry = this.realm.objectForPrimaryKey<CacheEntry>('CacheEntry', url)
+    const entry = this.realm.objectForPrimaryKey(CacheEntryObject, url)
     if (!entry) return null
 
     if (entry.expiresAt && entry.expiresAt < Date.now()) {
@@ -162,21 +191,24 @@ class RealmCacheManager implements ICacheManager {
     }
     file.write(new Uint8Array(data))
 
-    const entry: CacheEntry = {
-      url,
-      localPath: file.uri,
-      mimeType: options?.mimeType || 'application/octet-stream',
-      size: data.byteLength,
-      createdAt: Date.now(),
-      lastAccessed: Date.now(),
-      accessCount: 1,
-      etag: options?.etag,
-      expiresAt: options?.maxAge ? Date.now() + options.maxAge : undefined,
-      isPinned: options?.isPinned || false,
-    }
-
+    const now = Date.now()
     realm.write(() => {
-      realm.create<CacheEntry>('CacheEntry', entry, Realm.UpdateMode.Modified)
+      realm.create(
+        CacheEntryObject,
+        {
+          url,
+          localPath: file.uri,
+          mimeType: options?.mimeType || 'application/octet-stream',
+          size: data.byteLength,
+          createdAt: now,
+          lastAccessed: now,
+          accessCount: 1,
+          etag: options?.etag,
+          expiresAt: options?.maxAge ? now + options.maxAge : undefined,
+          isPinned: options?.isPinned || false,
+        },
+        Realm.UpdateMode.Modified,
+      )
     })
 
     await this.prune()
@@ -190,7 +222,7 @@ class RealmCacheManager implements ICacheManager {
   async has(url: string): Promise<boolean> {
     if (!this.realm) return false
 
-    const entry = this.realm.objectForPrimaryKey<CacheEntry>('CacheEntry', url)
+    const entry = this.realm.objectForPrimaryKey(CacheEntryObject, url)
     if (!entry) return false
 
     if (entry.expiresAt && entry.expiresAt < Date.now()) {
@@ -210,7 +242,7 @@ class RealmCacheManager implements ICacheManager {
   async getMetadata(url: string): Promise<CacheEntry | null> {
     if (!this.realm) return null
 
-    const entry = this.realm.objectForPrimaryKey<CacheEntry>('CacheEntry', url)
+    const entry = this.realm.objectForPrimaryKey(CacheEntryObject, url)
     if (!entry) return null
 
     if (entry.expiresAt && entry.expiresAt < Date.now()) {
@@ -224,24 +256,13 @@ class RealmCacheManager implements ICacheManager {
       return null
     }
 
-    return {
-      url: entry.url,
-      localPath: entry.localPath,
-      size: entry.size,
-      mimeType: entry.mimeType ?? undefined,
-      etag: entry.etag ?? undefined,
-      lastAccessed: entry.lastAccessed,
-      accessCount: entry.accessCount,
-      createdAt: entry.createdAt,
-      expiresAt: entry.expiresAt ?? undefined,
-      isPinned: entry.isPinned,
-    }
+    return entry.toCacheEntry()
   }
 
   async list(filter?: CacheFilter): Promise<CacheEntry[]> {
     if (!this.realm) return []
 
-    let entries = this.realm.objects<CacheEntry>('CacheEntry')
+    let entries = this.realm.objects(CacheEntryObject)
 
     if (filter) {
       if (filter.mimeType) {
@@ -261,24 +282,13 @@ class RealmCacheManager implements ICacheManager {
       }
     }
 
-    return entries.map(entry => ({
-      url: entry.url,
-      localPath: entry.localPath,
-      size: entry.size,
-      mimeType: entry.mimeType ?? undefined,
-      etag: entry.etag ?? undefined,
-      lastAccessed: entry.lastAccessed,
-      accessCount: entry.accessCount,
-      createdAt: entry.createdAt,
-      expiresAt: entry.expiresAt ?? undefined,
-      isPinned: entry.isPinned,
-    }))
+    return entries.map(entry => entry.toCacheEntry())
   }
 
   async clear(): Promise<void> {
     if (!this.realm) return
 
-    const entries = this.realm.objects<CacheEntry>('CacheEntry')
+    const entries = this.realm.objects(CacheEntryObject)
     for (const entry of entries) {
       try {
         const file = new File(entry.localPath)
@@ -298,8 +308,8 @@ class RealmCacheManager implements ICacheManager {
       return { totalSize: 0, itemCount: 0, byType: {} }
     }
 
-    const entries = this.realm.objects<CacheEntry>('CacheEntry')
-    const totalSize = entries.reduce((sum: number, entry: any) => sum + entry.size, 0)
+    const entries = this.realm.objects(CacheEntryObject)
+    const totalSize = entries.reduce((sum, entry) => sum + entry.size, 0)
     const byType: CacheUsage['byType'] = {}
 
     for (const entry of entries) {
@@ -325,7 +335,7 @@ class RealmCacheManager implements ICacheManager {
     if (usage.totalSize <= this.config.maxSize) return 0
 
     const entries = this.realm
-      .objects<CacheEntry>('CacheEntry')
+      .objects(CacheEntryObject)
       .filtered('isPinned == false')
       .sorted('lastAccessed')
 
@@ -349,7 +359,7 @@ class RealmCacheManager implements ICacheManager {
     if (!this.realm) return
 
     this.realm.write(() => {
-      const entry = this.realm!.objectForPrimaryKey<CacheEntry>('CacheEntry', url)
+      const entry = this.realm!.objectForPrimaryKey(CacheEntryObject, url)
       if (entry) {
         entry.lastAccessed = Date.now()
       }
