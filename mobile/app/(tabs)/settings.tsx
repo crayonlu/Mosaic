@@ -96,6 +96,7 @@ export default function SettingsScreen() {
         'resource-cache': {
           title: '确认清除缓存',
           message: '清除后图片和视频需要重新加载，确定吗？',
+          requiresRestart: true,
         },
         sqlite: {
           title: '确认清除本地数据',

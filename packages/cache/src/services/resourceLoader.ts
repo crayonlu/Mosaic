@@ -214,7 +214,13 @@ let resourceLoader: ResourceLoader | null = null;
 export const getResourceLoader = async (): Promise<ResourceLoader | null> => {
   if (!resourceLoader) {
     resourceLoader = new ResourceLoader();
-    await resourceLoader.initialize();
+    try {
+      await resourceLoader.initialize();
+    } catch (error) {
+      console.warn('[getResourceLoader] Failed to initialize:', error);
+      resourceLoader = null;
+      return null;
+    }
   }
   return resourceLoader;
 };
