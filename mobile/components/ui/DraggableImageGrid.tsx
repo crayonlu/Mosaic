@@ -1,3 +1,4 @@
+import { apiClient } from '@mosaic/api'
 import { useResourceCache } from '@mosaic/cache'
 import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
@@ -16,6 +17,13 @@ export type { MediaGridItem } from './media/types'
 
 type GridItem = MediaGridItem
 
+function toAbsoluteUrl(url?: string): string | undefined {
+  if (!url) return undefined
+  if (/^https?:/i.test(url)) return url
+  const baseUrl = apiClient.getBaseUrl()
+  return baseUrl ? `${baseUrl}${url}` : url
+}
+
 interface DraggableImageGridProps {
   items: MediaGridItem[]
   authHeaders?: Record<string, string>
@@ -25,6 +33,7 @@ interface DraggableImageGridProps {
   onDragStart?: () => void
   onDragEnd?: () => void
   draggable?: boolean
+  isCacheLoading?: boolean
 }
 
 export function DraggableImageGrid({
@@ -36,45 +45,63 @@ export function DraggableImageGrid({
   onDragStart,
   onDragEnd,
   draggable = true,
+  isCacheLoading = false,
 }: DraggableImageGridProps) {
   const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null)
 
   const resolvedItems: MediaGridItem[] = useMemo(() => items, [items])
 
-  const imageThumbUrls = useMemo(
-    () =>
-      resolvedItems
-        .filter(item => item.type === 'image')
-        .map(item => getOptimizedMediaUri(item.uri, 'thumb')),
-    [resolvedItems]
-  )
-  const imageOptUrls = useMemo(
-    () =>
-      resolvedItems
-        .filter(item => item.type === 'image')
-        .map(item => getOptimizedMediaUri(item.uri, 'opt')),
-    [resolvedItems]
-  )
-  const videoThumbUrls = useMemo(
-    () =>
-      resolvedItems
-        .filter(item => item.type === 'video')
-        .map(item => item.thumbnailUri)
-        .filter((url): url is string => Boolean(url)),
-    [resolvedItems]
-  )
-  const videoOptUrls = useMemo(
-    () =>
-      resolvedItems
-        .filter(item => item.type === 'video')
-        .map(item => getOptimizedMediaUri(item.uri, 'opt')),
-    [resolvedItems]
-  )
+  const imageThumbUrls = useMemo(() => {
+    const urls: string[] = []
+    for (const item of resolvedItems) {
+      if (item.type === 'image') {
+        const url = toAbsoluteUrl(getOptimizedMediaUri(item.uri, 'thumb'))
+        if (url) urls.push(url)
+      }
+    }
+    return urls
+  }, [resolvedItems])
 
-  const { cachedUris: cachedImageThumbUris } = useResourceCache(imageThumbUrls)
-  const { cachedUris: cachedImageOptUris } = useResourceCache(imageOptUrls)
-  const { cachedUris: cachedVideoThumbUris } = useResourceCache(videoThumbUrls)
-  const { cachedUris: cachedVideoOptUris } = useResourceCache(videoOptUrls)
+  const imageOptUrls = useMemo(() => {
+    const urls: string[] = []
+    for (const item of resolvedItems) {
+      if (item.type === 'image') {
+        const url = toAbsoluteUrl(getOptimizedMediaUri(item.uri, 'opt'))
+        if (url) urls.push(url)
+      }
+    }
+    return urls
+  }, [resolvedItems])
+
+  const videoThumbUrls = useMemo(() => {
+    const urls: string[] = []
+    for (const item of resolvedItems) {
+      if (item.type === 'video' && item.thumbnailUri) {
+        const url = toAbsoluteUrl(item.thumbnailUri)
+        if (url) urls.push(url)
+      }
+    }
+    return urls
+  }, [resolvedItems])
+
+  const videoOptUrls = useMemo(() => {
+    const urls: string[] = []
+    for (const item of resolvedItems) {
+      if (item.type === 'video') {
+        const url = toAbsoluteUrl(getOptimizedMediaUri(item.uri, 'opt'))
+        if (url) urls.push(url)
+      }
+    }
+    return urls
+  }, [resolvedItems])
+
+  const { cachedUris: cachedImageThumbUris, isLoading: isLoadingImageThumb } = useResourceCache(imageThumbUrls)
+  const { cachedUris: cachedImageOptUris, isLoading: isLoadingImageOpt } = useResourceCache(imageOptUrls)
+  const { cachedUris: cachedVideoThumbUris, isLoading: isLoadingVideoThumb } = useResourceCache(videoThumbUrls)
+  const { cachedUris: cachedVideoOptUris, isLoading: isLoadingVideoOpt } = useResourceCache(videoOptUrls)
+
+  const isResourceCacheLoading = isLoadingImageThumb || isLoadingImageOpt || isLoadingVideoThumb || isLoadingVideoOpt
+  const showLoading = isCacheLoading || isResourceCacheLoading
 
   const cacheMaps = useMemo<MediaCacheMaps>(
     () => ({
@@ -141,6 +168,7 @@ export function DraggableImageGrid({
             previewUri={source.gridUri}
             previewHeaders={source.gridHeaders}
             uploadProgress={uploadProgressById?.[item.key]}
+            isLoading={showLoading}
             onPress={pressable ? () => handleItemPress(index) : undefined}
             onRemove={showRemoveButton ? () => handleRemove(index) : undefined}
             showRemoveButton={showRemoveButton}
@@ -156,6 +184,7 @@ export function DraggableImageGrid({
       mediaTileSize.height,
       mediaTileSize.width,
       resolvedMediaSources,
+      showLoading,
       showRemoveButton,
       uploadProgressById,
     ]

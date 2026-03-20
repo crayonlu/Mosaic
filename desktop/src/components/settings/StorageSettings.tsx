@@ -31,6 +31,11 @@ export function StorageSettings() {
     setIsLoading(true)
     try {
       const loader = await getResourceLoader()
+      if (!loader) {
+        console.error('Resource loader not available')
+        setIsLoading(false)
+        return
+      }
       const usage = await loader.getCacheUsage()
       const imageUsage = usage?.byType?.image
       const videoUsage = usage?.byType?.video
@@ -52,6 +57,11 @@ export function StorageSettings() {
     setIsClearing(true)
     try {
       const loader = await getResourceLoader()
+      if (!loader) {
+        console.error('Resource loader not available')
+        setIsClearing(false)
+        return
+      }
       await loader.clearCache()
       await loadCacheInfo()
     } catch (error) {

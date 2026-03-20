@@ -1,7 +1,8 @@
 import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
-import { Play, X } from 'lucide-react-native'
+import { ImageOff, Play, VideoOff, X } from 'lucide-react-native'
 import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { useState } from 'react'
 
 import { withAlpha } from './mediaPreviewUtils'
 import type { MediaGridItem } from './types'
@@ -13,6 +14,7 @@ interface MediaGridTileProps {
   previewUri?: string
   previewHeaders?: Record<string, string>
   uploadProgress?: number
+  isLoading?: boolean
   onPress?: () => void
   onRemove?: () => void
   showRemoveButton?: boolean
@@ -25,28 +27,42 @@ export function MediaGridTile({
   previewUri,
   previewHeaders,
   uploadProgress,
+  isLoading = false,
   onPress,
   onRemove,
   showRemoveButton = false,
 }: MediaGridTileProps) {
   const { theme } = useThemeStore()
+  const [imageError, setImageError] = useState(false)
   const uploadOverlayColor = withAlpha(theme.background, 0.14)
   const progressTrackColor = withAlpha(theme.surface, 0.9)
   const videoBadgeColor = withAlpha(theme.background, 0.7)
   const videoBadgeIconColor = withAlpha(theme.text, 0.98)
+  const loadingBgColor = withAlpha(theme.surface, 0.9)
   const isUploading = typeof uploadProgress === 'number'
 
   const content = (
     <View style={styles.imageContainer}>
-      {previewUri ? (
+      {isLoading ? (
+        <View style={[styles.loadingContainer, { backgroundColor: loadingBgColor }]}>
+          <View style={[styles.loadingDot, { backgroundColor: theme.textSecondary }]} />
+          <View style={[styles.loadingDot, { backgroundColor: theme.textSecondary }]} />
+          <View style={[styles.loadingDot, { backgroundColor: theme.textSecondary }]} />
+        </View>
+      ) : previewUri && !imageError ? (
         <Image
           source={{ uri: previewUri, headers: previewHeaders }}
           style={styles.image}
           contentFit="cover"
+          onError={() => setImageError(true)}
         />
       ) : (
-        <View style={[styles.videoFallback, { backgroundColor: theme.surface }]}>
-          <Play size={20} color={theme.textSecondary} fill={theme.textSecondary} />
+        <View style={[styles.errorFallback, { backgroundColor: theme.surface }]}>
+          {item.type === 'image' ? (
+            <ImageOff size={24} color={theme.textSecondary} />
+          ) : (
+            <VideoOff size={24} color={theme.textSecondary} />
+          )}
         </View>
       )}
 
@@ -140,6 +156,25 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  errorFallback: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingContainer: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  loadingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   videoBadge: {
     position: 'absolute',

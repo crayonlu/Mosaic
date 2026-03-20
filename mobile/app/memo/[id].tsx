@@ -9,6 +9,7 @@ import { createSelectedMediaItems, uploadSelectedMedia } from '@/lib/media/uploa
 import { useDeleteMemo, useMemo as useQueryMemo, useUpdateMemo } from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { stringUtils } from '@/lib/utils'
+import { useCacheStore } from '@/stores/cacheStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { apiClient, resourcesApi, type ResourceResponse } from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -34,6 +35,7 @@ export default function MemoDetailScreen() {
   const { data: memo, isLoading } = useQueryMemo(id || '')
   const { mutateAsync: updateMemo, isPending: isUpdating } = useUpdateMemo()
   const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
+  const { isReady: isCacheReady } = useCacheStore()
 
   const [editing, setEditing] = useState(false)
   const [content, setContent] = useState('')
@@ -322,6 +324,7 @@ export default function MemoDetailScreen() {
                   items={memoMediaItems}
                   authHeaders={authHeaders}
                   draggable={false}
+                  isCacheLoading={!isCacheReady}
                 />
               </View>
             )}

@@ -2,6 +2,7 @@ import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
 import { useAuthStore } from '@/stores/authStore'
+import { useCacheStore } from '@/stores/cacheStore'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useMoodStore } from '@/stores/moodStore'
 import { useThemeInit, useThemeStore } from '@/stores/themeStore'
@@ -16,10 +17,10 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
 } from 'react-native-reanimated'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -56,9 +57,9 @@ export default function RootLayout() {
   const { currentMood, currentMoodIntensity } = useMoodStore()
   const { isServerReachable, initialize } = useConnectionStore()
   const { isAuthenticated, isInitialized, isLoading, initialize: initAuth } = useAuthStore()
+  const { setReady: setCacheReady } = useCacheStore()
   const segments = useSegments()
   const router = useRouter()
-  const [isCacheReady, setIsCacheReady] = useState(false)
   const hasHiddenNativeSplash = useRef(false)
 
   useThemeInit()
@@ -72,8 +73,6 @@ export default function RootLayout() {
   }, [])
 
   useEffect(() => {
-    let isMounted = true
-
     const bootstrap = async () => {
       try {
         await initAuth()
@@ -100,32 +99,40 @@ export default function RootLayout() {
         } catch (error) {
           console.warn('Push registration failed:', error)
         }
-
-        try {
-          const { initializeMobileCache } = await import('../lib/cache')
-          await initializeMobileCache()
-        } catch (error) {
-          console.warn('Mobile cache initialization failed:', error)
-        } finally {
-          if (isMounted) {
-            setIsCacheReady(true)
-          }
-        }
-        return
-      }
-
-      if (isMounted) {
-        setIsCacheReady(true)
       }
     }
 
     bootstrap()
-
-    return () => {
-      isMounted = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    const initCache = async () => {
+      const checkAuth = () => useAuthStore.getState().isInitialized
+      const maxWait = 10000
+      const startTime = Date.now()
+
+      while (!checkAuth() && Date.now() - startTime < maxWait) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+
+      const authState = useAuthStore.getState()
+      if (!authState.isAuthenticated) {
+        setCacheReady(true)
+        return
+      }
+
+      try {
+        const { initializeMobileCache } = await import('../lib/cache')
+        await initializeMobileCache()
+        setCacheReady(true)
+      } catch (error) {
+        console.warn('Mobile cache initialization failed:', error)
+        setCacheReady(true)
+      }
+    }
+
+    initCache()
+  }, [setCacheReady])
 
   useEffect(() => {
     const timeoutId = setTimeout(hideNativeSplash, 80)
@@ -176,7 +183,7 @@ export default function RootLayout() {
     })
   }, [baseMoodColor, completeGradientTransition, moodColor, overlayOpacity])
 
-  const isAppReady = isInitialized && !isLoading && (!isAuthenticated || isCacheReady)
+  const isAppReady = isInitialized && !isLoading
 
   useEffect(() => {
     if (isAppReady) {
