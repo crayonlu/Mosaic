@@ -20,6 +20,9 @@ function extractResourceId(url: string): string | null {
   return match ? match[1] : null
 }
 
+const srcCache = new Map<string, string>()
+const loadingPromises = new Map<string, Promise<string | null>>()
+
 export function AuthImage({
   src,
   withAuth = true,
@@ -27,9 +30,19 @@ export function AuthImage({
   onLoadingChange,
   ...props
 }: AuthImageProps) {
-  const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(undefined)
+  const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(() => {
+    if (typeof src === 'string' && srcCache.has(src)) {
+      return srcCache.get(src)
+    }
+    return undefined
+  })
 
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(() => {
+    if (typeof src === 'string' && srcCache.has(src)) {
+      return false
+    }
+    return true
+  })
   const [hasError, setHasError] = useState(false)
 
   const source = useMemo(() => (typeof src === 'string' ? src : undefined), [src])
@@ -42,14 +55,22 @@ export function AuthImage({
       return
     }
 
+    if (srcCache.has(source)) {
+      setResolvedSrc(srcCache.get(source))
+      setIsLoading(false)
+      setHasError(false)
+      return
+    }
+
     if (!withAuth || isBypassSource(source)) {
+      srcCache.set(source, source)
       setResolvedSrc(source)
       setIsLoading(false)
       setHasError(false)
       return
     }
 
-    const controller = new window.AbortController()
+    let cancelled = false
 
     const loadImage = async () => {
       try {
@@ -57,58 +78,63 @@ export function AuthImage({
         setHasError(false)
 
         const resourceId = extractResourceId(source)
+        let urlToLoad = source
 
         if (resourceId && variant !== 'original') {
           const variantUrl = resourcesApi.getDownloadUrl(resourceId, variant)
+          urlToLoad = variantUrl
+        }
+
+        if (loadingPromises.has(urlToLoad)) {
+          const cachedPromise = loadingPromises.get(urlToLoad)!
+          const result = await cachedPromise
+          if (!cancelled) {
+            if (result) {
+              srcCache.set(source, result)
+              setResolvedSrc(result)
+            } else {
+              setHasError(true)
+            }
+            setIsLoading(false)
+          }
+          return
+        }
+
+        const promise = (async () => {
           const loader = await getResourceLoader()
           if (!loader) {
-            setHasError(true)
-            setIsLoading(false)
-            return
+            return null
           }
-          const result = await loader.load(variantUrl, { forceRefresh: false, allowCache: true })
+          const result = await loader.load(urlToLoad, { forceRefresh: false, allowCache: true })
 
           if (result.path) {
-            setResolvedSrc(result.path)
-            setIsLoading(false)
-            return
+            return result.path
           }
 
           if (result.data) {
             const blob = new Blob([result.data])
-            const objectUrl = URL.createObjectURL(blob)
-            setResolvedSrc(objectUrl)
-            setIsLoading(false)
-            return
+            return URL.createObjectURL(blob)
           }
-        }
 
-        const loader = await getResourceLoader()
-        if (!loader) {
+          return null
+        })()
+
+        loadingPromises.set(urlToLoad, promise)
+
+        const result = await promise
+        loadingPromises.delete(urlToLoad)
+
+        if (cancelled) return
+
+        if (result) {
+          srcCache.set(source, result)
+          setResolvedSrc(result)
+        } else {
           setHasError(true)
-          setIsLoading(false)
-          return
         }
-        const result = await loader.load(source, { forceRefresh: false, allowCache: true })
-
-        if (result.path) {
-          setResolvedSrc(result.path)
-          setIsLoading(false)
-          return
-        }
-
-        if (result.data) {
-          const blob = new Blob([result.data])
-          const objectUrl = URL.createObjectURL(blob)
-          setResolvedSrc(objectUrl)
-          setIsLoading(false)
-          return
-        }
-
-        setHasError(true)
         setIsLoading(false)
       } catch (error) {
-        if ((error as Error).name !== 'AbortError') {
+        if ((error as Error).name !== 'AbortError' && !cancelled) {
           setHasError(true)
         }
         setIsLoading(false)
@@ -117,7 +143,7 @@ export function AuthImage({
     loadImage()
 
     return () => {
-      controller.abort()
+      cancelled = true
     }
   }, [source, withAuth, variant])
 
