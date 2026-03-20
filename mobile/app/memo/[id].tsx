@@ -11,21 +11,11 @@ import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { stringUtils } from '@/lib/utils'
 import { useCacheStore } from '@/stores/cacheStore'
 import { useThemeStore } from '@/stores/themeStore'
-import { apiClient, resourcesApi, type ResourceResponse } from '@mosaic/api'
+import { resourcesApi, type ResourceResponse } from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, ImagePlus } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-
-function toAbsoluteUrl(url?: string): string | undefined {
-  if (!url) return undefined
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url
-  }
-
-  const baseUrl = apiClient.getBaseUrl()
-  return baseUrl ? `${baseUrl}${url}` : url
-}
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -76,7 +66,7 @@ export default function MemoDetailScreen() {
       uri: resourcesApi.getDownloadUrl(resource.id),
       type: resource.resourceType,
       thumbnailUri:
-        resource.resourceType === 'video' ? toAbsoluteUrl(resource.thumbnailUrl) : undefined,
+        resource.resourceType === 'video' ? resourcesApi.getThumbnailUrl(resource.id) : undefined,
     }),
     []
   )

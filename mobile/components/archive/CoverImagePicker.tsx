@@ -1,7 +1,7 @@
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
-import { apiClient, resourcesApi } from '@mosaic/api'
+import { resourcesApi } from '@mosaic/api'
 import { useResourceCache } from '@mosaic/cache'
 import { Image } from 'expo-image'
 import { Check, Play } from 'lucide-react-native'
@@ -10,16 +10,6 @@ import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-n
 
 const { width } = Dimensions.get('window')
 const IMAGE_SIZE = (width - 48) / 3
-
-function toAbsoluteUrl(url?: string): string | undefined {
-  if (!url) return undefined
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url
-  }
-
-  const baseUrl = apiClient.getBaseUrl()
-  return baseUrl ? `${baseUrl}${url}` : url
-}
 
 interface CoverImagePickerProps {
   memos: MemoWithResources[]
@@ -66,7 +56,7 @@ export function CoverImagePicker({
             ]
           }
 
-          const thumbnailUrl = toAbsoluteUrl(resource.thumbnailUrl)
+          const thumbnailUrl = resourcesApi.getThumbnailUrl(resource.id)
           if (!thumbnailUrl) {
             return []
           }

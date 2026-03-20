@@ -3,7 +3,7 @@ export { authApi } from './auth'
 export { ApiClient, apiClient, type TokenStorage } from './client'
 export { diariesApi } from './diaries'
 export { memosApi } from './memos'
-export { resourcesApi, uploadResourceFiles } from './resources'
+export { resourcesApi, uploadResourceFiles, toAbsoluteUrl } from './resources'
 export { statsApi } from './stats'
 
 // Hooks exports

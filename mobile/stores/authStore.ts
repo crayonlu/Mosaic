@@ -42,6 +42,16 @@ apiClient.setTokenStorage({
   clearTokens: () => tokenStorage.clearTokens(),
 })
 
+const savedServerUrl = tokenStorage.getServerUrl()
+if (savedServerUrl) {
+  console.log('setting base url to', savedServerUrl)
+  try {
+    apiClient.setBaseUrl(savedServerUrl)
+  } catch (error) {
+    console.error('error setting base url', error)
+  }
+}
+
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
