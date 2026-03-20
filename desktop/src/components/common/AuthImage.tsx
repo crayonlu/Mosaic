@@ -61,6 +61,11 @@ export function AuthImage({
         if (resourceId && variant !== 'original') {
           const variantUrl = resourcesApi.getDownloadUrl(resourceId, variant)
           const loader = await getResourceLoader()
+          if (!loader) {
+            setHasError(true)
+            setIsLoading(false)
+            return
+          }
           const result = await loader.load(variantUrl, { forceRefresh: false, allowCache: true })
 
           if (result.path) {
@@ -79,6 +84,11 @@ export function AuthImage({
         }
 
         const loader = await getResourceLoader()
+        if (!loader) {
+          setHasError(true)
+          setIsLoading(false)
+          return
+        }
         const result = await loader.load(source, { forceRefresh: false, allowCache: true })
 
         if (result.path) {
@@ -119,7 +129,7 @@ export function AuthImage({
 
   if (isLoading) {
     return (
-      <div className="min-w-16 min-h-16 flex justify-center items-center">
+      <div className="flex justify-center items-center">
         <LoadingSpinner className={classNameRest} {...imgProps} />
       </div>
     )

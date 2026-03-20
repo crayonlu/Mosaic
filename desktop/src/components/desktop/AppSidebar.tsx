@@ -102,7 +102,7 @@ export function AppSidebar() {
               size="lg"
               className="hover:bg-transparent hover:text-primary transition-all w-auto"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
+              <Avatar className="h-8 w-8 rounded-lg flex justify-center items-center">
                 <AuthImage
                   src={user ? resolveApiUrl(user.avatarUrl) : undefined}
                   alt={user?.username || 'User'}

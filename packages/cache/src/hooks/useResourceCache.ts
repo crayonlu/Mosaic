@@ -6,7 +6,7 @@ function isRenderableLocalUri(uri: string): boolean {
 }
 
 const INITIALIZATION_POLL_INTERVAL = 100;
-const MAX_INITIALIZATION_WAIT = 5000;
+const MAX_INITIALIZATION_WAIT = 1500;
 
 export function useResourceCache(
   urls: string[],
@@ -35,6 +35,17 @@ export function useResourceCache(
     let cancelled = false;
     let loader: ResourceLoader | null = null;
 
+    const fallbackUris: Record<string, string> = {};
+    for (const url of urls) {
+      if (isRenderableLocalUri(url)) {
+        fallbackUris[url] = url;
+      }
+    }
+    const fallbackKeys = Object.keys(fallbackUris)
+    if (fallbackKeys.length > 0) {
+      setCachedUris(fallbackUris);
+    }
+
     const loadCache = async () => {
       try {
         const startTime = Date.now();
@@ -47,16 +58,16 @@ export function useResourceCache(
               break;
             }
           } catch {
-            await new Promise((resolve) => setTimeout(resolve, INITIALIZATION_POLL_INTERVAL));
-            continue;
+            // wait for loader to be initialized
           }
-        }
-
-        if (!loader) {
-          return;
+          await new Promise((resolve) => setTimeout(resolve, INITIALIZATION_POLL_INTERVAL));
         }
 
         if (cancelled || !isMounted) {
+          return;
+        }
+
+        if (!loader) {
           return;
         }
 
@@ -78,7 +89,9 @@ export function useResourceCache(
           }
         });
 
-        await Promise.all(loadPromises);
+        await Promise.all(loadPromises).catch(() => {
+          // Ignore individual load errors
+        });
 
         if (isMounted && !cancelled) {
           setCachedUris((prev) => ({ ...prev, ...newCachedUris }));

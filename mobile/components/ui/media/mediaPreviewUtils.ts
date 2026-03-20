@@ -101,10 +101,10 @@ export function resolveMediaSource(
   if (item.type === 'image') {
     const thumbUri = getOptimizedMediaUri(item.uri, 'thumb')
     const previewUri = getOptimizedMediaUri(item.uri, 'opt')
-    const resolvedThumbUri =
-      resolveCachedUri(thumbUri, cacheMaps.imageThumbUris[thumbUri]) || thumbUri
-    const resolvedPreviewUri =
-      resolveCachedUri(previewUri, cacheMaps.imageOptUris[previewUri]) || previewUri
+    const cachedThumbUri = cacheMaps.imageThumbUris[thumbUri]
+    const cachedPreviewUri = cacheMaps.imageOptUris[previewUri]
+    const resolvedThumbUri = resolveCachedUri(thumbUri, cachedThumbUri) || thumbUri
+    const resolvedPreviewUri = resolveCachedUri(previewUri, cachedPreviewUri) || previewUri
 
     return {
       item,
@@ -115,21 +115,20 @@ export function resolveMediaSource(
     }
   }
 
-  const videoThumbUri = resolveCachedUri(
-    item.thumbnailUri,
-    item.thumbnailUri ? cacheMaps.videoThumbUris[item.thumbnailUri] : undefined
-  )
+  const videoThumbUri = item.thumbnailUri
+  const cachedVideoThumbUri = item.thumbnailUri ? cacheMaps.videoThumbUris[item.thumbnailUri] : undefined
+  const resolvedVideoThumbUri = resolveCachedUri(videoThumbUri, cachedVideoThumbUri) || videoThumbUri
   const videoOptUri = getOptimizedMediaUri(item.uri, 'opt')
-  const resolvedVideoUri =
-    resolveCachedUri(videoOptUri, cacheMaps.videoOptUris[videoOptUri]) || videoOptUri
+  const cachedVideoOptUri = cacheMaps.videoOptUris[videoOptUri]
+  const resolvedVideoUri = resolveCachedUri(videoOptUri, cachedVideoOptUri) || videoOptUri
 
   return {
     item,
-    gridUri: videoThumbUri,
-    gridHeaders: isRemoteUri(videoThumbUri) ? requestHeaders : undefined,
+    gridUri: resolvedVideoThumbUri,
+    gridHeaders: isRemoteUri(resolvedVideoThumbUri) ? requestHeaders : undefined,
     previewUri: resolvedVideoUri,
     previewHeaders: isRemoteUri(resolvedVideoUri) ? requestHeaders : undefined,
-    previewThumbnailUri: videoThumbUri,
-    previewThumbnailHeaders: isRemoteUri(videoThumbUri) ? requestHeaders : undefined,
+    previewThumbnailUri: resolvedVideoThumbUri,
+    previewThumbnailHeaders: isRemoteUri(resolvedVideoThumbUri) ? requestHeaders : undefined,
   }
 }

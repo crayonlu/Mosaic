@@ -59,6 +59,11 @@ export function AuthVideo({
         if (resourceId && variant !== 'original') {
           const variantUrl = resourcesApi.getDownloadUrl(resourceId, variant)
           const loader = await getResourceLoader()
+          if (!loader) {
+            setHasError(true)
+            setIsLoading(false)
+            return
+          }
           const result = await loader.load(variantUrl, { forceRefresh: false, allowCache: true })
 
           if (result.path) {
@@ -77,6 +82,11 @@ export function AuthVideo({
         }
 
         const loader = await getResourceLoader()
+        if (!loader) {
+          setHasError(true)
+          setIsLoading(false)
+          return
+        }
         const result = await loader.load(source, { forceRefresh: false, allowCache: true })
 
         if (result.path) {
