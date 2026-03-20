@@ -95,12 +95,17 @@ export function DraggableImageGrid({
     return urls
   }, [resolvedItems])
 
-  const { cachedUris: cachedImageThumbUris, isLoading: isLoadingImageThumb } = useResourceCache(imageThumbUrls)
-  const { cachedUris: cachedImageOptUris, isLoading: isLoadingImageOpt } = useResourceCache(imageOptUrls)
-  const { cachedUris: cachedVideoThumbUris, isLoading: isLoadingVideoThumb } = useResourceCache(videoThumbUrls)
-  const { cachedUris: cachedVideoOptUris, isLoading: isLoadingVideoOpt } = useResourceCache(videoOptUrls)
+  const { cachedUris: cachedImageThumbUris, isLoading: isLoadingImageThumb } =
+    useResourceCache(imageThumbUrls)
+  const { cachedUris: cachedImageOptUris, isLoading: isLoadingImageOpt } =
+    useResourceCache(imageOptUrls)
+  const { cachedUris: cachedVideoThumbUris, isLoading: isLoadingVideoThumb } =
+    useResourceCache(videoThumbUrls)
+  const { cachedUris: cachedVideoOptUris, isLoading: isLoadingVideoOpt } =
+    useResourceCache(videoOptUrls)
 
-  const isResourceCacheLoading = isLoadingImageThumb || isLoadingImageOpt || isLoadingVideoThumb || isLoadingVideoOpt
+  const isResourceCacheLoading =
+    isLoadingImageThumb || isLoadingImageOpt || isLoadingVideoThumb || isLoadingVideoOpt
   const showLoading = isCacheLoading || isResourceCacheLoading
 
   const cacheMaps = useMemo<MediaCacheMaps>(

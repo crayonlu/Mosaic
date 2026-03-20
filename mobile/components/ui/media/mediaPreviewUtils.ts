@@ -116,8 +116,11 @@ export function resolveMediaSource(
   }
 
   const videoThumbUri = item.thumbnailUri
-  const cachedVideoThumbUri = item.thumbnailUri ? cacheMaps.videoThumbUris[item.thumbnailUri] : undefined
-  const resolvedVideoThumbUri = resolveCachedUri(videoThumbUri, cachedVideoThumbUri) || videoThumbUri
+  const cachedVideoThumbUri = item.thumbnailUri
+    ? cacheMaps.videoThumbUris[item.thumbnailUri]
+    : undefined
+  const resolvedVideoThumbUri =
+    resolveCachedUri(videoThumbUri, cachedVideoThumbUri) || videoThumbUri
   const videoOptUri = getOptimizedMediaUri(item.uri, 'opt')
   const cachedVideoOptUri = cacheMaps.videoOptUris[videoOptUri]
   const resolvedVideoUri = resolveCachedUri(videoOptUri, cachedVideoOptUri) || videoOptUri

@@ -41,7 +41,7 @@ export function useResourceCache(
         fallbackUris[url] = url;
       }
     }
-    const fallbackKeys = Object.keys(fallbackUris)
+    const fallbackKeys = Object.keys(fallbackUris);
     if (fallbackKeys.length > 0) {
       setCachedUris(fallbackUris);
     }

@@ -5,7 +5,7 @@ interface CacheState {
   setReady: (value: boolean) => void
 }
 
-export const useCacheStore = create<CacheState>((set) => ({
+export const useCacheStore = create<CacheState>(set => ({
   isReady: false,
   setReady: (value: boolean) => set({ isReady: value }),
 }))
