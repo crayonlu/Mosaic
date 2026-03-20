@@ -1,4 +1,3 @@
-import { apiClient } from '@mosaic/api'
 import { useResourceCache } from '@mosaic/cache'
 import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
@@ -16,13 +15,6 @@ import type { MediaCacheMaps, MediaGridItem } from './media/types'
 export type { MediaGridItem } from './media/types'
 
 type GridItem = MediaGridItem
-
-function toAbsoluteUrl(url?: string): string | undefined {
-  if (!url) return undefined
-  if (/^https?:/i.test(url)) return url
-  const baseUrl = apiClient.getBaseUrl()
-  return baseUrl ? `${baseUrl}${url}` : url
-}
 
 interface DraggableImageGridProps {
   items: MediaGridItem[]
@@ -49,13 +41,15 @@ export function DraggableImageGrid({
 }: DraggableImageGridProps) {
   const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null)
 
-  const resolvedItems: MediaGridItem[] = useMemo(() => items, [items])
+  const resolvedItems: MediaGridItem[] = useMemo(() => {
+    return items
+  }, [items])
 
   const imageThumbUrls = useMemo(() => {
     const urls: string[] = []
     for (const item of resolvedItems) {
       if (item.type === 'image') {
-        const url = toAbsoluteUrl(getOptimizedMediaUri(item.uri, 'thumb'))
+        const url = getOptimizedMediaUri(item.uri, 'thumb')
         if (url) urls.push(url)
       }
     }
@@ -66,7 +60,7 @@ export function DraggableImageGrid({
     const urls: string[] = []
     for (const item of resolvedItems) {
       if (item.type === 'image') {
-        const url = toAbsoluteUrl(getOptimizedMediaUri(item.uri, 'opt'))
+        const url = getOptimizedMediaUri(item.uri, 'opt')
         if (url) urls.push(url)
       }
     }
@@ -77,8 +71,7 @@ export function DraggableImageGrid({
     const urls: string[] = []
     for (const item of resolvedItems) {
       if (item.type === 'video' && item.thumbnailUri) {
-        const url = toAbsoluteUrl(item.thumbnailUri)
-        if (url) urls.push(url)
+        urls.push(item.thumbnailUri)
       }
     }
     return urls
@@ -88,7 +81,7 @@ export function DraggableImageGrid({
     const urls: string[] = []
     for (const item of resolvedItems) {
       if (item.type === 'video') {
-        const url = toAbsoluteUrl(getOptimizedMediaUri(item.uri, 'opt'))
+        const url = getOptimizedMediaUri(item.uri, 'opt')
         if (url) urls.push(url)
       }
     }

@@ -7,20 +7,10 @@ import { stringUtils } from '@/lib/utils/string'
 import { useCacheStore } from '@/stores/cacheStore'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
-import { apiClient, resourcesApi } from '@mosaic/api'
+import { resourcesApi } from '@mosaic/api'
 import { Trash2 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-
-function toAbsoluteUrl(url?: string): string | undefined {
-  if (!url) return undefined
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url
-  }
-
-  const baseUrl = apiClient.getBaseUrl()
-  return baseUrl ? `${baseUrl}${url}` : url
-}
 
 interface MemoCardProps {
   memo: MemoWithResources
@@ -60,7 +50,7 @@ export function MemoCard({
     uri: resourcesApi.getDownloadUrl(resource.id),
     type: resource.resourceType,
     thumbnailUri:
-      resource.resourceType === 'video' ? toAbsoluteUrl(resource.thumbnailUrl) : undefined,
+      resource.resourceType === 'video' ? resourcesApi.getThumbnailUrl(resource.id) : undefined,
   }))
 
   const handleDelete = () => {

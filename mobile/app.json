@@ -2,7 +2,7 @@
   "expo": {
     "name": "Mosaic",
     "slug": "Mosaic",
-    "version": "2.2.2",
+    "version": "2.2.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mosaic",

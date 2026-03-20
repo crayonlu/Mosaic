@@ -5,21 +5,11 @@ import { toast } from '@/components/ui/Toast'
 import { useDiary, useUpdateDiary } from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
-import { apiClient, resourcesApi } from '@mosaic/api'
+import { resourcesApi } from '@mosaic/api'
 import { useResourceCache } from '@mosaic/cache'
 import { Image } from 'expo-image'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-
-function toAbsoluteUrl(url?: string): string | undefined {
-  if (!url) return undefined
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url
-  }
-
-  const baseUrl = apiClient.getBaseUrl()
-  return baseUrl ? `${baseUrl}${url}` : url
-}
 
 interface DayPageViewProps {
   date: string
@@ -68,7 +58,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
   const coverImageUrl = useMemo(() => {
     if (!displayCoverImageId) return undefined
     if (coverResource?.resourceType === 'video') {
-      return toAbsoluteUrl(coverResource.thumbnailUrl)
+      return resourcesApi.getThumbnailUrl(displayCoverImageId)
     }
     if (coverResource) {
       return resourcesApi.getDownloadUrl(coverResource.id)

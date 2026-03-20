@@ -13,6 +13,17 @@ import type {
   UserResponse,
 } from './types'
 
+export function toAbsoluteUrl(url?: string): string {
+  if (!url) return ''
+  if (/^https?:/i.test(url)) return url
+  const baseUrl = apiClient.getBaseUrl()
+  if (!baseUrl) {
+    console.warn('[resourcesApi] baseUrl is not set, URL may be invalid:', url)
+    return url
+  }
+  return url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`
+}
+
 export const resourcesApi = {
   list(query?: ListResourcesQuery): Promise<PaginatedResponse<ResourceResponse>> {
     return apiClient.get<PaginatedResponse<ResourceResponse>>('/api/resources', query)
@@ -56,9 +67,13 @@ export const resourcesApi = {
   },
 
   getDownloadUrl(id: string, variant?: 'thumb' | 'opt'): string {
-    const baseUrl = apiClient.getBaseUrl()
+    const path = `/api/resources/${id}/download`
     const variantParam = variant ? `?variant=${variant}` : ''
-    return `${baseUrl}/api/resources/${id}/download${variantParam}`
+    return toAbsoluteUrl(path + variantParam)
+  },
+
+  getThumbnailUrl(id: string): string {
+    return toAbsoluteUrl(`/api/resources/${id}/thumbnail`)
   },
 }
 
