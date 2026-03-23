@@ -211,7 +211,7 @@ impl MemoService {
             e
         })?;
         let memo = sqlx::query_as::<_, Memo>(
-            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
              FROM memos WHERE id = $1 AND user_id = $2 AND is_deleted = false",
         )
         .bind(memo_id)
@@ -251,7 +251,7 @@ impl MemoService {
         let memos = if let Some(ref search_pattern) = search_pattern {
             // Search mode: search in content and tags
             sqlx::query_as::<_, Memo>(
-                "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+                "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
                  FROM memos 
                  WHERE user_id = $1 
                    AND is_deleted = false 
@@ -266,7 +266,7 @@ impl MemoService {
             .await?
         } else if let Some(diary_date) = diary_date {
             sqlx::query_as::<_, Memo>(
-                "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+                "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
                  FROM memos WHERE user_id = $1 AND is_deleted = false AND diary_date = $2 AND is_archived = true
                  ORDER BY created_at DESC LIMIT $3 OFFSET $4",
             )
@@ -280,7 +280,7 @@ impl MemoService {
             match archived {
                 Some(true) => {
                     sqlx::query_as::<_, Memo>(
-                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
                          FROM memos WHERE user_id = $1 AND is_deleted = false AND is_archived = true
                          ORDER BY created_at DESC LIMIT $2 OFFSET $3",
                     )
@@ -292,7 +292,7 @@ impl MemoService {
                 }
                 Some(false) => {
                     sqlx::query_as::<_, Memo>(
-                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
                          FROM memos WHERE user_id = $1 AND is_deleted = false AND is_archived = false
                          ORDER BY created_at DESC LIMIT $2 OFFSET $3",
                     )
@@ -304,7 +304,7 @@ impl MemoService {
                 }
                 None => {
                     sqlx::query_as::<_, Memo>(
-                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
                          FROM memos WHERE user_id = $1 AND is_deleted = false
                          ORDER BY created_at DESC LIMIT $2 OFFSET $3",
                     )
@@ -401,7 +401,7 @@ impl MemoService {
         let user_uuid = Uuid::parse_str(user_id)?;
 
         let mut query = String::from(
-            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
              FROM memos
              WHERE user_id = $1
                 AND is_deleted = false
@@ -636,7 +636,7 @@ impl MemoService {
         let offset = (page - 1) * page_size;
 
         let mut query_str = String::from(
-            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at 
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at 
              FROM memos WHERE user_id = $1 AND is_deleted = false",
         );
 
