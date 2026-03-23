@@ -82,8 +82,7 @@ class OpenAIAgent implements AIAgent {
 
   async suggestTags(content: string): Promise<AIResponse<TagSuggestion[]>> {
     const prompt = PromptBuilder.buildSuggestTagsPrompt(content)
-
-    const response = await this.callAPI(prompt, 100)
+    const response = await this.callAPI(prompt, 500)
     const tags = parseSuggestedTags(response.data)
 
     return {
@@ -106,36 +105,54 @@ class OpenAIAgent implements AIAgent {
 
   private async callAPI(prompt: string, maxTokens: number): Promise<AIResponse<string>> {
     const url = `${this.config.baseUrl}/chat/completions`
+    // Create abort controller for timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), this.config.timeout)
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.config.apiKey}`,
-      },
-      signal: AbortSignal.timeout(this.config.timeout),
-      body: JSON.stringify({
-        model: this.config.model,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: this.config.temperature,
-        max_tokens: maxTokens,
-      }),
-    })
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.config.apiKey}`,
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: this.config.model,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: this.config.temperature,
+          max_tokens: maxTokens,
+        }),
+      })
 
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error?.message || 'OpenAI API error')
-    }
+      clearTimeout(timeoutId)
 
-    const data = await response.json()
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error?.message || 'OpenAI API error')
+      }
 
-    return {
-      data: data.choices[0].message.content,
-      usage: {
-        promptTokens: data.usage.prompt_tokens,
-        completionTokens: data.usage.completion_tokens,
-        totalTokens: data.usage.total_tokens,
-      },
+      const data = await response.json()
+      const content = data.choices[0].message.content
+      const finishReason = data.choices[0].finish_reason
+
+      if (!content || content.trim() === '')
+        throw new Error(`AI 返回空内容 (finish_reason: ${finishReason})`)
+
+      return {
+        data: content,
+        usage: {
+          promptTokens: data.usage.prompt_tokens,
+          completionTokens: data.usage.completion_tokens,
+          totalTokens: data.usage.total_tokens,
+        },
+      }
+    } catch (err) {
+      clearTimeout(timeoutId)
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error('请求超时，请稍后重试')
+      }
+      throw err
     }
   }
 }
@@ -150,7 +167,7 @@ class AnthropicAgent implements AIAgent {
   async suggestTags(content: string): Promise<AIResponse<TagSuggestion[]>> {
     const prompt = PromptBuilder.buildSuggestTagsPrompt(content)
 
-    const response = await this.callAPI(prompt, 100)
+    const response = await this.callAPI(prompt, 500)
     const tags = parseSuggestedTags(response.data)
 
     return {
@@ -174,36 +191,49 @@ class AnthropicAgent implements AIAgent {
   private async callAPI(prompt: string, maxTokens: number): Promise<AIResponse<string>> {
     const url = `${this.config.baseUrl}/messages`
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.config.apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      signal: AbortSignal.timeout(this.config.timeout),
-      body: JSON.stringify({
-        model: this.config.model,
-        max_tokens: maxTokens,
-        temperature: this.config.temperature,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), this.config.timeout)
 
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error?.message || 'Anthropic API error')
-    }
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.config.apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: this.config.model,
+          max_tokens: maxTokens,
+          temperature: this.config.temperature,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
 
-    const data = await response.json()
+      clearTimeout(timeoutId)
 
-    return {
-      data: data.content[0].text,
-      usage: {
-        promptTokens: data.usage.input_tokens,
-        completionTokens: data.usage.output_tokens,
-        totalTokens: data.usage.input_tokens + data.usage.output_tokens,
-      },
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error?.message || 'Anthropic API error')
+      }
+
+      const data = await response.json()
+
+      return {
+        data: data.content[0].text,
+        usage: {
+          promptTokens: data.usage.input_tokens,
+          completionTokens: data.usage.output_tokens,
+          totalTokens: data.usage.input_tokens + data.usage.output_tokens,
+        },
+      }
+    } catch (err) {
+      clearTimeout(timeoutId)
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error('请求超时，请稍后重试')
+      }
+      throw err
     }
   }
 }

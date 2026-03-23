@@ -57,6 +57,9 @@ export default function SettingsScreen() {
   const [showAISettings, setShowAISettings] = useState(false)
   const [showPermissionSettings, setShowPermissionSettings] = useState(false)
   const [savingAI, setSavingAI] = useState(false)
+  const [testingAI, setTestingAI] = useState(false)
+  const [testResult, setTestResult] = useState<'success' | 'error' | null>(null)
+  const [testMessage, setTestMessage] = useState('')
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushPermissionGranted, setPushPermissionGranted] = useState(false)
   const [showStorageSettings, setShowStorageSettings] = useState(false)
@@ -250,6 +253,46 @@ export default function SettingsScreen() {
     }
   }
 
+  const handleTestAI = async () => {
+    if (!aiConfig?.apiKey?.trim()) {
+      setTestResult('error')
+      setTestMessage('请先输入 API Key')
+      return
+    }
+
+    setTestingAI(true)
+    setTestResult(null)
+    setTestMessage('测试中...')
+
+    try {
+      const { createAIAgent } = await import('@/lib/ai/client')
+      const agent = createAIAgent(aiConfig)
+
+      const response = await agent.suggestTags('test')
+      const tags = response.data.map(t => t.name)
+
+      setTestResult('success')
+      setTestMessage(`连接成功！推荐标签: ${tags.join(', ')}`)
+      toast.show({
+        type: 'success',
+        title: 'AI 连接测试成功',
+        message: `使用了 ${response.usage.totalTokens} tokens`,
+      })
+    } catch (error) {
+      console.error('AI test error:', error)
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
+      setTestResult('error')
+      setTestMessage(`连接失败: ${errorMessage}`)
+      toast.show({
+        type: 'error',
+        title: 'AI 连接测试失败',
+        message: errorMessage,
+      })
+    } finally {
+      setTestingAI(false)
+    }
+  }
+
   const handleAvatarPress = async () => {
     try {
       const croppedUri = await pickAndCropAvatar()
@@ -424,12 +467,61 @@ export default function SettingsScreen() {
                 placeholder={aiConfig.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'}
               />
             </View>
-            <Button
-              title="保存"
-              variant="primary"
-              onPress={handleSaveAIConfig}
-              loading={savingAI}
-            />
+            <View style={styles.settingRow}>
+              <Button
+                title="测试连接"
+                variant="secondary"
+                onPress={handleTestAI}
+                loading={testingAI}
+                disabled={!aiConfig.apiKey?.trim()}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="保存"
+                variant="primary"
+                onPress={handleSaveAIConfig}
+                loading={savingAI}
+                disabled={testingAI || !aiConfig.apiKey?.trim()}
+                style={{ flex: 1 }}
+              />
+            </View>
+            {testMessage && (
+              <View
+                style={[
+                  styles.testResult,
+                  {
+                    backgroundColor:
+                      testResult === 'success'
+                        ? 'rgba(34, 197, 94, 0.1)'
+                        : testResult === 'error'
+                          ? 'rgba(239, 68, 68, 0.1)'
+                          : 'rgba(59, 130, 246, 0.1)',
+                    borderColor:
+                      testResult === 'success'
+                        ? 'rgba(34, 197, 94, 0.3)'
+                        : testResult === 'error'
+                          ? 'rgba(239, 68, 68, 0.3)'
+                          : 'rgba(59, 130, 246, 0.3)',
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.testResultText,
+                    {
+                      color:
+                        testResult === 'success'
+                          ? '#22c55e'
+                          : testResult === 'error'
+                            ? '#ef4444'
+                            : '#3b82f6',
+                    },
+                  ]}
+                >
+                  {testMessage}
+                </Text>
+              </View>
+            )}
           </Animated.View>
         )}
       </View>
@@ -748,5 +840,14 @@ const styles = StyleSheet.create({
   providerButtonText: {
     fontSize: 13,
     fontWeight: '500',
+  },
+  testResult: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  testResultText: {
+    fontSize: 13,
   },
 })

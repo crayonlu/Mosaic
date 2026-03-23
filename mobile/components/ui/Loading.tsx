@@ -33,7 +33,6 @@ export function Loading({ size = 'large', text, fullScreen = false }: LoadingPro
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },

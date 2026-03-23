@@ -33,10 +33,12 @@ export function TagInput({
   const { suggestions: aiSuggestions, loading: aiLoading, suggest: getAISuggestions } = useAITags()
   const [inputValue, setInputValue] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [showAISuggestionsOnly, setShowAISuggestionsOnly] = useState(false)
 
   const allSuggestions: SuggestionItem[] = [...suggestions, ...aiSuggestions.map(s => s.name)]
 
   const filteredSuggestions = allSuggestions.filter(s => {
+    if (showAISuggestionsOnly && aiSuggestions.some(ai => ai.name === s)) return !tags.includes(s)
     const matchInput = s.toLowerCase().includes(inputValue.toLowerCase())
     const notInTags = !tags.includes(s)
     return matchInput && notInTags
@@ -47,7 +49,7 @@ export function TagInput({
     if (trimmed && !tags.includes(trimmed) && tags.length < maxTags) {
       onTagsChange([...tags, trimmed])
       setInputValue('')
-      setShowSuggestions(false)
+      // Don't hide suggestions when adding tags - let user add multiple tags
     }
   }
 
@@ -63,8 +65,9 @@ export function TagInput({
 
   const handleAISuggest = () => {
     if (content && isConnected && isAIEnabled) {
-      getAISuggestions(content)
+      setShowAISuggestionsOnly(true)
       setShowSuggestions(true)
+      getAISuggestions(content)
     }
   }
 
@@ -116,46 +119,59 @@ export function TagInput({
 
         {content && isConnected && isAIEnabled && (
           <TouchableOpacity
-            style={[styles.aiButton, { backgroundColor: theme.primary + '15' }]}
+            style={[styles.aiButton, aiLoading && styles.aiButtonLoading]}
             onPress={handleAISuggest}
-            disabled={aiLoading}
           >
             {aiLoading ? (
               <Loading size="small" />
             ) : (
-              <>
+              <View
+                style={{
+                  backgroundColor: theme.primary + '15',
+                  paddingHorizontal: 8,
+                  paddingVertical: 6,
+                  flexDirection: 'row',
+                  gap: 4,
+                }}
+              >
                 <Sparkles size={14} color={theme.primary} />
                 <Text style={[styles.aiButtonText, { color: theme.primary }]}>AI 推荐</Text>
-              </>
+              </View>
             )}
           </TouchableOpacity>
         )}
       </View>
 
-      {showSuggestions && filteredSuggestions.length > 0 && (
-        <View
-          style={[
-            styles.suggestionsContainer,
-            {
-              backgroundColor: theme.surface,
-              borderColor: theme.border,
-              borderWidth: 1,
-            },
-          ]}
-        >
-          <ScrollView keyboardShouldPersistTaps="handled">
-            {filteredSuggestions.map((suggestion, index) => (
-              <TouchableOpacity
-                key={`${suggestion}-${index}`}
-                onPress={() => addTag(suggestion)}
-                style={[styles.suggestionItem, { borderBottomColor: theme.border }]}
-              >
-                <Text style={[styles.suggestionText, { color: theme.text }]}>{suggestion}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+      {showSuggestions &&
+        (filteredSuggestions.length > 0 || (showAISuggestionsOnly && aiSuggestions.length > 0)) && (
+          <View
+            style={[
+              styles.suggestionsContainer,
+              {
+                backgroundColor: theme.surface,
+                borderColor: theme.border,
+                borderWidth: 1,
+              },
+            ]}
+          >
+            <ScrollView keyboardShouldPersistTaps="handled">
+              {(showAISuggestionsOnly ? aiSuggestions : filteredSuggestions).map(
+                (suggestion, index) => {
+                  const tagName = typeof suggestion === 'string' ? suggestion : suggestion.name
+                  return (
+                    <TouchableOpacity
+                      key={`${tagName}-${index}`}
+                      onPress={() => addTag(tagName)}
+                      style={[styles.suggestionItem, { borderBottomColor: theme.border }]}
+                    >
+                      <Text style={[styles.suggestionText, { color: theme.text }]}>{tagName}</Text>
+                    </TouchableOpacity>
+                  )
+                }
+              )}
+            </ScrollView>
+          </View>
+        )}
     </View>
   )
 }
@@ -198,10 +214,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
     borderRadius: 8,
     alignSelf: 'flex-end',
+    opacity: 1,
+  },
+  aiButtonLoading: {
+    opacity: 0.7,
   },
   aiButtonText: {
     fontSize: 12,
