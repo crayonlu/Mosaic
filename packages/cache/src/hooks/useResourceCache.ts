@@ -75,7 +75,6 @@ export function useResourceCache(
         const newCachedUris: Record<string, string> = {};
 
         const loadPromises = urls.map(async (url) => {
-          console.log('[useResourceCache] loading url:', url);
           try {
             const result = await loader!.load(url, {
               forceRefresh: options?.forceRefresh ?? false,

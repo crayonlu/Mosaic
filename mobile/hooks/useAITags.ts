@@ -33,6 +33,7 @@ export function useAITags() {
       try {
         const client = await createAIClient()
         const response = await client.suggestTags(content)
+        if (response.data.length === 0) setError('AI 未返回标签建议，请检查配置')
         setSuggestions(response.data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'AI 服务错误')
