@@ -296,6 +296,22 @@ export default function MemoDetailScreen() {
       <View style={styles.content}>
         {editing ? (
           <>
+            {(aiSummaryLoading || aiSummary) && (
+              <View style={styles.aiSummaryContainer}>
+                <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
+                <Text style={[styles.aiSummaryText, { color: theme.textSecondary }]}>
+                  {aiSummaryLoading ? '生成中...' : aiSummary}
+                </Text>
+              </View>
+            )}
+
+            {aiSummaryError && (
+              <View style={styles.aiSummaryContainer}>
+                <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
+                <Text style={[styles.aiSummaryText, { color: '#FF3B30' }]}>{aiSummaryError}</Text>
+              </View>
+            )}
+
             <View style={{ minHeight: 150 }}>
               <TextEditor
                 value={content}
@@ -338,6 +354,15 @@ export default function MemoDetailScreen() {
           </>
         ) : (
           <>
+            {memo.aiSummary && (
+              <View style={styles.aiSummaryContainer}>
+                <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
+                <Text style={[styles.aiSummaryText, { color: theme.textSecondary }]}>
+                  {memo.aiSummary}
+                </Text>
+              </View>
+            )}
+
             <View style={{ minHeight: 150, padding: 16 }}>
               <MarkdownRenderer content={memo.content} />
             </View>
@@ -364,15 +389,6 @@ export default function MemoDetailScreen() {
                 <Text style={[styles.tagText, { color: theme.textSecondary }]}>#{tag}</Text>
               </View>
             ))}
-          </View>
-        )}
-
-        {!editing && memo.aiSummary && (
-          <View style={styles.aiSummaryContainer}>
-            <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
-            <Text style={[styles.aiSummaryText, { color: theme.textSecondary }]}>
-              {memo.aiSummary}
-            </Text>
           </View>
         )}
 
