@@ -1,21 +1,30 @@
 import { useCallback, useState } from 'react'
-import { createAIClient, type TagSuggestion } from '../lib/ai'
+import { createAIClient } from '../lib/ai'
 import { normalizeContent } from '../lib/utils/content'
 import { useConnectionStore } from '../stores/connectionStore'
 import { useAIConfig } from './useAIConfig'
 
-export function useAITags() {
-  const [suggestions, setSuggestions] = useState<TagSuggestion[]>([])
+export interface AISummaryResult {
+  summary: string
+  usage: {
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+  }
+}
+
+export function useAISummary() {
+  const [summary, setSummary] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { isConnected } = useConnectionStore()
   const { isAIEnabled } = useAIConfig()
 
-  const suggest = useCallback(
-    async (content: string) => {
+  const summarize = useCallback(
+    async (content: string, maxLength?: number) => {
       const normalized = normalizeContent(content)
       if (!normalized) {
-        setSuggestions([])
+        setSummary(null)
         return
       }
 
@@ -34,12 +43,16 @@ export function useAITags() {
 
       try {
         const client = await createAIClient()
-        const response = await client.suggestTags(normalized)
-        if (response.data.length === 0) setError('AI 未返回标签建议，请检查配置')
-        setSuggestions(response.data)
+        const response = await client.summarizeText(normalized)
+        if (!response.data || response.data.trim() === '') {
+          setError('AI 未返回摘要内容，请检查配置')
+          setSummary(null)
+        } else {
+          setSummary(response.data)
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'AI 服务错误')
-        setSuggestions([])
+        setSummary(null)
       } finally {
         setLoading(false)
       }
@@ -48,15 +61,15 @@ export function useAITags() {
   )
 
   const clear = useCallback(() => {
-    setSuggestions([])
+    setSummary(null)
     setError(null)
   }, [])
 
   return {
-    suggestions,
+    summary,
     loading,
     error,
-    suggest,
+    summarize,
     clear,
     disabled: !isConnected || !isAIEnabled,
   }

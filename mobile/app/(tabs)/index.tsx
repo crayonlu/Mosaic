@@ -42,7 +42,12 @@ export default function HomeScreen() {
     })
   }
 
-  const handleSubmit = async (content: string, tags: string[], resources: string[]) => {
+  const handleSubmit = async (
+    content: string,
+    tags: string[],
+    resources: string[],
+    aiSummary?: string
+  ) => {
     const trimmedContent = content.trim()
     if ((!trimmedContent && resources.length === 0) || !canUseNetwork || isPending) {
       return
@@ -53,6 +58,7 @@ export default function HomeScreen() {
         content: trimmedContent,
         tags,
         resourceIds: resources,
+        aiSummary,
       })
       toast.success('成功', '已创建')
     } catch (error) {

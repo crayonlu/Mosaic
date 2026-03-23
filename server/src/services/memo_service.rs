@@ -51,9 +51,9 @@ impl MemoService {
         let now = Utc::now().timestamp_millis();
 
         let memo = sqlx::query_as::<_, Memo>(
-            "INSERT INTO memos (id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-             RETURNING id, user_id, content, tags, is_archived, is_deleted, diary_date, created_at, updated_at",
+            "INSERT INTO memos (id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             RETURNING id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at",
         )
         .bind(Uuid::new_v4())
         .bind(user_uuid)
@@ -62,6 +62,7 @@ impl MemoService {
         .bind(false)
         .bind(false)
         .bind(req.diary_date)
+        .bind(&req.ai_summary)
         .bind(now)
         .bind(now)
         .fetch_one(&self.pool)
@@ -460,6 +461,11 @@ impl MemoService {
             param_idx += 1;
         }
 
+        if req.ai_summary.is_some() {
+            set_clauses.push(format!("ai_summary = ${}", param_idx));
+            param_idx += 1;
+        }
+
         let query = format!(
             "UPDATE memos SET {} WHERE id = ${} AND user_id = ${} RETURNING *",
             set_clauses.join(", "),
@@ -484,6 +490,10 @@ impl MemoService {
 
         if let Some(diary_date) = &req.diary_date {
             query_builder = query_builder.bind(*diary_date);
+        }
+
+        if let Some(ai_summary) = &req.ai_summary {
+            query_builder = query_builder.bind(ai_summary);
         }
 
         let memo = query_builder

@@ -21,6 +21,7 @@ pub struct Memo {
     pub is_archived: bool,
     pub is_deleted: bool,
     pub diary_date: Option<chrono::NaiveDate>,
+    pub ai_summary: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -50,6 +51,7 @@ pub struct MemoWithResources {
     pub tags: Vec<String>,
     pub is_archived: bool,
     pub diary_date: Option<chrono::NaiveDate>,
+    pub ai_summary: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
     pub resources: Vec<ResourceResponse>,
@@ -65,6 +67,8 @@ pub struct CreateMemoRequest {
     pub diary_date: Option<chrono::NaiveDate>,
     #[serde(default)]
     pub resource_ids: Vec<String>,
+    #[serde(default)]
+    pub ai_summary: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -76,6 +80,7 @@ pub struct UpdateMemoRequest {
     pub resource_ids: Option<Vec<String>>,
     pub is_archived: Option<bool>,
     pub diary_date: Option<Option<chrono::NaiveDate>>,
+    pub ai_summary: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -191,6 +196,7 @@ impl MemoWithResources {
             tags,
             is_archived: memo.is_archived,
             diary_date: memo.diary_date,
+            ai_summary: memo.ai_summary,
             created_at: memo.created_at,
             updated_at: memo.updated_at,
             resources,
