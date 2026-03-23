@@ -6,7 +6,7 @@ import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
 import { FullScreenEditor } from './FullScreenEditor'
 
 interface MemoInputProps {
-  onSubmit?: (content: string, tags: string[], resources: string[]) => void
+  onSubmit?: (content: string, tags: string[], resources: string[], aiSummary?: string) => void
   placeholder?: string
   availableTags?: string[]
   disabled?: boolean
@@ -28,8 +28,13 @@ export function MemoInput({
     setText('')
   }
 
-  const handleFullScreenSubmit = (content: string, submitTags: string[], resources: string[]) => {
-    onSubmit?.(content, submitTags, resources)
+  const handleFullScreenSubmit = (
+    content: string,
+    submitTags: string[],
+    resources: string[],
+    aiSummary?: string
+  ) => {
+    onSubmit?.(content, submitTags, resources, aiSummary)
     setIsFullScreenVisible(false)
     setText('')
   }

@@ -2,6 +2,7 @@ import { Loading } from '@/components/ui'
 import { Badge } from '@/components/ui/Badge'
 import { useAIConfig } from '@/hooks/useAIConfig'
 import { useAITags } from '@/hooks/useAITags'
+import { normalizeContent } from '@/lib/utils/content'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { Sparkles, X } from 'lucide-react-native'
@@ -64,10 +65,11 @@ export function TagInput({
   }
 
   const handleAISuggest = () => {
-    if (content && isConnected && isAIEnabled) {
+    const normalized = normalizeContent(content || '')
+    if (normalized && isConnected && isAIEnabled) {
       setShowAISuggestionsOnly(true)
       setShowSuggestions(true)
-      getAISuggestions(content)
+      getAISuggestions(normalized)
     }
   }
 
@@ -117,7 +119,7 @@ export function TagInput({
           )}
         </View>
 
-        {content && isConnected && isAIEnabled && (
+        {normalizeContent(content || '') && isConnected && isAIEnabled && (
           <TouchableOpacity
             style={[styles.aiButton, aiLoading && styles.aiButtonLoading]}
             onPress={handleAISuggest}

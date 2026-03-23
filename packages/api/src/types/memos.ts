@@ -6,6 +6,7 @@ export interface Memo {
   tags: string[]
   isArchived: boolean
   diaryDate?: string
+  aiSummary?: string
   createdAt: number
   updatedAt: number
 }
@@ -35,6 +36,7 @@ export interface CreateMemoRequest {
   tags?: string[]
   resourceIds?: string[]
   diaryDate?: string
+  aiSummary?: string
 }
 
 export interface UpdateMemoRequest {
@@ -43,6 +45,7 @@ export interface UpdateMemoRequest {
   resourceIds?: string[]
   isArchived?: boolean
   diaryDate?: string | null
+  aiSummary?: string
 }
 
 export interface SearchMemosQuery {

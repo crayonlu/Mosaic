@@ -100,7 +100,7 @@ class OpenAIAgent implements AIAgent {
   async summarizeText(text: string): Promise<AIResponse<string>> {
     const prompt = PromptBuilder.buildSummarizePrompt(text)
 
-    return this.callAPI(prompt, 200)
+    return this.callAPI(prompt, 1000)
   }
 
   private async callAPI(prompt: string, maxTokens: number): Promise<AIResponse<string>> {
@@ -185,7 +185,8 @@ class AnthropicAgent implements AIAgent {
   async summarizeText(text: string): Promise<AIResponse<string>> {
     const prompt = PromptBuilder.buildSummarizePrompt(text)
 
-    return this.callAPI(prompt, 200)
+    const response = await this.callAPI(prompt, 500)
+    return response
   }
 
   private async callAPI(prompt: string, maxTokens: number): Promise<AIResponse<string>> {
@@ -219,9 +220,14 @@ class AnthropicAgent implements AIAgent {
       }
 
       const data = await response.json()
+      const content = data.content[0].text
+
+      if (!content || content.trim() === '') {
+        throw new Error('AI 返回空内容')
+      }
 
       return {
-        data: data.content[0].text,
+        data: content,
         usage: {
           promptTokens: data.usage.input_tokens,
           completionTokens: data.usage.output_tokens,

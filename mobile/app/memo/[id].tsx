@@ -3,6 +3,7 @@ import { TextEditor } from '@/components/editor/TextEditor'
 import { TagInput } from '@/components/tag/TagInput'
 import { Button, DraggableImageGrid, Loading, toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
+import { useAISummary } from '@/hooks/useAISummary'
 import { useConnection } from '@/hooks/useConnection'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { createSelectedMediaItems, uploadSelectedMedia } from '@/lib/media/upload'
@@ -13,7 +14,7 @@ import { useCacheStore } from '@/stores/cacheStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type ResourceResponse } from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
-import { ArrowLeft, ImagePlus } from 'lucide-react-native'
+import { ArrowLeft, ImagePlus, Sparkles } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -22,6 +23,14 @@ export default function MemoDetailScreen() {
   const { theme } = useThemeStore()
   const { canUseNetwork } = useConnection()
   const handleError = useErrorHandler()
+  const {
+    summary: aiSummary,
+    loading: aiSummaryLoading,
+    summarize,
+    clear: clearAISummary,
+    error: aiSummaryError,
+    disabled: aiSummaryDisabled,
+  } = useAISummary()
   const { data: memo, isLoading } = useQueryMemo(id || '')
   const { mutateAsync: updateMemo, isPending: isUpdating } = useUpdateMemo()
   const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
@@ -169,6 +178,7 @@ export default function MemoDetailScreen() {
           content: content.trim(),
           tags,
           resourceIds: editingResources.map(resource => resource.id),
+          aiSummary: aiSummary || undefined,
         },
       })
       setEditing(false)
@@ -177,7 +187,17 @@ export default function MemoDetailScreen() {
       handleError(error)
       toast.error('错误', '更新失败')
     }
-  }, [memo, canUseNetwork, isPending, updateMemo, content, tags, editingResources, handleError])
+  }, [
+    memo,
+    canUseNetwork,
+    isPending,
+    updateMemo,
+    content,
+    tags,
+    editingResources,
+    handleError,
+    aiSummary,
+  ])
 
   const handleDelete = useCallback(() => {
     if (!memo) return
@@ -224,7 +244,6 @@ export default function MemoDetailScreen() {
         <TouchableOpacity onPress={router.back} style={styles.headerButton}>
           <ArrowLeft size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Memo详情</Text>
         {!editing ? (
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <TouchableOpacity
@@ -243,6 +262,20 @@ export default function MemoDetailScreen() {
           </View>
         ) : (
           <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => summarize(content)}
+              style={styles.headerButton}
+              disabled={aiSummaryDisabled || aiSummaryLoading}
+            >
+              {aiSummaryLoading ? (
+                <Loading size="small" />
+              ) : (
+                <Sparkles
+                  size={20}
+                  color={aiSummaryDisabled ? theme.textSecondary : theme.primary}
+                />
+              )}
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => setEditing(false)} style={styles.headerButton}>
               <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>取消</Text>
             </TouchableOpacity>
@@ -334,6 +367,15 @@ export default function MemoDetailScreen() {
           </View>
         )}
 
+        {!editing && memo.aiSummary && (
+          <View style={styles.aiSummaryContainer}>
+            <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
+            <Text style={[styles.aiSummaryText, { color: theme.textSecondary }]}>
+              {memo.aiSummary}
+            </Text>
+          </View>
+        )}
+
         {!editing && (
           <View style={styles.metadata}>
             <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
@@ -376,10 +418,6 @@ const styles = StyleSheet.create({
     padding: 8,
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
   headerActions: {
     flexDirection: 'row',
     gap: 8,
@@ -409,6 +447,22 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 13,
+  },
+  aiSummaryContainer: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: 'rgba(120, 120, 128, 0.1)',
+    borderRadius: 8,
+  },
+  aiSummaryTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  aiSummaryText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   resourcesContainer: {
     paddingHorizontal: 12,

@@ -1,14 +1,16 @@
-import { Button, toast } from '@/components/ui'
+import { Button, Loading, toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { DraggableImageGrid } from '@/components/ui/DraggableImageGrid'
+import { useAISummary } from '@/hooks/useAISummary'
 import { useConnection } from '@/hooks/useConnection'
 import {
   createSelectedMediaItems,
   uploadSelectedMedia,
   type SelectedMediaItem,
 } from '@/lib/media/upload'
+import { normalizeContent } from '@/lib/utils/content'
 import { useThemeStore } from '@/stores/themeStore'
-import { X } from 'lucide-react-native'
+import { Share as ShareIcon, Sparkles, X } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import {
   KeyboardAvoidingView,
@@ -28,16 +30,18 @@ interface FullScreenEditorProps {
   visible: boolean
   initialContent?: string
   initialTags?: string[]
+  initialAISummary?: string
   placeholder?: string
   availableTags?: string[]
   onClose: () => void
-  onSubmit: (content: string, tags: string[], resources: string[]) => void
+  onSubmit: (content: string, tags: string[], resources: string[], aiSummary?: string) => void
 }
 
 export function FullScreenEditor({
   visible,
   initialContent = '',
   initialTags = [],
+  initialAISummary,
   placeholder = "What's on your mind?",
   availableTags = [],
   onClose,
@@ -46,6 +50,14 @@ export function FullScreenEditor({
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
   const { canUseNetwork } = useConnection()
+  const {
+    summary,
+    loading: summaryLoading,
+    summarize,
+    clear: clearSummary,
+    error: summaryError,
+    disabled: summaryDisabled,
+  } = useAISummary()
   const [content, setContent] = useState(initialContent)
   const [tags, setTags] = useState<string[]>(initialTags)
   const [resources, setResources] = useState<string[]>([])
@@ -68,8 +80,29 @@ export function FullScreenEditor({
       setMediaItems([])
       setUploadProgressItems([])
       setIsDraggingMedia(false)
+      if (initialAISummary) {
+        // Set initial AI summary if provided (for editing existing memo)
+        // Note: This would need a separate setter in useAISummary hook
+      }
+      clearSummary()
     }
-  }, [visible, initialContent, initialTags])
+  }, [visible, initialContent, initialTags, clearSummary, initialAISummary])
+
+  const handleSummarize = useCallback(async () => {
+    const normalized = normalizeContent(content)
+    if (normalized) await summarize(normalized)
+  }, [content, summarize])
+
+  const handleCopySummary = useCallback(async () => {
+    if (summary) {
+      try {
+        const { Share } = await import('react-native')
+        await Share.share({ message: summary })
+      } catch (error) {
+        console.log('Share failed:', error)
+      }
+    }
+  }, [summary])
 
   const handleMediaItemsChange = useCallback((nextItems: MediaGridItem[]) => {
     setMediaItems(prev =>
@@ -135,7 +168,7 @@ export function FullScreenEditor({
       setUploadProgressItems([])
     }
 
-    onSubmit(content, tags, uploadedResourceIds)
+    onSubmit(content, tags, uploadedResourceIds, summary || undefined)
     handleClose()
   }
 
@@ -178,15 +211,32 @@ export function FullScreenEditor({
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <X size={24} color={theme.text} strokeWidth={2} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>Memo</Text>
             <View style={styles.headerActions}>
+              <TouchableOpacity
+                onPress={handleSummarize}
+                style={styles.summarizeButton}
+                disabled={summaryDisabled || !normalizeContent(content) || summaryLoading}
+              >
+                {summaryLoading ? (
+                  <Loading size="small" />
+                ) : (
+                  <Sparkles
+                    size={16}
+                    color={
+                      summaryDisabled || !normalizeContent(content)
+                        ? theme.textSecondary
+                        : theme.primary
+                    }
+                  />
+                )}
+              </TouchableOpacity>
               <Button onPress={handlePickMedia} variant="ghost" size="medium" title="上传" />
               <Button
                 title="预览"
                 onPress={() => setShowPreview(true)}
                 variant="ghost"
                 size="medium"
-                disabled={!content.trim() && mediaItems.length === 0}
+                disabled={!normalizeContent(content) && mediaItems.length === 0}
               />
               <Button
                 title="创建"
@@ -194,7 +244,9 @@ export function FullScreenEditor({
                 variant="ghost"
                 size="medium"
                 disabled={
-                  (!content.trim() && mediaItems.length === 0) || !canUseNetwork || uploading
+                  (!normalizeContent(content) && mediaItems.length === 0) ||
+                  !canUseNetwork ||
+                  uploading
                 }
               />
             </View>
@@ -232,6 +284,32 @@ export function FullScreenEditor({
                 </>
               )}
             </View>
+
+            {summary && (
+              <View style={styles.summaryContainer}>
+                <View style={styles.summaryHeader}>
+                  <Text style={[styles.summaryTitle, { color: theme.text }]}>AI 摘要</Text>
+                  <View style={styles.summaryActions}>
+                    <TouchableOpacity
+                      onPress={handleCopySummary}
+                      style={styles.summaryActionButton}
+                    >
+                      <ShareIcon size={16} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={clearSummary} style={styles.summaryActionButton}>
+                      <X size={16} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <Text style={[styles.summaryText, { color: theme.textSecondary }]}>{summary}</Text>
+              </View>
+            )}
+
+            {summaryError && (
+              <View style={styles.errorContainer}>
+                <Text style={[styles.errorText, { color: '#FF3B30' }]}>{summaryError}</Text>
+              </View>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
 
@@ -268,11 +346,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    flex: 1,
-  },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -306,5 +379,59 @@ const styles = StyleSheet.create({
   },
   footerButton: {
     padding: 8,
+  },
+  summarizeButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summaryContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: 'rgba(120, 120, 120, 0.1)',
+    borderRadius: 8,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  summaryTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  summaryText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  summaryActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  summaryActionButton: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    borderRadius: 8,
+  },
+  errorText: {
+    fontSize: 14,
   },
 })
