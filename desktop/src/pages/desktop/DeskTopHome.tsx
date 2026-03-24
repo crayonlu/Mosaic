@@ -34,6 +34,7 @@ export default function DeskTopHome() {
     value: string,
     _resourceFilenames?: string[],
     tags?: string[],
+    aiSummary?: string,
     clearInputValue?: () => void
   ) => {
     try {
@@ -67,6 +68,7 @@ export default function DeskTopHome() {
         content: value,
         tags: tags || [],
         resourceIds,
+        aiSummary,
       })
 
       clearInputValue?.()

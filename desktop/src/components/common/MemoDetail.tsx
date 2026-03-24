@@ -16,6 +16,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { Textarea } from '@/components/ui/textarea'
 import { useAI } from '@/hooks/useAI'
 import { uploadFiles } from '@/hooks/useFileUpload'
 import { toast } from '@/hooks/useToast'
@@ -57,9 +58,13 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [tagInput, setTagInput] = useState('')
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [editedAISummary, setEditedAISummary] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
+  const [isReplaceSummaryDialogOpen, setIsReplaceSummaryDialogOpen] = useState(false)
+  const [pendingSummary, setPendingSummary] = useState('')
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleteResourceDialogOpen, setIsDeleteResourceDialogOpen] = useState(false)
   const [resourceToDelete, setResourceToDelete] = useState<string | null>(null)
@@ -69,7 +74,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [videoUrls, setVideoUrls] = useState<Map<string, string>>(new Map())
   const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map())
   const uploadInputRef = useRef<HTMLInputElement>(null)
-  const { suggestTags, loading: aiLoading } = useAI()
+  const { suggestTags, summarizeText, loading: aiLoading } = useAI()
   const updateMemo = useUpdateMemo()
   const deleteMemo = useDeleteMemo()
 
@@ -84,11 +89,13 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     if (!memo) {
       setIsEditing(false)
       setEditedContent('')
+      setEditedAISummary('')
       return
     }
 
     if (!isEditing) {
       setEditedContent(memo.content)
+      setEditedAISummary(memo.aiSummary || '')
       setEditingResources(memo.resources)
       setHasResourceChanges(false)
     }
@@ -134,6 +141,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     if (memo) {
       setEditedContent(memo.content)
       setEditedTags([...memo.tags])
+      setEditedAISummary(memo.aiSummary || '')
       setTagInput('')
       setEditingResources(memo.resources)
       setHasResourceChanges(false)
@@ -145,10 +153,50 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     if (memo) {
       setEditedContent(memo.content)
       setEditedTags([...memo.tags])
+      setEditedAISummary(memo.aiSummary || '')
       setTagInput('')
     }
     setHasResourceChanges(false)
     setIsEditing(false)
+  }
+
+  const handleGenerateSummary = async () => {
+    const normalizedContent = normalizeContent(editedContent).trim()
+    if (!normalizedContent) {
+      return
+    }
+
+    setIsGeneratingSummary(true)
+    try {
+      const result = await summarizeText({ text: normalizedContent })
+      const nextSummary = result?.summary?.trim()
+      if (!nextSummary) {
+        return
+      }
+
+      if (editedAISummary.trim()) {
+        setPendingSummary(nextSummary)
+        setIsReplaceSummaryDialogOpen(true)
+        return
+      }
+
+      setEditedAISummary(nextSummary)
+    } finally {
+      setIsGeneratingSummary(false)
+    }
+  }
+
+  const handleConfirmReplaceSummary = () => {
+    if (pendingSummary) {
+      setEditedAISummary(pendingSummary)
+    }
+    setPendingSummary('')
+    setIsReplaceSummaryDialogOpen(false)
+  }
+
+  const handleCancelReplaceSummary = () => {
+    setPendingSummary('')
+    setIsReplaceSummaryDialogOpen(false)
   }
 
   const handleSave = async () => {
@@ -161,6 +209,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
         data: {
           content: editedContent,
           tags: editedTags,
+          aiSummary: editedAISummary.trim(),
           resourceIds: editingResources.map(resource => resource.id),
         },
       })
@@ -362,6 +411,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const hasContentChanged = editedContent !== memo?.content
   const hasTagsChanged =
     JSON.stringify([...editedTags].sort()) !== JSON.stringify([...(memo?.tags ?? [])].sort())
+  const hasSummaryChanged = editedAISummary.trim() !== (memo?.aiSummary || '').trim()
 
   if (!memo) return null
 
@@ -410,7 +460,11 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 size="sm"
                 onClick={handleSave}
                 disabled={
-                  isSaving || (!hasContentChanged && !hasTagsChanged && !hasResourceChanges)
+                  isSaving ||
+                  (!hasContentChanged &&
+                    !hasTagsChanged &&
+                    !hasResourceChanges &&
+                    !hasSummaryChanged)
                 }
               >
                 <Save className="h-4 w-4 mr-1" />
@@ -430,6 +484,38 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 editable={true}
                 className="border border-t-0"
               />
+
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium text-foreground">AI 摘要</div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleGenerateSummary}
+                    disabled={
+                      isGeneratingSummary || aiLoading || !normalizeContent(editedContent).trim()
+                    }
+                    className="gap-2"
+                  >
+                    {isGeneratingSummary || aiLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="h-3.5 w-3.5" />
+                        AI生成
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <Textarea
+                  value={editedAISummary}
+                  onChange={e => setEditedAISummary(e.target.value)}
+                  placeholder="可手动编辑摘要，保存时会同步到 memo"
+                  rows={4}
+                  disabled={isSaving}
+                />
+              </div>
 
               <div className="border rounded-lg p-4">
                 <div className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
@@ -535,18 +621,27 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
               </div>
             </div>
           ) : (
-            <div className="prose prose-sm max-w-none">
-              {normalizeContent(memo.content) ? (
-                <RichTextEditor
-                  content={memo.content}
-                  onChange={() => {}}
-                  editable={false}
-                  className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1 border"
-                />
-              ) : (
-                <></>
-              )}
-            </div>
+            <>
+              <div className="prose prose-sm max-w-none">
+                {normalizeContent(memo.content) ? (
+                  <RichTextEditor
+                    content={memo.content}
+                    onChange={() => {}}
+                    editable={false}
+                    className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1 border"
+                  />
+                ) : (
+                  <></>
+                )}
+              </div>
+
+              <div className="space-y-2 border rounded-lg p-4 bg-muted/20">
+                <div className="text-sm font-medium text-foreground">AI 摘要</div>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {memo.aiSummary?.trim() ? memo.aiSummary : '暂无摘要'}
+                </p>
+              </div>
+            </>
           )}
 
           {(imageResources.length > 0 || videoResources.length > 0 || isEditing) && (
@@ -667,6 +762,22 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
             </Button>
             <Button variant="destructive" size="sm" onClick={handleDeleteResource}>
               删除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isReplaceSummaryDialogOpen} onOpenChange={setIsReplaceSummaryDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>替换AI摘要</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">已有摘要内容，是否使用新生成的摘要替换？</p>
+          <DialogFooter className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={handleCancelReplaceSummary}>
+              取消
+            </Button>
+            <Button size="sm" onClick={handleConfirmReplaceSummary}>
+              替换
             </Button>
           </DialogFooter>
         </DialogContent>
