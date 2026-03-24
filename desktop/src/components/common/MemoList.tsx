@@ -83,6 +83,14 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
                   <></>
                 )}
               </div>
+              {memo.aiSummary?.trim() && (
+                <div className="px-2 py-2 border-t bg-muted/20">
+                  <div className="text-[11px] font-medium text-muted-foreground mb-1">AI摘要</div>
+                  <p className="text-xs text-muted-foreground line-clamp-2 whitespace-pre-wrap">
+                    {memo.aiSummary}
+                  </p>
+                </div>
+              )}
               {(memo.resources.length > 0 || (memo.tags && memo.tags.length > 0)) && (
                 <div className="p-2 border-t space-y-3">
                   {memo.resources.length > 0 && <ResourceThumbnails resources={memo.resources} />}
