@@ -17,10 +17,10 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
 } from 'react-native-reanimated'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -55,7 +55,7 @@ function SafeAreaContainer({
 export default function RootLayout() {
   const { theme } = useThemeStore()
   const { currentMood, currentMoodIntensity } = useMoodStore()
-  const { isServerReachable, initialize } = useConnectionStore()
+  const { isServerReachable, initialize, lastError } = useConnectionStore()
   const { isAuthenticated, isInitialized, isLoading, initialize: initAuth } = useAuthStore()
   const { setReady: setCacheReady } = useCacheStore()
   const segments = useSegments()
@@ -219,7 +219,7 @@ export default function RootLayout() {
               <QueryProvider>
                 {isAuthenticated && !isServerReachable && (
                   <View style={[styles.offlineBanner, { backgroundColor: '#EF4444' }]}>
-                    <Text style={styles.offlineText}>无法连接到服务器</Text>
+                    <Text style={styles.offlineText}>{lastError || '无法连接到服务器'}</Text>
                   </View>
                 )}
                 <Stack

@@ -1,5 +1,10 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import {
+  mapServerConnectionError,
+  normalizeServerUrlInput,
+  validateServerUrl,
+} from '@/lib/errors/serverConnection'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
@@ -13,49 +18,89 @@ type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error'
 export default function SetupScreen() {
   const { theme, themeMode } = useThemeStore()
   const insets = useSafeAreaInsets()
-  const { login, testConnection, isLoading } = useAuthStore()
+  const { login, isLoading } = useAuthStore()
 
   const [serverUrl, setServerUrl] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  const [errorHint, setErrorHint] = useState('')
 
   const handleTestConnection = async () => {
-    if (!serverUrl) return
+    const normalizedServerUrl = normalizeServerUrlInput(serverUrl)
+    const urlError = validateServerUrl(normalizedServerUrl)
+    if (urlError) {
+      setConnectionStatus('error')
+      setErrorMessage(urlError)
+      setErrorHint('请使用完整地址，例如 https://your-server.com')
+      return
+    }
 
     setConnectionStatus('testing')
     setErrorMessage('')
+    setErrorHint('')
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
 
     try {
-      const isConnected = await testConnection(serverUrl)
-      if (isConnected) {
-        setConnectionStatus('success')
-      } else {
-        setConnectionStatus('error')
-        setErrorMessage('无法连接到服务器')
+      const response = await fetch(`${normalizedServerUrl}/health`, {
+        method: 'GET',
+        signal: controller.signal,
+      })
+
+      if (!response.ok) {
+        throw { status: response.status, error: `Health check failed: HTTP ${response.status}` }
       }
-    } catch {
+
+      setConnectionStatus('success')
+    } catch (error: unknown) {
+      const presentation = mapServerConnectionError(error, 'connect')
       setConnectionStatus('error')
-      setErrorMessage('连接测试失败')
+      setErrorMessage(presentation.message)
+      setErrorHint(presentation.hint || '')
+    } finally {
+      clearTimeout(timeoutId)
     }
   }
 
   const handleLogin = async () => {
     if (!serverUrl || !username || !password) return
 
+    const normalizedServerUrl = normalizeServerUrlInput(serverUrl)
+    const urlError = validateServerUrl(normalizedServerUrl)
+    if (urlError) {
+      setConnectionStatus('error')
+      setErrorMessage(urlError)
+      setErrorHint('请先修正服务器地址，再继续登录。')
+      return
+    }
+
+    if (connectionStatus !== 'success') {
+      setConnectionStatus('error')
+      setErrorMessage('请先完成服务器连接测试')
+      setErrorHint('点击“测试连接”，显示连接成功后再登录。')
+      return
+    }
+
     setErrorMessage('')
+    setErrorHint('')
 
     try {
-      await login(serverUrl, username, password)
-    } catch (error: any) {
-      setErrorMessage(error?.error || '登录失败，请检查配置')
+      await login(normalizedServerUrl, username, password)
+    } catch (error: unknown) {
+      const presentation = mapServerConnectionError(error, 'login')
+      setConnectionStatus('error')
+      setErrorMessage(presentation.message)
+      setErrorHint(presentation.hint || '')
     }
   }
 
   const handleInputChange = () => {
     setConnectionStatus('idle')
     setErrorMessage('')
+    setErrorHint('')
   }
 
   const isFormValid = serverUrl && username && password
@@ -78,10 +123,7 @@ export default function SetupScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
             <Image
               source={
@@ -146,7 +188,10 @@ export default function SetupScreen() {
               {connectionStatus === 'error' && (
                 <View style={styles.errorContainer}>
                   <XCircle size={16} color="#EF4444" />
-                  <Text style={styles.errorText}>{errorMessage}</Text>
+                  <View style={styles.errorTextWrapper}>
+                    <Text style={styles.errorText}>{errorMessage}</Text>
+                    {errorHint ? <Text style={styles.errorHint}>{errorHint}</Text> : null}
+                  </View>
                 </View>
               )}
 
@@ -162,7 +207,7 @@ export default function SetupScreen() {
                     }
                     onPress={handleTestConnection}
                     variant="secondary"
-                    disabled={!serverUrl || !username || !password || isLoading}
+                    disabled={!serverUrl || isLoading}
                     loading={connectionStatus === 'testing'}
                     fullWidth
                   />
@@ -240,10 +285,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 8,
   },
+  errorTextWrapper: {
+    flex: 1,
+    gap: 4,
+  },
   errorText: {
     color: '#EF4444',
     fontSize: 14,
-    flex: 1,
+  },
+  errorHint: {
+    color: '#B91C1C',
+    fontSize: 12,
   },
   buttonRow: {
     flexDirection: 'row',
