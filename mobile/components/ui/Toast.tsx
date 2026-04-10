@@ -99,6 +99,8 @@ function Toast({
   toast: ToastMessage
   onHide: () => void
   theme: {
+    background: string
+    surface: string
     text: string
     textSecondary: string
     success: string
@@ -145,7 +147,7 @@ function Toast({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast.id])
 
-  const getBackgroundColor = () => {
+  const getSemanticColor = () => {
     switch (toast.type) {
       case 'success':
         return theme.success
@@ -156,8 +158,52 @@ function Toast({
       case 'info':
         return theme.info
       default:
-        return theme.textSecondary
+        return theme.info
     }
+  }
+
+  const hexToRgba = (hex: string, alpha: number) => {
+    const cleanHex = hex.replace('#', '')
+    const normalizedHex =
+      cleanHex.length === 3
+        ? cleanHex
+            .split('')
+            .map(char => char + char)
+            .join('')
+        : cleanHex
+
+    if (normalizedHex.length !== 6) {
+      return `rgba(0, 0, 0, ${alpha})`
+    }
+
+    const r = Number.parseInt(normalizedHex.slice(0, 2), 16)
+    const g = Number.parseInt(normalizedHex.slice(2, 4), 16)
+    const b = Number.parseInt(normalizedHex.slice(4, 6), 16)
+
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
+
+  const isDarkBackground = () => {
+    const cleanHex = theme.background.replace('#', '')
+    if (cleanHex.length !== 6) {
+      return false
+    }
+    const r = Number.parseInt(cleanHex.slice(0, 2), 16)
+    const g = Number.parseInt(cleanHex.slice(2, 4), 16)
+    const b = Number.parseInt(cleanHex.slice(4, 6), 16)
+    const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+    return luminance < 0.5
+  }
+
+  const semanticColor = getSemanticColor()
+  const darkMode = isDarkBackground()
+  const palette = {
+    containerBackground: hexToRgba(semanticColor, darkMode ? 0.36 : 0.24),
+    containerBorder: hexToRgba(semanticColor, darkMode ? 0.78 : 0.6),
+    iconColor: semanticColor,
+    closeBackground: hexToRgba(semanticColor, darkMode ? 0.5 : 0.35),
+    actionBorder: hexToRgba(semanticColor, darkMode ? 0.82 : 0.66),
+    actionText: semanticColor,
   }
 
   const getIcon = () => {
@@ -180,15 +226,15 @@ function Toast({
       style={[
         styles.toastContainer,
         {
-          backgroundColor: getBackgroundColor(),
-          borderColor: theme.border,
+          backgroundColor: palette.containerBackground,
+          borderColor: palette.containerBorder,
           opacity: fadeAnim,
           transform: [{ scale: scaleAnim }],
         },
       ]}
     >
       <View style={styles.content}>
-        <Text style={[styles.icon, { color: theme.text }]}>{getIcon()}</Text>
+        <Text style={[styles.icon, { color: palette.iconColor }]}>{getIcon()}</Text>
         <View style={styles.textContainer}>
           <Text style={[styles.title, { color: theme.text }]}>{toast.title}</Text>
           {toast.message && (
@@ -200,7 +246,7 @@ function Toast({
       </View>
       <TouchableOpacity
         onPress={onHide}
-        style={[styles.closeButton, { backgroundColor: getBackgroundColor() }]}
+        style={[styles.closeButton, { backgroundColor: palette.closeBackground }]}
       >
         <X color={theme.text} size={14} />
       </TouchableOpacity>
@@ -210,9 +256,9 @@ function Toast({
             toast.onAction?.()
             onHide()
           }}
-          style={[styles.actionButton, { borderColor: theme.border }]}
+          style={[styles.actionButton, { borderColor: palette.actionBorder }]}
         >
-          <Text style={[styles.actionText, { color: theme.text }]}>{toast.actionLabel}</Text>
+          <Text style={[styles.actionText, { color: palette.actionText }]}>{toast.actionLabel}</Text>
         </TouchableOpacity>
       )}
     </Animated.View>
@@ -260,10 +306,10 @@ const styles = StyleSheet.create({
   },
   toastContainer: {
     padding: 14,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     marginVertical: 6,
-    maxWidth: 240,
+    maxWidth: 280,
     minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
