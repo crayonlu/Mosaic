@@ -218,8 +218,10 @@ export default function RootLayout() {
             <BottomSheetModalProvider>
               <QueryProvider>
                 {isAuthenticated && !isServerReachable && (
-                  <View style={[styles.offlineBanner, { backgroundColor: '#EF4444' }]}>
-                    <Text style={styles.offlineText}>{lastError || '无法连接到服务器'}</Text>
+                  <View style={[styles.offlineBanner, { backgroundColor: theme.error }]}>
+                    <Text style={[styles.offlineText, { color: theme.onPrimary }]}>
+                      {lastError || '无法连接到服务器'}
+                    </Text>
                   </View>
                 )}
                 <Stack
@@ -270,7 +272,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   offlineText: {
-    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '500',
   },

@@ -37,7 +37,7 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
   const getTextColor = () => {
     switch (variant) {
       case 'solid':
-        return '#FFFFFF'
+        return theme.onPrimary
       default:
         return theme.primary
     }

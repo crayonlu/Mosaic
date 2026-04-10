@@ -91,7 +91,23 @@ export function ToastContainer() {
   )
 }
 
-function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => void; theme: any }) {
+function Toast({
+  toast,
+  onHide,
+  theme,
+}: {
+  toast: ToastMessage
+  onHide: () => void
+  theme: {
+    text: string
+    textSecondary: string
+    success: string
+    error: string
+    warning: string
+    info: string
+    border: string
+  }
+}) {
   const fadeAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.8)).current
 
@@ -132,15 +148,15 @@ function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => vo
   const getBackgroundColor = () => {
     switch (toast.type) {
       case 'success':
-        return '#10B981'
+        return theme.success
       case 'error':
-        return '#EF4444'
+        return theme.error
       case 'warning':
-        return '#F59E0B'
+        return theme.warning
       case 'info':
-        return '#3B82F6'
+        return theme.info
       default:
-        return '#6B7280'
+        return theme.textSecondary
     }
   }
 
@@ -165,17 +181,18 @@ function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => vo
         styles.toastContainer,
         {
           backgroundColor: getBackgroundColor(),
+          borderColor: theme.border,
           opacity: fadeAnim,
           transform: [{ scale: scaleAnim }],
         },
       ]}
     >
       <View style={styles.content}>
-        <Text style={styles.icon}>{getIcon()}</Text>
+        <Text style={[styles.icon, { color: theme.text }]}>{getIcon()}</Text>
         <View style={styles.textContainer}>
-          <Text style={[styles.title, { color: '#FFFFFF' }]}>{toast.title}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{toast.title}</Text>
           {toast.message && (
-            <Text style={[styles.message, { color: 'rgba(255,255,255,0.9)' }]}>
+            <Text style={[styles.message, { color: theme.textSecondary }]}>
               {toast.message}
             </Text>
           )}
@@ -185,7 +202,7 @@ function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => vo
         onPress={onHide}
         style={[styles.closeButton, { backgroundColor: getBackgroundColor() }]}
       >
-        <X color="#FFFFFF" size={14} />
+        <X color={theme.text} size={14} />
       </TouchableOpacity>
       {toast.actionLabel && toast.onAction && (
         <TouchableOpacity
@@ -193,9 +210,9 @@ function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => vo
             toast.onAction?.()
             onHide()
           }}
-          style={[styles.actionButton, { borderColor: 'rgba(255, 255, 255, 0.3)' }]}
+          style={[styles.actionButton, { borderColor: theme.border }]}
         >
-          <Text style={styles.actionText}>{toast.actionLabel}</Text>
+          <Text style={[styles.actionText, { color: theme.text }]}>{toast.actionLabel}</Text>
         </TouchableOpacity>
       )}
     </Animated.View>
@@ -244,7 +261,7 @@ const styles = StyleSheet.create({
   toastContainer: {
     padding: 14,
     borderRadius: 8,
-    elevation: 4,
+    borderWidth: 1,
     marginVertical: 6,
     maxWidth: 240,
     minHeight: 48,
@@ -261,7 +278,6 @@ const styles = StyleSheet.create({
   icon: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#FFFFFF',
     minWidth: 20,
     textAlign: 'center',
   },
@@ -293,7 +309,7 @@ const styles = StyleSheet.create({
   },
   closeText: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: '#667085',
     fontWeight: 'bold',
   },
   actionButton: {
@@ -304,7 +320,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   actionText: {
-    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
   },

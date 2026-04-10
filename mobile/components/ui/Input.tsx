@@ -23,7 +23,7 @@ export function Input({ label, error, showPasswordToggle, style, ...props }: Inp
             {
               backgroundColor: theme.surface,
               color: theme.text,
-              borderColor: error ? '#EF4444' : theme.border,
+              borderColor: error ? theme.error : theme.border,
               flex: 1,
             },
             style,
@@ -45,7 +45,7 @@ export function Input({ label, error, showPasswordToggle, style, ...props }: Inp
           </TouchableOpacity>
         )}
       </View>
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <Text style={[styles.error, { color: theme.error }]}>{error}</Text>}
     </View>
   )
 }
@@ -81,7 +81,6 @@ const styles = StyleSheet.create({
   },
   error: {
     fontSize: 12,
-    color: '#EF4444',
     marginTop: 4,
   },
 })

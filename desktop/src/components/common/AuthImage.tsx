@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils'
 import { resourcesApi } from '@mosaic/api'
 import { getResourceLoader } from '@mosaic/cache'
 import { useEffect, useMemo, useState } from 'react'
@@ -155,8 +156,8 @@ export function AuthImage({
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center">
-        <LoadingSpinner className={classNameRest} {...imgProps} />
+      <div className={cn('flex size-full items-center justify-center', classNameRest)}>
+        <LoadingSpinner size="md" />
       </div>
     )
   }

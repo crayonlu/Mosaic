@@ -108,7 +108,7 @@ export default function MemoDetailScreen() {
               await resourcesApi.delete(resource.id)
             } catch (error) {
               handleError(error)
-              toast.error('错误', '删除媒体失败')
+              toast.error('错误', '删除图像失败')
             }
           }
         })()
@@ -161,7 +161,7 @@ export default function MemoDetailScreen() {
       setEditingResources(prev => [...prev, ...uploadedResources].slice(0, 9))
     } catch (error) {
       handleError(error)
-      toast.error('错误', '上传媒体失败')
+      toast.error('错误', '上传图像失败')
     } finally {
       setUploading(false)
       setUploadProgressItems([])
@@ -331,7 +331,7 @@ export default function MemoDetailScreen() {
             </View>
             <View style={styles.imageUploadContainer}>
               <View style={styles.imageUploadHeader}>
-                <Text style={{ color: theme.textSecondary }}>媒体</Text>
+                <Text style={{ color: theme.textSecondary }}>图像</Text>
                 <Button
                   title="添加"
                   onPress={selectMedia}

@@ -49,7 +49,7 @@ export function Button({
       case 'ghost':
         return 'transparent'
       case 'danger':
-        return theme.primary
+        return theme.error
       default:
         return theme.primary
     }
@@ -61,13 +61,13 @@ export function Button({
     }
     switch (variant) {
       case 'primary':
-        return '#FFFFFF'
+        return theme.onPrimary
       case 'secondary':
         return theme.text
       case 'ghost':
         return theme.primary
       case 'danger':
-        return '#FFFFFF'
+        return theme.onPrimary
       default:
         return theme.text
     }

@@ -9,6 +9,8 @@ export function useHeatmap(query: StatsQuery) {
     queryKey: ['stats', 'heatmap', query],
     queryFn: () => statsApi.getHeatmap(query),
     staleTime: DEFAULT_STALE_TIME,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   })
 }
 

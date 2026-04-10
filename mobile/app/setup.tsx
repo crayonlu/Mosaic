@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import {
-  mapServerConnectionError,
-  normalizeServerUrlInput,
-  validateServerUrl,
+    mapServerConnectionError,
+    normalizeServerUrlInput,
+    validateServerUrl,
 } from '@/lib/errors/serverConnection'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
@@ -187,10 +187,12 @@ export default function SetupScreen() {
 
               {connectionStatus === 'error' && (
                 <View style={styles.errorContainer}>
-                  <XCircle size={16} color="#EF4444" />
+                  <XCircle size={16} color={theme.error} />
                   <View style={styles.errorTextWrapper}>
-                    <Text style={styles.errorText}>{errorMessage}</Text>
-                    {errorHint ? <Text style={styles.errorHint}>{errorHint}</Text> : null}
+                    <Text style={[styles.errorText, { color: theme.error }]}>{errorMessage}</Text>
+                    {errorHint ? (
+                      <Text style={[styles.errorHint, { color: theme.textSecondary }]}>{errorHint}</Text>
+                    ) : null}
                   </View>
                 </View>
               )}
@@ -213,7 +215,7 @@ export default function SetupScreen() {
                   />
                   {connectionStatus === 'success' && (
                     <View style={styles.successIcon}>
-                      <CheckCircle size={20} color="#22C55E" />
+                      <CheckCircle size={20} color={theme.success} />
                     </View>
                   )}
                 </View>
@@ -279,7 +281,7 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: 'rgba(201, 79, 79, 0.12)',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
@@ -290,11 +292,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   errorText: {
-    color: '#EF4444',
     fontSize: 14,
   },
   errorHint: {
-    color: '#B91C1C',
     fontSize: 12,
   },
   buttonRow: {

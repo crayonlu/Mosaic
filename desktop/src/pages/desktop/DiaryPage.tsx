@@ -1,5 +1,4 @@
 import { EmptyState } from '@/components/common/EmptyState'
-import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -65,17 +64,14 @@ export default function DiaryPage() {
 
   if (isLoading && diaries.length === 0) {
     return (
-      <DeskTopLayout className="relative">
-        <div className="h-full flex items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </div>
-      </DeskTopLayout>
+      <div className="h-full flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
     )
   }
 
   return (
-    <DeskTopLayout className="relative">
-      <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col">
         <div className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
           <div className="flex items-center justify-between px-6 pb-4 pt-2">
             <div className="flex items-center gap-4">
@@ -224,6 +220,5 @@ export default function DiaryPage() {
           )}
         </div>
       </div>
-    </DeskTopLayout>
   )
 }

@@ -1,9 +1,10 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTheme } from '@/hooks/useTheme'
 import type { HeatMapCell, HeatMapDataExtended } from '@/types/stats'
-import { getMoodLabel } from '@mosaic/utils'
+import { getMoodColor, getMoodLabel } from '@mosaic/utils'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { cn } from 'src/lib/utils'
 
 interface MoodHeatMapProps {
   data: HeatMapDataExtended
@@ -19,17 +20,38 @@ export function MoodHeatMap({
   onMonthClick: _onMonthClick,
 }: MoodHeatMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
+  const neutralColor = getMoodColor('neutral')
+  const today = dayjs().format('YYYY-MM-DD')
+
+  useLayoutEffect(() => {
+    if (containerRef.current) {
+      setContainerWidth(containerRef.current.clientWidth)
+    }
+  }, [])
 
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollLeft = containerRef.current.scrollWidth
+    if (!containerRef.current) {
+      return
     }
-  }, [data])
+
+    if (typeof window === 'undefined' || !window.ResizeObserver) {
+      setContainerWidth(containerRef.current.clientWidth)
+      return
+    }
+
+    const observer = new window.ResizeObserver(entries => {
+      const width = entries[0]?.contentRect.width ?? 0
+      setContainerWidth(width)
+    })
+
+    observer.observe(containerRef.current)
+    return () => observer.disconnect()
+  }, [])
 
   const { weeks } = useMemo(() => {
     const cells = data.cells || []
     const weeks: HeatMapCell[][] = []
-    const monthLabels: Array<{ month: number; weekIndex: number }> = []
 
     const startDate = data.startDate ? new Date(data.startDate) : new Date()
     const endDate = data.endDate ? new Date(data.endDate) : new Date()
@@ -40,8 +62,6 @@ export function MoodHeatMap({
     firstDayOfWeek.setDate(startDate.getDate() - startDate.getDay())
 
     let currentDate = new Date(firstDayOfWeek)
-    let weekIndex = 0
-    let lastMonth = -1
 
     while (currentDate <= endDate) {
       const week: HeatMapCell[] = []
@@ -54,20 +74,11 @@ export function MoodHeatMap({
         const dateStr = dayjs(currentDate).format('YYYY-MM-DD')
         const cell = cellMap.get(dateStr) || {
           date: dateStr,
-          color: '#ebedf0',
+          color: neutralColor,
           count: 0,
-          isToday: false,
+          isToday: dateStr === today,
         }
         week.push(cell)
-
-        const currentMonth = currentDate.getMonth()
-        if (currentMonth !== lastMonth && dayOfWeek === 0) {
-          monthLabels.push({
-            month: currentMonth,
-            weekIndex,
-          })
-          lastMonth = currentMonth
-        }
 
         currentDate.setDate(currentDate.getDate() + 1)
       }
@@ -75,11 +86,26 @@ export function MoodHeatMap({
       if (week.length > 0) {
         weeks.push(week)
       }
-      weekIndex++
     }
 
     return { weeks }
-  }, [data])
+  }, [data, neutralColor, today])
+
+  const visibleWeeks = useMemo(() => {
+    if (containerWidth <= 0) {
+      return []
+    }
+
+    // Keep the widget responsive by showing only as many trailing weeks as the sidebar can fit.
+    const cellWidth = 10
+    const weekGap = 6
+    const maxWeeks = Math.max(1, Math.floor((containerWidth + weekGap) / (cellWidth + weekGap)))
+
+    if (weeks.length <= maxWeeks) {
+      return weeks
+    }
+    return weeks.slice(-maxWeeks)
+  }, [containerWidth, weeks])
 
   const { theme } = useTheme()
   const dark = theme === 'dark'
@@ -99,36 +125,50 @@ export function MoodHeatMap({
     const moodLabel = getMoodLabel(cell.moodKey)
     const score = cell.moodScore || 0
 
-    return `${formattedDate} · ${weekday} · ${moodLabel} (${score})`
+    return `${formattedDate} · ${weekday} · ${moodLabel}${score ? ` (${score})` : ''}`
   }
 
   return (
     <TooltipProvider>
       <div
         ref={containerRef}
-        className="overflow-x-auto overflow-y-hidden flex gap-1 justify-start"
+        className="w-full overflow-hidden rounded-xl border py-2 transition-all"
+        style={{
+          borderColor: dark ? '#3A352D' : '#D9D2C6',
+          backgroundColor: dark ? '#1F1F22' : '#F2ECE2',
+        }}
       >
-        {weeks.map((week, weekIndex) => (
-          <div key={weekIndex} className="flex flex-col gap-1">
-            {week.map(cell => (
-              <Tooltip key={cell.date}>
-                <TooltipTrigger asChild>
-                  <div
-                    className="w-3 h-3 rounded-sm cursor-pointer transition-all hover:scale-110 hover:ring-1 hover:ring-primary/30"
-                    style={{
-                      backgroundColor:
-                        cell.color === '#ebedf0' ? (dark ? '#161B2f' : '#ebedf0') : cell.color,
-                    }}
-                    onClick={() => onDateClick?.(cell.date)}
-                  />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{formatTooltipContent(cell)}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
-        ))}
+        <div className="mx-auto flex w-fit gap-1.5 justify-start">
+          {visibleWeeks.map((week, weekIndex) => (
+            <div key={weekIndex} className="flex flex-col gap-1.5">
+              {week.map(cell => (
+                <Tooltip key={cell.date}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        'h-2.5 w-2.5 rounded-sm transition-all duration-150 ease-out',
+                        'hover:scale-115 hover:ring-1 hover:ring-primary/30',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40'
+                      )}
+                      style={{
+                        backgroundColor:
+                          cell.count === 0 ? (dark ? '#2A2B30' : '#CFC6B8') : cell.color,
+                        outline: cell.date === today ? `1px solid ${dark ? '#D39B66' : '#9A6B3F'}` : 'none',
+                        outlineOffset: cell.date === today ? '1px' : '0px',
+                      }}
+                      onClick={() => onDateClick?.(cell.date)}
+                      aria-label={formatTooltipContent(cell)}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{formatTooltipContent(cell)}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </TooltipProvider>
   )
