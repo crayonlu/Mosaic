@@ -26,7 +26,7 @@ impl ApiClient {
                 std::time::Duration::from_secs(30),
                 ProxyMode::from_str(proxy_mode),
             )
-                .expect("Failed to create HTTP client"),
+            .expect("Failed to create HTTP client"),
             base_url,
             token: Arc::new(RwLock::new(None)),
             refresh_token_fn: None,

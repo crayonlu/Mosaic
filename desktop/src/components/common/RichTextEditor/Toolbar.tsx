@@ -8,7 +8,6 @@ import {
   Heading1,
   Heading2,
   Heading3,
-  Highlighter,
   Italic,
   Link,
   List,
@@ -18,14 +17,12 @@ import {
   RemoveFormatting,
   Sparkles,
   Strikethrough,
-  Underline,
   Undo2,
   Wand2,
 } from 'lucide-react'
 import { useState } from 'react'
 import { AIRewriteDialog } from '../AIRewriteDialog'
 import { CodeBlockLanguageSelector } from './CodeBlockLanguageSelector'
-import { HighlightColorSelector } from './HighlightColorSelector'
 import { InsertMenu } from './InsertMenu'
 import { LinkDialog } from './LinkDialog'
 import { ToolbarButton } from './ToolbarButton'
@@ -80,17 +77,6 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
       },
     },
     {
-      icon: Underline,
-      label: '下划线',
-      shortcut: 'Ctrl+U',
-      onClick: () => editor.chain().focus().toggleUnderline().run(),
-      isActive: () => editor.isActive('underline'),
-      canExecute: () => {
-        if (!editor || !editor.view || editor.isDestroyed) return false
-        return editor?.can()?.chain()?.focus()?.toggleUnderline()?.run() ?? false
-      },
-    },
-    {
       icon: Code,
       label: '行内代码',
       shortcut: 'Ctrl+`',
@@ -99,17 +85,6 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
       canExecute: () => {
         if (!editor || !editor.view || editor.isDestroyed) return false
         return editor?.can()?.chain()?.focus()?.toggleCode()?.run() ?? false
-      },
-    },
-    {
-      icon: Highlighter,
-      label: '高亮',
-      shortcut: 'Ctrl+Shift+H',
-      onClick: () => editor.chain().focus().toggleHighlight().run(),
-      isActive: () => editor.isActive('highlight'),
-      canExecute: () => {
-        if (!editor || !editor.view || editor.isDestroyed) return false
-        return editor?.can()?.chain()?.focus()?.toggleHighlight()?.run() ?? false
       },
     },
   ]
@@ -285,7 +260,6 @@ export function Toolbar({ editor, className, onCompleteText, isCompleting }: Too
         ))}
         <InsertMenu editor={editor} />
         <CodeBlockLanguageSelector editor={editor} />
-        <HighlightColorSelector editor={editor} />
       </div>
 
       <div className="w-px h-6 bg-border mx-1" />

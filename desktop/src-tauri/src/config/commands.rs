@@ -30,7 +30,7 @@ pub async fn test_server_connection(server_config: ServerConfig) -> Result<(), S
         std::time::Duration::from_secs(10),
         ProxyMode::from_str(&server_config.proxy_mode),
     )
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+    .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
 
     let url = format!("{}/api/auth/login", server_config.url.trim_end_matches('/'));
 

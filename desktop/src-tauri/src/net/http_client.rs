@@ -16,7 +16,10 @@ impl ProxyMode {
     }
 }
 
-pub fn build_client(timeout: Duration, proxy_mode: ProxyMode) -> Result<reqwest::Client, reqwest::Error> {
+pub fn build_client(
+    timeout: Duration,
+    proxy_mode: ProxyMode,
+) -> Result<reqwest::Client, reqwest::Error> {
     let builder = reqwest::Client::builder().timeout(timeout);
     let builder = match proxy_mode {
         ProxyMode::Direct => builder.no_proxy(),

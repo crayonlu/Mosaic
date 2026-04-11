@@ -2,16 +2,10 @@ import { useAI } from '@/hooks/useAI'
 import { cn } from '@/lib/utils'
 import { Code } from '@tiptap/extension-code'
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
-import { Highlight } from '@tiptap/extension-highlight'
 import { Link } from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
-import { Table } from '@tiptap/extension-table'
-import { TableCell } from '@tiptap/extension-table-cell'
-import { TableHeader } from '@tiptap/extension-table-header'
-import { TableRow } from '@tiptap/extension-table-row'
 import { TaskItem } from '@tiptap/extension-task-item'
 import { TaskList } from '@tiptap/extension-task-list'
-import { Underline } from '@tiptap/extension-underline'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { createLowlight } from 'lowlight'
@@ -90,6 +84,19 @@ export function RichTextEditor({
   const [isCompleting, setIsCompleting] = useState(false)
   const { completeText, loading: aiLoading } = useAI()
 
+  const toHtmlFromMarkdown = useCallback((source: string) => {
+    const parsed = marked.parse(source)
+    return typeof parsed === 'string' ? parsed : source
+  }, [])
+
+  const getMarkdownFromEditor = useCallback(
+    (instance: { storage: unknown; getText: () => string }) => {
+      const storage = instance.storage as { markdown?: { getMarkdown?: () => string } }
+      return storage.markdown?.getMarkdown?.() ?? instance.getText()
+    },
+    []
+  )
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -118,25 +125,15 @@ export function RichTextEditor({
       TaskItem.configure({
         nested: true,
       }),
-      Table.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      Underline,
-      Highlight.configure({
-        multicolor: true,
-      }),
       Markdown,
       Placeholder.configure({
         placeholder,
       }),
     ],
-    content,
+    content: toHtmlFromMarkdown(content),
     editable,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML())
+      onChange(getMarkdownFromEditor(editor))
     },
     editorProps: {
       attributes: {
@@ -237,10 +234,13 @@ export function RichTextEditor({
   }, [editor, editable])
 
   useEffect(() => {
-    if (editor && editable && editor.getHTML() !== content) {
-      editor.commands.setContent(content)
+    if (!editor || !editable) return
+
+    const currentMarkdown = getMarkdownFromEditor(editor)
+    if (currentMarkdown !== content) {
+      editor.commands.setContent(toHtmlFromMarkdown(content), { emitUpdate: false })
     }
-  }, [content, editor, editable])
+  }, [content, editor, editable, getMarkdownFromEditor, toHtmlFromMarkdown])
 
   if (!editor) {
     return null

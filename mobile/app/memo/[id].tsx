@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 8
+    paddingTop: 8,
   },
   tagsContainer: {
     flexDirection: 'row',

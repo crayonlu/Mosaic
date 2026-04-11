@@ -1,12 +1,12 @@
 use crate::config::AppConfig;
 use crate::error::AppResult;
-use crate::net::http_client::{build_client, describe_reqwest_error, ProxyMode};
 use crate::modules::ai::models::{
     CompleteTextRequest, RewriteTextRequest, SuggestTagsRequest, SummarizeTextRequest,
 };
 use crate::modules::ai::prompts::PromptBuilder;
 use crate::modules::settings::models::AIConfig;
 use crate::modules::settings::store::SettingsStore;
+use crate::net::http_client::{build_client, describe_reqwest_error, ProxyMode};
 
 pub async fn load_ai_config() -> AppResult<Option<AIConfig>> {
     let store = SettingsStore::new(AppConfig::config_dir());
