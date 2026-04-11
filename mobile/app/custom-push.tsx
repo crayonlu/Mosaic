@@ -1,16 +1,24 @@
 import { Button, DatePickerSheet, Input } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
 import {
-    useCustomPushList,
-    useDeleteCustomPush,
-    useSaveCustomPush,
+  useCustomPushList,
+  useDeleteCustomPush,
+  useSaveCustomPush,
 } from '@/lib/query/hooks/useCustomPush'
 import { CustomPushData } from '@/lib/services/local-push/custom'
 import { useThemeStore } from '@/stores/themeStore'
 import { router } from 'expo-router'
 import { ArrowLeft, Bell, Clock, Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 
 export default function CustomPushScreen() {
   const { theme } = useThemeStore()
@@ -145,9 +153,7 @@ export default function CustomPushScreen() {
 
       <ScrollView style={styles.content}>
         {showAddForm && (
-          <View
-            style={[styles.card, { backgroundColor: theme.surface }]}
-          >
+          <View style={[styles.card, { backgroundColor: theme.surface }]}>
             <Text style={[styles.cardTitle, { color: theme.text }]}>
               {editingPush ? '编辑提醒' : '新增提醒'}
             </Text>
@@ -172,10 +178,7 @@ export default function CustomPushScreen() {
               <Text style={[styles.label, { color: theme.textSecondary }]}>提醒时间</Text>
               <View style={styles.dateTimeRow}>
                 <TouchableOpacity
-                  style={[
-                    styles.dateTimeBtn,
-                    { backgroundColor: theme.surfaceMuted },
-                  ]}
+                  style={[styles.dateTimeBtn, { backgroundColor: theme.surfaceMuted }]}
                   onPress={() => setShowDatePicker(true)}
                 >
                   <Text style={{ color: theme.text, marginLeft: 4 }}>
@@ -183,10 +186,7 @@ export default function CustomPushScreen() {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[
-                    styles.dateTimeBtn,
-                    { backgroundColor: theme.surfaceMuted },
-                  ]}
+                  style={[styles.dateTimeBtn, { backgroundColor: theme.surfaceMuted }]}
                   onPress={openTimePicker}
                 >
                   <Text style={{ color: theme.text, marginLeft: 4 }}>
@@ -212,12 +212,7 @@ export default function CustomPushScreen() {
           </Text>
 
           {pushes.length === 0 ? (
-            <View
-              style={[
-                styles.emptyCard,
-                { backgroundColor: theme.surfaceMuted },
-              ]}
-            >
+            <View style={[styles.emptyCard, { backgroundColor: theme.surfaceMuted }]}>
               <Bell size={48} color={theme.textSecondary} style={{ opacity: 0.5 }} />
               <Text style={[styles.emptyText, { color: theme.textSecondary }]}>暂无自定义提醒</Text>
               <Text style={[styles.emptySubText, { color: theme.textSecondary }]}>
@@ -226,13 +221,7 @@ export default function CustomPushScreen() {
             </View>
           ) : (
             pushes.map(push => (
-              <View
-                key={push.name}
-                style={[
-                  styles.pushCard,
-                  { backgroundColor: theme.surface },
-                ]}
-              >
+              <View key={push.name} style={[styles.pushCard, { backgroundColor: theme.surface }]}>
                 <View style={styles.pushInfo}>
                   <Text style={[styles.pushTitle, { color: theme.text }]}>{push.title}</Text>
                   <Text style={[styles.pushBody, { color: theme.textSecondary }]}>{push.body}</Text>
@@ -268,10 +257,15 @@ export default function CustomPushScreen() {
         onClose={() => setShowDatePicker(false)}
       />
 
-      <Modal visible={showTimePicker} transparent animationType="fade" onRequestClose={() => setShowTimePicker(false)}>
+      <Modal
+        visible={showTimePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowTimePicker(false)}
+      >
         <View style={styles.timeOverlay}>
           <Pressable style={styles.timeBackdrop} onPress={() => setShowTimePicker(false)} />
-          <View style={[styles.timeSheet, { backgroundColor: theme.background }]}> 
+          <View style={[styles.timeSheet, { backgroundColor: theme.background }]}>
             <Text style={[styles.timeSheetTitle, { color: theme.text }]}>选择时间</Text>
 
             <View style={styles.timeColumns}>

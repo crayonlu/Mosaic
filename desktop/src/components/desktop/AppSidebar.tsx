@@ -4,18 +4,18 @@ import { AuthImage } from '@/components/common/AuthImage'
 import { SidebarHeatMap } from '@/components/desktop/SidebarHeatMap'
 import { Avatar } from '@/components/ui/avatar'
 import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarGroupLabel,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    SidebarRail,
-    useSidebar,
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { useTheme } from '@/hooks/useTheme'
 import { resolveApiUrl } from '@/lib/sharedApi'
@@ -38,7 +38,9 @@ export function AppSidebar() {
   const { theme, toggleTheme } = useTheme()
   const DESKTOP_SIDEBAR_ANIMATION_MS = 220
   const MOBILE_SIDEBAR_ANIMATION_MS = 520
-  const [shouldShowHeatMap, setShouldShowHeatMap] = useState(isMobile ? openMobile : state === 'expanded')
+  const [shouldShowHeatMap, setShouldShowHeatMap] = useState(
+    isMobile ? openMobile : state === 'expanded'
+  )
   const prevDesktopStateRef = useRef(state)
   const prevMobileOpenRef = useRef(openMobile)
 

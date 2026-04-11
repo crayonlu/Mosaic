@@ -4,28 +4,33 @@ import { DraggableImageGrid } from '@/components/ui/DraggableImageGrid'
 import { useAISummary } from '@/hooks/useAISummary'
 import { useConnection } from '@/hooks/useConnection'
 import {
-    createSelectedMediaItems,
-    uploadSelectedMedia,
-    type SelectedMediaItem,
+  createSelectedMediaItems,
+  uploadSelectedMedia,
+  type SelectedMediaItem,
 } from '@/lib/media/upload'
 import { normalizeContent } from '@/lib/utils/content'
 import { useThemeStore } from '@/stores/themeStore'
-import { Share as ShareIcon, Sparkles, X } from 'lucide-react-native'
-import { useCallback, useEffect, useState } from 'react'
+import { Share as ShareIcon, X } from 'lucide-react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TagInput } from '../tag/TagInput'
 import { PostPreview } from './PostPreview'
 import { TextEditor } from './TextEditor'
+
+const EMPTY_TAGS: string[] = []
+const EMPTY_MEDIA_ITEMS: MediaGridItem[] = []
+const EMPTY_RESOURCE_IDS: string[] = []
+
 interface FullScreenEditorProps {
   visible: boolean
   initialContent?: string
@@ -45,12 +50,12 @@ interface FullScreenEditorProps {
 export function FullScreenEditor({
   visible,
   initialContent = '',
-  initialTags = [],
+  initialTags = EMPTY_TAGS,
   initialAISummary,
-  initialMediaItems = [],
-  initialResourceIds = [],
+  initialMediaItems = EMPTY_MEDIA_ITEMS,
+  initialResourceIds = EMPTY_RESOURCE_IDS,
   uploadMemoId,
-  title = '写 Memo',
+  title = 'Memo',
   submitLabel = '创建',
   placeholder = "What's on your mind?",
   availableTags = [],
@@ -78,32 +83,33 @@ export function FullScreenEditor({
   >([])
   const [showPreview, setShowPreview] = useState(false)
   const [isDraggingMedia, setIsDraggingMedia] = useState(false)
+  const wasVisibleRef = useRef(false)
   const uploadProgressById = Object.fromEntries(
     uploadProgressItems.map(item => [item.id, item.progress])
   )
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !wasVisibleRef.current) {
       setContent(initialContent)
       setTags(initialTags)
       setMediaItems(initialMediaItems)
       setUploadCandidates({})
       setUploadProgressItems([])
       setIsDraggingMedia(false)
+      setShowPreview(false)
       if (initialAISummary) {
         // Set initial AI summary if provided (for editing existing memo)
         // Note: This would need a separate setter in useAISummary hook
       }
       clearSummary()
     }
-  }, [
-    visible,
-    initialContent,
-    initialTags,
-    initialMediaItems,
-    clearSummary,
-    initialAISummary,
-  ])
+
+    if (!visible && wasVisibleRef.current) {
+      setShowPreview(false)
+    }
+
+    wasVisibleRef.current = visible
+  }, [visible, initialContent, initialTags, initialMediaItems, clearSummary, initialAISummary])
 
   const handleSummarize = useCallback(async () => {
     const normalized = normalizeContent(content)
@@ -240,7 +246,9 @@ export function FullScreenEditor({
                 style={styles.headerTextButton}
                 activeOpacity={theme.state.pressedOpacity}
               >
-                <Text style={[styles.headerTextButtonLabel, { color: theme.textSecondary }]}>取消</Text>
+                <Text style={[styles.headerTextButtonLabel, { color: theme.textSecondary }]}>
+                  取消
+                </Text>
               </TouchableOpacity>
 
               <Text style={[styles.headerTitle, { color: theme.text }]}>{title}</Text>
@@ -282,11 +290,7 @@ export function FullScreenEditor({
                 disabled={!canSummarize || summaryLoading}
                 activeOpacity={theme.state.pressedOpacity}
               >
-                {summaryLoading ? (
-                  <Loading size="small" />
-                ) : (
-                  <></>
-                )}
+                {summaryLoading ? <Loading size="small" /> : <></>}
                 <Text
                   style={[
                     styles.actionButtonText,
@@ -378,7 +382,7 @@ export function FullScreenEditor({
                 style={[
                   styles.summaryContainer,
                   {
-                    backgroundColor: theme.semantic.infoSoft,
+                    backgroundColor: theme.surfaceMuted,
                     borderRadius: theme.radius.medium,
                   },
                 ]}

@@ -71,70 +71,66 @@ export default function SearchPage() {
 
   return (
     <div className="h-full flex flex-col">
-        <div className="bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
-          <div className="flex items-center gap-4 px-6 pb-4 border-b">
-            <div className="flex-1 max-w-2xl">
-              <SearchInput value={query} onChange={setQuery} placeholder="搜索内容或标签..." />
-            </div>
+      <div className="bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
+        <div className="flex items-center gap-4 px-6 pb-4 border-b">
+          <div className="flex-1 max-w-2xl">
+            <SearchInput value={query} onChange={setQuery} placeholder="搜索内容或标签..." />
           </div>
-
-          <SearchFilters
-            isArchived={isArchived}
-            onArchivedChange={setIsArchived}
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-            selectedTags={selectedTags}
-            onTagsChange={setSelectedTags}
-            total={total}
-          />
-
-          <TagCloud
-            tags={allTags}
-            selectedTags={selectedTags}
-            onTagToggle={handleTagToggle}
-            isLoading={isTagsLoading}
-          />
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {isPending ? (
-            <div className="flex items-center justify-center h-full">
-              <LoadingSpinner size="lg" />
-            </div>
-          ) : results.length === 0 ? (
-            <EmptyState
-              icon={SearchIcon}
-              title="暂无搜索结果"
-              description={
-                deferredQuery.trim() ||
-                selectedTags.length > 0 ||
-                startDate ||
-                endDate ||
-                isArchived !== undefined
-                  ? '尝试调整搜索条件或关键词'
-                  : '暂无记录'
-              }
-            />
-          ) : (
-            <div className="py-4">
-              <SearchResults
-                results={results}
-                query={deferredQuery}
-                onMemoClick={handleMemoClick}
-              />
-            </div>
-          )}
-        </div>
+        <SearchFilters
+          isArchived={isArchived}
+          onArchivedChange={setIsArchived}
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          selectedTags={selectedTags}
+          onTagsChange={setSelectedTags}
+          total={total}
+        />
 
-        <MemoDetail
-          memo={selectedMemo}
-          open={isDetailOpen}
-          onClose={handleDetailClose}
-          onUpdate={handleMemoUpdate}
-          onDelete={handleMemoDelete}
+        <TagCloud
+          tags={allTags}
+          selectedTags={selectedTags}
+          onTagToggle={handleTagToggle}
+          isLoading={isTagsLoading}
         />
       </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {isPending ? (
+          <div className="flex items-center justify-center h-full">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : results.length === 0 ? (
+          <EmptyState
+            icon={SearchIcon}
+            title="暂无搜索结果"
+            description={
+              deferredQuery.trim() ||
+              selectedTags.length > 0 ||
+              startDate ||
+              endDate ||
+              isArchived !== undefined
+                ? '尝试调整搜索条件或关键词'
+                : '暂无记录'
+            }
+          />
+        ) : (
+          <div className="py-4">
+            <SearchResults results={results} query={deferredQuery} onMemoClick={handleMemoClick} />
+          </div>
+        )}
+      </div>
+
+      <MemoDetail
+        memo={selectedMemo}
+        open={isDetailOpen}
+        onClose={handleDetailClose}
+        onUpdate={handleMemoUpdate}
+        onDelete={handleMemoDelete}
+      />
+    </div>
   )
 }

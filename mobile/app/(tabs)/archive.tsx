@@ -97,7 +97,9 @@ export default function ArchiveScreen() {
         <View style={styles.headerRow}>
           <View>
             <Text style={[styles.headerTitle, { color: theme.text }]}>归档</Text>
-            <Text style={[styles.headerSubTitle, { color: theme.textSecondary }]}>整理今天的记录，沉淀成日记{isArchiveMode ? ` · 已选 ${selectedCount} 条` : ''}</Text>
+            <Text style={[styles.headerSubTitle, { color: theme.textSecondary }]}>
+              整理今天的记录，沉淀成日记{isArchiveMode ? ` · 已选 ${selectedCount} 条` : ''}
+            </Text>
           </View>
 
           <TouchableOpacity
@@ -122,7 +124,9 @@ export default function ArchiveScreen() {
                 styles.archiveActionText,
                 {
                   color:
-                    selectedCount > 0 || shouldShowAddButton ? theme.onPrimary : theme.textSecondary,
+                    selectedCount > 0 || shouldShowAddButton
+                      ? theme.onPrimary
+                      : theme.textSecondary,
                 },
               ]}
             >
@@ -137,10 +141,7 @@ export default function ArchiveScreen() {
           </TouchableOpacity>
         </View>
 
-        <ArchiveDateFilter
-          selectedDate={selectedDate}
-          onDateSelect={setSelectedDate}
-        />
+        <ArchiveDateFilter selectedDate={selectedDate} onDateSelect={setSelectedDate} />
       </View>
 
       <MemoFeed

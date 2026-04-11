@@ -6,9 +6,9 @@ import { DraggableGrid } from 'react-native-draggable-grid'
 import { MediaGridTile } from './media/MediaGridTile'
 import { MediaPreviewModal } from './media/MediaPreviewModal'
 import {
-    getMediaTileSize,
-    getOptimizedMediaUri,
-    resolveMediaSource,
+  getMediaTileSize,
+  getOptimizedMediaUri,
+  resolveMediaSource,
 } from './media/mediaPreviewUtils'
 import type { MediaCacheMaps, MediaGridItem } from './media/types'
 
@@ -189,12 +189,15 @@ export function DraggableImageGrid({
     ]
   )
 
-  const handleGridLayout = useCallback((event: LayoutChangeEvent) => {
-    const nextWidth = Math.floor(event.nativeEvent.layout.width)
-    if (nextWidth > 0 && nextWidth !== gridWidth) {
-      setGridWidth(nextWidth)
-    }
-  }, [gridWidth])
+  const handleGridLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const nextWidth = Math.floor(event.nativeEvent.layout.width)
+      if (nextWidth > 0 && nextWidth !== gridWidth) {
+        setGridWidth(nextWidth)
+      }
+    },
+    [gridWidth]
+  )
 
   return (
     <View style={styles.container} onLayout={handleGridLayout}>

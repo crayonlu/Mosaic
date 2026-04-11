@@ -191,7 +191,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
   }
 
   return (
-    <View style={[styles.container]}> 
+    <View style={[styles.container]}>
       {/* Heat map grid */}
       <ScrollView
         ref={scrollViewRef}

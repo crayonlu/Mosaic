@@ -78,7 +78,7 @@ export function DatePickerSheet({
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        <View style={[styles.sheet, { backgroundColor: theme.background }]}> 
+        <View style={[styles.sheet, { backgroundColor: theme.background }]}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
             <View style={styles.headerActions}>
@@ -126,7 +126,9 @@ export function DatePickerSheet({
                     styles.cell,
                     styles.dateCell,
                     {
-                      backgroundColor: selected ? theme.primary : 'transparent',
+                      backgroundColor: selected ? theme.surfaceStrong : 'transparent',
+                      borderColor: selected ? theme.border : 'transparent',
+                      borderWidth: selected ? StyleSheet.hairlineWidth : 0,
                       opacity: disabled ? theme.state.disabledOpacity : 1,
                     },
                   ]}
@@ -142,7 +144,7 @@ export function DatePickerSheet({
                     style={[
                       styles.dateText,
                       {
-                        color: selected ? theme.onPrimary : theme.text,
+                        color: theme.text,
                         fontWeight: selected ? '500' : '400',
                       },
                     ]}

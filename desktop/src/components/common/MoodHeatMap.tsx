@@ -154,7 +154,10 @@ export function MoodHeatMap({
                       style={{
                         backgroundColor:
                           cell.count === 0 ? (dark ? '#2A2B30' : '#CFC6B8') : cell.color,
-                        outline: cell.date === today ? `1px solid ${dark ? '#D39B66' : '#9A6B3F'}` : 'none',
+                        outline:
+                          cell.date === today
+                            ? `1px solid ${dark ? '#D39B66' : '#9A6B3F'}`
+                            : 'none',
                         outlineOffset: cell.date === today ? '1px' : '0px',
                       }}
                       onClick={() => onDateClick?.(cell.date)}

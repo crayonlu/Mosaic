@@ -5,7 +5,7 @@ import { useAITags } from '@/hooks/useAITags'
 import { normalizeContent } from '@/lib/utils/content'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useThemeStore } from '@/stores/themeStore'
-import { Sparkles, X } from 'lucide-react-native'
+import { X } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 
@@ -86,6 +86,7 @@ export function TagInput({
     showSuggestions &&
     (filteredSuggestions.length > 0 ||
       (showAISuggestionsOnly && (aiSuggestions.length > 0 || aiLoading || Boolean(aiError))))
+  const canShowAIRecommend = Boolean(normalizeContent(content || '')) && isConnected && isAIEnabled
 
   useEffect(() => {
     if (!aiError) {
@@ -165,10 +166,15 @@ export function TagInput({
           )}
         </View>
 
-        {normalizeContent(content || '') && isConnected && isAIEnabled && (
+        <View style={styles.aiButtonSlot}>
           <TouchableOpacity
-            style={[styles.aiButton, aiLoading && styles.aiButtonLoading]}
+            style={[
+              styles.aiButton,
+              aiLoading && styles.aiButtonLoading,
+              !canShowAIRecommend && styles.aiButtonHidden,
+            ]}
             onPress={handleAISuggest}
+            disabled={!canShowAIRecommend || aiLoading}
           >
             {aiLoading ? (
               <Loading size="small" />
@@ -185,58 +191,57 @@ export function TagInput({
                   borderRadius: theme.radius.pill,
                 }}
               >
-                <Sparkles size={14} color={theme.primary} />
                 <Text style={[styles.aiButtonText, { color: theme.primary }]}>AI 推荐</Text>
               </View>
             )}
           </TouchableOpacity>
-        )}
+        </View>
       </View>
 
       {shouldShowSuggestionPanel && (
-          <View
-            style={[
-              styles.suggestionsContainer,
-              {
-                backgroundColor: isPlain ? theme.surfaceMuted : theme.surface,
-                borderColor: theme.border,
-                borderWidth: isPlain ? 0 : 1,
-                borderRadius: theme.radius.medium,
-              },
-            ]}
-          >
-            <ScrollView keyboardShouldPersistTaps="handled">
-              {showAISuggestionsOnly && aiError && !aiLoading && (
-                <View style={styles.feedbackItem}>
-                  <Text style={[styles.feedbackText, { color: theme.error }]}>{aiError}</Text>
-                </View>
-              )}
+        <View
+          style={[
+            styles.suggestionsContainer,
+            {
+              backgroundColor: isPlain ? theme.surfaceMuted : theme.surface,
+              borderColor: theme.border,
+              borderWidth: isPlain ? 0 : 1,
+              borderRadius: theme.radius.medium,
+            },
+          ]}
+        >
+          <ScrollView keyboardShouldPersistTaps="handled">
+            {showAISuggestionsOnly && aiError && !aiLoading && (
+              <View style={styles.feedbackItem}>
+                <Text style={[styles.feedbackText, { color: theme.error }]}>{aiError}</Text>
+              </View>
+            )}
 
-              {showAISuggestionsOnly && !aiLoading && !aiError && aiSuggestions.length === 0 && (
-                <View style={styles.feedbackItem}>
-                  <Text style={[styles.feedbackText, { color: theme.textSecondary }]}>
-                    暂无推荐标签，可稍后重试
-                  </Text>
-                </View>
-              )}
+            {showAISuggestionsOnly && !aiLoading && !aiError && aiSuggestions.length === 0 && (
+              <View style={styles.feedbackItem}>
+                <Text style={[styles.feedbackText, { color: theme.textSecondary }]}>
+                  暂无推荐标签，可稍后重试
+                </Text>
+              </View>
+            )}
 
-              {(showAISuggestionsOnly ? aiSuggestions : filteredSuggestions).map(
-                (suggestion, index) => {
-                  const tagName = typeof suggestion === 'string' ? suggestion : suggestion.name
-                  return (
-                    <TouchableOpacity
-                      key={`${tagName}-${index}`}
-                      onPress={() => addTag(tagName)}
-                      style={[styles.suggestionItem, { borderBottomColor: theme.border }]}
-                    >
-                      <Text style={[styles.suggestionText, { color: theme.text }]}>{tagName}</Text>
-                    </TouchableOpacity>
-                  )
-                }
-              )}
-            </ScrollView>
-          </View>
-        )}
+            {(showAISuggestionsOnly ? aiSuggestions : filteredSuggestions).map(
+              (suggestion, index) => {
+                const tagName = typeof suggestion === 'string' ? suggestion : suggestion.name
+                return (
+                  <TouchableOpacity
+                    key={`${tagName}-${index}`}
+                    onPress={() => addTag(tagName)}
+                    style={[styles.suggestionItem, { borderBottomColor: theme.border }]}
+                  >
+                    <Text style={[styles.suggestionText, { color: theme.text }]}>{tagName}</Text>
+                  </TouchableOpacity>
+                )
+              }
+            )}
+          </ScrollView>
+        </View>
+      )}
     </View>
   )
 }
@@ -294,6 +299,15 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignSelf: 'center',
     opacity: 1,
+  },
+  aiButtonSlot: {
+    minWidth: 74,
+    minHeight: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiButtonHidden: {
+    opacity: 0,
   },
   aiButtonLoading: {
     opacity: 0.7,

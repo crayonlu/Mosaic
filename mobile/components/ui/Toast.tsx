@@ -227,9 +227,7 @@ function Toast({
         <View style={styles.textContainer}>
           <Text style={[styles.title, { color: theme.text }]}>{toast.title}</Text>
           {toast.message && (
-            <Text style={[styles.message, { color: theme.textSecondary }]}>
-              {toast.message}
-            </Text>
+            <Text style={[styles.message, { color: theme.textSecondary }]}>{toast.message}</Text>
           )}
         </View>
       </View>
@@ -247,7 +245,9 @@ function Toast({
           }}
           style={[styles.actionButton, { borderColor: palette.actionBorder }]}
         >
-          <Text style={[styles.actionText, { color: palette.actionText }]}>{toast.actionLabel}</Text>
+          <Text style={[styles.actionText, { color: palette.actionText }]}>
+            {toast.actionLabel}
+          </Text>
         </TouchableOpacity>
       )}
     </Animated.View>
