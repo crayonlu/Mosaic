@@ -10,9 +10,17 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useKeyCapture } from '@/hooks/useKeyCapture'
 import { toast } from '@/hooks/useToast'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { configCommands } from '@/utils/callRust'
 import {
   loadShortcutConfig,
   selectDataDirectory,
@@ -33,6 +41,8 @@ export function SystemSettings() {
   const [defaultDataDirectory, setDefaultDataDirectory] = useState('')
   const [storageLoading, setStorageLoading] = useState(false)
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const [proxyMode, setProxyMode] = useState<'direct' | 'system'>('direct')
+  const [proxySaving, setProxySaving] = useState(false)
   const [pendingDirectoryChange, setPendingDirectoryChange] = useState<{
     path: string
     isReset: boolean
@@ -62,10 +72,32 @@ export function SystemSettings() {
       const defaultDir = await storageCommands.getDefaultDataDirectory()
       setDataDirectory(currentDir)
       setDefaultDataDirectory(defaultDir)
+
+      const serverConfig = await configCommands.getServerConfig()
+      setProxyMode(serverConfig.proxyMode || 'direct')
     } catch (error) {
       console.error('Failed to load settings:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleProxyModeChange(value: 'direct' | 'system') {
+    setProxySaving(true)
+    try {
+      const serverConfig = await configCommands.getServerConfig()
+      await configCommands.setServerConfig({
+        ...serverConfig,
+        proxyMode: value,
+      })
+      setProxyMode(value)
+      toast.success('网络模式已保存')
+      toast.info('部分网络链路可能需要重启应用后生效')
+    } catch (error) {
+      console.error('Failed to update proxy mode:', error)
+      toast.error('网络模式保存失败')
+    } finally {
+      setProxySaving(false)
     }
   }
 
@@ -174,6 +206,27 @@ export function SystemSettings() {
               />
             </button>
           </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-sm font-medium">网络模式</Label>
+              <p className="text-xs text-muted-foreground">控制请求是否跟随系统代理设置</p>
+            </div>
+            <Select
+              value={proxyMode}
+              onValueChange={value => handleProxyModeChange(value as 'direct' | 'system')}
+              disabled={proxySaving}
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="direct">直连模式（推荐）</SelectItem>
+                <SelectItem value="system">系统代理模式</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="flex flex-col gap-1">
             <Label className="text-sm" htmlFor="showShortcut">
               快速唤出快捷键

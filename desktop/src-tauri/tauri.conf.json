@@ -13,10 +13,11 @@
     "windows": [
       {
         "title": "mosaic",
-        "width": 1000,
-        "height": 600,
+        "width": 1200,
+        "height": 800,
         "decorations": false,
-        "transparent": true
+        "transparent": true,
+        "additionalBrowserArgs": "--no-proxy-server"
       }
     ],
     "security": {

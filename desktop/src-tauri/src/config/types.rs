@@ -10,6 +10,12 @@ pub struct ServerConfig {
     pub password: String,
     pub api_token: Option<String>,
     pub refresh_token: Option<String>,
+    #[serde(default = "default_proxy_mode")]
+    pub proxy_mode: String,
+}
+
+fn default_proxy_mode() -> String {
+    "direct".to_string()
 }
 
 impl ServerConfig {
@@ -73,6 +79,7 @@ impl Default for ServerConfig {
             password: String::new(),
             api_token: None,
             refresh_token: None,
+            proxy_mode: default_proxy_mode(),
         }
     }
 }

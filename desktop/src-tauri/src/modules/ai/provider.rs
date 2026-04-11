@@ -1,5 +1,6 @@
 use crate::config::AppConfig;
 use crate::error::AppResult;
+use crate::net::http_client::{build_client, describe_reqwest_error, ProxyMode};
 use crate::modules::ai::models::{
     CompleteTextRequest, RewriteTextRequest, SuggestTagsRequest, SummarizeTextRequest,
 };
@@ -69,6 +70,15 @@ pub async fn create_provider_with_config(config: AIConfig) -> AppResult<Provider
     }
 }
 
+fn resolve_proxy_mode() -> ProxyMode {
+    let proxy_mode = AppConfig::load()
+        .ok()
+        .map(|cfg| cfg.server.proxy_mode)
+        .unwrap_or_else(|| "direct".to_string());
+
+    ProxyMode::from_str(&proxy_mode)
+}
+
 pub trait AIProvider {
     async fn complete_text(&self, req: &CompleteTextRequest) -> AppResult<String>;
     async fn rewrite_text(&self, req: &RewriteTextRequest) -> AppResult<String>;
@@ -123,8 +133,13 @@ pub struct OpenAIProvider {
 
 impl OpenAIProvider {
     pub fn new(config: &AIConfig) -> Self {
+        let proxy_mode = resolve_proxy_mode();
         Self {
-            client: reqwest::Client::new(),
+            client: build_client(
+                std::time::Duration::from_secs(config.timeout.unwrap_or(30) as u64),
+                proxy_mode,
+            )
+            .expect("Failed to create OpenAI HTTP client"),
             base_url: config.base_url.clone(),
             api_key: config.api_key.clone(),
             model: config.model.clone().unwrap_or_default(),
@@ -160,7 +175,11 @@ impl OpenAIProvider {
             .timeout(std::time::Duration::from_secs(self.timeout))
             .send()
             .await
-            .map_err(crate::error::AppError::NetworkError)?;
+            .map_err(|err| {
+                let details = describe_reqwest_error(&err);
+                tracing::error!(target: "network", provider = "openai", url = %url, error = %details, "AI request failed");
+                crate::error::AppError::NetworkError(err)
+            })?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -218,8 +237,13 @@ pub struct AnthropicProvider {
 
 impl AnthropicProvider {
     pub fn new(config: &AIConfig) -> Self {
+        let proxy_mode = resolve_proxy_mode();
         Self {
-            client: reqwest::Client::new(),
+            client: build_client(
+                std::time::Duration::from_secs(config.timeout.unwrap_or(30) as u64),
+                proxy_mode,
+            )
+            .expect("Failed to create Anthropic HTTP client"),
             base_url: config.base_url.clone(),
             api_key: config.api_key.clone(),
             model: config
@@ -257,7 +281,11 @@ impl AnthropicProvider {
             .timeout(std::time::Duration::from_secs(self.timeout))
             .send()
             .await
-            .map_err(crate::error::AppError::NetworkError)?;
+            .map_err(|err| {
+                let details = describe_reqwest_error(&err);
+                tracing::error!(target: "network", provider = "anthropic", url = %url, error = %details, "AI request failed");
+                crate::error::AppError::NetworkError(err)
+            })?;
 
         if !response.status().is_success() {
             let status = response.status();

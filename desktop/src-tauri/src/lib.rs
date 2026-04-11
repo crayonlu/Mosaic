@@ -3,6 +3,7 @@ mod config;
 mod error;
 mod models;
 mod modules;
+mod net;
 
 use api::*;
 use config::commands::{
@@ -140,7 +141,12 @@ pub fn run() {
                                 config_guard.server.url.clone()
                             };
 
-                            let auth_api = AuthApi::new(server_url);
+                            let proxy_mode = {
+                                let config_guard = config.read().await;
+                                config_guard.server.proxy_mode.clone()
+                            };
+
+                            let auth_api = AuthApi::new(server_url, &proxy_mode);
                             let response = auth_api.refresh_token(&refresh_token).await?;
 
                             let mut config_guard = config.write().await;
@@ -161,11 +167,11 @@ pub fn run() {
                             >
                     };
 
-                    ApiClient::new(config.server.url.clone())
+                    ApiClient::new(config.server.url.clone(), &config.server.proxy_mode)
                         .with_token(config.server.api_token.clone().unwrap_or_default())
                         .with_refresh_fn(refresh_fn)
                 } else {
-                    ApiClient::new("http://localhost:3000".to_string())
+                    ApiClient::new("http://localhost:3000".to_string(), "direct")
                 };
 
                 app.manage(config_arc.clone());
