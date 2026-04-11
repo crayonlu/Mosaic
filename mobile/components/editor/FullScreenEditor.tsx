@@ -4,23 +4,23 @@ import { DraggableImageGrid } from '@/components/ui/DraggableImageGrid'
 import { useAISummary } from '@/hooks/useAISummary'
 import { useConnection } from '@/hooks/useConnection'
 import {
-  createSelectedMediaItems,
-  uploadSelectedMedia,
-  type SelectedMediaItem,
+    createSelectedMediaItems,
+    uploadSelectedMedia,
+    type SelectedMediaItem,
 } from '@/lib/media/upload'
 import { normalizeContent } from '@/lib/utils/content'
 import { useThemeStore } from '@/stores/themeStore'
 import { Share as ShareIcon, X } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TagInput } from '../tag/TagInput'
@@ -503,7 +503,6 @@ const styles = StyleSheet.create({
   },
   editorContainer: {
     flexShrink: 0,
-    minHeight: 220,
     paddingHorizontal: 16,
     paddingTop: 4,
   },

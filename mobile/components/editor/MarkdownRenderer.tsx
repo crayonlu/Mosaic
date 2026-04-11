@@ -137,8 +137,9 @@ function MarkdownContent({
       }
       if (line.startsWith('- ') || line.startsWith('* ')) {
         return (
-          <Text key={index} style={[styles.listItem, { color: theme.text }]}>
-            {'\u2022'} {line.substring(2)}
+          <Text key={index} style={styles.listItem}>
+            <Text style={{ color: theme.primary }}>{'\u2022'} </Text>
+            <Text style={{ color: theme.text }}>{line.substring(2)}</Text>
           </Text>
         )
       }
@@ -146,8 +147,9 @@ function MarkdownContent({
         const match = line.match(/^(\d+\.\s)(.*)$/)
         if (match) {
           return (
-            <Text key={index} style={[styles.listItem, { color: theme.text }]}>
-              {match[1]} {match[2]}
+            <Text key={index} style={styles.listItem}>
+              <Text style={{ color: theme.primary }}>{match[1]}</Text>
+              <Text style={{ color: theme.text }}>{match[2]}</Text>
             </Text>
           )
         }
@@ -162,7 +164,11 @@ function MarkdownContent({
     })
   }
 
-  return <View style={[styles.container, style]}>{renderContent()}</View>
+  return (
+    <View style={[styles.container, style]}>
+      {renderContent()}
+    </View>
+  )
 }
 
 function renderInlineStyles(
@@ -267,10 +273,11 @@ function renderInlineStyles(
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    width: '100%',
   },
   webView: {
-    flex: 1,
+    width: '100%',
+    minHeight: 120,
   },
   paragraph: {
     fontSize: 16,
@@ -298,7 +305,7 @@ const styles = StyleSheet.create({
   listItem: {
     fontSize: 16,
     lineHeight: 24,
-    marginLeft: 16,
+    marginLeft: 4,
     marginBottom: 4,
   },
   bold: {
