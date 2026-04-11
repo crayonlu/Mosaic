@@ -42,9 +42,9 @@ pub struct AuthApi {
 }
 
 impl AuthApi {
-    pub fn new(base_url: String) -> Self {
+    pub fn new(base_url: String, proxy_mode: &str) -> Self {
         Self {
-            client: ApiClient::new(base_url),
+            client: ApiClient::new(base_url, proxy_mode),
         }
     }
 

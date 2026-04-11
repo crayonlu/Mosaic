@@ -14,7 +14,11 @@ export function useServerConfig() {
 
   const checkConfig = async () => {
     try {
-      const serverConfig = await configCommands.getServerConfig()
+      const rawConfig = await configCommands.getServerConfig()
+      const serverConfig: ServerConfig = {
+        ...rawConfig,
+        proxyMode: rawConfig.proxyMode || 'direct',
+      }
       const configured = !!serverConfig.url && !!serverConfig.username && !!serverConfig.password
 
       // Only initialize API client if we have a valid URL

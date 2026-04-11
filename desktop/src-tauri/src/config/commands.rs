@@ -1,5 +1,6 @@
 use crate::api::{AuthApi, LoginResponse, RefreshTokenResponse};
 use crate::config::{AppConfig, ServerConfig};
+use crate::net::http_client::{build_client, describe_reqwest_error, ProxyMode};
 use std::sync::Arc;
 use tauri::State;
 use tokio::sync::RwLock;
@@ -25,9 +26,10 @@ pub async fn set_server_config(
 
 #[tauri::command]
 pub async fn test_server_connection(server_config: ServerConfig) -> Result<(), String> {
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
+    let client = build_client(
+        std::time::Duration::from_secs(10),
+        ProxyMode::from_str(&server_config.proxy_mode),
+    )
         .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
 
     let url = format!("{}/api/auth/login", server_config.url.trim_end_matches('/'));
@@ -40,7 +42,11 @@ pub async fn test_server_connection(server_config: ServerConfig) -> Result<(), S
         }))
         .send()
         .await
-        .map_err(|e| format!("Network error: {}", e))?;
+        .map_err(|e| {
+            let details = describe_reqwest_error(&e);
+            tracing::error!(target: "network", url = %url, error = %details, "Server connection test failed");
+            format!("Network error: {}", details)
+        })?;
 
     let status = response.status();
     if status.is_success() {
@@ -66,7 +72,12 @@ pub async fn login(
         config_guard.server.url.clone()
     };
 
-    let auth_api = AuthApi::new(server_url);
+    let proxy_mode = {
+        let config_guard = config.read().await;
+        config_guard.server.proxy_mode.clone()
+    };
+
+    let auth_api = AuthApi::new(server_url, &proxy_mode);
     let response = auth_api
         .login(&username, &password)
         .await
@@ -93,7 +104,12 @@ pub async fn refresh_token(
         (refresh_token, config_guard.server.url.clone())
     };
 
-    let auth_api = AuthApi::new(server_url);
+    let proxy_mode = {
+        let config_guard = config.read().await;
+        config_guard.server.proxy_mode.clone()
+    };
+
+    let auth_api = AuthApi::new(server_url, &proxy_mode);
     let response = auth_api
         .refresh_token(&refresh_token)
         .await
@@ -129,7 +145,12 @@ pub async fn change_password(
         config_guard.server.url.clone()
     };
 
-    let auth_api = AuthApi::new(server_url);
+    let proxy_mode = {
+        let config_guard = config.read().await;
+        config_guard.server.proxy_mode.clone()
+    };
+
+    let auth_api = AuthApi::new(server_url, &proxy_mode);
     auth_api
         .change_password(&old_password, &new_password)
         .await

@@ -35,6 +35,7 @@ export class TauriApiClient {
     url: string
     username: string
     password: string
+    proxyMode?: 'direct' | 'system'
   }): Promise<void> {
     return this.invoke('set_server_config', { serverConfig: config })
   }
@@ -43,6 +44,7 @@ export class TauriApiClient {
     url: string
     username: string
     password: string
+    proxyMode?: 'direct' | 'system'
     aiProvider?: string
     aiBaseUrl?: string
     aiApiKey?: string

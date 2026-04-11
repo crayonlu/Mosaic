@@ -1,4 +1,5 @@
 use crate::error::{AppError, AppResult};
+use crate::net::http_client::{build_client, describe_reqwest_error, ProxyMode};
 use base64::{engine::general_purpose, Engine as _};
 use reqwest::Client;
 use std::sync::Arc;
@@ -19,11 +20,12 @@ pub struct ApiClient {
 }
 
 impl ApiClient {
-    pub fn new(base_url: String) -> Self {
+    pub fn new(base_url: String, proxy_mode: &str) -> Self {
         Self {
-            client: Client::builder()
-                .timeout(std::time::Duration::from_secs(30))
-                .build()
+            client: build_client(
+                std::time::Duration::from_secs(30),
+                ProxyMode::from_str(proxy_mode),
+            )
                 .expect("Failed to create HTTP client"),
             base_url,
             token: Arc::new(RwLock::new(None)),
@@ -122,6 +124,7 @@ impl ApiClient {
         body: Option<serde_json::Value>,
     ) -> AppResult<T> {
         let url = format!("{}{}", self.base_url.trim_end_matches('/'), path);
+        let method_str = method.as_str().to_string();
         let mut request = self.client.request(method, &url);
 
         if let Some(token) = self.token.read().await.as_ref() {
@@ -132,7 +135,11 @@ impl ApiClient {
             request = request.json(&body);
         }
 
-        let response = request.send().await?;
+        let response = request.send().await.map_err(|err| {
+            let details = describe_reqwest_error(&err);
+            tracing::error!(target: "network", method = %method_str, url = %url, error = %details, "API request failed");
+            AppError::NetworkError(err)
+        })?;
 
         let status = response.status();
         if !status.is_success() {

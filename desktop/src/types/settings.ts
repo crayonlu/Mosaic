@@ -34,6 +34,7 @@ export interface ServerConfig {
   url: string
   username: string
   password: string
+  proxyMode?: 'direct' | 'system'
   apiToken?: string
   refreshToken?: string
   aiProvider?: 'openai' | 'anthropic'

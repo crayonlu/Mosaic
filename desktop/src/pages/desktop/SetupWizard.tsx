@@ -5,13 +5,20 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
 import { useServerConfig } from '@/hooks/useServerConfig'
 import { useTheme } from '@/hooks/useTheme'
 import { toast } from '@/hooks/useToast'
 import {
-  mapServerConnectionError,
-  normalizeServerUrlInput,
-  validateServerUrl,
+    mapServerConnectionError,
+    normalizeServerUrlInput,
+    validateServerUrl,
 } from '@/lib/serverConnectionError'
 import { initSharedApiClient } from '@/lib/sharedApi'
 import type { ServerConfig } from '@/types/settings'
@@ -34,12 +41,16 @@ export default function SetupWizard() {
     url: '',
     username: '',
     password: '',
+    proxyMode: 'direct',
     aiProvider: 'openai',
     aiBaseUrl: '',
     aiApiKey: '',
   })
 
-  const handleServerConfigChange = (field: keyof ServerConfig, value: string) => {
+  const handleServerConfigChange = <K extends keyof ServerConfig>(
+    field: K,
+    value: ServerConfig[K]
+  ) => {
     setServerConfig(prev => ({ ...prev, [field]: value }))
     setConnectionStatus('idle')
     setErrorMessage('')
@@ -122,7 +133,7 @@ export default function SetupWizard() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-background to-card p-4">
+    <div className="h-full flex items-center justify-center bg-linear-to-br from-background to-card p-4">
       <div className="w-full max-w-2xl space-y-8">
         {/* Header */}
         <div className="text-center flex flex-col items-center gap-4">
@@ -176,6 +187,28 @@ export default function SetupWizard() {
                 onChange={e => handleServerConfigChange('password', e.target.value)}
                 disabled={loading}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="proxy-mode">网络模式</Label>
+              <Select
+                value={serverConfig.proxyMode || 'direct'}
+                onValueChange={value =>
+                  handleServerConfigChange('proxyMode', value as ServerConfig['proxyMode'])
+                }
+                disabled={loading}
+              >
+                <SelectTrigger id="proxy-mode">
+                  <SelectValue placeholder="选择网络模式" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="direct">直连模式（推荐）</SelectItem>
+                  <SelectItem value="system">系统代理模式</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                直连模式会绕过系统代理，系统代理模式会跟随操作系统代理设置。
+              </p>
             </div>
 
             {connectionStatus === 'error' && (

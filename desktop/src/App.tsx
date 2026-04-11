@@ -6,6 +6,7 @@ import './styles/scroll-bar.css'
 // Router Imports
 import { Navigate, Route, Routes } from 'react-router-dom'
 import DeskTopLayout from './components/layout/DeskTopLayout'
+import SetupLayout from './components/layout/SetupLayout'
 import ArchivePage from './pages/desktop/ArchivePage'
 import DeskTopHome from './pages/desktop/DeskTopHome'
 import DiaryDetailPage from './pages/desktop/DiaryDetailPage'
@@ -33,7 +34,9 @@ function App() {
       <Routes>
         {!isConfigured ? (
           <>
-            <Route path="/setup" element={<SetupWizard />} />
+            <Route element={<SetupLayout />}>
+              <Route path="/setup" element={<SetupWizard />} />
+            </Route>
             <Route path="/theme-demo" element={<ThemeDemoPage />} />
             <Route path="*" element={<Navigate to="/setup" replace />} />
           </>
@@ -48,7 +51,9 @@ function App() {
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="/theme-demo" element={<ThemeDemoPage />} />
-            <Route path="/setup" element={<Navigate to="/" replace />} />
+            <Route element={<SetupLayout />}>
+              <Route path="/setup" element={<Navigate to="/" replace />} />
+            </Route>
           </>
         )}
       </Routes>
