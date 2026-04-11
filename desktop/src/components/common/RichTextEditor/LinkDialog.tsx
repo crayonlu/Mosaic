@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Editor } from '@tiptap/react'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { Editor } from '@tiptap/react'
+import { useEffect, useState } from 'react'
 
 interface LinkDialogProps {
   editor: Editor
@@ -42,9 +42,9 @@ export function LinkDialog({ editor, open, onOpenChange }: LinkDialogProps) {
       if (hasSelection) {
         editor.chain().focus().setLink({ href: url }).run()
       } else if (text.trim()) {
-        editor.chain().focus().insertContent(`<a href="${url}">${text}</a>`).run()
+        editor.chain().focus().insertContent(`[${text}](${url})`).run()
       } else {
-        editor.chain().focus().insertContent(`<a href="${url}">${url}</a>`).run()
+        editor.chain().focus().insertContent(`[${url}](${url})`).run()
       }
     }
 
@@ -64,7 +64,7 @@ export function LinkDialog({ editor, open, onOpenChange }: LinkDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>{isLinkActive ? '编辑链接' : '插入链接'}</DialogTitle>
         </DialogHeader>

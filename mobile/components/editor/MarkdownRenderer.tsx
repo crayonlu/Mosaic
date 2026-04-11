@@ -1,6 +1,11 @@
 import { useThemeStore } from '@/stores/themeStore'
+import MarkdownIt from 'markdown-it'
+import taskLists from 'markdown-it-task-lists'
+import { useMemo } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { WebView } from 'react-native-webview'
+import Markdown from 'react-native-markdown-display'
+import SyntaxHighlighter from 'react-native-syntax-highlighter'
+import { atomOneDark } from 'react-syntax-highlighter/dist/cjs/styles/hljs'
 
 interface MarkdownRendererProps {
   content: string
@@ -14,92 +19,7 @@ export function MarkdownRenderer({ content, style }: MarkdownRendererProps) {
     return null
   }
 
-  const isHtml = isHtmlContent(content)
-
-  if (isHtml) {
-    return <HtmlRenderer content={content} theme={theme} style={style} />
-  }
-
   return <MarkdownContent content={content} theme={theme} style={style} />
-}
-
-function isHtmlContent(text: string): boolean {
-  const trimmed = text.trim()
-  return trimmed.startsWith('<') && trimmed.endsWith('>') && /<[a-z][\s\S]*>/i.test(trimmed)
-}
-
-function HtmlRenderer({
-  content,
-  theme,
-  style,
-}: {
-  content: string
-  theme: {
-    text: string
-    background: string
-    border: string
-    primary: string
-    textSecondary: string
-  }
-  style?: object
-}) {
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-size: 16px;
-            line-height: 1.6;
-            color: ${theme.text};
-            background-color: ${theme.background};
-            padding: 0;
-            margin: 0;
-          }
-          p { margin-bottom: 8px; }
-          strong { font-weight: 600; }
-          em { font-style: italic; }
-          a { color: ${theme.primary}; }
-          code {
-            background-color: ${theme.border};
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-          }
-          pre {
-            background-color: ${theme.border};
-            padding: 12px;
-            border-radius: 8px;
-            overflow-x: auto;
-          }
-          blockquote {
-            border-left: 3px solid ${theme.border};
-            padding-left: 12px;
-            color: ${theme.textSecondary};
-          }
-        </style>
-      </head>
-      <body>${content}</body>
-    </html>
-  `
-
-  if (!content || content.trim().length === 0) {
-    return null
-  }
-
-  return (
-    <View style={[styles.container, style]}>
-      <WebView
-        source={{ html: htmlContent }}
-        style={[styles.webView, { backgroundColor: theme.background }]}
-        scrollEnabled={true}
-        showsVerticalScrollIndicator={false}
-        javaScriptEnabled={false}
-      />
-    </View>
-  )
 }
 
 function MarkdownContent({
@@ -108,219 +28,139 @@ function MarkdownContent({
   style,
 }: {
   content: string
-  theme: { text: string; primary: string; textSecondary: string }
+  theme: {
+    text: string
+    primary: string
+    textSecondary: string
+    border: string
+    surfaceMuted: string
+  }
   style?: object
 }) {
-  const renderContent = () => {
-    const lines = content.split('\n')
-    return lines.map((line, index) => {
-      if (line.startsWith('# ')) {
-        return (
-          <Text key={index} style={[styles.h1, { color: theme.text }]}>
-            {line.substring(2)}
-          </Text>
-        )
-      }
-      if (line.startsWith('## ')) {
-        return (
-          <Text key={index} style={[styles.h2, { color: theme.text }]}>
-            {line.substring(3)}
-          </Text>
-        )
-      }
-      if (line.startsWith('### ')) {
-        return (
-          <Text key={index} style={[styles.h3, { color: theme.text }]}>
-            {line.substring(4)}
-          </Text>
-        )
-      }
-      if (line.startsWith('- ') || line.startsWith('* ')) {
-        return (
-          <Text key={index} style={styles.listItem}>
-            <Text style={{ color: theme.primary }}>{'\u2022'} </Text>
-            <Text style={{ color: theme.text }}>{line.substring(2)}</Text>
-          </Text>
-        )
-      }
-      if (/^\d+\.\s/.test(line)) {
-        const match = line.match(/^(\d+\.\s)(.*)$/)
-        if (match) {
-          return (
-            <Text key={index} style={styles.listItem}>
-              <Text style={{ color: theme.primary }}>{match[1]}</Text>
-              <Text style={{ color: theme.text }}>{match[2]}</Text>
-            </Text>
-          )
-        }
-      }
-
-      const renderedLine = renderInlineStyles(line, theme)
-      return (
-        <Text key={index} style={[styles.paragraph, { color: theme.text }]}>
-          {renderedLine}
-        </Text>
-      )
+  const markdownIt = useMemo(() => {
+    const parser = MarkdownIt({
+      html: false,
+      typographer: true,
+      breaks: true,
+      linkify: true,
     })
-  }
+
+    parser.use(taskLists, { enabled: true, label: true, labelAfter: false })
+    return parser
+  }, [])
+
+  const markdownText = useMemo(
+    () => content.replace(/^- \[[xX]\]\s+/gm, '- ☑ ').replace(/^- \[\s\]\s+/gm, '- ☐ '),
+    [content]
+  )
+
+  const markdownStyles = useMemo(
+    () => ({
+      body: { color: theme.text, fontSize: 16, lineHeight: 24 },
+      paragraph: { marginTop: 0, marginBottom: 8 },
+      heading1: {
+        color: theme.text,
+        fontSize: 28,
+        fontWeight: '700',
+        marginTop: 8,
+        marginBottom: 12,
+      },
+      heading2: {
+        color: theme.text,
+        fontSize: 24,
+        fontWeight: '600',
+        marginTop: 6,
+        marginBottom: 10,
+      },
+      heading3: {
+        color: theme.text,
+        fontSize: 20,
+        fontWeight: '600',
+        marginTop: 4,
+        marginBottom: 8,
+      },
+      hr: { backgroundColor: theme.border, height: StyleSheet.hairlineWidth, marginVertical: 10 },
+      blockquote: {
+        borderLeftColor: theme.border,
+        borderLeftWidth: 3,
+        paddingLeft: 12,
+        marginBottom: 8,
+      },
+      bullet_list_icon: { color: theme.primary },
+      ordered_list_icon: { color: theme.primary },
+      list_item: { color: theme.text, marginBottom: 4 },
+      strong: { fontWeight: '700' },
+      em: { fontStyle: 'italic' },
+      s: { textDecorationLine: 'line-through' },
+      link: { color: theme.primary, textDecorationLine: 'underline' },
+      code_inline: {
+        backgroundColor: theme.textSecondary + '20',
+        borderRadius: 4,
+        paddingHorizontal: 4,
+        fontFamily: 'monospace',
+      },
+      table: { borderColor: theme.border, borderWidth: 1, marginBottom: 8 },
+      thead: { backgroundColor: theme.surfaceMuted },
+      th: {
+        borderColor: theme.border,
+        borderWidth: 1,
+        padding: 6,
+        color: theme.text,
+        fontWeight: '700',
+      },
+      td: { borderColor: theme.border, borderWidth: 1, padding: 6, color: theme.text },
+    }),
+    [theme]
+  )
 
   return (
     <View style={[styles.container, style]}>
-      {renderContent()}
+      <Markdown
+        markdownit={markdownIt}
+        style={markdownStyles as any}
+        rules={{
+          fence: (node, _children, _parent, _styles) => {
+            const language = (node as any).sourceInfo?.trim()?.split(/\s+/)[0] || 'text'
+            const code = node.content || ''
+            return (
+              <View key={node.key} style={styles.codeBlockContainer}>
+                <Text style={styles.codeBlockLang}>{language}</Text>
+                <SyntaxHighlighter language={language} style={atomOneDark} highlighter="hljs">
+                  {code}
+                </SyntaxHighlighter>
+              </View>
+            )
+          },
+          code_block: (node, _children, _parent, _styles) => (
+            <View key={node.key} style={styles.codeBlockContainer}>
+              <SyntaxHighlighter language="text" style={atomOneDark} highlighter="hljs">
+                {node.content || ''}
+              </SyntaxHighlighter>
+            </View>
+          ),
+        }}
+      >
+        {markdownText}
+      </Markdown>
     </View>
   )
-}
-
-function renderInlineStyles(
-  text: string,
-  theme: { primary: string; text: string; textSecondary: string }
-) {
-  let result: React.ReactNode[] = []
-  let remaining = text
-  let key = 0
-
-  while (remaining.length > 0) {
-    const boldMatch = remaining.match(/\*\*(.+?)\*\*/)
-    const italicMatch = remaining.match(/\*(.+?)\*/)
-    const codeMatch = remaining.match(/`(.+?)`/)
-    const linkMatch = remaining.match(/\[(.+?)\]\((.+?)\)/)
-
-    const matches = [
-      boldMatch
-        ? {
-            type: 'bold',
-            index: boldMatch.index!,
-            length: boldMatch[0].length,
-            content: boldMatch[1],
-          }
-        : null,
-      italicMatch
-        ? {
-            type: 'italic',
-            index: italicMatch.index!,
-            length: italicMatch[0].length,
-            content: italicMatch[1],
-          }
-        : null,
-      codeMatch
-        ? {
-            type: 'code',
-            index: codeMatch.index!,
-            length: codeMatch[0].length,
-            content: codeMatch[1],
-          }
-        : null,
-      linkMatch
-        ? {
-            type: 'link',
-            index: linkMatch.index!,
-            length: linkMatch[0].length,
-            text: linkMatch[1],
-            url: linkMatch[2],
-          }
-        : null,
-    ]
-      .filter(Boolean)
-      .sort((a, b) => a!.index - b!.index)
-
-    if (matches.length === 0) {
-      result.push(<Text key={key++}>{remaining}</Text>)
-      break
-    }
-
-    const match = matches[0]!
-
-    if (match.index > 0) {
-      result.push(<Text key={key++}>{remaining.substring(0, match.index)}</Text>)
-    }
-
-    switch (match.type) {
-      case 'bold':
-        result.push(
-          <Text key={key++} style={styles.bold}>
-            {match.content}
-          </Text>
-        )
-        break
-      case 'italic':
-        result.push(
-          <Text key={key++} style={styles.italic}>
-            {match.content}
-          </Text>
-        )
-        break
-      case 'code':
-        result.push(
-          <Text key={key++} style={[styles.code, { backgroundColor: theme.textSecondary + '20' }]}>
-            {match.content}
-          </Text>
-        )
-        break
-      case 'link':
-        result.push(
-          <Text key={key++} style={[styles.link, { color: theme.primary }]}>
-            {match.text}
-          </Text>
-        )
-        break
-    }
-
-    remaining = remaining.substring(match.index + match.length)
-  }
-
-  return result
 }
 
 const styles = StyleSheet.create({
   container: {
     width: '100%',
   },
-  webView: {
-    width: '100%',
-    minHeight: 120,
-  },
-  paragraph: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 8,
-  },
-  h1: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  h2: {
-    fontSize: 24,
-    fontWeight: '500',
+  codeBlockContainer: {
     marginBottom: 10,
-    marginTop: 6,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
-  h3: {
-    fontSize: 20,
-    fontWeight: '500',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  listItem: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginLeft: 4,
-    marginBottom: 4,
-  },
-  bold: {
-    fontWeight: '700',
-  },
-  italic: {
-    fontStyle: 'italic',
-  },
-  code: {
-    fontFamily: 'monospace',
-    fontSize: 14,
-    paddingHorizontal: 4,
-    borderRadius: 4,
-  },
-  link: {
-    textDecorationLine: 'underline',
+  codeBlockLang: {
+    fontSize: 11,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    color: '#d0d0d0',
+    backgroundColor: '#1e1e1e',
+    textTransform: 'lowercase',
   },
 })

@@ -40,10 +40,7 @@ export function ArchiveDateFilter({ selectedDate, onDateSelect }: ArchiveDateFil
         >
           <Calendar size={18} color={theme.textSecondary} />
           <Text
-            style={[
-              styles.filterText,
-              { color: selectedDate ? theme.text : theme.textSecondary },
-            ]}
+            style={[styles.filterText, { color: selectedDate ? theme.text : theme.textSecondary }]}
           >
             {formatDate(selectedDate) || '选择日期'}
           </Text>

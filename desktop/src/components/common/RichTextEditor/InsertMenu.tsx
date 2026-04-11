@@ -1,8 +1,8 @@
-import { Editor } from '@tiptap/react'
-import { Table, Minus, MoreHorizontal } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { Editor } from '@tiptap/react'
+import { Minus, MoreHorizontal } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 interface InsertMenuProps {
   editor: Editor
@@ -24,11 +24,6 @@ export function InsertMenu({ editor }: InsertMenuProps) {
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [isOpen])
-
-  const insertTable = () => {
-    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
-    setIsOpen(false)
-  }
 
   const insertHorizontalRule = () => {
     editor.chain().focus().setHorizontalRule().run()
@@ -57,19 +52,11 @@ export function InsertMenu({ editor }: InsertMenuProps) {
       </Tooltip>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-md z-50 min-w-[120px]">
-          <button
-            type="button"
-            onClick={insertTable}
-            className="w-full px-3 py-2 text-sm text-left hover:bg-accent flex items-center gap-2 rounded-t-md"
-          >
-            <Table className="size-4" />
-            <span>表格</span>
-          </button>
+        <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-md z-50 min-w-30">
           <button
             type="button"
             onClick={insertHorizontalRule}
-            className="w-full px-3 py-2 text-sm text-left hover:bg-accent flex items-center gap-2 rounded-b-md"
+            className="w-full px-3 py-2 text-sm text-left hover:bg-accent flex items-center gap-2 rounded-md"
           >
             <Minus className="size-4" />
             <span>分隔线</span>
