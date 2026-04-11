@@ -3,8 +3,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useServerConfig } from '@/hooks/useServerConfig'
 import { AlertCircle, Cloud, CloudOff, LogOutIcon, RefreshCw } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export function SyncStatusDisplay() {
+  const navigate = useNavigate()
   const { isConfigured, loading, config, checkConfig, logout } = useServerConfig()
 
   const handleLogout = async () => {
@@ -13,7 +15,7 @@ export function SyncStatusDisplay() {
     } catch (error) {
       console.error('Failed to logout:', error)
     }
-    window.location.reload()
+    navigate('/setup', { replace: true })
   }
 
   const getStatus = () => {
