@@ -17,7 +17,7 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
       case 'solid':
         return theme.primary
       case 'soft':
-        return `${theme.primary}20`
+        return theme.semantic.infoSoft
       case 'outline':
         return 'transparent'
       default:
@@ -28,7 +28,9 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
   const getBorderColor = () => {
     switch (variant) {
       case 'outline':
-        return theme.primary
+        return theme.borderStrong
+      case 'soft':
+        return theme.border
       default:
         return 'transparent'
     }
@@ -37,22 +39,24 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
   const getTextColor = () => {
     switch (variant) {
       case 'solid':
-        return '#FFFFFF'
+        return theme.onPrimary
+      case 'soft':
+        return theme.info
       default:
-        return theme.primary
+        return theme.text
     }
   }
 
   const getPaddingVertical = () => {
-    return size === 'small' ? 2 : 4
+    return size === 'small' ? theme.spacingScale.xsmall : theme.spacingScale.small
   }
 
   const getPaddingHorizontal = () => {
-    return size === 'small' ? 6 : 10
+    return size === 'small' ? 6 : theme.spacingScale.medium
   }
 
   const getFontSize = () => {
-    return size === 'small' ? 11 : 12
+    return size === 'small' ? 11 : theme.typography.caption
   }
 
   const badgeContent = (
@@ -78,9 +82,10 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
           {
             backgroundColor: getBackgroundColor(),
             borderColor: getBorderColor(),
-            borderWidth: variant === 'outline' ? 1 : 0,
+            borderWidth: variant === 'outline' || variant === 'soft' ? 1 : 0,
             paddingVertical: getPaddingVertical(),
             paddingHorizontal: getPaddingHorizontal(),
+            borderRadius: theme.radius.pill,
           },
           style,
         ]}
@@ -99,9 +104,10 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
         {
           backgroundColor: getBackgroundColor(),
           borderColor: getBorderColor(),
-          borderWidth: variant === 'outline' ? 1 : 0,
+          borderWidth: variant === 'outline' || variant === 'soft' ? 1 : 0,
           paddingVertical: getPaddingVertical(),
           paddingHorizontal: getPaddingHorizontal(),
+          borderRadius: theme.radius.pill,
         },
         style,
       ]}
@@ -113,7 +119,6 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
 
 const styles = StyleSheet.create({
   badge: {
-    borderRadius: 6,
     alignSelf: 'flex-start',
   },
   text: {

@@ -17,7 +17,6 @@
     "@mosaic/api": "workspace:*",
     "@mosaic/cache": "workspace:*",
     "@mosaic/utils": "workspace:*",
-    "@react-native-community/datetimepicker": "8.4.4",
     "@tanstack/react-query": "^5.90.20",
     "dayjs": "^1.11.19",
     "expo": "~54.0.33",

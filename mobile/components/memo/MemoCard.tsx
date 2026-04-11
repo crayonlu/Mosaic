@@ -67,9 +67,9 @@ export function MemoCard({
           backgroundColor: isSelected
             ? theme.surface
             : pressed && showPressFeedback
-              ? `${theme.surface}80`
+              ? theme.surfaceMuted
               : 'transparent',
-          borderColor: theme.border,
+          borderRadius: theme.radius.medium,
         },
       ]}
     >
@@ -93,7 +93,7 @@ export function MemoCard({
       </View>
 
       {(memo.tags.length > 0 || showActions || showTimestamp) && (
-        <View style={[styles.metadataContainer, { borderColor: theme.border }]}>
+        <View style={styles.metadataContainer}>
           {memo.tags.length > 0 && (
             <View style={styles.tagsRow}>
               {memo.tags.slice(0, 3).map(tag => (
@@ -135,10 +135,12 @@ export function MemoCard({
 
 const styles = StyleSheet.create({
   container: {
-    borderBottomWidth: 1,
     overflow: 'hidden',
     paddingHorizontal: 12,
-    paddingTop: 12,
+    paddingTop: 10,
+    paddingBottom: 6,
+    marginHorizontal: 8,
+    marginBottom: 6,
   },
   contentContainer: {
     flexDirection: 'column',
@@ -151,7 +153,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: 2,
   },
   tagsRow: {
     flexDirection: 'row',

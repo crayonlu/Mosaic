@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerButton: {
     width: 40,
@@ -104,11 +104,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   content: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
   },
   textContent: {
     flex: 1,

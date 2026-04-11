@@ -1,7 +1,6 @@
 import { AppInput, type AppInputRef } from '@/components/common/AppInput'
 import { MemoDetail } from '@/components/common/MemoDetail'
 import { MemoList, type MemoListRef } from '@/components/common/MemoList'
-import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { createObjectUrl, uploadFilesAndGetResourceIds } from '@/hooks/useFileUpload'
 import { useTime } from '@/hooks/useTime'
 import { toast } from '@/hooks/useToast'
@@ -114,15 +113,15 @@ export default function DeskTopHome() {
   }
 
   return (
-    <DeskTopLayout className="relative">
-      <div className="h-[calc(100dvh-20rem)] overflow-hidden flex flex-col">
+    <>
+      <div className="h-[calc(100dvh-24rem)] overflow-hidden flex flex-col">
         <div className="w-full pb-4 transition-all duration-500 ease-in-out memo-scrollbar overflow-y-auto flex-1 min-h-0">
           <MemoList ref={memoListRef} date={formattedDate} onMemoClick={handleMemoClick} />
         </div>
       </div>
       <div
         className={`w-full absolute left-0 right-0 bottom-0 transition-all duration-500 ease-in-out ${
-          isInputExpanded ? 'h-full' : 'h-64'
+          isInputExpanded ? 'h-full' : 'h-80'
         }`}
       >
         <AppInput
@@ -140,6 +139,6 @@ export default function DeskTopHome() {
         onUpdate={handleMemoUpdate}
         onDelete={handleMemoDelete}
       />
-    </DeskTopLayout>
+    </>
   )
 }

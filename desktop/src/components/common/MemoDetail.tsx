@@ -21,6 +21,7 @@ import { useAI } from '@/hooks/useAI'
 import { uploadFiles } from '@/hooks/useFileUpload'
 import { toast } from '@/hooks/useToast'
 import { resolveApiUrl } from '@/lib/sharedApi'
+import { cn } from '@/lib/utils'
 import { normalizeContent } from '@/utils/content'
 import type { MemoWithResources, Resource } from '@mosaic/api'
 import { resourcesApi, useDeleteMemo, useUpdateMemo } from '@mosaic/api'
@@ -284,7 +285,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   }
 
   const handleTagKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && canAddTag) {
       e.preventDefault()
       handleAddTag()
     }
@@ -412,6 +413,9 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const hasTagsChanged =
     JSON.stringify([...editedTags].sort()) !== JSON.stringify([...(memo?.tags ?? [])].sort())
   const hasSummaryChanged = editedAISummary.trim() !== (memo?.aiSummary || '').trim()
+  const normalizedTagInput = tagInput.trim()
+  const canAddTag =
+    normalizedTagInput.length > 0 && !editedTags.includes(normalizedTagInput) && !aiLoading && !isSaving
 
   if (!memo) return null
 
@@ -477,15 +481,17 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
         <div className="px-6 pb-6 pt-2 space-y-6">
           {isEditing ? (
             <div className="space-y-4">
-              <RichTextEditor
-                content={editedContent}
-                onChange={setEditedContent}
-                placeholder="输入内容..."
-                editable={true}
-                className="border border-t-0"
-              />
+              <div className="overflow-hidden rounded-xl border border-border/80 bg-card">
+                <RichTextEditor
+                  content={editedContent}
+                  onChange={setEditedContent}
+                  placeholder="输入内容..."
+                  editable={true}
+                  className="border-0"
+                />
+              </div>
 
-              <div className="border rounded-lg p-4 space-y-3">
+              <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4">
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-medium text-foreground">AI 摘要</div>
                   <Button
@@ -517,7 +523,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 />
               </div>
 
-              <div className="border rounded-lg p-4">
+              <div className="rounded-xl border border-border/80 bg-card p-4">
                 <div className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                   <Tag className="h-4 w-4" />
                   标签
@@ -549,12 +555,16 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                       onChange={e => setTagInput(e.target.value)}
                       onKeyDown={handleTagKeyDown}
                       placeholder="添加标签..."
-                      className="flex-1 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                     <button
                       type="button"
                       onClick={() => handleAddTag()}
-                      className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                      disabled={!canAddTag}
+                      className={cn(
+                        'rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground transition-colors',
+                        canAddTag ? 'hover:bg-primary/90' : 'cursor-not-allowed opacity-50'
+                      )}
                     >
                       添加
                     </button>
@@ -579,7 +589,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                     )}
                   </div>
                   {showSuggestions && tagSuggestions.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md bg-muted/30">
+                    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/80 bg-muted/30 p-2">
                       <span className="text-xs text-muted-foreground">AI建议标签：</span>
                       {tagSuggestions.map(tag => (
                         <Badge
@@ -624,18 +634,20 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
             <>
               <div className="prose prose-sm max-w-none">
                 {normalizeContent(memo.content) ? (
-                  <RichTextEditor
-                    content={memo.content}
-                    onChange={() => {}}
-                    editable={false}
-                    className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1 border"
-                  />
+                  <div className="overflow-hidden rounded-xl border border-border/80 bg-card">
+                    <RichTextEditor
+                      content={memo.content}
+                      onChange={() => {}}
+                      editable={false}
+                      className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1 border-0"
+                    />
+                  </div>
                 ) : (
                   <></>
                 )}
               </div>
 
-              <div className="space-y-2 border rounded-lg p-4 bg-muted/20">
+              <div className="space-y-2 rounded-xl border border-border/80 bg-muted/20 p-4">
                 <div className="text-sm font-medium text-foreground">AI 摘要</div>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                   {memo.aiSummary?.trim() ? memo.aiSummary : '暂无摘要'}
@@ -649,7 +661,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
               <div className="flex items-center justify-between gap-2 text-sm font-medium text-foreground">
                 <div className="flex items-center gap-2">
                   <ImageIcon className="h-4 w-4" />
-                  <span>媒体 ({displayResources.length})</span>
+                  <span>图像 ({displayResources.length})</span>
                 </div>
                 {isEditing && (
                   <>

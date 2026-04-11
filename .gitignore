@@ -74,3 +74,11 @@ __tests__
 .design/
 
 plans/*
+
+.agent/
+.agents/
+.cline/
+.codebuddy/
+.kiro/
+.trae/
+.windsurf/

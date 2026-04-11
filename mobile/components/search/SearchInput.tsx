@@ -1,5 +1,6 @@
 import { useThemeStore } from '@/stores/themeStore'
 import { Search, X } from 'lucide-react-native'
+import { useState } from 'react'
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
 
 interface SearchInputProps {
@@ -18,6 +19,7 @@ export function SearchInput({
   style,
 }: SearchInputProps) {
   const { theme } = useThemeStore()
+  const [isFocused, setIsFocused] = useState(false)
 
   const handleClear = () => {
     onChangeText('')
@@ -28,7 +30,11 @@ export function SearchInput({
       style={[
         styles.container,
         style,
-        { backgroundColor: theme.surface, borderColor: theme.border },
+        {
+          backgroundColor: theme.surfaceMuted,
+          borderColor: isFocused ? theme.border : 'transparent',
+          borderWidth: isFocused ? StyleSheet.hairlineWidth : 0,
+        },
       ]}
     >
       <Search size={20} color={theme.textSecondary} />
@@ -39,6 +45,8 @@ export function SearchInput({
         placeholder={placeholder}
         placeholderTextColor={theme.textSecondary}
         onSubmitEditing={onSubmit}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
         returnKeyType="search"
         autoCapitalize="none"
       />
@@ -57,8 +65,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 12,
     gap: 8,
   },
   input: {

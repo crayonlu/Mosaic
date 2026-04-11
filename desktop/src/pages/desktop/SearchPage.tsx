@@ -4,7 +4,6 @@ import { SearchFilters } from '@/components/common/SearchFilters'
 import { SearchInput } from '@/components/common/SearchInput'
 import { SearchResults } from '@/components/common/SearchResults'
 import { TagCloud } from '@/components/common/TagCloud'
-import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import type { MemoWithResources } from '@mosaic/api'
 import { useMemoTags, useSearchMemos } from '@mosaic/api'
@@ -71,8 +70,7 @@ export default function SearchPage() {
   }
 
   return (
-    <DeskTopLayout className="relative">
-      <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col">
         <div className="bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
           <div className="flex items-center gap-4 px-6 pb-4 border-b">
             <div className="flex-1 max-w-2xl">
@@ -120,7 +118,7 @@ export default function SearchPage() {
               }
             />
           ) : (
-            <div className="p-6">
+            <div className="py-4">
               <SearchResults
                 results={results}
                 query={deferredQuery}
@@ -138,6 +136,5 @@ export default function SearchPage() {
           onDelete={handleMemoDelete}
         />
       </div>
-    </DeskTopLayout>
   )
 }

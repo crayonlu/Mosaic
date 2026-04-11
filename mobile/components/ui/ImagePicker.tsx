@@ -105,8 +105,8 @@ export function ImagePicker({
             style={[
               styles.editAddButton,
               {
-                backgroundColor: theme.surface,
-                borderColor: theme.border,
+                backgroundColor: theme.surfaceMuted,
+                borderColor: 'transparent',
               },
             ]}
             onPress={pickImage}
@@ -185,14 +185,13 @@ const styles = StyleSheet.create({
   },
   addButton: {
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -225,7 +224,7 @@ const styles = StyleSheet.create({
   editImageContainer: {
     width: 80,
     height: 80,
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -243,7 +242,7 @@ const styles = StyleSheet.create({
     right: 4,
     width: 20,
     height: 20,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
@@ -251,8 +250,7 @@ const styles = StyleSheet.create({
   editAddButton: {
     width: 80,
     height: 80,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },

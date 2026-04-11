@@ -14,6 +14,8 @@ interface LoadingProps {
 
 export function Loading({ size = 'large', text, fullScreen = false }: LoadingProps) {
   const { theme } = useThemeStore()
+  const textSize = theme.typography?.body ?? 14
+  const textMarginTop = theme.spacingScale?.medium ?? 12
 
   return (
     <View
@@ -26,7 +28,20 @@ export function Loading({ size = 'large', text, fullScreen = false }: LoadingPro
       ]}
     >
       <ActivityIndicator size={size} color={theme.primary} />
-      {text && <Text style={[styles.text, { color: theme.textSecondary }]}>{text}</Text>}
+      {text && (
+        <Text
+          style={[
+            styles.text,
+            {
+              color: theme.textSecondary,
+              fontSize: textSize,
+              marginTop: textMarginTop,
+            },
+          ]}
+        >
+          {text}
+        </Text>
+      )}
     </View>
   )
 }
@@ -40,7 +55,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   text: {
-    marginTop: 12,
-    fontSize: 14,
+    textAlign: 'center',
   },
 })

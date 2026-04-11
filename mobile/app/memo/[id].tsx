@@ -1,12 +1,9 @@
+import { FullScreenEditor } from '@/components/editor/FullScreenEditor'
 import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
-import { TextEditor } from '@/components/editor/TextEditor'
-import { TagInput } from '@/components/tag/TagInput'
-import { Button, DraggableImageGrid, Loading, toast } from '@/components/ui'
+import { DraggableImageGrid, Loading, toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
-import { useAISummary } from '@/hooks/useAISummary'
 import { useConnection } from '@/hooks/useConnection'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { createSelectedMediaItems, uploadSelectedMedia } from '@/lib/media/upload'
 import { useDeleteMemo, useMemo as useQueryMemo, useUpdateMemo } from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { stringUtils } from '@/lib/utils'
@@ -14,8 +11,8 @@ import { useCacheStore } from '@/stores/cacheStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type ResourceResponse } from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
-import { ArrowLeft, ImagePlus, Sparkles } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ArrowLeft } from 'lucide-react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function MemoDetailScreen() {
@@ -23,34 +20,15 @@ export default function MemoDetailScreen() {
   const { theme } = useThemeStore()
   const { canUseNetwork } = useConnection()
   const handleError = useErrorHandler()
-  const {
-    summary: aiSummary,
-    loading: aiSummaryLoading,
-    summarize,
-    clear: clearAISummary,
-    error: aiSummaryError,
-    disabled: aiSummaryDisabled,
-  } = useAISummary()
   const { data: memo, isLoading } = useQueryMemo(id || '')
   const { mutateAsync: updateMemo, isPending: isUpdating } = useUpdateMemo()
   const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
   const { isReady: isCacheReady } = useCacheStore()
 
-  const [editing, setEditing] = useState(false)
-  const [content, setContent] = useState('')
-  const [tags, setTags] = useState<string[]>([])
+  const [isEditorVisible, setIsEditorVisible] = useState(false)
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
-  const [editingResources, setEditingResources] = useState<ResourceResponse[]>([])
-  const [uploading, setUploading] = useState(false)
-  const [uploadProgressItems, setUploadProgressItems] = useState<
-    { id: string; name: string; type: 'image' | 'video'; progress: number }[]
-  >([])
-  const wasEditingRef = useRef(false)
-  const uploadProgressById = Object.fromEntries(
-    uploadProgressItems.map(item => [item.id, item.progress])
-  )
 
-  const isPending = isUpdating || isDeleting || uploading
+  const isPending = isUpdating || isDeleting
 
   useEffect(() => {
     const loadAuthHeaders = async () => {
@@ -60,14 +38,6 @@ export default function MemoDetailScreen() {
 
     loadAuthHeaders()
   }, [])
-
-  useEffect(() => {
-    if (editing && !wasEditingRef.current && memo?.resources) {
-      setEditingResources(memo.resources)
-    }
-
-    wasEditingRef.current = editing
-  }, [editing, memo?.resources])
 
   const toMediaItem = useCallback(
     (resource: ResourceResponse): MediaGridItem => ({
@@ -80,108 +50,42 @@ export default function MemoDetailScreen() {
     []
   )
 
-  const editingMediaItems = useMemo(
-    () => editingResources.map(toMediaItem),
-    [editingResources, toMediaItem]
-  )
-
   const memoMediaItems = useMemo(
     () => (memo?.resources ?? []).map(toMediaItem),
     [memo?.resources, toMediaItem]
   )
 
-  const handleMediaChange = useCallback(
-    (nextItems: MediaGridItem[]) => {
-      const nextIds = new Set(nextItems.map(item => item.key))
-      const nextResources = nextItems
-        .map(item => editingResources.find(resource => resource.id === item.key))
-        .filter((resource): resource is ResourceResponse => Boolean(resource))
-
-      const removedResources = editingResources.filter(resource => !nextIds.has(resource.id))
-
-      setEditingResources(nextResources)
-
-      if (removedResources.length > 0 && canUseNetwork) {
-        void (async () => {
-          for (const resource of removedResources) {
-            try {
-              await resourcesApi.delete(resource.id)
-            } catch (error) {
-              handleError(error)
-              toast.error('错误', '删除媒体失败')
-            }
-          }
-        })()
-      }
-    },
-    [editingResources, canUseNetwork, handleError]
-  )
-
-  const selectMedia = async () => {
-    const { launchImageLibraryAsync } = await import('expo-image-picker')
-    const result = await launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
-      allowsMultipleSelection: true,
-      quality: 0.8,
-    })
-
-    if (result.canceled) {
-      return
-    }
-
-    const remainingSlots = Math.max(0, 9 - editingResources.length)
-    const selectedItems = await createSelectedMediaItems(result.assets.slice(0, remainingSlots))
-
-    if (!memo || !canUseNetwork || selectedItems.length === 0) {
-      return
-    }
-
-    setUploadProgressItems(
-      selectedItems.map(item => ({
-        id: item.key,
-        name: item.filename,
-        type: item.type,
-        progress: 0,
-      }))
-    )
-
-    setUploading(true)
-    try {
-      const uploadedResources = await uploadSelectedMedia(selectedItems, {
-        memoId: memo.id,
-        onFileProgress: (item, progress) => {
-          setUploadProgressItems(prev =>
-            prev.map(entry =>
-              entry.id === item.key ? { ...entry, progress: progress.percent } : entry
-            )
-          )
-        },
-      })
-
-      setEditingResources(prev => [...prev, ...uploadedResources].slice(0, 9))
-    } catch (error) {
-      handleError(error)
-      toast.error('错误', '上传媒体失败')
-    } finally {
-      setUploading(false)
-      setUploadProgressItems([])
-    }
-  }
-
-  const handleSave = useCallback(async () => {
+  const handleEditSubmit = useCallback(async (
+    content: string,
+    tags: string[],
+    resourceIds: string[],
+    aiSummary?: string
+  ) => {
     if (!memo || !canUseNetwork || isPending) return
 
     try {
+      const existingResourceIds = memo.resources.map(resource => resource.id)
+      const removedResourceIds = existingResourceIds.filter(id => !resourceIds.includes(id))
+
       await updateMemo({
         id: memo.id,
         data: {
           content: content.trim(),
           tags,
-          resourceIds: editingResources.map(resource => resource.id),
-          aiSummary: aiSummary || undefined,
+          resourceIds,
+          aiSummary,
         },
       })
-      setEditing(false)
+
+      for (const resourceId of removedResourceIds) {
+        try {
+          await resourcesApi.delete(resourceId)
+        } catch {
+          // Best-effort cleanup: memo update has succeeded even if resource delete fails.
+        }
+      }
+
+      setIsEditorVisible(false)
       toast.success('成功', '已更新')
     } catch (error) {
       handleError(error)
@@ -192,11 +96,7 @@ export default function MemoDetailScreen() {
     canUseNetwork,
     isPending,
     updateMemo,
-    content,
-    tags,
-    editingResources,
     handleError,
-    aiSummary,
   ])
 
   const handleDelete = useCallback(() => {
@@ -241,150 +141,63 @@ export default function MemoDetailScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <TouchableOpacity onPress={router.back} style={styles.headerButton}>
+        <TouchableOpacity onPress={router.back} style={styles.backButton}>
           <ArrowLeft size={24} color={theme.text} />
         </TouchableOpacity>
-        {!editing ? (
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <TouchableOpacity
-              onPress={() => {
-                setEditing(true)
-                setContent(memo.content)
-                setTags(memo.tags || [])
-              }}
-              style={styles.headerButton}
-            >
-              <Text style={[styles.editButtonText, { color: theme.primary }]}>编辑</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleDelete} style={styles.headerButton}>
-              <Text style={[styles.editButtonText, { color: theme.primary }]}>删除</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              onPress={() => summarize(content)}
-              style={styles.headerButton}
-              disabled={aiSummaryDisabled || aiSummaryLoading}
-            >
-              {aiSummaryLoading ? (
-                <Loading size="small" />
-              ) : (
-                <Sparkles
-                  size={20}
-                  color={aiSummaryDisabled ? theme.textSecondary : theme.primary}
-                />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setEditing(false)} style={styles.headerButton}>
-              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>取消</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} style={styles.headerButton} disabled={isPending}>
-              <Text
-                style={[
-                  styles.cancelButtonText,
-                  { color: isPending ? theme.textSecondary : theme.primary },
-                ]}
-              >
-                保存
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={() => setIsEditorVisible(true)}
+            disabled={isPending}
+            style={[styles.headerAction, { opacity: isPending ? theme.state.disabledOpacity : 1 }]}
+          >
+            <Text style={[styles.headerActionText, { color: theme.textSecondary }]}>编辑</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleDelete}
+            disabled={isPending}
+            style={[styles.headerAction, { opacity: isPending ? theme.state.disabledOpacity : 1 }]}
+          >
+            <Text style={[styles.headerActionText, { color: theme.textSecondary }]}>删除</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.content}>
-        {editing ? (
-          <>
-            {(aiSummaryLoading || aiSummary) && (
-              <View style={styles.aiSummaryContainer}>
-                <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
-                <Text style={[styles.aiSummaryText, { color: theme.textSecondary }]}>
-                  {aiSummaryLoading ? '生成中...' : aiSummary}
-                </Text>
-              </View>
-            )}
-
-            {aiSummaryError && (
-              <View style={styles.aiSummaryContainer}>
-                <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
-                <Text style={[styles.aiSummaryText, { color: '#FF3B30' }]}>{aiSummaryError}</Text>
-              </View>
-            )}
-
-            <View style={{ minHeight: 150 }}>
-              <TextEditor
-                value={content}
-                onChange={setContent}
-                placeholder="What's on your mind?"
-                editable={true}
-              />
-            </View>
-            <View style={{ padding: 16, paddingBottom: 0 }}>
-              <Text style={{ color: theme.textSecondary, marginBottom: 8 }}>标签</Text>
-              <TagInput
-                tags={tags}
-                onTagsChange={setTags}
-                content={content}
-                placeholder="添加标签..."
-              />
-            </View>
-            <View style={styles.imageUploadContainer}>
-              <View style={styles.imageUploadHeader}>
-                <Text style={{ color: theme.textSecondary }}>媒体</Text>
-                <Button
-                  title="添加"
-                  onPress={selectMedia}
-                  variant="ghost"
-                  size="small"
-                  leftIcon={<ImagePlus size={16} color={theme.text} />}
-                  disabled={!canUseNetwork || editingResources.length >= 9 || uploading}
-                />
-              </View>
-              {editingMediaItems.length > 0 && (
-                <DraggableImageGrid
-                  key={`edit-grid-${editingMediaItems.map(item => item.key).join('|')}`}
-                  items={editingMediaItems}
-                  authHeaders={authHeaders}
-                  uploadProgressById={uploadProgressById}
-                  onItemsChange={handleMediaChange}
-                />
-              )}
-            </View>
-          </>
-        ) : (
-          <>
-            {memo.aiSummary && (
-              <View style={styles.aiSummaryContainer}>
-                <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
-                <Text style={[styles.aiSummaryText, { color: theme.textSecondary }]}>
-                  {memo.aiSummary}
-                </Text>
-              </View>
-            )}
-
-            <View style={{ minHeight: 150, padding: 16 }}>
-              <MarkdownRenderer content={memo.content} />
-            </View>
-            {memo.resources.length > 0 && (
-              <View style={styles.resourcesContainer}>
-                <DraggableImageGrid
-                  items={memoMediaItems}
-                  authHeaders={authHeaders}
-                  draggable={false}
-                  isCacheLoading={!isCacheReady}
-                />
-              </View>
-            )}
-          </>
+        {memo.aiSummary && (
+          <View
+            style={[
+              styles.aiSummaryContainer,
+              {
+                backgroundColor: theme.semantic.infoSoft,
+                borderRadius: theme.radius.medium,
+              },
+            ]}
+          >
+            <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
+            <Text style={[styles.aiSummaryText, { color: theme.textSecondary }]}>{memo.aiSummary}</Text>
+          </View>
         )}
 
-        {!editing && memo.tags.length > 0 && (
+        <View style={{ minHeight: 150, padding: 16 }}>
+          <MarkdownRenderer content={memo.content} />
+        </View>
+        {memo.resources.length > 0 && (
+          <View style={styles.resourcesContainer}>
+            <DraggableImageGrid
+              items={memoMediaItems}
+              authHeaders={authHeaders}
+              draggable={false}
+              isCacheLoading={!isCacheReady}
+            />
+          </View>
+        )}
+
+        {memo.tags.length > 0 && (
           <View style={styles.tagsContainer}>
             {memo.tags.map((tag, index) => (
               <View
                 key={index}
-                style={[styles.tag, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                style={[styles.tag, { backgroundColor: theme.surfaceMuted }]}
               >
                 <Text style={[styles.tagText, { color: theme.textSecondary }]}>#{tag}</Text>
               </View>
@@ -392,19 +205,53 @@ export default function MemoDetailScreen() {
           </View>
         )}
 
-        {!editing && (
-          <View style={styles.metadata}>
-            <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
-              创建于 {stringUtils.formatDateTime(memo.createdAt)}
+        <View style={styles.metadata}>
+          <View
+            style={[
+              styles.metadataChip,
+              {
+                backgroundColor: theme.surfaceMuted,
+                borderColor: theme.border,
+              },
+            ]}
+          >
+            <Text style={[styles.metadataLabel, { color: theme.textSecondary }]}>创建</Text>
+            <Text style={[styles.metadataValue, { color: theme.textSecondary }]}>
+              {stringUtils.formatDateTime(memo.createdAt)}
             </Text>
-            {memo.updatedAt > memo.createdAt && (
-              <Text style={[styles.metadataText, { color: theme.textSecondary }]}>
-                更新于 {stringUtils.formatDateTime(memo.updatedAt)}
-              </Text>
-            )}
           </View>
-        )}
+          {memo.updatedAt > memo.createdAt && (
+            <View
+              style={[
+                styles.metadataChip,
+                {
+                  backgroundColor: theme.surfaceMuted,
+                  borderColor: theme.border,
+                },
+              ]}
+            >
+              <Text style={[styles.metadataLabel, { color: theme.textSecondary }]}>更新</Text>
+              <Text style={[styles.metadataValue, { color: theme.textSecondary }]}>
+                {stringUtils.formatDateTime(memo.updatedAt)}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
+
+      <FullScreenEditor
+        visible={isEditorVisible}
+        title="编辑 Memo"
+        submitLabel="保存"
+        initialContent={memo.content}
+        initialTags={memo.tags}
+        initialAISummary={memo.aiSummary || undefined}
+        initialMediaItems={memoMediaItems}
+        initialResourceIds={memo.resources.map(resource => resource.id)}
+        uploadMemoId={memo.id}
+        onClose={() => setIsEditorVisible(false)}
+        onSubmit={handleEditSubmit}
+      />
     </View>
   )
 }
@@ -427,23 +274,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    paddingVertical: 12,
     paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerButton: {
-    padding: 8,
+  backButton: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 14,
   },
-  editButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+  headerAction: {
+    height: 32,
+    paddingHorizontal: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  cancelButtonText: {
+  headerActionText: {
     fontSize: 15,
+    fontWeight: '500',
   },
   content: {
     flex: 1,
@@ -458,8 +311,7 @@ const styles = StyleSheet.create({
   tag: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 999,
   },
   tagText: {
     fontSize: 13,
@@ -468,12 +320,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
-    backgroundColor: 'rgba(120, 120, 128, 0.1)',
-    borderRadius: 8,
   },
   aiSummaryTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 4,
   },
   aiSummaryText: {
@@ -485,25 +335,28 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   metadata: {
-    padding: 16,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.05)',
-    marginTop: 4,
-  },
-  metadataText: {
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  imageUploadContainer: {
-    padding: 16,
-    paddingTop: 8,
-    minHeight: 100,
-  },
-  imageUploadHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 14,
+  },
+  metadataChip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  metadataLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 0.2,
+  },
+  metadataValue: {
+    fontSize: 12,
   },
 })

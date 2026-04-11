@@ -9,8 +9,9 @@ import { memosApi } from '@mosaic/api'
 import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { router } from 'expo-router'
+import { Check, X } from 'lucide-react-native'
 import { useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function ArchiveScreen() {
   const { theme } = useThemeStore()
@@ -88,16 +89,60 @@ export default function ArchiveScreen() {
     setSelectedMemoIds([])
   }
 
+  const selectedCount = selectedMemoIds.length
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ArchiveDateFilter
-        selectedDate={selectedDate}
-        onDateSelect={setSelectedDate}
-        isArchiveMode={isArchiveMode}
-        hasSelection={selectedMemoIds.length > 0}
-        showAddButton={shouldShowAddButton}
-        onArchivePress={handleArchivePress}
-      />
+      <View style={styles.topArea}>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>归档</Text>
+            <Text style={[styles.headerSubTitle, { color: theme.textSecondary }]}>整理今天的记录，沉淀成日记{isArchiveMode ? ` · 已选 ${selectedCount} 条` : ''}</Text>
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.archiveActionButton,
+              {
+                backgroundColor:
+                  selectedCount > 0 || shouldShowAddButton ? theme.primary : theme.surfaceMuted,
+                borderRadius: theme.radius.medium,
+              },
+            ]}
+            onPress={handleArchivePress}
+            activeOpacity={theme.state.pressedOpacity}
+          >
+            {selectedCount > 0 || shouldShowAddButton ? (
+              <Check size={18} color={theme.onPrimary} />
+            ) : isArchiveMode ? (
+              <X size={18} color={theme.textSecondary} />
+            ) : null}
+            <Text
+              style={[
+                styles.archiveActionText,
+                {
+                  color:
+                    selectedCount > 0 || shouldShowAddButton ? theme.onPrimary : theme.textSecondary,
+                },
+              ]}
+            >
+              {shouldShowAddButton
+                ? '添加'
+                : selectedCount > 0
+                  ? '归档'
+                  : isArchiveMode
+                    ? '完成'
+                    : '归档'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <ArchiveDateFilter
+          selectedDate={selectedDate}
+          onDateSelect={setSelectedDate}
+        />
+      </View>
+
       <MemoFeed
         targetDate={selectedDate}
         onMemoPress={handleMemoPress}
@@ -121,5 +166,36 @@ export default function ArchiveScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  topArea: {
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  headerRow: {
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  headerSubTitle: {
+    fontSize: 12,
+  },
+  archiveActionButton: {
+    minHeight: 40,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  archiveActionText: {
+    fontSize: 15,
+    fontWeight: '500',
   },
 })

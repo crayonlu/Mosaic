@@ -2,20 +2,20 @@ import { useThemeStore } from '@/stores/themeStore'
 import { X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  FlatList,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
+    FlatList,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+    useWindowDimensions,
+    type NativeScrollEvent,
+    type NativeSyntheticEvent,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { withAlpha } from './mediaPreviewUtils'
 import { ImagePreviewContent } from './ImagePreviewContent'
+import { withAlpha } from './mediaPreviewUtils'
 import type { ResolvedMediaSource } from './types'
 import { VideoPreviewContent } from './VideoPreviewContent'
 
@@ -104,7 +104,7 @@ export function MediaPreviewModal({ items, initialIndex, onRequestClose }: Media
         <View style={styles.chromeLayer} pointerEvents="box-none">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="关闭媒体预览"
+            accessibilityLabel="关闭图像预览"
             onPress={onRequestClose}
             style={({ pressed }) => [
               styles.closeButton,
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   counterText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     fontVariant: ['tabular-nums'],
   },
 })

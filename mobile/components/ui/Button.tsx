@@ -1,13 +1,13 @@
 import { useTheme } from '@/hooks/useTheme'
 import React, { JSX } from 'react'
 import {
-  ActivityIndicator,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ViewStyle,
+    ActivityIndicator,
+    StyleProp,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    ViewStyle,
 } from 'react-native'
 
 export interface ButtonProps {
@@ -36,38 +36,39 @@ export function Button({
   rightIcon,
 }: ButtonProps) {
   const { theme } = useTheme()
+  const isInactive = disabled || loading
 
   const getBackgroundColor = () => {
-    if (disabled || loading) {
+    if (isInactive) {
       return variant === 'ghost' ? 'transparent' : theme.border
     }
     switch (variant) {
       case 'primary':
         return theme.primary
       case 'secondary':
-        return theme.border
+        return theme.surfaceMuted
       case 'ghost':
         return 'transparent'
       case 'danger':
-        return theme.primary
+        return theme.error
       default:
         return theme.primary
     }
   }
 
   const getTextColor = () => {
-    if (disabled || loading) {
+    if (isInactive) {
       return theme.textSecondary
     }
     switch (variant) {
       case 'primary':
-        return '#FFFFFF'
+        return theme.onPrimary
       case 'secondary':
         return theme.text
       case 'ghost':
         return theme.primary
       case 'danger':
-        return '#FFFFFF'
+        return theme.onPrimary
       default:
         return theme.text
     }
@@ -76,40 +77,48 @@ export function Button({
   const getPaddingVertical = () => {
     switch (size) {
       case 'small':
-        return 6
+        return theme.spacingScale.small
       case 'medium':
-        return 8
+        return theme.spacingScale.medium
       case 'large':
-        return 10
+        return theme.spacingScale.large
       default:
-        return 8
+        return theme.spacingScale.medium
     }
   }
 
   const getPaddingHorizontal = () => {
     switch (size) {
       case 'small':
-        return leftIcon || rightIcon ? 10 : 14
+        return leftIcon || rightIcon ? theme.spacingScale.medium : theme.spacingScale.large
       case 'medium':
-        return leftIcon || rightIcon ? 14 : 18
+        return leftIcon || rightIcon ? theme.spacingScale.large : theme.spacingScale.xlarge
       case 'large':
-        return leftIcon || rightIcon ? 16 : 22
+        return leftIcon || rightIcon ? theme.spacingScale.xlarge : theme.spacingScale.xxlarge
       default:
-        return leftIcon || rightIcon ? 14 : 18
+        return leftIcon || rightIcon ? theme.spacingScale.large : theme.spacingScale.xlarge
     }
   }
 
   const getFontSize = () => {
     switch (size) {
       case 'small':
-        return 13
+        return theme.typography.caption
       case 'medium':
-        return 15
+        return theme.typography.body
       case 'large':
-        return 17
+        return theme.typography.bodyLarge
       default:
-        return 15
+        return theme.typography.body
     }
+  }
+
+  const getBorderColor = () => {
+    return 'transparent'
+  }
+
+  const getBorderWidth = () => {
+    return 0
   }
 
   return (
@@ -121,13 +130,16 @@ export function Button({
           paddingVertical: getPaddingVertical(),
           paddingHorizontal: getPaddingHorizontal(),
           width: fullWidth ? '100%' : undefined,
-          opacity: disabled || loading ? 0.4 : 1,
+          borderRadius: theme.radius.medium,
+          borderColor: getBorderColor(),
+          borderWidth: getBorderWidth(),
+          opacity: isInactive ? theme.state.disabledOpacity : 1,
         },
         style,
       ]}
       onPress={onPress}
-      disabled={disabled || loading}
-      activeOpacity={0.7}
+      disabled={isInactive}
+      activeOpacity={theme.state.pressedOpacity}
     >
       {loading ? (
         <ActivityIndicator color={getTextColor()} size="small" />
@@ -160,7 +172,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
     minHeight: 40,
   },
   contentContainer: {
@@ -170,7 +181,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   text: {
-    fontWeight: '600',
+    fontWeight: '500',
     textAlign: 'center',
   },
 })

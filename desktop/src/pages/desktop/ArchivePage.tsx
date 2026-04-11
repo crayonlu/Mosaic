@@ -2,7 +2,6 @@ import { ArchiveDialog } from '@/components/archive/ArchiveDialog'
 import { MemoCard } from '@/components/archive/MemoCard'
 import { EmptyState } from '@/components/common/EmptyState'
 import { MemoDetail } from '@/components/common/MemoDetail'
-import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar as CalendarComponent } from '@/components/ui/calendar'
@@ -13,12 +12,12 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from '@/hooks/useToast'
 import type { MemoWithResources, MoodKey } from '@mosaic/api'
 import {
-  useArchiveMemo,
-  useCreateOrUpdateDiary,
-  useDeleteMemo,
-  useDiary,
-  useMemoByDate,
-  useUnarchiveMemo,
+    useArchiveMemo,
+    useCreateOrUpdateDiary,
+    useDeleteMemo,
+    useDiary,
+    useMemoByDate,
+    useUnarchiveMemo,
 } from '@mosaic/api'
 import { extractTextFromHtml } from '@mosaic/utils'
 import dayjs from 'dayjs'
@@ -209,8 +208,7 @@ export default function ArchivePage() {
   }
 
   return (
-    <DeskTopLayout className="relative">
-      <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col">
         <div className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
           <div className="flex items-center justify-between px-6 pb-4 pt-2">
             <div className="flex items-center gap-4">
@@ -406,6 +404,5 @@ export default function ArchivePage() {
           onDelete={handleMemoDelete}
         />
       </div>
-    </DeskTopLayout>
   )
 }
