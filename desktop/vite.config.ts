@@ -9,9 +9,11 @@ const host = process.env.TAURI_DEV_HOST
 export default defineConfig(async () => ({
   plugins: [react(), tailwindcss()],
   resolve: {
+    dedupe: ['react', 'react-dom', '@tanstack/react-query'],
     alias: {
       '@': new URL('./src', import.meta.url).pathname,
       src: new URL('./src', import.meta.url).pathname,
+      '@mosaic/api': path.resolve(__dirname, '../packages/api/src/index.ts'),
       '@mosaic/cache': path.resolve(__dirname, '../packages/cache/src/index.ts'),
     },
   },

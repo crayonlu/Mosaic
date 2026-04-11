@@ -6,19 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
-import { useServerConfig } from '@/hooks/useServerConfig'
+import { notifyServerConfigUpdated, useServerConfig } from '@/hooks/useServerConfig'
 import { useTheme } from '@/hooks/useTheme'
 import { toast } from '@/hooks/useToast'
 import {
-    mapServerConnectionError,
-    normalizeServerUrlInput,
-    validateServerUrl,
+  mapServerConnectionError,
+  normalizeServerUrlInput,
+  validateServerUrl,
 } from '@/lib/serverConnectionError'
 import { initSharedApiClient } from '@/lib/sharedApi'
 import type { ServerConfig } from '@/types/settings'
@@ -118,9 +118,9 @@ export default function SetupWizard() {
       toast.success('服务器配置已保存')
 
       await checkConfig()
+      notifyServerConfigUpdated()
 
-      window.location.reload()
-      navigate('/')
+      navigate('/', { replace: true })
     } catch (error: unknown) {
       const presentation = mapServerConnectionError(error, 'login')
       setConnectionStatus('error')
