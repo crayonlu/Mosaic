@@ -68,6 +68,9 @@ export default function HomeScreen() {
   }
 
   const handleDateClick = (date: string) => {
+    if (__DEV__) {
+      console.log('[HomeScreen] navigate from heatmap', { date })
+    }
     router.push({ pathname: '/diaries', params: { date } })
   }
 
@@ -86,7 +89,10 @@ export default function HomeScreen() {
       </View>
 
       <KeyboardAvoidProvider
-        style={[styles.inputContainer, { backgroundColor: theme.background }]}
+        style={[
+          styles.inputContainer,
+          { backgroundColor: theme.background, borderColor: theme.border },
+        ]}
         extraBottom={-TAB_BAR_HEIGHT}
       >
         <MemoInput onSubmit={handleSubmit} disabled={!canUseNetwork || isPending} />
@@ -108,11 +114,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   inputContainer: {
-    padding: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.05)',
+    paddingHorizontal: 8,
+    paddingTop: 6,
+    paddingBottom: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
 })

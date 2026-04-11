@@ -1,9 +1,11 @@
+import { mapServerConnectionError } from '@/lib/errors/serverConnection'
 import { create } from 'zustand'
 import { useAuthStore } from './authStore'
 
 interface ConnectionState {
   isConnected: boolean
   isServerReachable: boolean
+  lastError: string | null
   lastConnectedAt: string | null
   checkInterval: number
 }
@@ -20,6 +22,7 @@ interface ConnectionStore extends ConnectionState {
 export const useConnectionStore = create<ConnectionStore>((set, get) => ({
   isConnected: true,
   isServerReachable: true,
+  lastError: null,
   lastConnectedAt: null,
   checkInterval: 30000,
 
@@ -31,7 +34,7 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
   },
 
   setServerReachable: reachable => {
-    set({ isServerReachable: reachable })
+    set({ isServerReachable: reachable, lastError: reachable ? null : get().lastError })
     if (reachable) {
       get().updateLastConnectedAt()
     }
@@ -51,26 +54,42 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
   checkServerReachability: async () => {
     const serverUrl = useAuthStore.getState().serverUrl
     if (!serverUrl) {
-      set({ isServerReachable: false, isConnected: false })
+      set({
+        isServerReachable: false,
+        isConnected: false,
+        lastError: '未检测到服务器配置，请先完成初始化设置。',
+      })
       return
     }
 
     const normalizedUrl = serverUrl.replace(/\/$/, '')
     const healthUrl = `${normalizedUrl}/health`
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
+
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000)
       const response = await fetch(healthUrl, {
         method: 'GET',
         signal: controller.signal,
       })
-      clearTimeout(timeoutId)
-      get().setServerReachable(response.ok)
-      get().setConnected(response.ok)
+
+      if (!response.ok) {
+        const presentation = mapServerConnectionError(
+          { status: response.status, error: `Health check failed: HTTP ${response.status}` },
+          'initialize'
+        )
+        set({ isServerReachable: false, isConnected: false, lastError: presentation.message })
+        return
+      }
+
+      set({ isServerReachable: true, isConnected: true, lastError: null })
+      get().updateLastConnectedAt()
     } catch (error: any) {
-      console.log('error', error)
-      get().setServerReachable(false)
-      get().setConnected(false)
+      console.log('checkServerReachability error', error)
+      const presentation = mapServerConnectionError(error, 'initialize')
+      set({ isServerReachable: false, isConnected: false, lastError: presentation.message })
+    } finally {
+      clearTimeout(timeoutId)
     }
   },
 }))

@@ -1,4 +1,3 @@
-import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { AISettings } from '@/components/settings/AISettings'
 import { AppSettings } from '@/components/settings/AppSettings'
 import { StorageSettings } from '@/components/settings/StorageSettings'
@@ -8,15 +7,13 @@ import { UserSettings } from '@/components/settings/UserSettings'
 
 export default function SettingsPage() {
   return (
-    <DeskTopLayout>
-      <div className="max-w-2xl mx-auto space-y-4">
-        <SyncStatusDisplay />
-        <UserSettings />
-        <AppSettings />
-        <StorageSettings />
-        <SystemSettings />
-        <AISettings />
-      </div>
-    </DeskTopLayout>
+    <div className="max-w-2xl mx-auto space-y-4">
+      <SyncStatusDisplay />
+      <UserSettings />
+      <AppSettings />
+      <StorageSettings />
+      <SystemSettings />
+      <AISettings />
+    </div>
   )
 }

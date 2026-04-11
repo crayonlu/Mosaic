@@ -6,8 +6,12 @@ import type { MediaCacheMaps, MediaGridItem, ResolvedMediaSource } from './types
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const GRID_GAP = 0
 
-export function getMediaTileSize(count: number) {
-  const containerWidth = SCREEN_WIDTH - 24
+export function getMediaTileSize(count: number, measuredContainerWidth?: number) {
+  const safeMeasuredWidth =
+    typeof measuredContainerWidth === 'number' && measuredContainerWidth > 0
+      ? measuredContainerWidth
+      : undefined
+  const containerWidth = safeMeasuredWidth ?? SCREEN_WIDTH - 24
   if (count === 1) {
     return { width: containerWidth, height: 300 }
   }

@@ -9,6 +9,7 @@ function buildHeatmapData(
   startDate: string,
   endDate: string
 ): HeatMapDataExtended {
+  const neutralColor = getMoodColor('neutral')
   const dateInfoMap = new Map<string, { count: number; moodKey?: string }>()
   rawData.dates?.forEach((date: string, index: number) => {
     const moodKey = rawData.moods?.[index] ?? undefined
@@ -30,9 +31,9 @@ function buildHeatmapData(
     const count = info?.count || 0
     const moodKey = info?.moodKey
 
-    let color = '#ebedf0'
+    let color = neutralColor
     if (count > 0 && moodKey) {
-      color = getMoodColor(moodKey) || '#ebedf0'
+      color = getMoodColor(moodKey) || neutralColor
     }
 
     cells.push({

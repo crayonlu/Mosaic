@@ -1,44 +1,26 @@
+import { DatePickerSheet } from '@/components/ui'
 import { useThemeStore } from '@/stores/themeStore'
-import DateTimePicker from '@react-native-community/datetimepicker'
 import dayjs from 'dayjs'
-import { Calendar, Check, X } from 'lucide-react-native'
+import { Calendar, X } from 'lucide-react-native'
 import { useState } from 'react'
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface ArchiveDateFilterProps {
   selectedDate?: string
   onDateSelect: (date?: string) => void
-  isArchiveMode: boolean
-  hasSelection: boolean
-  showAddButton?: boolean
-  onArchivePress: () => void
 }
 
 export function ArchiveDateFilter({
   selectedDate,
   onDateSelect,
-  isArchiveMode,
-  hasSelection,
-  showAddButton,
-  onArchivePress,
 }: ArchiveDateFilterProps) {
   const { theme } = useThemeStore()
   const [showDatePicker, setShowDatePicker] = useState(false)
-  const [tempDate, setTempDate] = useState<Date>(selectedDate ? new Date(selectedDate) : new Date())
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return ''
     const date = new Date(dateString)
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-  }
-
-  const onDateChange = (event: { type: string }, date?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios')
-    if (date && event.type !== 'dismissed') {
-      const dateString = dayjs(date).format('YYYY-MM-DD')
-      setTempDate(date)
-      onDateSelect(dateString)
-    }
   }
 
   const handleClearDate = () => {
@@ -52,8 +34,9 @@ export function ArchiveDateFilter({
           style={[
             styles.filterButton,
             {
-              backgroundColor: theme.surface,
-              borderColor: selectedDate ? theme.primary : theme.border,
+              backgroundColor: selectedDate ? theme.semantic.infoSoft : theme.surfaceMuted,
+              borderColor: 'transparent',
+              borderRadius: theme.radius.medium,
             },
           ]}
           onPress={() => setShowDatePicker(true)}
@@ -76,40 +59,17 @@ export function ArchiveDateFilter({
             </TouchableOpacity>
           )}
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.archiveButton,
-            { backgroundColor: hasSelection || showAddButton ? theme.primary : theme.surface },
-            { borderColor: hasSelection || showAddButton ? theme.primary : theme.border },
-          ]}
-          onPress={onArchivePress}
-        >
-          {hasSelection || showAddButton ? (
-            <Check size={18} color="#FFFFFF" />
-          ) : isArchiveMode ? (
-            <X size={18} color={theme.textSecondary} />
-          ) : null}
-          <Text
-            style={[
-              styles.archiveButtonText,
-              { color: hasSelection || showAddButton ? '#FFFFFF' : theme.textSecondary },
-            ]}
-          >
-            {showAddButton ? '添加' : hasSelection ? '确定' : isArchiveMode ? '取消' : '归档'}
-          </Text>
-        </TouchableOpacity>
       </View>
 
-      {showDatePicker && (
-        <DateTimePicker
-          value={tempDate}
-          mode="date"
-          display="default"
-          onChange={onDateChange}
-          maximumDate={new Date()}
-        />
-      )}
+      <DatePickerSheet
+        visible={showDatePicker}
+        selectedDate={selectedDate}
+        maxDate={dayjs().format('YYYY-MM-DD')}
+        onSelect={onDateSelect}
+        onClear={handleClearDate}
+        onClose={() => setShowDatePicker(false)}
+        title="选择归档日期"
+      />
     </>
   )
 }
@@ -118,17 +78,14 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
+    marginBottom: 8,
     paddingHorizontal: 16,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     gap: 8,
     flex: 1,
   },
@@ -136,18 +93,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     flex: 1,
-  },
-  archiveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 6,
-  },
-  archiveButtonText: {
-    fontSize: 15,
-    fontWeight: '500',
   },
 })

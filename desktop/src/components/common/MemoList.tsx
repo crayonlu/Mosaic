@@ -1,5 +1,4 @@
-import { ResourceThumbnails } from '@/components/common/ResourceThumbnails'
-import { RichTextEditor } from '@/components/common/RichTextEditor'
+import { MemoCard } from '@/components/common/MemoCard'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import type { MemoWithResources } from '@mosaic/api'
 import { useMemoByDate, useMemos } from '@mosaic/api'
@@ -66,55 +65,7 @@ export const MemoList = forwardRef<MemoListRef, MemoListProps>(
       <div className={className}>
         <div className="space-y-2">
           {memos.map(memo => (
-            <div
-              key={memo.id}
-              className="group rounded-lg border bg-card overflow-hidden text-sm text-card-foreground transition-all cursor-pointer"
-              onClick={() => onMemoClick?.(memo)}
-            >
-              <div>
-                {memo.content ? (
-                  <RichTextEditor
-                    content={memo.content}
-                    onChange={() => {}}
-                    editable={false}
-                    className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1"
-                  />
-                ) : (
-                  <></>
-                )}
-              </div>
-              {memo.aiSummary?.trim() && (
-                <div className="px-2 py-2 border-t bg-muted/20">
-                  <div className="text-[11px] font-medium text-muted-foreground mb-1">AI摘要</div>
-                  <p className="text-xs text-muted-foreground line-clamp-2 whitespace-pre-wrap">
-                    {memo.aiSummary}
-                  </p>
-                </div>
-              )}
-              {(memo.resources.length > 0 || (memo.tags && memo.tags.length > 0)) && (
-                <div className="p-2 border-t space-y-3">
-                  {memo.resources.length > 0 && <ResourceThumbnails resources={memo.resources} />}
-
-                  {memo.tags && memo.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {memo.tags.slice(0, 3).map((tag, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs font-medium"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                      {memo.tags.length > 3 && (
-                        <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                          +{memo.tags.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <MemoCard key={memo.id} memo={memo} onClick={() => onMemoClick?.(memo)} />
           ))}
         </div>
       </div>

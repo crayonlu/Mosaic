@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   placeholder: {
     width: 40,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   cropperContainer: {
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 2,
     position: 'relative',

@@ -15,8 +15,13 @@ export default function ModalScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
-      <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+    <View style={[styles.container, { backgroundColor: theme.overlay }]}> 
+      <View
+        style={[
+          styles.modalContent,
+          { backgroundColor: theme.surface, borderRadius: theme.radius.large },
+        ]}
+      >
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <Text style={[styles.title, { color: theme.text }]}>Modal</Text>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
@@ -36,7 +41,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
     width: '85%',
@@ -48,11 +52,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   closeButton: {
     padding: 8,

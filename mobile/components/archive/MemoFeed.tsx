@@ -2,7 +2,6 @@ import { Loading } from '@/components/ui'
 import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
-import { FileX } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { MemoCard } from '../memo/MemoCard'
@@ -101,9 +100,6 @@ export function MemoFeed({
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <View style={[styles.emptyIcon, { backgroundColor: `${theme.primary}10` }]}>
-        <FileX size={48} color={theme.primary} strokeWidth={1.5} />
-      </View>
       <Text style={[styles.emptyTitle, { color: theme.text }]}>
         {targetDate ? '今天还没有记录' : '暂无Memo'}
       </Text>
@@ -164,7 +160,9 @@ export function MemoFeed({
 }
 
 const styles = StyleSheet.create({
-  listContent: {},
+  listContent: {
+    paddingBottom: 10,
+  },
   cardContent: {
     flex: 1,
   },
@@ -172,20 +170,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
+    paddingVertical: 72,
+    paddingHorizontal: 24,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontWeight: '500',
+    marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 14,
@@ -193,7 +184,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   footer: {
-    paddingVertical: 20,
+    paddingVertical: 16,
     alignItems: 'center',
   },
   footerText: {

@@ -1,17 +1,16 @@
-import { Button, Input } from '@/components/ui'
+import { Button, DatePickerSheet, Input } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
 import {
-  useCustomPushList,
-  useDeleteCustomPush,
-  useSaveCustomPush,
+    useCustomPushList,
+    useDeleteCustomPush,
+    useSaveCustomPush,
 } from '@/lib/query/hooks/useCustomPush'
 import { CustomPushData } from '@/lib/services/local-push/custom'
 import { useThemeStore } from '@/stores/themeStore'
-import DateTimePicker from '@react-native-community/datetimepicker'
 import { router } from 'expo-router'
 import { ArrowLeft, Bell, Clock, Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function CustomPushScreen() {
   const { theme } = useThemeStore()
@@ -27,6 +26,10 @@ export default function CustomPushScreen() {
   const [triggerDate, setTriggerDate] = useState(new Date())
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showTimePicker, setShowTimePicker] = useState(false)
+  const [tempHour, setTempHour] = useState(new Date().getHours())
+  const [tempMinute, setTempMinute] = useState(new Date().getMinutes())
+
+  const minuteOptions = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
 
   const resetForm = () => {
     setTitle('')
@@ -76,9 +79,45 @@ export default function CustomPushScreen() {
   const handleEdit = (push: CustomPushData) => {
     setTitle(push.title)
     setBody(push.body)
-    setTriggerDate(new Date(push.trigger))
+    const date = new Date(push.trigger)
+    setTriggerDate(date)
+    setTempHour(date.getHours())
+    setTempMinute(date.getMinutes())
     setEditingPush(push)
     setShowAddForm(true)
+  }
+
+  const openTimePicker = () => {
+    setTempHour(triggerDate.getHours())
+    setTempMinute(triggerDate.getMinutes())
+    setShowTimePicker(true)
+  }
+
+  const applyTime = () => {
+    const next = new Date(triggerDate)
+    next.setHours(tempHour)
+    next.setMinutes(tempMinute)
+    next.setSeconds(0)
+    next.setMilliseconds(0)
+    setTriggerDate(next)
+    setShowTimePicker(false)
+  }
+
+  const handleDateSelect = (dateString: string) => {
+    const [year, month, day] = dateString.split('-').map(Number)
+    if (!year || !month || !day) {
+      return
+    }
+
+    const next = new Date(triggerDate)
+    next.setFullYear(year)
+    next.setMonth(month - 1)
+    next.setDate(day)
+    setTriggerDate(next)
+  }
+
+  const formatPickerDate = (date: Date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
   }
 
   const formatTriggerTime = (trigger: string) => {
@@ -107,7 +146,7 @@ export default function CustomPushScreen() {
       <ScrollView style={styles.content}>
         {showAddForm && (
           <View
-            style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
+            style={[styles.card, { backgroundColor: theme.surface }]}
           >
             <Text style={[styles.cardTitle, { color: theme.text }]}>
               {editingPush ? '编辑提醒' : '新增提醒'}
@@ -135,7 +174,7 @@ export default function CustomPushScreen() {
                 <TouchableOpacity
                   style={[
                     styles.dateTimeBtn,
-                    { backgroundColor: theme.background, borderColor: theme.border },
+                    { backgroundColor: theme.surfaceMuted },
                   ]}
                   onPress={() => setShowDatePicker(true)}
                 >
@@ -146,9 +185,9 @@ export default function CustomPushScreen() {
                 <TouchableOpacity
                   style={[
                     styles.dateTimeBtn,
-                    { backgroundColor: theme.background, borderColor: theme.border },
+                    { backgroundColor: theme.surfaceMuted },
                   ]}
-                  onPress={() => setShowTimePicker(true)}
+                  onPress={openTimePicker}
                 >
                   <Text style={{ color: theme.text, marginLeft: 4 }}>
                     {triggerDate.toLocaleTimeString('zh-CN', {
@@ -159,41 +198,6 @@ export default function CustomPushScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={triggerDate}
-                mode="date"
-                display="default"
-                onChange={(event, date) => {
-                  setShowDatePicker(false)
-                  if (date) {
-                    const newDate = new Date(triggerDate)
-                    newDate.setFullYear(date.getFullYear())
-                    newDate.setMonth(date.getMonth())
-                    newDate.setDate(date.getDate())
-                    setTriggerDate(newDate)
-                  }
-                }}
-              />
-            )}
-
-            {showTimePicker && (
-              <DateTimePicker
-                value={triggerDate}
-                mode="time"
-                display="default"
-                onChange={(event, date) => {
-                  setShowTimePicker(false)
-                  if (date) {
-                    const newDate = new Date(triggerDate)
-                    newDate.setHours(date.getHours())
-                    newDate.setMinutes(date.getMinutes())
-                    setTriggerDate(newDate)
-                  }
-                }}
-              />
-            )}
 
             <View style={styles.formActions}>
               <Button title="取消" variant="secondary" onPress={resetForm} style={{ flex: 1 }} />
@@ -211,7 +215,7 @@ export default function CustomPushScreen() {
             <View
               style={[
                 styles.emptyCard,
-                { backgroundColor: theme.surface, borderColor: theme.border },
+                { backgroundColor: theme.surfaceMuted },
               ]}
             >
               <Bell size={48} color={theme.textSecondary} style={{ opacity: 0.5 }} />
@@ -226,7 +230,7 @@ export default function CustomPushScreen() {
                 key={push.name}
                 style={[
                   styles.pushCard,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
+                  { backgroundColor: theme.surface },
                 ]}
               >
                 <View style={styles.pushInfo}>
@@ -247,7 +251,7 @@ export default function CustomPushScreen() {
                     onPress={() => handleDelete(push.name)}
                     style={styles.actionBtn}
                   >
-                    <Trash2 size={16} color="#ff4d4f" />
+                    <Trash2 size={16} color={theme.error} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -255,6 +259,80 @@ export default function CustomPushScreen() {
           )}
         </View>
       </ScrollView>
+
+      <DatePickerSheet
+        visible={showDatePicker}
+        title="选择日期"
+        selectedDate={formatPickerDate(triggerDate)}
+        onSelect={handleDateSelect}
+        onClose={() => setShowDatePicker(false)}
+      />
+
+      <Modal visible={showTimePicker} transparent animationType="fade" onRequestClose={() => setShowTimePicker(false)}>
+        <View style={styles.timeOverlay}>
+          <Pressable style={styles.timeBackdrop} onPress={() => setShowTimePicker(false)} />
+          <View style={[styles.timeSheet, { backgroundColor: theme.background }]}> 
+            <Text style={[styles.timeSheetTitle, { color: theme.text }]}>选择时间</Text>
+
+            <View style={styles.timeColumns}>
+              <View style={styles.timeColumn}>
+                <Text style={[styles.timeColumnLabel, { color: theme.textSecondary }]}>小时</Text>
+                <ScrollView style={styles.timeOptions} showsVerticalScrollIndicator={false}>
+                  {Array.from({ length: 24 }, (_, hour) => (
+                    <TouchableOpacity
+                      key={`hour-${hour}`}
+                      style={[
+                        styles.timeOption,
+                        {
+                          backgroundColor: tempHour === hour ? theme.surfaceMuted : 'transparent',
+                        },
+                      ]}
+                      onPress={() => setTempHour(hour)}
+                    >
+                      <Text style={[styles.timeOptionText, { color: theme.text }]}>
+                        {String(hour).padStart(2, '0')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              <View style={styles.timeColumn}>
+                <Text style={[styles.timeColumnLabel, { color: theme.textSecondary }]}>分钟</Text>
+                <ScrollView style={styles.timeOptions} showsVerticalScrollIndicator={false}>
+                  {minuteOptions.map(minute => (
+                    <TouchableOpacity
+                      key={`minute-${minute}`}
+                      style={[
+                        styles.timeOption,
+                        {
+                          backgroundColor:
+                            tempMinute === minute ? theme.surfaceMuted : 'transparent',
+                        },
+                      ]}
+                      onPress={() => setTempMinute(minute)}
+                    >
+                      <Text style={[styles.timeOptionText, { color: theme.text }]}>
+                        {String(minute).padStart(2, '0')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+
+            <View style={styles.timeActions}>
+              <Button
+                title="取消"
+                variant="secondary"
+                onPress={() => setShowTimePicker(false)}
+                style={{ flex: 1 }}
+              />
+              <Button title="确定" variant="primary" onPress={applyTime} style={{ flex: 1 }} />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -269,14 +347,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerBack: {
     padding: 4,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   headerAdd: {
     padding: 4,
@@ -287,13 +365,12 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 12,
-    borderWidth: 1,
     padding: 16,
     marginBottom: 16,
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 16,
   },
   formGroup: {
@@ -313,11 +390,59 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 10,
   },
   formActions: {
     width: '100%',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  timeOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  timeBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.24)',
+  },
+  timeSheet: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 18,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    gap: 12,
+  },
+  timeSheetTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  timeColumns: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  timeColumn: {
+    flex: 1,
+  },
+  timeColumnLabel: {
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  timeOptions: {
+    maxHeight: 180,
+  },
+  timeOption: {
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  timeOptionText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  timeActions: {
     flexDirection: 'row',
     gap: 12,
   },
@@ -328,7 +453,6 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     borderRadius: 12,
-    borderWidth: 1,
     padding: 32,
     alignItems: 'center',
   },
@@ -343,7 +467,6 @@ const styles = StyleSheet.create({
   },
   pushCard: {
     borderRadius: 12,
-    borderWidth: 1,
     padding: 16,
     marginBottom: 12,
     flexDirection: 'row',

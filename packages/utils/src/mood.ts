@@ -1,4 +1,5 @@
 import type { MoodKey } from '@mosaic/api'
+import { QUIET_PAPER_MOOD_COLORS } from './designTokens'
 
 export type { MoodKey }
 
@@ -9,14 +10,14 @@ export interface MoodConfig {
 }
 
 export const MOODS: MoodConfig[] = [
-  { key: 'joy', label: '愉悦', color: '#FFD93D' },
-  { key: 'anger', label: '愤怒', color: '#FF6B6B' },
-  { key: 'sadness', label: '悲伤', color: '#4ECDC4' },
-  { key: 'calm', label: '平静', color: '#95E1D3' },
-  { key: 'anxiety', label: '焦虑', color: '#FFA07A' },
-  { key: 'focus', label: '专注', color: '#6C5CE7' },
-  { key: 'tired', label: '疲惫', color: '#A8A8A8' },
-  { key: 'neutral', label: '无感', color: '#B8B8B8' },
+  { key: 'joy', label: '愉悦', color: QUIET_PAPER_MOOD_COLORS.joy },
+  { key: 'anger', label: '愤怒', color: QUIET_PAPER_MOOD_COLORS.anger },
+  { key: 'sadness', label: '悲伤', color: QUIET_PAPER_MOOD_COLORS.sadness },
+  { key: 'calm', label: '平静', color: QUIET_PAPER_MOOD_COLORS.calm },
+  { key: 'anxiety', label: '焦虑', color: QUIET_PAPER_MOOD_COLORS.anxiety },
+  { key: 'focus', label: '专注', color: QUIET_PAPER_MOOD_COLORS.focus },
+  { key: 'tired', label: '疲惫', color: QUIET_PAPER_MOOD_COLORS.tired },
+  { key: 'neutral', label: '无感', color: QUIET_PAPER_MOOD_COLORS.neutral },
 ] as const
 
 export const MOOD_LABEL_MAP: Record<MoodKey, string> = {
@@ -31,14 +32,14 @@ export const MOOD_LABEL_MAP: Record<MoodKey, string> = {
 }
 
 export const MOOD_COLOR_MAP: Record<MoodKey, string> = {
-  joy: '#FFD93D',
-  anger: '#FF6B6B',
-  sadness: '#4ECDC4',
-  calm: '#95E1D3',
-  anxiety: '#FFA07A',
-  focus: '#6C5CE7',
-  tired: '#A8A8A8',
-  neutral: '#B8B8B8',
+  joy: QUIET_PAPER_MOOD_COLORS.joy,
+  anger: QUIET_PAPER_MOOD_COLORS.anger,
+  sadness: QUIET_PAPER_MOOD_COLORS.sadness,
+  calm: QUIET_PAPER_MOOD_COLORS.calm,
+  anxiety: QUIET_PAPER_MOOD_COLORS.anxiety,
+  focus: QUIET_PAPER_MOOD_COLORS.focus,
+  tired: QUIET_PAPER_MOOD_COLORS.tired,
+  neutral: QUIET_PAPER_MOOD_COLORS.neutral,
 }
 
 function isValidMoodKey(value: string | null | undefined): value is MoodKey {
@@ -82,7 +83,7 @@ export const MOOD_INTENSITY_LEVELS = 10
 export const DEFAULT_MOOD: MoodKey = 'neutral'
 
 export function getMoodColorWithIntensity(moodKey?: MoodKey, intensity?: number): string {
-  if (!moodKey) return 'rgba(184, 184, 184, 0.5)'
+  if (!moodKey) return 'rgba(154, 148, 138, 0.5)'
   const baseColor = MOOD_COLOR_MAP[moodKey] || MOOD_COLOR_MAP.neutral
   const opacity = 0.2 + (intensity !== undefined ? (intensity / 10) * 0.6 : 0.5)
 

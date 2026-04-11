@@ -10,7 +10,6 @@ import PagerView from 'react-native-pager-view'
 import { DayPageView } from './DayPageView'
 
 const PREFETCH_DAYS = 2
-const TOTAL_PAGES = PREFETCH_DAYS * 2 + 1
 
 interface DiaryPagerScreenProps {
   initialDate?: string
@@ -22,6 +21,8 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
   const pagerRef = useRef<PagerView>(null)
   const currentPageRef = useRef(PREFETCH_DAYS)
   const skipNextPageSelectedRef = useRef(false)
+  const handledRouteDateRef = useRef<string | null>(null)
+  const pendingRouteDateRef = useRef<string | null>(null)
 
   const { currentDate, setCurrentDate, diaryQuery } = useDiaryPager({
     prefetchDays: PREFETCH_DAYS,
@@ -50,27 +51,29 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     setCurrentMood,
   ])
 
-  const todayIndex = PREFETCH_DAYS
   const today = useMemo(() => dayjs().startOf('day'), [])
   const isToday = useMemo(() => dayjs(currentDate).isSame(today, 'day'), [currentDate, today])
 
-  const currentPageIndex = isToday ? PREFETCH_DAYS : todayIndex
+  useEffect(() => {
+    if (dayjs(currentDate).isAfter(today, 'day')) {
+      setCurrentDate(today.format('YYYY-MM-DD'))
+    }
+  }, [currentDate, setCurrentDate, today])
+
+  const currentPageIndex = PREFETCH_DAYS
 
   const displayDates = useMemo(() => {
-    if (isToday) {
-      return Array.from({ length: PREFETCH_DAYS + 1 }, (_, index) =>
-        dayjs(currentDate)
-          .subtract(PREFETCH_DAYS - index, 'day')
-          .format('YYYY-MM-DD')
-      )
-    }
+    const safeCurrent = dayjs(currentDate).isAfter(today, 'day') ? today : dayjs(currentDate)
+    const availableFutureDays = Math.max(0, dayjs(today).diff(safeCurrent, 'day'))
+    const futureDays = Math.min(PREFETCH_DAYS, availableFutureDays)
+    const totalPages = PREFETCH_DAYS + futureDays + 1
 
-    return Array.from({ length: TOTAL_PAGES }, (_, index) =>
-      dayjs(currentDate)
+    return Array.from({ length: totalPages }, (_, index) =>
+      safeCurrent
         .add(index - currentPageIndex, 'day')
         .format('YYYY-MM-DD')
     )
-  }, [currentDate, currentPageIndex, isToday])
+  }, [currentDate, currentPageIndex, today])
 
   useEffect(() => {
     if (currentPageRef.current !== currentPageIndex) {
@@ -113,21 +116,61 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     [currentDate, currentPageIndex, normalizeAndClampDate, setCurrentDate]
   )
 
+  useEffect(() => {
+    if (!initialDate) return
+
+    const safeDate = normalizeAndClampDate(initialDate)
+    if (handledRouteDateRef.current === safeDate) {
+      return
+    }
+
+    handledRouteDateRef.current = safeDate
+    pendingRouteDateRef.current = safeDate
+
+    if (currentDate !== safeDate) {
+      setCurrentDate(safeDate)
+    }
+
+    skipNextPageSelectedRef.current = true
+    pagerRef.current?.setPageWithoutAnimation(currentPageIndex)
+    currentPageRef.current = currentPageIndex
+  }, [currentDate, currentPageIndex, initialDate, normalizeAndClampDate, setCurrentDate])
+
   const handlePageSelected = useCallback(
     (e: { nativeEvent: { position: number } }) => {
       const newIndex = e.nativeEvent.position
+
+      if (pendingRouteDateRef.current && newIndex !== currentPageIndex) {
+        skipNextPageSelectedRef.current = true
+        pagerRef.current?.setPageWithoutAnimation(currentPageIndex)
+        currentPageRef.current = currentPageIndex
+        return
+      }
+
       currentPageRef.current = newIndex
 
       if (skipNextPageSelectedRef.current) {
         skipNextPageSelectedRef.current = false
+        if (pendingRouteDateRef.current && newIndex === currentPageIndex) {
+          pendingRouteDateRef.current = null
+        }
         return
       }
 
       const targetDate = displayDates[newIndex]
       if (!targetDate) return
+
+      if (pendingRouteDateRef.current && targetDate !== pendingRouteDateRef.current) {
+        return
+      }
+
+      if (pendingRouteDateRef.current && targetDate === pendingRouteDateRef.current) {
+        pendingRouteDateRef.current = null
+      }
+
       navigateToDate(targetDate)
     },
-    [displayDates, navigateToDate]
+    [currentPageIndex, displayDates, navigateToDate]
   )
 
   const handlePreviousMonth = useCallback(() => {
@@ -236,7 +279,7 @@ const styles = StyleSheet.create({
   },
   currentDate: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   pager: {
     flex: 1,

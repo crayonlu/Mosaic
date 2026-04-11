@@ -36,7 +36,7 @@ export function SearchResults({
     if (emptyQuery) {
       return (
         <View style={styles.emptyContainer}>
-          <View style={[styles.emptyIcon, { backgroundColor: `${theme.primary}10` }]}>
+          <View style={[styles.emptyIcon, { backgroundColor: theme.semantic.infoSoft }]}>
             <Search size={48} color={theme.primary} strokeWidth={1.5} />
           </View>
           <Text style={[styles.emptyTitle, { color: theme.text }]}>开始搜索</Text>
@@ -49,7 +49,7 @@ export function SearchResults({
 
     return (
       <View style={styles.emptyContainer}>
-        <View style={[styles.emptyIcon, { backgroundColor: `${theme.primary}10` }]}>
+        <View style={[styles.emptyIcon, { backgroundColor: theme.semantic.warningSoft }]}>
           <FileX size={48} color={theme.primary} strokeWidth={1.5} />
         </View>
         <Text style={[styles.emptyTitle, { color: theme.text }]}>暂无搜索结果</Text>
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 8,
   },
   emptySubtitle: {

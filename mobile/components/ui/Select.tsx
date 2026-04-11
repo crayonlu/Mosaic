@@ -2,12 +2,12 @@ import { useThemeStore } from '@/stores/themeStore'
 import { Check, ChevronDown } from 'lucide-react-native'
 import { useState } from 'react'
 import {
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    Modal,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from 'react-native'
 
 export interface SelectOption {
@@ -42,15 +42,15 @@ export function Select({
   }
 
   const getPaddingVertical = () => {
-    return size === 'small' ? 6 : 8
+    return size === 'small' ? theme.spacingScale.small : theme.spacingScale.medium
   }
 
   const getPaddingHorizontal = () => {
-    return size === 'small' ? 10 : 12
+    return size === 'small' ? theme.spacingScale.medium : theme.spacingScale.large
   }
 
   const getFontSize = () => {
-    return size === 'small' ? 13 : 14
+    return size === 'small' ? theme.typography.caption : theme.typography.body
   }
 
   return (
@@ -60,10 +60,12 @@ export function Select({
         style={[
           styles.trigger,
           {
-            backgroundColor: theme.surface,
-            borderColor: theme.border,
+            backgroundColor: theme.surfaceMuted,
+            borderColor: isOpen ? theme.border : 'transparent',
+            borderWidth: isOpen ? StyleSheet.hairlineWidth : 0,
             paddingVertical: getPaddingVertical(),
             paddingHorizontal: getPaddingHorizontal(),
+            borderRadius: theme.radius.medium,
           },
         ]}
         onPress={() => setIsOpen(true)}
@@ -92,24 +94,29 @@ export function Select({
         onRequestClose={() => setIsOpen(false)}
       >
         <TouchableWithoutFeedback onPress={() => setIsOpen(false)}>
-          <View style={styles.modalOverlay}>
+          <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}> 
             <TouchableWithoutFeedback>
               <View
                 style={[
                   styles.dropdown,
                   {
                     backgroundColor: theme.surface,
-                    borderColor: theme.border,
+                    borderColor: 'transparent',
+                    borderRadius: theme.radius.large,
                   },
                 ]}
               >
-                {options.map(option => (
+                {options.map((option, index) => (
                   <TouchableOpacity
                     key={option.value}
                     style={[
                       styles.option,
                       {
                         borderBottomColor: theme.border,
+                        borderBottomWidth:
+                          index === options.length - 1 ? 0 : StyleSheet.hairlineWidth,
+                        paddingHorizontal: theme.spacing,
+                        paddingVertical: theme.spacingScale.medium,
                       },
                     ]}
                     onPress={() => handleSelect(option.value)}
@@ -147,8 +154,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderRadius: 8,
     gap: 6,
   },
   triggerText: {
@@ -157,15 +162,12 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
   },
   dropdown: {
     width: '100%',
-    borderRadius: 8,
-    borderWidth: 1,
     overflow: 'hidden',
     maxHeight: 300,
   },
@@ -173,9 +175,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
   },
   optionText: {
     fontSize: 15,

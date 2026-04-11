@@ -25,7 +25,7 @@ export function UploadProgressList({ items }: UploadProgressListProps) {
       {items.map(item => (
         <View
           key={item.id}
-          style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          style={[styles.card, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}
         >
           <View style={[styles.iconWrap, { backgroundColor: theme.background }]}>
             {item.type === 'video' ? (
@@ -68,7 +68,6 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderWidth: 1,
     borderRadius: 12,
   },
   iconWrap: {
@@ -84,7 +83,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   track: {
     height: 4,

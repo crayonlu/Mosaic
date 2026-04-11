@@ -8,6 +8,11 @@ import { Label } from '@/components/ui/label'
 import { useServerConfig } from '@/hooks/useServerConfig'
 import { useTheme } from '@/hooks/useTheme'
 import { toast } from '@/hooks/useToast'
+import {
+  mapServerConnectionError,
+  normalizeServerUrlInput,
+  validateServerUrl,
+} from '@/lib/serverConnectionError'
 import { initSharedApiClient } from '@/lib/sharedApi'
 import type { ServerConfig } from '@/types/settings'
 import { configCommands } from '@/utils/callRust'
@@ -23,6 +28,7 @@ export default function SetupWizard() {
   const [testingConnection, setTestingConnection] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  const [errorHint, setErrorHint] = useState('')
 
   const [serverConfig, setServerConfig] = useState<ServerConfig>({
     url: '',
@@ -37,35 +43,66 @@ export default function SetupWizard() {
     setServerConfig(prev => ({ ...prev, [field]: value }))
     setConnectionStatus('idle')
     setErrorMessage('')
+    setErrorHint('')
   }
 
   const testConnection = async () => {
+    const normalizedUrl = normalizeServerUrlInput(serverConfig.url)
+    const urlError = validateServerUrl(normalizedUrl)
+    if (urlError) {
+      setConnectionStatus('error')
+      setErrorMessage(urlError)
+      setErrorHint('请使用完整地址，例如 https://your-server.com')
+      return
+    }
+
     setTestingConnection(true)
     setConnectionStatus('idle')
     setErrorMessage('')
+    setErrorHint('')
+
+    const normalizedConfig = {
+      ...serverConfig,
+      url: normalizedUrl,
+    }
 
     try {
-      await configCommands.testServerConnection(serverConfig)
+      await configCommands.testServerConnection(normalizedConfig)
       setConnectionStatus('success')
       toast.success('服务器连接测试通过')
-    } catch (error) {
+    } catch (error: unknown) {
+      const presentation = mapServerConnectionError(error, 'connect')
       setConnectionStatus('error')
-      const errMsg = error instanceof Error ? error.message : '连接失败，请检查配置'
-      setErrorMessage(errMsg)
-      toast.error(errMsg)
+      setErrorMessage(presentation.message)
+      setErrorHint(presentation.hint || '')
+      toast.error(`${presentation.title}: ${presentation.message}`)
     } finally {
       setTestingConnection(false)
     }
   }
 
   const saveServerConfig = async () => {
+    const normalizedUrl = normalizeServerUrlInput(serverConfig.url)
+    const urlError = validateServerUrl(normalizedUrl)
+    if (urlError) {
+      setConnectionStatus('error')
+      setErrorMessage(urlError)
+      setErrorHint('请先修正服务器地址，再继续保存。')
+      return
+    }
+
     setLoading(true)
+    const normalizedConfig = {
+      ...serverConfig,
+      url: normalizedUrl,
+    }
+
     try {
-      await configCommands.setServerConfig(serverConfig)
+      await configCommands.setServerConfig(normalizedConfig)
 
-      await configCommands.login(serverConfig.username, serverConfig.password)
+      await configCommands.login(normalizedConfig.username, normalizedConfig.password)
 
-      initSharedApiClient(serverConfig.url)
+      initSharedApiClient(normalizedConfig.url)
 
       toast.success('服务器配置已保存')
 
@@ -73,8 +110,12 @@ export default function SetupWizard() {
 
       window.location.reload()
       navigate('/')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : '未知错误')
+    } catch (error: unknown) {
+      const presentation = mapServerConnectionError(error, 'login')
+      setConnectionStatus('error')
+      setErrorMessage(presentation.message)
+      setErrorHint(presentation.hint || '')
+      toast.error(`${presentation.title}: ${presentation.message}`)
     } finally {
       setLoading(false)
     }
@@ -141,7 +182,10 @@ export default function SetupWizard() {
               <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
                 <div className="flex items-center gap-2">
                   <X className="h-4 w-4" />
-                  <span>{errorMessage}</span>
+                  <div className="space-y-1">
+                    <p>{errorMessage}</p>
+                    {errorHint ? <p className="text-xs text-destructive/80">{errorHint}</p> : null}
+                  </div>
                 </div>
               </div>
             )}

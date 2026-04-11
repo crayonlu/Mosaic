@@ -1,26 +1,26 @@
-import { Button, Loading, toast } from '@/components/ui'
+import { Loading, toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { DraggableImageGrid } from '@/components/ui/DraggableImageGrid'
 import { useAISummary } from '@/hooks/useAISummary'
 import { useConnection } from '@/hooks/useConnection'
 import {
-  createSelectedMediaItems,
-  uploadSelectedMedia,
-  type SelectedMediaItem,
+    createSelectedMediaItems,
+    uploadSelectedMedia,
+    type SelectedMediaItem,
 } from '@/lib/media/upload'
 import { normalizeContent } from '@/lib/utils/content'
 import { useThemeStore } from '@/stores/themeStore'
 import { Share as ShareIcon, Sparkles, X } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TagInput } from '../tag/TagInput'
@@ -31,6 +31,11 @@ interface FullScreenEditorProps {
   initialContent?: string
   initialTags?: string[]
   initialAISummary?: string
+  initialMediaItems?: MediaGridItem[]
+  initialResourceIds?: string[]
+  uploadMemoId?: string
+  title?: string
+  submitLabel?: string
   placeholder?: string
   availableTags?: string[]
   onClose: () => void
@@ -42,6 +47,11 @@ export function FullScreenEditor({
   initialContent = '',
   initialTags = [],
   initialAISummary,
+  initialMediaItems = [],
+  initialResourceIds = [],
+  uploadMemoId,
+  title = '写 Memo',
+  submitLabel = '创建',
   placeholder = "What's on your mind?",
   availableTags = [],
   onClose,
@@ -60,8 +70,8 @@ export function FullScreenEditor({
   } = useAISummary()
   const [content, setContent] = useState(initialContent)
   const [tags, setTags] = useState<string[]>(initialTags)
-  const [resources, setResources] = useState<string[]>([])
-  const [mediaItems, setMediaItems] = useState<SelectedMediaItem[]>([])
+  const [mediaItems, setMediaItems] = useState<MediaGridItem[]>(initialMediaItems)
+  const [uploadCandidates, setUploadCandidates] = useState<Record<string, SelectedMediaItem>>({})
   const [uploading, setUploading] = useState(false)
   const [uploadProgressItems, setUploadProgressItems] = useState<
     { id: string; name: string; type: 'image' | 'video'; progress: number }[]
@@ -76,8 +86,8 @@ export function FullScreenEditor({
     if (visible) {
       setContent(initialContent)
       setTags(initialTags)
-      setResources([])
-      setMediaItems([])
+      setMediaItems(initialMediaItems)
+      setUploadCandidates({})
       setUploadProgressItems([])
       setIsDraggingMedia(false)
       if (initialAISummary) {
@@ -86,7 +96,14 @@ export function FullScreenEditor({
       }
       clearSummary()
     }
-  }, [visible, initialContent, initialTags, clearSummary, initialAISummary])
+  }, [
+    visible,
+    initialContent,
+    initialTags,
+    initialMediaItems,
+    clearSummary,
+    initialAISummary,
+  ])
 
   const handleSummarize = useCallback(async () => {
     const normalized = normalizeContent(content)
@@ -105,11 +122,7 @@ export function FullScreenEditor({
   }, [summary])
 
   const handleMediaItemsChange = useCallback((nextItems: MediaGridItem[]) => {
-    setMediaItems(prev =>
-      nextItems
-        .map(item => prev.find(candidate => candidate.key === item.key))
-        .filter((item): item is SelectedMediaItem => Boolean(item))
-    )
+    setMediaItems(nextItems)
   }, [])
 
   const selectMedia = async () => {
@@ -130,15 +143,23 @@ export function FullScreenEditor({
   const handlePickMedia = async () => {
     const selectedItems = await selectMedia()
     if (selectedItems.length > 0) {
+      const selectedById = Object.fromEntries(selectedItems.map(item => [item.key, item]))
+      setUploadCandidates(prev => ({ ...prev, ...selectedById }))
       setMediaItems(prev => [...prev, ...selectedItems].slice(0, 9))
     }
   }
 
   const handleSubmit = async () => {
-    const uploadedResourceIds = [...resources]
-    if (mediaItems.length > 0 && canUseNetwork) {
+    const visibleKeys = new Set(mediaItems.map(item => item.key))
+    const keptResourceIds = initialResourceIds.filter(resourceId => visibleKeys.has(resourceId))
+    const pendingUploadItems = mediaItems
+      .map(item => uploadCandidates[item.key])
+      .filter((item): item is SelectedMediaItem => Boolean(item))
+
+    const uploadedResourceIds: string[] = []
+    if (pendingUploadItems.length > 0 && canUseNetwork) {
       setUploadProgressItems(
-        mediaItems.map(item => ({
+        pendingUploadItems.map(item => ({
           id: item.key,
           name: item.filename,
           type: item.type,
@@ -147,7 +168,8 @@ export function FullScreenEditor({
       )
       setUploading(true)
       try {
-        const uploadedResources = await uploadSelectedMedia(mediaItems, {
+        const uploadedResources = await uploadSelectedMedia(pendingUploadItems, {
+          memoId: uploadMemoId,
           onFileProgress: (item, progress) => {
             setUploadProgressItems(prev =>
               prev.map(entry =>
@@ -168,15 +190,15 @@ export function FullScreenEditor({
       setUploadProgressItems([])
     }
 
-    onSubmit(content, tags, uploadedResourceIds, summary || undefined)
+    onSubmit(content, tags, [...keptResourceIds, ...uploadedResourceIds], summary || undefined)
     handleClose()
   }
 
   const handleClose = () => {
     setContent('')
     setTags([])
-    setResources([])
     setMediaItems([])
+    setUploadCandidates({})
     setUploadProgressItems([])
     onClose()
   }
@@ -185,6 +207,10 @@ export function FullScreenEditor({
     setShowPreview(false)
     await handleSubmit()
   }
+
+  const hasContent = Boolean(normalizeContent(content) || mediaItems.length > 0)
+  const canSummarize = !summaryDisabled && Boolean(normalizeContent(content))
+  const canSubmit = hasContent && canUseNetwork && !uploading
 
   return (
     <Modal
@@ -207,64 +233,126 @@ export function FullScreenEditor({
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-          <View style={[styles.header]}>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <X size={24} color={theme.text} strokeWidth={2} />
-            </TouchableOpacity>
-            <View style={styles.headerActions}>
+          <View style={styles.header}>
+            <View style={styles.headerTopRow}>
+              <TouchableOpacity
+                onPress={handleClose}
+                style={styles.headerTextButton}
+                activeOpacity={theme.state.pressedOpacity}
+              >
+                <Text style={[styles.headerTextButtonLabel, { color: theme.textSecondary }]}>取消</Text>
+              </TouchableOpacity>
+
+              <Text style={[styles.headerTitle, { color: theme.text }]}>{title}</Text>
+
+              <TouchableOpacity
+                onPress={handleSubmit}
+                style={styles.headerTextButton}
+                disabled={!canSubmit}
+                activeOpacity={theme.state.pressedOpacity}
+              >
+                <Text
+                  style={[
+                    styles.headerTextButtonLabel,
+                    {
+                      color: canSubmit ? theme.primary : theme.textTertiary,
+                      opacity: canSubmit ? 1 : theme.state.disabledOpacity,
+                    },
+                  ]}
+                >
+                  {submitLabel}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.headerActions}
+            >
               <TouchableOpacity
                 onPress={handleSummarize}
-                style={styles.summarizeButton}
-                disabled={summaryDisabled || !normalizeContent(content) || summaryLoading}
+                style={[
+                  styles.actionButton,
+                  {
+                    backgroundColor: canSummarize ? theme.semantic.infoSoft : theme.surfaceMuted,
+                    opacity: canSummarize && !summaryLoading ? 1 : theme.state.disabledOpacity,
+                  },
+                ]}
+                disabled={!canSummarize || summaryLoading}
+                activeOpacity={theme.state.pressedOpacity}
               >
                 {summaryLoading ? (
                   <Loading size="small" />
                 ) : (
-                  <Sparkles
-                    size={16}
-                    color={
-                      summaryDisabled || !normalizeContent(content)
-                        ? theme.textSecondary
-                        : theme.primary
-                    }
-                  />
+                  <></>
                 )}
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    { color: canSummarize ? theme.primary : theme.textSecondary },
+                  ]}
+                >
+                  AI 摘要
+                </Text>
               </TouchableOpacity>
-              <Button onPress={handlePickMedia} variant="ghost" size="medium" title="上传" />
-              <Button
-                title="预览"
+
+              <TouchableOpacity
+                onPress={handlePickMedia}
+                style={[styles.actionButton, { backgroundColor: theme.surfaceMuted }]}
+                activeOpacity={theme.state.pressedOpacity}
+              >
+                <Text style={[styles.actionButtonText, { color: theme.text }]}>添加图片</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 onPress={() => setShowPreview(true)}
-                variant="ghost"
-                size="medium"
-                disabled={!normalizeContent(content) && mediaItems.length === 0}
-              />
-              <Button
-                title="创建"
-                onPress={handleSubmit}
-                variant="ghost"
-                size="medium"
-                disabled={
-                  (!normalizeContent(content) && mediaItems.length === 0) ||
-                  !canUseNetwork ||
-                  uploading
-                }
-              />
-            </View>
+                style={[
+                  styles.actionButton,
+                  {
+                    backgroundColor: hasContent ? theme.surfaceMuted : theme.surface,
+                    opacity: hasContent ? 1 : theme.state.disabledOpacity,
+                  },
+                ]}
+                disabled={!hasContent}
+                activeOpacity={theme.state.pressedOpacity}
+              >
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    { color: hasContent ? theme.text : theme.textSecondary },
+                  ]}
+                >
+                  预览
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
 
-          <ScrollView style={styles.contentContainer} scrollEnabled={!isDraggingMedia}>
+          <ScrollView
+            style={styles.contentContainer}
+            contentContainerStyle={styles.contentInner}
+            scrollEnabled={!isDraggingMedia}
+          >
             <View style={styles.tagContainer}>
+              <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>标签</Text>
               <TagInput
                 tags={tags}
                 onTagsChange={setTags}
                 content={content}
                 suggestions={availableTags}
                 placeholder="添加标签..."
+                appearance="plain"
               />
             </View>
 
             <View style={styles.editorContainer}>
-              <TextEditor value={content} onChange={setContent} placeholder={placeholder} />
+              <TextEditor
+                value={content}
+                onChange={setContent}
+                placeholder={placeholder}
+                appearance="plain"
+              />
             </View>
 
             <View style={styles.imageContainer}>
@@ -286,7 +374,15 @@ export function FullScreenEditor({
             </View>
 
             {summary && (
-              <View style={styles.summaryContainer}>
+              <View
+                style={[
+                  styles.summaryContainer,
+                  {
+                    backgroundColor: theme.semantic.infoSoft,
+                    borderRadius: theme.radius.medium,
+                  },
+                ]}
+              >
                 <View style={styles.summaryHeader}>
                   <Text style={[styles.summaryTitle, { color: theme.text }]}>AI 摘要</Text>
                   <View style={styles.summaryActions}>
@@ -306,8 +402,16 @@ export function FullScreenEditor({
             )}
 
             {summaryError && (
-              <View style={styles.errorContainer}>
-                <Text style={[styles.errorText, { color: '#FF3B30' }]}>{summaryError}</Text>
+              <View
+                style={[
+                  styles.errorContainer,
+                  {
+                    backgroundColor: theme.semantic.errorSoft,
+                    borderRadius: theme.radius.medium,
+                  },
+                ]}
+              >
+                <Text style={[styles.errorText, { color: theme.error }]}>{summaryError}</Text>
               </View>
             )}
           </ScrollView>
@@ -334,64 +438,83 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    gap: 10,
+  },
+  headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
   },
-  closeButton: {
-    width: 40,
-    height: 40,
+  headerTextButton: {
+    minWidth: 56,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerTextButtonLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+  },
+  actionButton: {
+    minHeight: 34,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  actionButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
   contentContainer: {
     flex: 1,
     flexDirection: 'column',
   },
+  contentInner: {
+    paddingBottom: 28,
+  },
   tagContainer: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 6,
+    paddingBottom: 8,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    marginBottom: 8,
+    letterSpacing: 0.2,
   },
   editorContainer: {
     flexShrink: 0,
-    minHeight: 150,
+    minHeight: 220,
+    paddingHorizontal: 16,
+    paddingTop: 4,
   },
   imageContainer: {
-    padding: 8,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
   mediaHint: {
     fontSize: 12,
     marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  footer: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-  },
-  footerButton: {
-    padding: 8,
-  },
-  summarizeButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   summaryContainer: {
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     padding: 12,
-    backgroundColor: 'rgba(120, 120, 120, 0.1)',
-    borderRadius: 8,
   },
   summaryHeader: {
     flexDirection: 'row',
@@ -401,7 +524,7 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   summaryText: {
     fontSize: 14,
@@ -426,10 +549,8 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     padding: 12,
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    borderRadius: 8,
   },
   errorText: {
     fontSize: 14,

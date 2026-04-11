@@ -39,7 +39,7 @@ export function CoverImagePicker({
       setAuthHeaders(headers)
     }
 
-    loadAuthHeaders()
+    void loadAuthHeaders()
   }, [])
 
   const allImages: CoverMediaItem[] = useMemo(
@@ -101,7 +101,7 @@ export function CoverImagePicker({
             </>
           )}
           {item.type === 'video' && (
-            <View style={styles.videoBadge}>
+            <View style={[styles.videoBadge, { backgroundColor: theme.overlay }]}>
               <Play size={12} color="#fff" fill="#fff" />
             </View>
           )}
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   clearButton: {
     fontSize: 14,
@@ -194,7 +194,6 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 999,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
     alignItems: 'center',
     justifyContent: 'center',
   },

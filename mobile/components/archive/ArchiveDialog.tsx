@@ -3,11 +3,11 @@ import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
 import { useThemeStore } from '@/stores/themeStore'
 import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-  BottomSheetTextInput,
-  type BottomSheetBackdropProps,
+    BottomSheetBackdrop,
+    BottomSheetModal,
+    BottomSheetScrollView,
+    BottomSheetTextInput,
+    type BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet'
 import { diariesApi, memosApi, type DiaryResponse, type MemoWithResources } from '@mosaic/api'
 import { MOODS, type MoodKey } from '@mosaic/utils'
@@ -143,9 +143,9 @@ export function ArchiveDialog({
             style={[
               styles.summaryInput,
               {
-                backgroundColor: theme.surface,
+                backgroundColor: theme.surfaceMuted,
                 color: theme.text,
-                borderColor: theme.border,
+                borderColor: 'transparent',
               },
             ]}
             placeholderTextColor={theme.textSecondary}
@@ -163,6 +163,7 @@ export function ArchiveDialog({
                   { backgroundColor: mood.color },
                   moodKey === mood.key && {
                     borderColor: theme.text,
+                    borderWidth: StyleSheet.hairlineWidth,
                   },
                 ]}
                 onPress={() => setMoodKey(mood.key)}
@@ -223,8 +224,7 @@ const styles = StyleSheet.create({
   },
   summaryInput: {
     height: 100,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 12,
     paddingHorizontal: 16,
     textAlignVertical: 'top',
     paddingTop: 12,
@@ -250,15 +250,13 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'transparent',
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
   },
   moodLabelText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 10,
     lineHeight: 12,
   },
@@ -273,7 +271,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 16,
     gap: 12,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   footerButton: {
     flex: 1,

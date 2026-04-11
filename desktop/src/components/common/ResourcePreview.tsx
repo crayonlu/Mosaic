@@ -2,6 +2,7 @@ import { AuthImage } from '@/components/common/AuthImage'
 import { AuthVideo } from '@/components/common/AuthVideo'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
 import { Image as ImageIcon, Video } from 'lucide-react'
 import { useState } from 'react'
 
@@ -10,6 +11,7 @@ interface ResourcePreviewProps {
   previewUrl: string
   type: 'image' | 'video'
   size?: number
+  compact?: boolean
   onRemove: () => void
 }
 
@@ -18,6 +20,7 @@ export function ResourcePreview({
   previewUrl,
   type,
   size,
+  compact = false,
   onRemove,
 }: ResourcePreviewProps) {
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -36,7 +39,10 @@ export function ResourcePreview({
           <AuthVideo
             src={previewUrl}
             variant="thumb"
-            className="w-full h-18 object-cover cursor-pointer transition-opacity hover:opacity-90"
+            className={cn(
+              'w-full object-cover cursor-pointer transition-opacity hover:opacity-90',
+              compact ? 'h-14' : 'h-18'
+            )}
             onClick={() => setPreviewOpen(true)}
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
@@ -45,13 +51,16 @@ export function ResourcePreview({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-1 right-1 h-4 w-4 bg-black/50 hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+            className={cn(
+              'absolute top-1 right-1 bg-black/50 hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity',
+              compact ? 'h-3.5 w-3.5' : 'h-4 w-4'
+            )}
             onClick={e => {
               e.stopPropagation()
               onRemove()
             }}
           >
-            <span className="text-white text-[8px]">×</span>
+            <span className={cn('text-white', compact ? 'text-[7px]' : 'text-[8px]')}>×</span>
           </Button>
           <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-2">
             {size && <div className="text-[8px] text-white/80">{formatSize(size)}</div>}
@@ -63,7 +72,10 @@ export function ResourcePreview({
             src={previewUrl}
             variant="thumb"
             alt={filename}
-            className="w-full h-18 object-cover cursor-pointer transition-opacity hover:opacity-90"
+            className={cn(
+              'w-full object-cover cursor-pointer transition-opacity hover:opacity-90',
+              compact ? 'h-14' : 'h-18'
+            )}
             onClick={() => setPreviewOpen(true)}
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
@@ -72,13 +84,16 @@ export function ResourcePreview({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-1 right-1 h-4 w-4 bg-black/50 hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+            className={cn(
+              'absolute top-1 right-1 bg-black/50 hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity',
+              compact ? 'h-3.5 w-3.5' : 'h-4 w-4'
+            )}
             onClick={e => {
               e.stopPropagation()
               onRemove()
             }}
           >
-            <span className="text-white text-[8px]">×</span>
+            <span className={cn('text-white', compact ? 'text-[7px]' : 'text-[8px]')}>×</span>
           </Button>
           <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-2">
             {size && <div className="text-[8px] text-white/80">{formatSize(size)}</div>}

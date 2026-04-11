@@ -23,7 +23,6 @@ import { useAI } from '@/hooks/useAI'
 import { useInput } from '@/hooks/useInput'
 import { cn } from '@/lib/utils'
 import { useInputStore } from '@/stores/inputStore'
-import { normalizeContent } from '@/utils/content'
 
 export interface AppInputRef {
   clearTags: () => void
@@ -51,9 +50,8 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
     const [aiSummary, setAISummary] = useState('')
     const [pendingSummary, setPendingSummary] = useState('')
     const [isReplaceDialogOpen, setIsReplaceDialogOpen] = useState(false)
-    const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
     const { resourceFilenames, uploadingFiles } = useInputStore()
-    const { suggestTags, summarizeText, loading: aiLoading } = useAI()
+    const { suggestTags, loading: aiLoading } = useAI()
 
     const {
       isExpanded,
@@ -75,7 +73,9 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
       onFileUpload,
     })
 
-    const normalizedInput = normalizeContent(inputValue).trim()
+    const normalizedTagInput = tagInput.trim()
+    const canAddTag =
+      normalizedTagInput.length > 0 && !tags.includes(normalizedTagInput) && !aiLoading
 
     const handleAddTag = (tag?: string) => {
       const trimmedTag = tag ? tag.trim() : tagInput.trim()
@@ -117,29 +117,6 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
       }
     }
 
-    const handleGenerateSummary = async () => {
-      if (!normalizedInput) {
-        return
-      }
-
-      setIsGeneratingSummary(true)
-      try {
-        const result = await summarizeText({ text: normalizedInput })
-        const nextSummary = result?.summary?.trim()
-        if (!nextSummary) return
-
-        if (aiSummary.trim()) {
-          setPendingSummary(nextSummary)
-          setIsReplaceDialogOpen(true)
-          return
-        }
-
-        setAISummary(nextSummary)
-      } finally {
-        setIsGeneratingSummary(false)
-      }
-    }
-
     const handleAddSuggestedTag = (tag: string) => {
       handleAddTag(tag)
       setTagSuggestions(prev => prev.filter(t => t !== tag))
@@ -159,7 +136,7 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
     }
 
     const handleTagKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' && canAddTag) {
         e.preventDefault()
         handleAddTag()
       }
@@ -196,7 +173,7 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
     return (
       <>
         <div className={`${className} h-full flex flex-col relative`}>
-          <InputGroup className="rounded-none flex-1 flex flex-col justify-between h-full min-h-0 relative overflow-hidden">
+          <InputGroup className="rounded-none relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
             <div
               className={`w-full overflow-auto flex-1 min-h-0 ${isExpanded ? 'flex flex-col' : ''}`}
             >
@@ -212,7 +189,7 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
 
               {isExpanded && (
                 <div className="px-4 py-3 border-t bg-muted/30">
-                  <div className="flex flex-wrap gap-2 mb-2">
+                  <div className="flex">
                     {tags.map((tag, index) => (
                       <span
                         key={index}
@@ -242,7 +219,13 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
                       <button
                         type="button"
                         onClick={() => handleAddTag()}
-                        className="px-3 py-1 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                        disabled={!canAddTag}
+                        className={cn(
+                          'rounded-md bg-primary px-3 py-1 text-sm text-primary-foreground transition-colors',
+                          canAddTag
+                            ? 'hover:bg-primary/90'
+                            : 'cursor-not-allowed opacity-50'
+                        )}
                       >
                         添加
                       </button>
@@ -305,36 +288,6 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
                         </Button>
                       </div>
                     )}
-                  </div>
-
-                  <div className="space-y-2 border rounded-md p-3 bg-background">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">AI摘要 (可选)</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleGenerateSummary}
-                        disabled={isGeneratingSummary || aiLoading || !normalizedInput}
-                        className="gap-2"
-                      >
-                        {isGeneratingSummary || aiLoading ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <>
-                            <Sparkles className="h-3.5 w-3.5" />
-                            AI生成
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    <textarea
-                      value={aiSummary}
-                      onChange={e => setAISummary(e.target.value)}
-                      placeholder="生成后可编辑，创建时会保存到 memo"
-                      rows={3}
-                      className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y"
-                    />
                   </div>
                 </div>
               )}
@@ -410,7 +363,7 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
                 </div>
               </div>
             </InputGroupAddon>
-            <InputResources />
+            <InputResources compact={!isExpanded} />
           </InputGroup>
         </div>
 

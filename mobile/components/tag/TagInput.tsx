@@ -1,12 +1,12 @@
 import { Loading } from '@/components/ui'
-import { Badge } from '@/components/ui/Badge'
+import { toast } from '@/components/ui/Toast'
 import { useAIConfig } from '@/hooks/useAIConfig'
 import { useAITags } from '@/hooks/useAITags'
 import { normalizeContent } from '@/lib/utils/content'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { Sparkles, X } from 'lucide-react-native'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 
 interface TagInputProps {
@@ -16,6 +16,7 @@ interface TagInputProps {
   suggestions?: string[]
   placeholder?: string
   maxTags?: number
+  appearance?: 'default' | 'plain'
 }
 
 type SuggestionItem = string
@@ -27,14 +28,22 @@ export function TagInput({
   suggestions = [],
   placeholder = '添加标签...',
   maxTags = 10,
+  appearance = 'default',
 }: TagInputProps) {
   const { theme } = useThemeStore()
+  const isPlain = appearance === 'plain'
   const { isConnected } = useConnectionStore()
   const { isAIEnabled } = useAIConfig()
-  const { suggestions: aiSuggestions, loading: aiLoading, suggest: getAISuggestions } = useAITags()
+  const {
+    suggestions: aiSuggestions,
+    loading: aiLoading,
+    error: aiError,
+    suggest: getAISuggestions,
+  } = useAITags()
   const [inputValue, setInputValue] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [showAISuggestionsOnly, setShowAISuggestionsOnly] = useState(false)
+  const lastToastErrorRef = useRef<string | null>(null)
 
   const allSuggestions: SuggestionItem[] = [...suggestions, ...aiSuggestions.map(s => s.name)]
 
@@ -73,29 +82,66 @@ export function TagInput({
     }
   }
 
+  const shouldShowSuggestionPanel =
+    showSuggestions &&
+    (filteredSuggestions.length > 0 ||
+      (showAISuggestionsOnly && (aiSuggestions.length > 0 || aiLoading || Boolean(aiError))))
+
+  useEffect(() => {
+    if (!aiError) {
+      lastToastErrorRef.current = null
+      return
+    }
+
+    if (lastToastErrorRef.current === aiError) {
+      return
+    }
+
+    toast.show({
+      type: 'error',
+      title: 'AI 标签推荐失败',
+      message: aiError,
+    })
+    lastToastErrorRef.current = aiError
+  }, [aiError])
+
   return (
     <View>
       <View
         style={[
           styles.container,
+          isPlain && styles.containerPlain,
           {
-            backgroundColor: theme.background,
+            backgroundColor: isPlain ? 'transparent' : theme.surface,
             borderColor: theme.border,
-            borderWidth: 1,
+            borderWidth: isPlain ? 0 : 1,
+            borderRadius: theme.radius.medium,
+            padding: isPlain ? 0 : theme.spacingScale.medium,
             minHeight: 48,
           },
         ]}
       >
         <View style={styles.tagsRow}>
           {tags.map(tag => (
-            <View key={tag} style={styles.tagWrapper}>
-              <Badge text={tag} variant="soft" size="small" />
+            <View
+              key={tag}
+              style={[
+                styles.tagChip,
+                {
+                  backgroundColor: theme.semantic.infoSoft,
+                  borderColor: theme.border,
+                },
+              ]}
+            >
+              <Text style={[styles.tagChipText, { color: theme.info }]} numberOfLines={1}>
+                {tag}
+              </Text>
               <TouchableOpacity
                 onPress={() => removeTag(tag)}
                 hitSlop={8}
-                style={[styles.removeButton, { backgroundColor: theme.border }]}
+                style={styles.tagChipRemove}
               >
-                <X size={10} color={theme.textSecondary} />
+                <X size={11} color={theme.info} />
               </TouchableOpacity>
             </View>
           ))}
@@ -129,11 +175,14 @@ export function TagInput({
             ) : (
               <View
                 style={{
-                  backgroundColor: theme.primary + '15',
+                  backgroundColor: isPlain ? theme.surfaceMuted : theme.semantic.infoSoft,
+                  borderColor: theme.border,
+                  borderWidth: isPlain ? 0 : 1,
                   paddingHorizontal: 8,
                   paddingVertical: 6,
                   flexDirection: 'row',
                   gap: 4,
+                  borderRadius: theme.radius.pill,
                 }}
               >
                 <Sparkles size={14} color={theme.primary} />
@@ -144,19 +193,33 @@ export function TagInput({
         )}
       </View>
 
-      {showSuggestions &&
-        (filteredSuggestions.length > 0 || (showAISuggestionsOnly && aiSuggestions.length > 0)) && (
+      {shouldShowSuggestionPanel && (
           <View
             style={[
               styles.suggestionsContainer,
               {
-                backgroundColor: theme.surface,
+                backgroundColor: isPlain ? theme.surfaceMuted : theme.surface,
                 borderColor: theme.border,
-                borderWidth: 1,
+                borderWidth: isPlain ? 0 : 1,
+                borderRadius: theme.radius.medium,
               },
             ]}
           >
             <ScrollView keyboardShouldPersistTaps="handled">
+              {showAISuggestionsOnly && aiError && !aiLoading && (
+                <View style={styles.feedbackItem}>
+                  <Text style={[styles.feedbackText, { color: theme.error }]}>{aiError}</Text>
+                </View>
+              )}
+
+              {showAISuggestionsOnly && !aiLoading && !aiError && aiSuggestions.length === 0 && (
+                <View style={styles.feedbackItem}>
+                  <Text style={[styles.feedbackText, { color: theme.textSecondary }]}>
+                    暂无推荐标签，可稍后重试
+                  </Text>
+                </View>
+              )}
+
               {(showAISuggestionsOnly ? aiSuggestions : filteredSuggestions).map(
                 (suggestion, index) => {
                   const tagName = typeof suggestion === 'string' ? suggestion : suggestion.name
@@ -184,8 +247,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
-    padding: 12,
-    borderRadius: 8,
+  },
+  containerPlain: {
+    gap: 6,
   },
   tagsRow: {
     flexDirection: 'row',
@@ -194,15 +258,24 @@ const styles = StyleSheet.create({
     gap: 8,
     flex: 1,
   },
-  tagWrapper: {
+  tagChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    maxWidth: '100%',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 999,
+    paddingLeft: 8,
+    paddingRight: 6,
+    paddingVertical: 4,
   },
-  removeButton: {
-    marginLeft: 4,
+  tagChipText: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginRight: 4,
+  },
+  tagChipRemove: {
     width: 16,
     height: 16,
-    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -218,8 +291,8 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 4,
     paddingVertical: 2,
-    borderRadius: 8,
-    alignSelf: 'flex-end',
+    borderRadius: 999,
+    alignSelf: 'center',
     opacity: 1,
   },
   aiButtonLoading: {
@@ -230,14 +303,21 @@ const styles = StyleSheet.create({
   },
   suggestionsContainer: {
     marginTop: 8,
-    borderRadius: 8,
     maxHeight: 150,
   },
   suggestionItem: {
     padding: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   suggestionText: {
     fontSize: 14,
+  },
+  feedbackItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  feedbackText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 })

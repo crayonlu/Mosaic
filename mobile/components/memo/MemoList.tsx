@@ -111,8 +111,8 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
     <View
       style={[
         styles.dateHeader,
-        { borderTopColor: theme.border },
-        isFirst && { borderTopWidth: 0, marginTop: 0 },
+        { borderTopColor: theme.border, borderTopWidth: isFirst ? 0 : StyleSheet.hairlineWidth },
+        isFirst && { marginTop: 0 },
       ]}
     >
       <Text style={[styles.dateHeaderText, { color: theme.text }]}>{displayDate}</Text>
@@ -124,7 +124,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <View style={[styles.emptyIcon, { backgroundColor: `${theme.primary}10` }]}>
+      <View style={[styles.emptyIcon, { backgroundColor: theme.semantic.infoSoft }]}>
         <FileX size={48} color={theme.primary} strokeWidth={1.5} />
       </View>
       <Text style={[styles.emptyTitle, { color: theme.text }]}>
@@ -207,17 +207,21 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
 }
 
 const styles = StyleSheet.create({
-  listContent: {},
+  listContent: {
+    paddingBottom: 8,
+  },
   dateHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 8,
+    paddingTop: 14,
+    paddingBottom: 6,
     paddingHorizontal: 12,
+    marginTop: 4,
   },
   dateHeaderText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   dateHeaderCount: {
     fontSize: 12,
@@ -239,7 +243,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 8,
   },
   emptySubtitle: {

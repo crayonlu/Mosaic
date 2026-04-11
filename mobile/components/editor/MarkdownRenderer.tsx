@@ -285,13 +285,13 @@ const styles = StyleSheet.create({
   },
   h2: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 10,
     marginTop: 6,
   },
   h3: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 8,
     marginTop: 4,
   },

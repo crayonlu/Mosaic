@@ -4,22 +4,24 @@ import { AuthImage } from '@/components/common/AuthImage'
 import { SidebarHeatMap } from '@/components/desktop/SidebarHeatMap'
 import { Avatar } from '@/components/ui/avatar'
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarRail,
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarRail,
+    useSidebar,
 } from '@/components/ui/sidebar'
 import { useTheme } from '@/hooks/useTheme'
 import { resolveApiUrl } from '@/lib/sharedApi'
 import { useUser } from '@mosaic/api'
 import { Inbox, Moon, PenBox, Search, Settings, Sun } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 const items = [
@@ -31,8 +33,53 @@ const items = [
 export function AppSidebar() {
   const location = useLocation()
   const { data: user } = useUser()
+  const { state, isMobile, openMobile } = useSidebar()
 
   const { theme, toggleTheme } = useTheme()
+  const DESKTOP_SIDEBAR_ANIMATION_MS = 220
+  const MOBILE_SIDEBAR_ANIMATION_MS = 520
+  const [shouldShowHeatMap, setShouldShowHeatMap] = useState(isMobile ? openMobile : state === 'expanded')
+  const prevDesktopStateRef = useRef(state)
+  const prevMobileOpenRef = useRef(openMobile)
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    if (isMobile) {
+      const wasOpen = prevMobileOpenRef.current
+      if (!openMobile) {
+        setShouldShowHeatMap(false)
+      } else if (!wasOpen && openMobile) {
+        setShouldShowHeatMap(false)
+        timer = setTimeout(() => setShouldShowHeatMap(true), MOBILE_SIDEBAR_ANIMATION_MS)
+      } else {
+        setShouldShowHeatMap(true)
+      }
+      prevMobileOpenRef.current = openMobile
+      return () => {
+        if (timer) {
+          clearTimeout(timer)
+        }
+      }
+    }
+
+    const prevState = prevDesktopStateRef.current
+    if (state === 'collapsed') {
+      setShouldShowHeatMap(false)
+    } else if (prevState === 'collapsed' && state === 'expanded') {
+      setShouldShowHeatMap(false)
+      timer = setTimeout(() => setShouldShowHeatMap(true), DESKTOP_SIDEBAR_ANIMATION_MS)
+    } else {
+      setShouldShowHeatMap(true)
+    }
+
+    prevDesktopStateRef.current = state
+    return () => {
+      if (timer) {
+        clearTimeout(timer)
+      }
+    }
+  }, [isMobile, openMobile, state])
 
   return (
     <Sidebar collapsible="icon">
@@ -88,11 +135,13 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-          <SidebarGroupContent>
-            <SidebarHeatMap />
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {shouldShowHeatMap && (
+          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+            <SidebarGroupContent>
+              <SidebarHeatMap />
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>

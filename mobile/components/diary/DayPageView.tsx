@@ -148,7 +148,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
         <View style={styles.editActionsRow}>
           {!isEditing ? (
             <Pressable
-              style={[styles.editActionButton, { backgroundColor: `${theme.primary}12` }]}
+              style={[styles.editActionButton, { backgroundColor: theme.semantic.infoSoft }]}
               onPress={handleStartEdit}
             >
               <Text style={[styles.editActionText, { color: theme.primary }]}>编辑</Text>
@@ -193,7 +193,14 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
           )}
 
           {(diary.summary || isEditing) && (
-            <View style={[styles.card, { borderColor: theme.border }]}>
+            <View
+              style={[
+                styles.card,
+                {
+                  borderRadius: theme.radius.medium,
+                },
+              ]}
+            >
               <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>今日总结</Text>
               {isEditing ? (
                 <TextInput
@@ -207,7 +214,9 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
                     styles.summaryInput,
                     {
                       color: theme.text,
+                      backgroundColor: theme.surfaceMuted,
                       borderColor: theme.border,
+                      borderRadius: theme.radius.medium,
                     },
                   ]}
                 />
@@ -280,11 +289,11 @@ const styles = StyleSheet.create({
   editActionButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   editActionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   actionTextButton: {
     paddingVertical: 6,
@@ -292,7 +301,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   card: {
     padding: 12,
@@ -315,8 +324,7 @@ const styles = StyleSheet.create({
   },
   summaryInput: {
     minHeight: 108,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
@@ -349,7 +357,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   memoCount: {
     fontSize: 13,

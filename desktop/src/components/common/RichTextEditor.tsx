@@ -247,7 +247,7 @@ export function RichTextEditor({
   }
 
   return (
-    <div className="w-full h-full bg-background flex flex-col overflow-hidden">
+    <div className={cn('w-full h-full flex flex-col overflow-hidden', editable ? 'bg-background' : 'bg-transparent')}>
       {editable && editor && (
         <Toolbar
           editor={editor}

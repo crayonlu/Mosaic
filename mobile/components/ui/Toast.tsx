@@ -91,7 +91,32 @@ export function ToastContainer() {
   )
 }
 
-function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => void; theme: any }) {
+function Toast({
+  toast,
+  onHide,
+  theme,
+}: {
+  toast: ToastMessage
+  onHide: () => void
+  theme: {
+    background: string
+    surface: string
+    text: string
+    textSecondary: string
+    success: string
+    error: string
+    warning: string
+    info: string
+    border: string
+    borderStrong: string
+    semantic: {
+      successSoft: string
+      errorSoft: string
+      warningSoft: string
+      infoSoft: string
+    }
+  }
+}) {
   const fadeAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.8)).current
 
@@ -129,19 +154,45 @@ function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => vo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast.id])
 
-  const getBackgroundColor = () => {
+  const getSemanticColor = () => {
     switch (toast.type) {
       case 'success':
-        return '#10B981'
+        return theme.success
       case 'error':
-        return '#EF4444'
+        return theme.error
       case 'warning':
-        return '#F59E0B'
+        return theme.warning
       case 'info':
-        return '#3B82F6'
+        return theme.info
       default:
-        return '#6B7280'
+        return theme.info
     }
+  }
+
+  const semanticColor = getSemanticColor()
+
+  const getSoftSemanticColor = () => {
+    switch (toast.type) {
+      case 'success':
+        return theme.semantic.successSoft
+      case 'error':
+        return theme.semantic.errorSoft
+      case 'warning':
+        return theme.semantic.warningSoft
+      case 'info':
+        return theme.semantic.infoSoft
+      default:
+        return theme.semantic.infoSoft
+    }
+  }
+
+  const palette = {
+    containerBackground: getSoftSemanticColor(),
+    containerBorder: theme.borderStrong,
+    iconColor: semanticColor,
+    closeBackground: theme.surface,
+    actionBorder: semanticColor,
+    actionText: semanticColor,
   }
 
   const getIcon = () => {
@@ -164,18 +215,19 @@ function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => vo
       style={[
         styles.toastContainer,
         {
-          backgroundColor: getBackgroundColor(),
+          backgroundColor: palette.containerBackground,
+          borderColor: palette.containerBorder,
           opacity: fadeAnim,
           transform: [{ scale: scaleAnim }],
         },
       ]}
     >
       <View style={styles.content}>
-        <Text style={styles.icon}>{getIcon()}</Text>
+        <Text style={[styles.icon, { color: palette.iconColor }]}>{getIcon()}</Text>
         <View style={styles.textContainer}>
-          <Text style={[styles.title, { color: '#FFFFFF' }]}>{toast.title}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{toast.title}</Text>
           {toast.message && (
-            <Text style={[styles.message, { color: 'rgba(255,255,255,0.9)' }]}>
+            <Text style={[styles.message, { color: theme.textSecondary }]}>
               {toast.message}
             </Text>
           )}
@@ -183,9 +235,9 @@ function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => vo
       </View>
       <TouchableOpacity
         onPress={onHide}
-        style={[styles.closeButton, { backgroundColor: getBackgroundColor() }]}
+        style={[styles.closeButton, { backgroundColor: palette.closeBackground }]}
       >
-        <X color="#FFFFFF" size={14} />
+        <X color={theme.text} size={14} />
       </TouchableOpacity>
       {toast.actionLabel && toast.onAction && (
         <TouchableOpacity
@@ -193,9 +245,9 @@ function Toast({ toast, onHide, theme }: { toast: ToastMessage; onHide: () => vo
             toast.onAction?.()
             onHide()
           }}
-          style={[styles.actionButton, { borderColor: 'rgba(255, 255, 255, 0.3)' }]}
+          style={[styles.actionButton, { borderColor: palette.actionBorder }]}
         >
-          <Text style={styles.actionText}>{toast.actionLabel}</Text>
+          <Text style={[styles.actionText, { color: palette.actionText }]}>{toast.actionLabel}</Text>
         </TouchableOpacity>
       )}
     </Animated.View>
@@ -243,10 +295,10 @@ const styles = StyleSheet.create({
   },
   toastContainer: {
     padding: 14,
-    borderRadius: 8,
-    elevation: 4,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
     marginVertical: 6,
-    maxWidth: 240,
+    maxWidth: 280,
     minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
@@ -261,7 +313,6 @@ const styles = StyleSheet.create({
   icon: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#FFFFFF',
     minWidth: 20,
     textAlign: 'center',
   },
@@ -271,7 +322,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     textAlign: 'left',
   },
   message: {
@@ -291,21 +342,15 @@ const styles = StyleSheet.create({
     right: -6,
     borderRadius: 10,
   },
-  closeText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontWeight: 'bold',
-  },
   actionButton: {
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     marginLeft: 8,
   },
   actionText: {
-    color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 })

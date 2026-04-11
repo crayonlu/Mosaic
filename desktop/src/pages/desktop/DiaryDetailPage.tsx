@@ -1,16 +1,15 @@
 import { EmptyState } from '@/components/common/EmptyState'
 import { MemoList, type MemoListRef } from '@/components/common/MemoList'
-import DeskTopLayout from '@/components/layout/DeskTopLayout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Textarea } from '@/components/ui/textarea'
@@ -98,21 +97,17 @@ export default function DiaryDetailPage() {
 
   if (isLoading) {
     return (
-      <DeskTopLayout className="relative">
-        <div className="h-full flex items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </div>
-      </DeskTopLayout>
+      <div className="h-full flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
     )
   }
 
   if (!diary) {
     return (
-      <DeskTopLayout className="relative">
-        <div className="h-full flex items-center justify-center">
-          <EmptyState icon={BookOpen} title="日记不存在" description="该日期没有日记记录" />
-        </div>
-      </DeskTopLayout>
+      <div className="h-full flex items-center justify-center">
+        <EmptyState icon={BookOpen} title="日记不存在" description="该日期没有日记记录" />
+      </div>
     )
   }
 
@@ -120,8 +115,7 @@ export default function DiaryDetailPage() {
   const moodOption = MOODS.find(m => m.key === diary.moodKey)
 
   return (
-    <DeskTopLayout className="relative">
-      <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col">
         <div className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
           <div className="flex items-center justify-between px-6 pb-4 pt-2">
             <div className="flex items-center gap-4">
@@ -283,6 +277,5 @@ export default function DiaryDetailPage() {
           </div>
         </div>
       </div>
-    </DeskTopLayout>
   )
 }

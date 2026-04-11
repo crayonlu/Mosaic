@@ -21,6 +21,7 @@ export function MemoInput({
   const { theme } = useThemeStore()
   const [isFullScreenVisible, setIsFullScreenVisible] = useState(false)
   const [text, setText] = useState('')
+  const [isFocused, setIsFocused] = useState(false)
 
   const handleSubmit = () => {
     if (!text.trim() || disabled) return
@@ -46,19 +47,24 @@ export function MemoInput({
           style={[
             styles.inputWrapper,
             {
-              backgroundColor: theme.background,
-              borderColor: theme.border,
-              borderWidth: 1,
-              opacity: disabled ? 0.6 : 1,
+              backgroundColor: isFocused ? theme.surface : theme.surfaceMuted,
+              borderColor: isFocused ? theme.primary : 'transparent',
+              borderWidth: isFocused ? 1 : 0,
+              borderRadius: theme.radius.medium,
+              paddingHorizontal: theme.spacingScale.medium,
+              height: 48,
+              opacity: disabled ? theme.state.disabledOpacity : 1,
             },
           ]}
         >
           <TextInput
-            style={[styles.input, { color: theme.text }]}
+            style={[styles.input, { color: theme.text, fontSize: theme.typography.bodyLarge }]}
             placeholder={placeholder}
             placeholderTextColor={theme.textSecondary}
             value={text}
             onChangeText={setText}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             editable={!disabled}
             multiline={false}
             numberOfLines={1}
@@ -99,16 +105,12 @@ export function MemoInput({
 const styles = StyleSheet.create({
   container: {
     gap: 8,
-    display: 'flex',
     flexDirection: 'row',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    height: 48,
   },
   input: {
     flex: 1,
