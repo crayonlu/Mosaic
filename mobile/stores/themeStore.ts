@@ -50,13 +50,13 @@ export const useThemeStore = create<ThemeState>()(
       partialize: state => ({ themeMode: state.themeMode }),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<ThemeState> | undefined
-        const mode = persisted?.themeMode ?? currentState.themeMode ?? 'light'
+        const mode = persisted?.themeMode ?? currentState.themeMode ?? null
         const isDark = mode === 'dark'
 
         return {
           ...currentState,
           themeMode: mode,
-          theme: getTheme(mode),
+          theme: mode ? getTheme(mode) : currentState.theme,
           isDark,
         }
       },
@@ -65,7 +65,6 @@ export const useThemeStore = create<ThemeState>()(
 )
 
 export function useThemeInit() {
-  const { setThemeMode } = useThemeStore()
   const colorScheme = useColorScheme()
   const initialized = useRef(false)
 
@@ -73,8 +72,25 @@ export function useThemeInit() {
     if (initialized.current) return
     initialized.current = true
 
-    const systemMode = colorScheme === 'dark' ? 'dark' : 'light'
-    setThemeMode(systemMode)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const applySystemThemeIfUnset = () => {
+      const state = useThemeStore.getState()
+      if (state.themeMode !== null) {
+        return
+      }
+
+      const systemMode: ThemeMode = colorScheme === 'dark' ? 'dark' : 'light'
+      state.setThemeMode(systemMode)
+    }
+
+    if (useThemeStore.persist.hasHydrated()) {
+      applySystemThemeIfUnset()
+      return
+    }
+
+    const unsubscribeHydration = useThemeStore.persist.onFinishHydration(() => {
+      applySystemThemeIfUnset()
+    })
+
+    return unsubscribeHydration
   }, [colorScheme])
 }
