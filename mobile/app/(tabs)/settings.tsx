@@ -13,15 +13,15 @@ import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 // import { router } from 'expo-router'
 import {
-    // Bell,
-    Info,
-    LogOut,
-    Moon,
-    // Plus,
-    ShieldCheck,
-    Sparkles,
-    Sun,
-    Trash,
+  // Bell,
+  Info,
+  LogOut,
+  Moon,
+  // Plus,
+  ShieldCheck,
+  Sparkles,
+  Sun,
+  Trash,
 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'

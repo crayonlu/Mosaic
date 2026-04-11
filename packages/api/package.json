@@ -14,6 +14,7 @@
     "axios": "^1.13.5"
   },
   "devDependencies": {
+    "eslint": "^9.39.2",
     "prettier": "^3.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.0.0"

@@ -222,9 +222,7 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
                         disabled={!canAddTag}
                         className={cn(
                           'rounded-md bg-primary px-3 py-1 text-sm text-primary-foreground transition-colors',
-                          canAddTag
-                            ? 'hover:bg-primary/90'
-                            : 'cursor-not-allowed opacity-50'
+                          canAddTag ? 'hover:bg-primary/90' : 'cursor-not-allowed opacity-50'
                         )}
                       >
                         添加

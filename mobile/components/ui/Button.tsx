@@ -1,13 +1,13 @@
 import { useTheme } from '@/hooks/useTheme'
 import React, { JSX } from 'react'
 import {
-    ActivityIndicator,
-    StyleProp,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    ViewStyle,
+  ActivityIndicator,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ViewStyle,
 } from 'react-native'
 
 export interface ButtonProps {

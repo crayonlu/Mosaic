@@ -28,7 +28,10 @@ export function SidebarHeatMap() {
       <div className="grid grid-cols-4 gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
         {MOODS.map(mood => (
           <div key={mood.key} className="flex items-center gap-1.5 min-w-0">
-            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: mood.color }} />
+            <div
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ backgroundColor: mood.color }}
+            />
             <span>{mood.label}</span>
           </div>
         ))}

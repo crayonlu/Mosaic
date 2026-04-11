@@ -171,7 +171,9 @@ export function MemoCard({ memo, onClick, searchWords = [], className }: MemoCar
       {memo.aiSummary?.trim() && (
         <div className="border-t border-border/80 bg-muted/20 px-3 py-2">
           <div className="mb-1 text-[11px] font-medium text-muted-foreground">AI摘要</div>
-          <p className="line-clamp-2 whitespace-pre-wrap text-xs text-muted-foreground">{memo.aiSummary}</p>
+          <p className="line-clamp-2 whitespace-pre-wrap text-xs text-muted-foreground">
+            {memo.aiSummary}
+          </p>
         </div>
       )}
 

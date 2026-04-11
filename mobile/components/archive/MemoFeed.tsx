@@ -162,6 +162,7 @@ export function MemoFeed({
 const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 10,
+    paddingHorizontal: 8,
   },
   cardContent: {
     flex: 1,

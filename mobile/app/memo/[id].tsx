@@ -55,49 +55,41 @@ export default function MemoDetailScreen() {
     [memo?.resources, toMediaItem]
   )
 
-  const handleEditSubmit = useCallback(async (
-    content: string,
-    tags: string[],
-    resourceIds: string[],
-    aiSummary?: string
-  ) => {
-    if (!memo || !canUseNetwork || isPending) return
+  const handleEditSubmit = useCallback(
+    async (content: string, tags: string[], resourceIds: string[], aiSummary?: string) => {
+      if (!memo || !canUseNetwork || isPending) return
 
-    try {
-      const existingResourceIds = memo.resources.map(resource => resource.id)
-      const removedResourceIds = existingResourceIds.filter(id => !resourceIds.includes(id))
+      try {
+        const existingResourceIds = memo.resources.map(resource => resource.id)
+        const removedResourceIds = existingResourceIds.filter(id => !resourceIds.includes(id))
 
-      await updateMemo({
-        id: memo.id,
-        data: {
-          content: content.trim(),
-          tags,
-          resourceIds,
-          aiSummary,
-        },
-      })
+        await updateMemo({
+          id: memo.id,
+          data: {
+            content: content.trim(),
+            tags,
+            resourceIds,
+            aiSummary,
+          },
+        })
 
-      for (const resourceId of removedResourceIds) {
-        try {
-          await resourcesApi.delete(resourceId)
-        } catch {
-          // Best-effort cleanup: memo update has succeeded even if resource delete fails.
+        for (const resourceId of removedResourceIds) {
+          try {
+            await resourcesApi.delete(resourceId)
+          } catch {
+            // Best-effort cleanup: memo update has succeeded even if resource delete fails.
+          }
         }
-      }
 
-      setIsEditorVisible(false)
-      toast.success('成功', '已更新')
-    } catch (error) {
-      handleError(error)
-      toast.error('错误', '更新失败')
-    }
-  }, [
-    memo,
-    canUseNetwork,
-    isPending,
-    updateMemo,
-    handleError,
-  ])
+        setIsEditorVisible(false)
+        toast.success('成功', '已更新')
+      } catch (error) {
+        handleError(error)
+        toast.error('错误', '更新失败')
+      }
+    },
+    [memo, canUseNetwork, isPending, updateMemo, handleError]
+  )
 
   const handleDelete = useCallback(() => {
     if (!memo) return
@@ -168,13 +160,15 @@ export default function MemoDetailScreen() {
             style={[
               styles.aiSummaryContainer,
               {
-                backgroundColor: theme.semantic.infoSoft,
+                backgroundColor: theme.surfaceMuted,
                 borderRadius: theme.radius.medium,
               },
             ]}
           >
             <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
-            <Text style={[styles.aiSummaryText, { color: theme.textSecondary }]}>{memo.aiSummary}</Text>
+            <Text style={[styles.aiSummaryText, { color: theme.textSecondary }]}>
+              {memo.aiSummary}
+            </Text>
           </View>
         )}
 
@@ -195,10 +189,7 @@ export default function MemoDetailScreen() {
         {memo.tags.length > 0 && (
           <View style={styles.tagsContainer}>
             {memo.tags.map((tag, index) => (
-              <View
-                key={index}
-                style={[styles.tag, { backgroundColor: theme.surfaceMuted }]}
-              >
+              <View key={index} style={[styles.tag, { backgroundColor: theme.surfaceMuted }]}>
                 <Text style={[styles.tagText, { color: theme.textSecondary }]}>#{tag}</Text>
               </View>
             ))}

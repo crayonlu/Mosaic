@@ -10,10 +10,7 @@ interface ArchiveDateFilterProps {
   onDateSelect: (date?: string) => void
 }
 
-export function ArchiveDateFilter({
-  selectedDate,
-  onDateSelect,
-}: ArchiveDateFilterProps) {
+export function ArchiveDateFilter({ selectedDate, onDateSelect }: ArchiveDateFilterProps) {
   const { theme } = useThemeStore()
   const [showDatePicker, setShowDatePicker] = useState(false)
 
@@ -34,18 +31,18 @@ export function ArchiveDateFilter({
           style={[
             styles.filterButton,
             {
-              backgroundColor: selectedDate ? theme.semantic.infoSoft : theme.surfaceMuted,
+              backgroundColor: theme.surfaceMuted,
               borderColor: 'transparent',
               borderRadius: theme.radius.medium,
             },
           ]}
           onPress={() => setShowDatePicker(true)}
         >
-          <Calendar size={18} color={selectedDate ? theme.primary : theme.textSecondary} />
+          <Calendar size={18} color={theme.textSecondary} />
           <Text
             style={[
               styles.filterText,
-              { color: selectedDate ? theme.primary : theme.textSecondary },
+              { color: selectedDate ? theme.text : theme.textSecondary },
             ]}
           >
             {formatDate(selectedDate) || '选择日期'}

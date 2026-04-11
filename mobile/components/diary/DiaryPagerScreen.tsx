@@ -69,9 +69,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     const totalPages = PREFETCH_DAYS + futureDays + 1
 
     return Array.from({ length: totalPages }, (_, index) =>
-      safeCurrent
-        .add(index - currentPageIndex, 'day')
-        .format('YYYY-MM-DD')
+      safeCurrent.add(index - currentPageIndex, 'day').format('YYYY-MM-DD')
     )
   }, [currentDate, currentPageIndex, today])
 

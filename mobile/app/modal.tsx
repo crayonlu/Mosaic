@@ -15,7 +15,7 @@ export default function ModalScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.overlay }]}> 
+    <View style={[styles.container, { backgroundColor: theme.overlay }]}>
       <View
         style={[
           styles.modalContent,

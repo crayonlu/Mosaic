@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Textarea } from '@/components/ui/textarea'
@@ -116,166 +116,166 @@ export default function DiaryDetailPage() {
 
   return (
     <div className="h-full flex flex-col">
-        <div className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
-          <div className="flex items-center justify-between px-6 pb-4 pt-2">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={handleBack}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                返回
-              </Button>
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                <span className="text-lg font-semibold">{dateDisplay}</span>
-              </div>
-              {moodOption && (
-                <Badge
-                  variant="outline"
-                  className="text-sm text-white"
-                  style={{ backgroundColor: getMoodColor(diary.moodKey || '') }}
-                >
-                  {moodOption.label} (强度: {diary.moodScore}/10)
-                </Badge>
-              )}
+      <div className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
+        <div className="flex items-center justify-between px-6 pb-4 pt-2">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={handleBack}>
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              返回
+            </Button>
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              <span className="text-lg font-semibold">{dateDisplay}</span>
             </div>
+            {moodOption && (
+              <Badge
+                variant="outline"
+                className="text-sm text-white"
+                style={{ backgroundColor: getMoodColor(diary.moodKey || '') }}
+              >
+                {moodOption.label} (强度: {diary.moodScore}/10)
+              </Badge>
+            )}
           </div>
+        </div>
 
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-3xl mx-auto space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>日记总结</span>
-                    {!editingSummary && (
-                      <Button variant="ghost" size="sm" onClick={() => setEditingSummary(true)}>
-                        <Edit2 className="h-4 w-4 mr-1" />
-                        编辑
-                      </Button>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {editingSummary ? (
-                    <div className="space-y-4">
-                      <Textarea
-                        value={summary}
-                        onChange={e => setSummary(e.target.value)}
-                        placeholder="写下今天的总结..."
-                        rows={4}
-                        disabled={isSaving}
-                      />
-                      <div className="flex justify-end">
-                        <Button onClick={handleSaveSummary} disabled={isSaving}>
-                          {isSaving ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              保存中
-                            </>
-                          ) : (
-                            <>
-                              <Save className="h-4 w-4 mr-2" />
-                              保存
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm whitespace-pre-wrap">{diary.summary || '暂无总结'}</p>
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-3xl mx-auto space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>日记总结</span>
+                  {!editingSummary && (
+                    <Button variant="ghost" size="sm" onClick={() => setEditingSummary(true)}>
+                      <Edit2 className="h-4 w-4 mr-1" />
+                      编辑
+                    </Button>
                   )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>心情记录</span>
-                    {!editingMood ? (
-                      <Button variant="ghost" size="sm" onClick={() => setEditingMood(true)}>
-                        <Edit2 className="h-4 w-4 mr-1" />
-                        编辑
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {editingSummary ? (
+                  <div className="space-y-4">
+                    <Textarea
+                      value={summary}
+                      onChange={e => setSummary(e.target.value)}
+                      placeholder="写下今天的总结..."
+                      rows={4}
+                      disabled={isSaving}
+                    />
+                    <div className="flex justify-end">
+                      <Button onClick={handleSaveSummary} disabled={isSaving}>
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            保存中
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4 mr-2" />
+                            保存
+                          </>
+                        )}
                       </Button>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleCancelEdit}
-                          disabled={isSaving}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleSaveMood}
-                          disabled={isSaving || !moodKey}
-                        >
-                          {isSaving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Save className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {editingMood ? (
-                    <div className="space-y-4">
-                      <Select
-                        value={moodKey}
-                        onValueChange={(value: string) => setMoodKey(value as MoodKey)}
-                        disabled={isSaving}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="选择心情" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {MOODS.map(mood => (
-                            <SelectItem key={mood.key} value={mood.key}>
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className="w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: mood.color }}
-                                />
-                                <span>{mood.label}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <div className="flex items-center gap-4 mt-2">
-                        <span className="text-sm font-medium">强度: {moodScore[0]}/10</span>
-                        <Slider
-                          value={[moodScore[0]]}
-                          onValueChange={setMoodScore}
-                          max={10}
-                          min={1}
-                          step={1}
-                          disabled={isSaving}
-                          className="flex-1"
-                        />
-                      </div>
                     </div>
+                  </div>
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap">{diary.summary || '暂无总结'}</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>心情记录</span>
+                  {!editingMood ? (
+                    <Button variant="ghost" size="sm" onClick={() => setEditingMood(true)}>
+                      <Edit2 className="h-4 w-4 mr-1" />
+                      编辑
+                    </Button>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className="text-sm text-white"
-                        style={{ backgroundColor: getMoodColor(diary.moodKey || '') }}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCancelEdit}
+                        disabled={isSaving}
                       >
-                        {moodOption?.label} (强度: {diary.moodScore}/10)
-                      </Badge>
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSaveMood}
+                        disabled={isSaving || !moodKey}
+                      >
+                        {isSaving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {editingMood ? (
+                  <div className="space-y-4">
+                    <Select
+                      value={moodKey}
+                      onValueChange={(value: string) => setMoodKey(value as MoodKey)}
+                      disabled={isSaving}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择心情" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MOODS.map(mood => (
+                          <SelectItem key={mood.key} value={mood.key}>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: mood.color }}
+                              />
+                              <span>{mood.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className="text-sm font-medium">强度: {moodScore[0]}/10</span>
+                      <Slider
+                        value={[moodScore[0]]}
+                        onValueChange={setMoodScore}
+                        max={10}
+                        min={1}
+                        step={1}
+                        disabled={isSaving}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className="text-sm text-white"
+                      style={{ backgroundColor: getMoodColor(diary.moodKey || '') }}
+                    >
+                      {moodOption?.label} (强度: {diary.moodScore}/10)
+                    </Badge>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-              <MemoList diaryDate={date} ref={memoListRef} onMemoClick={() => {}} />
-            </div>
+            <MemoList diaryDate={date} ref={memoListRef} onMemoClick={() => {}} />
           </div>
         </div>
       </div>
+    </div>
   )
 }

@@ -2,12 +2,12 @@ import { useThemeStore } from '@/stores/themeStore'
 import { Check, ChevronDown } from 'lucide-react-native'
 import { useState } from 'react'
 import {
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native'
 
 export interface SelectOption {
@@ -94,7 +94,7 @@ export function Select({
         onRequestClose={() => setIsOpen(false)}
       >
         <TouchableWithoutFeedback onPress={() => setIsOpen(false)}>
-          <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}> 
+          <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
             <TouchableWithoutFeedback>
               <View
                 style={[

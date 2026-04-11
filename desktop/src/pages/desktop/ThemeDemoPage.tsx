@@ -2,10 +2,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-    QUIET_PAPER_DARK,
-    QUIET_PAPER_LIGHT,
-    QUIET_PAPER_MOOD_COLORS,
-    type ThemeScale,
+  QUIET_PAPER_DARK,
+  QUIET_PAPER_LIGHT,
+  QUIET_PAPER_MOOD_COLORS,
+  type ThemeScale,
 } from '@mosaic/utils'
 import { ArrowLeft, Moon, Sun } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -34,7 +34,11 @@ const lightPalette: Palette = {
     { name: 'Text Secondary', value: QUIET_PAPER_LIGHT.textSecondary, usage: 'Secondary text' },
     { name: 'Border', value: QUIET_PAPER_LIGHT.border, usage: 'Input and divider border' },
     { name: 'Primary', value: QUIET_PAPER_LIGHT.primary, usage: 'Brand action color' },
-    { name: 'Primary Accent', value: QUIET_PAPER_LIGHT.primaryAccent, usage: 'Hover and active accents' },
+    {
+      name: 'Primary Accent',
+      value: QUIET_PAPER_LIGHT.primaryAccent,
+      usage: 'Hover and active accents',
+    },
     { name: 'Info', value: QUIET_PAPER_LIGHT.info, usage: 'Informational states' },
     { name: 'Success', value: QUIET_PAPER_LIGHT.success, usage: 'Success states' },
     { name: 'Error', value: QUIET_PAPER_LIGHT.error, usage: 'Error states' },
@@ -52,7 +56,11 @@ const darkPalette: Palette = {
     { name: 'Text Secondary', value: QUIET_PAPER_DARK.textSecondary, usage: 'Secondary text' },
     { name: 'Border', value: QUIET_PAPER_DARK.border, usage: 'Input and divider border' },
     { name: 'Primary', value: QUIET_PAPER_DARK.primary, usage: 'Brand action color' },
-    { name: 'Primary Accent', value: QUIET_PAPER_DARK.primaryAccent, usage: 'Hover and active accents' },
+    {
+      name: 'Primary Accent',
+      value: QUIET_PAPER_DARK.primaryAccent,
+      usage: 'Hover and active accents',
+    },
     { name: 'Info', value: QUIET_PAPER_DARK.info, usage: 'Informational states' },
     { name: 'Success', value: QUIET_PAPER_DARK.success, usage: 'Success states' },
     { name: 'Error', value: QUIET_PAPER_DARK.error, usage: 'Error states' },
@@ -82,7 +90,10 @@ function TokenCard({ tone, dark = false }: { tone: Tone; dark?: boolean }) {
         backgroundColor: dark ? '#1F1F22' : '#F2ECE2',
       }}
     >
-      <div className="h-16 rounded-lg border" style={{ backgroundColor: tone.value, borderColor: '#00000022' }} />
+      <div
+        className="h-16 rounded-lg border"
+        style={{ backgroundColor: tone.value, borderColor: '#00000022' }}
+      />
       <div className="mt-3 space-y-1">
         <p className="text-sm font-semibold" style={{ color: textColor }}>
           {tone.name}
@@ -200,14 +211,20 @@ export default function ThemeDemoPage() {
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-neutral-600">Mosaic Design Study</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-neutral-600">
+              Mosaic Design Study
+            </p>
             <h1 className="mt-2 text-3xl font-semibold text-neutral-900">跨端配色演示页</h1>
             <p className="mt-2 text-sm text-neutral-700">
-              这是我为“小而美”方向提出的 Quiet Paper 方案。你可以先看整体气质，再决定是否替换当前主题。
+              这是我为“小而美”方向提出的 Quiet Paper
+              方案。你可以先看整体气质，再决定是否替换当前主题。
             </p>
           </div>
 
-          <Link to="/" className="inline-flex items-center gap-2 text-sm text-neutral-700 hover:text-neutral-900">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm text-neutral-700 hover:text-neutral-900"
+          >
             <ArrowLeft className="h-4 w-4" />
             返回主页
           </Link>
@@ -216,7 +233,12 @@ export default function ThemeDemoPage() {
         <PaletteSection palette={lightPalette} />
         <PaletteSection palette={darkPalette} />
 
-        <Card style={{ backgroundColor: QUIET_PAPER_LIGHT.background, borderColor: QUIET_PAPER_LIGHT.border }}>
+        <Card
+          style={{
+            backgroundColor: QUIET_PAPER_LIGHT.background,
+            borderColor: QUIET_PAPER_LIGHT.border,
+          }}
+        >
           <CardHeader>
             <CardTitle style={{ color: QUIET_PAPER_LIGHT.text }}>
               情绪色建议（可替换现有 mood 颜色）

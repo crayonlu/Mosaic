@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import {
-    mapServerConnectionError,
-    normalizeServerUrlInput,
-    validateServerUrl,
+  mapServerConnectionError,
+  normalizeServerUrlInput,
+  validateServerUrl,
 } from '@/lib/errors/serverConnection'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
@@ -123,7 +123,10 @@ export default function SetupScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.header}>
             <Image
               source={
@@ -139,7 +142,7 @@ export default function SetupScreen() {
             </Text>
           </View>
 
-          <View style={[styles.card, { backgroundColor: theme.surface }]}> 
+          <View style={[styles.card, { backgroundColor: theme.surface }]}>
             <Text style={[styles.cardTitle, { color: theme.text }]}>服务器配置</Text>
             <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
               输入您的 Mosaic 服务器信息
@@ -200,7 +203,9 @@ export default function SetupScreen() {
                   <View style={styles.errorTextWrapper}>
                     <Text style={[styles.errorText, { color: theme.error }]}>{errorMessage}</Text>
                     {errorHint ? (
-                      <Text style={[styles.errorHint, { color: theme.textSecondary }]}>{errorHint}</Text>
+                      <Text style={[styles.errorHint, { color: theme.textSecondary }]}>
+                        {errorHint}
+                      </Text>
                     ) : null}
                   </View>
                 </View>

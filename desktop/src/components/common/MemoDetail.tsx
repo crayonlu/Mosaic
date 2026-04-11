@@ -415,7 +415,10 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const hasSummaryChanged = editedAISummary.trim() !== (memo?.aiSummary || '').trim()
   const normalizedTagInput = tagInput.trim()
   const canAddTag =
-    normalizedTagInput.length > 0 && !editedTags.includes(normalizedTagInput) && !aiLoading && !isSaving
+    normalizedTagInput.length > 0 &&
+    !editedTags.includes(normalizedTagInput) &&
+    !aiLoading &&
+    !isSaving
 
   if (!memo) return null
 
