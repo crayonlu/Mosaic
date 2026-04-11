@@ -12,6 +12,11 @@ interface InputProps extends TextInputProps {
 export function Input({ label, error, showPasswordToggle, style, ...props }: InputProps) {
   const { theme } = useThemeStore()
   const [passwordVisible, setPasswordVisible] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
+
+  const borderColor = error ? theme.error : isFocused ? theme.primary : 'transparent'
+  const borderWidth = error || isFocused ? 1 : 0
+  const backgroundColor = isFocused ? theme.surface : theme.surfaceMuted
 
   return (
     <View style={styles.container}>
@@ -21,15 +26,27 @@ export function Input({ label, error, showPasswordToggle, style, ...props }: Inp
           style={[
             styles.input,
             {
-              backgroundColor: theme.surface,
+              backgroundColor,
               color: theme.text,
-              borderColor: error ? theme.error : theme.border,
+              borderColor,
+              borderWidth,
+              borderRadius: theme.radius.medium,
+              paddingHorizontal: theme.spacing,
+              fontSize: theme.typography.bodyLarge,
               flex: 1,
             },
             style,
           ]}
           placeholderTextColor={theme.textSecondary}
           secureTextEntry={showPasswordToggle && !passwordVisible}
+          onFocus={e => {
+            setIsFocused(true)
+            props.onFocus?.(e)
+          }}
+          onBlur={e => {
+            setIsFocused(false)
+            props.onBlur?.(e)
+          }}
           {...props}
         />
         {showPasswordToggle && (
@@ -67,10 +84,6 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 48,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    fontSize: 16,
     width: '100%',
     minWidth: '100%',
   },

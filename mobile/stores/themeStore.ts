@@ -1,9 +1,9 @@
 import { DarkTheme, LightTheme, ThemeMode, type Theme } from '@/constants/theme'
 import { mmkvZustandStorage } from '@/lib/storage/mmkv'
+import { useEffect, useRef } from 'react'
+import { useColorScheme } from 'react-native'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { useColorScheme } from 'react-native'
-import { useEffect, useRef } from 'react'
 
 const getTheme = (mode: ThemeMode): Theme => {
   return mode === 'dark' ? DarkTheme : LightTheme
@@ -47,6 +47,19 @@ export const useThemeStore = create<ThemeState>()(
     {
       name: 'mosaic-theme-storage',
       storage: createJSONStorage(() => mmkvZustandStorage),
+      partialize: state => ({ themeMode: state.themeMode }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<ThemeState> | undefined
+        const mode = persisted?.themeMode ?? currentState.themeMode ?? 'light'
+        const isDark = mode === 'dark'
+
+        return {
+          ...currentState,
+          themeMode: mode,
+          theme: getTheme(mode),
+          isDark,
+        }
+      },
     }
   )
 )

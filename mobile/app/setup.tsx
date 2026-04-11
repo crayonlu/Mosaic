@@ -139,7 +139,7 @@ export default function SetupScreen() {
             </Text>
           </View>
 
-          <View style={[styles.card, { backgroundColor: theme.surface }]}>
+          <View style={[styles.card, { backgroundColor: theme.surface }]}> 
             <Text style={[styles.cardTitle, { color: theme.text }]}>服务器配置</Text>
             <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
               输入您的 Mosaic 服务器信息
@@ -186,7 +186,16 @@ export default function SetupScreen() {
               />
 
               {connectionStatus === 'error' && (
-                <View style={styles.errorContainer}>
+                <View
+                  style={[
+                    styles.errorContainer,
+                    {
+                      backgroundColor: theme.semantic.errorSoft,
+                      borderColor: theme.border,
+                      borderRadius: theme.radius.medium,
+                    },
+                  ]}
+                >
                   <XCircle size={16} color={theme.error} />
                   <View style={styles.errorTextWrapper}>
                     <Text style={[styles.errorText, { color: theme.error }]}>{errorMessage}</Text>
@@ -263,12 +272,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 24,
   },
   cardTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '500',
     marginBottom: 4,
   },
   cardDescription: {
@@ -281,9 +290,8 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(201, 79, 79, 0.12)',
     padding: 12,
-    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
     marginBottom: 16,
     gap: 8,
   },

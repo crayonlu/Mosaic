@@ -1,14 +1,14 @@
 import { useResourceCache } from '@mosaic/cache'
 import { useCallback, useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { LayoutChangeEvent, StyleSheet, View } from 'react-native'
 import { DraggableGrid } from 'react-native-draggable-grid'
 
 import { MediaGridTile } from './media/MediaGridTile'
 import { MediaPreviewModal } from './media/MediaPreviewModal'
 import {
-  getMediaTileSize,
-  getOptimizedMediaUri,
-  resolveMediaSource,
+    getMediaTileSize,
+    getOptimizedMediaUri,
+    resolveMediaSource,
 } from './media/mediaPreviewUtils'
 import type { MediaCacheMaps, MediaGridItem } from './media/types'
 
@@ -40,6 +40,7 @@ export function DraggableImageGrid({
   isCacheLoading = false,
 }: DraggableImageGridProps) {
   const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null)
+  const [gridWidth, setGridWidth] = useState(0)
 
   const resolvedItems: MediaGridItem[] = useMemo(() => {
     return items
@@ -119,7 +120,7 @@ export function DraggableImageGrid({
     [resolvedItems]
   )
 
-  const mediaTileSize = getMediaTileSize(resolvedItems.length)
+  const mediaTileSize = getMediaTileSize(resolvedItems.length, gridWidth)
   const resolvedMediaSources = useMemo(
     () => resolvedItems.map(item => resolveMediaSource(item, cacheMaps, authHeaders)),
     [authHeaders, cacheMaps, resolvedItems]
@@ -188,8 +189,15 @@ export function DraggableImageGrid({
     ]
   )
 
+  const handleGridLayout = useCallback((event: LayoutChangeEvent) => {
+    const nextWidth = Math.floor(event.nativeEvent.layout.width)
+    if (nextWidth > 0 && nextWidth !== gridWidth) {
+      setGridWidth(nextWidth)
+    }
+  }, [gridWidth])
+
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={handleGridLayout}>
       {draggable ? (
         <DraggableGrid
           numColumns={resolvedItems.length <= 2 ? Math.max(1, resolvedItems.length) : 3}
@@ -234,10 +242,9 @@ export function DraggableImageGrid({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
   },
   grid: {
+    width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
   },

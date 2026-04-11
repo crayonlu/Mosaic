@@ -13,15 +13,15 @@ import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 // import { router } from 'expo-router'
 import {
-  // Bell,
-  Info,
-  LogOut,
-  Moon,
-  // Plus,
-  ShieldCheck,
-  Sparkles,
-  Sun,
-  Trash,
+    // Bell,
+    Info,
+    LogOut,
+    Moon,
+    // Plus,
+    ShieldCheck,
+    Sparkles,
+    Sun,
+    Trash,
 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
@@ -324,13 +324,15 @@ export default function SettingsScreen() {
     const avatarUrl = `${serverUrl}${user?.avatarUrl}`
     return (
       <View style={[styles.section]}>
-        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
           <TouchableOpacity style={styles.row} onPress={handleAvatarPress}>
             <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
               {user?.avatarUrl ? (
                 <AvatarImageWithAuth avatarUrl={avatarUrl} />
               ) : (
-                <Text style={styles.avatarText}>{user?.username?.charAt(0).toUpperCase()}</Text>
+                <Text style={[styles.avatarText, { color: theme.onPrimary }]}>
+                  {user?.username?.charAt(0).toUpperCase()}
+                </Text>
               )}
             </View>
             <View style={styles.userInfo}>
@@ -363,7 +365,7 @@ export default function SettingsScreen() {
 
   const renderAppearanceSection = () => (
     <View style={[styles.section]}>
-      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <TouchableOpacity style={styles.menuItem} onPress={toggleTheme}>
           {themeMode === 'light' ? (
             <Sun size={18} color={theme.text} />
@@ -385,7 +387,7 @@ export default function SettingsScreen() {
 
   const renderAISettings = () => (
     <View style={[styles.section]}>
-      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <TouchableOpacity
           style={[styles.menuItem, showAISettings && { borderBottomColor: theme.border }]}
           onPress={() => toggleSectionWithAnimation(setShowAISettings)}
@@ -403,13 +405,14 @@ export default function SettingsScreen() {
             entering={FadeIn.duration(400)}
             exiting={FadeOut.duration(240)}
             layout={expandLayoutTransition}
-            style={styles.aiSettings}
+            style={[styles.aiSettings, { borderTopColor: theme.border }]}
           >
             <View style={styles.settingRow}>
               <View style={styles.providerButtons}>
                 <TouchableOpacity
                   style={[
                     styles.providerButton,
+                    { backgroundColor: theme.surfaceMuted },
                     aiConfig.provider === 'openai' && { backgroundColor: theme.primary },
                   ]}
                   onPress={() => setLocalAIConfig({ ...aiConfig, provider: 'openai' })}
@@ -417,7 +420,7 @@ export default function SettingsScreen() {
                   <Text
                     style={[
                       styles.providerButtonText,
-                      aiConfig.provider === 'openai' && { color: '#FFFFFF' },
+                      aiConfig.provider === 'openai' && { color: theme.onPrimary },
                     ]}
                   >
                     OpenAI
@@ -426,6 +429,7 @@ export default function SettingsScreen() {
                 <TouchableOpacity
                   style={[
                     styles.providerButton,
+                    { backgroundColor: theme.surfaceMuted },
                     aiConfig.provider === 'anthropic' && { backgroundColor: theme.primary },
                   ]}
                   onPress={() => setLocalAIConfig({ ...aiConfig, provider: 'anthropic' })}
@@ -434,7 +438,7 @@ export default function SettingsScreen() {
                     style={[
                       styles.providerButtonText,
                       { color: theme.text },
-                      aiConfig.provider === 'anthropic' && { color: '#FFFFFF' },
+                      aiConfig.provider === 'anthropic' && { color: theme.onPrimary },
                     ]}
                   >
                     Anthropic
@@ -448,6 +452,7 @@ export default function SettingsScreen() {
                 value={aiConfig.baseUrl}
                 onChangeText={text => setLocalAIConfig({ ...aiConfig, baseUrl: text })}
                 placeholder="https://api.openai.com/v1"
+                style={styles.aiInputCompact}
               />
             </View>
             <View style={styles.settingRow}>
@@ -457,6 +462,7 @@ export default function SettingsScreen() {
                 onChangeText={text => setLocalAIConfig({ ...aiConfig, apiKey: text })}
                 placeholder="sk-..."
                 secureTextEntry
+                style={styles.aiInputCompact}
               />
             </View>
             <View style={styles.settingRow}>
@@ -465,6 +471,7 @@ export default function SettingsScreen() {
                 value={aiConfig.model}
                 onChangeText={text => setLocalAIConfig({ ...aiConfig, model: text })}
                 placeholder={aiConfig.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'}
+                style={styles.aiInputCompact}
               />
             </View>
             <View style={styles.settingRow}>
@@ -492,16 +499,16 @@ export default function SettingsScreen() {
                   {
                     backgroundColor:
                       testResult === 'success'
-                        ? 'rgba(34, 197, 94, 0.1)'
+                        ? theme.semantic.successSoft
                         : testResult === 'error'
-                          ? 'rgba(239, 68, 68, 0.1)'
-                          : 'rgba(59, 130, 246, 0.1)',
+                          ? theme.semantic.errorSoft
+                          : theme.semantic.infoSoft,
                     borderColor:
                       testResult === 'success'
-                        ? 'rgba(34, 197, 94, 0.3)'
+                        ? theme.border
                         : testResult === 'error'
-                          ? 'rgba(239, 68, 68, 0.3)'
-                          : 'rgba(59, 130, 246, 0.3)',
+                          ? theme.border
+                          : theme.border,
                   },
                 ]}
               >
@@ -511,10 +518,10 @@ export default function SettingsScreen() {
                     {
                       color:
                         testResult === 'success'
-                          ? '#22c55e'
+                          ? theme.success
                           : testResult === 'error'
-                            ? '#ef4444'
-                            : '#3b82f6',
+                            ? theme.error
+                            : theme.info,
                     },
                   ]}
                 >
@@ -530,7 +537,7 @@ export default function SettingsScreen() {
 
   const renderPermissionSection = () => (
     <View style={[styles.section]}>
-      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <TouchableOpacity
           style={styles.menuItem}
           onPress={() => toggleSectionWithAnimation(setShowPermissionSettings)}
@@ -548,7 +555,7 @@ export default function SettingsScreen() {
             entering={FadeIn.duration(400)}
             exiting={FadeOut.duration(240)}
             layout={expandLayoutTransition}
-            style={styles.permissionSettings}
+            style={[styles.permissionSettings, { borderTopColor: theme.border }]}
           >
             <View>
               <View
@@ -621,7 +628,7 @@ export default function SettingsScreen() {
                       marginRight: 4,
                     }}
                   >
-                    <Text style={{ fontSize: 10, color: '#FFFFFF' }}>{customPushCount}</Text>
+                    <Text style={{ fontSize: 10, color: theme.onPrimary }}>{customPushCount}</Text>
                   </View>
                 )}
                 <Plus size={16} color={theme.textSecondary} />
@@ -635,7 +642,7 @@ export default function SettingsScreen() {
 
   const renderAboutSection = () => (
     <View style={[styles.section]}>
-      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <TouchableOpacity style={styles.menuItem}>
           <Info size={18} color={theme.text} />
           <Text style={[styles.menuItemText, { color: theme.text }]}>关于</Text>
@@ -655,7 +662,7 @@ export default function SettingsScreen() {
 
   const renderStorageSection = () => (
     <View style={[styles.section]}>
-      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <TouchableOpacity
           style={[styles.menuItem, showStorageSettings && { borderBottomColor: theme.border }]}
           onPress={() => toggleSectionWithAnimation(setShowStorageSettings)}
@@ -674,7 +681,7 @@ export default function SettingsScreen() {
             entering={FadeIn.duration(400)}
             exiting={FadeOut.duration(240)}
             layout={expandLayoutTransition}
-            style={styles.storageSettings}
+            style={[styles.storageSettings, { borderTopColor: theme.border }]}
           >
             {storageItems.map(item => (
               <View
@@ -682,7 +689,7 @@ export default function SettingsScreen() {
                 style={[
                   styles.storageItem,
                   item !== storageItems[0] && {
-                    borderTopWidth: 1,
+                    borderTopWidth: StyleSheet.hairlineWidth,
                     borderTopColor: theme.border,
                   },
                 ]}
@@ -741,8 +748,7 @@ const styles = StyleSheet.create({
   },
   section: {},
   card: {
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   row: {
@@ -753,27 +759,26 @@ const styles = StyleSheet.create({
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
   avatarText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: '500',
   },
   avatarImage: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   userInfo: {
     flex: 1,
   },
   username: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 2,
   },
   serverUrl: {
@@ -798,20 +803,17 @@ const styles = StyleSheet.create({
   aiSettings: {
     padding: 12,
     gap: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   permissionSettings: {
     padding: 12,
     gap: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   storageSettings: {
     paddingHorizontal: 12,
     gap: 0,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   storageItem: {
     flexDirection: 'row',
@@ -833,18 +835,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 10,
     alignItems: 'center',
   },
   providerButtonText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '400',
+  },
+  aiInputCompact: {
+    fontSize: 14,
+    height: 44,
   },
   testResult: {
     padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
     marginTop: 8,
   },
   testResultText: {

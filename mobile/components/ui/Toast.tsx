@@ -108,6 +108,13 @@ function Toast({
     warning: string
     info: string
     border: string
+    borderStrong: string
+    semantic: {
+      successSoft: string
+      errorSoft: string
+      warningSoft: string
+      infoSoft: string
+    }
   }
 }) {
   const fadeAnim = useRef(new Animated.Value(0)).current
@@ -162,47 +169,29 @@ function Toast({
     }
   }
 
-  const hexToRgba = (hex: string, alpha: number) => {
-    const cleanHex = hex.replace('#', '')
-    const normalizedHex =
-      cleanHex.length === 3
-        ? cleanHex
-            .split('')
-            .map(char => char + char)
-            .join('')
-        : cleanHex
-
-    if (normalizedHex.length !== 6) {
-      return `rgba(0, 0, 0, ${alpha})`
-    }
-
-    const r = Number.parseInt(normalizedHex.slice(0, 2), 16)
-    const g = Number.parseInt(normalizedHex.slice(2, 4), 16)
-    const b = Number.parseInt(normalizedHex.slice(4, 6), 16)
-
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`
-  }
-
-  const isDarkBackground = () => {
-    const cleanHex = theme.background.replace('#', '')
-    if (cleanHex.length !== 6) {
-      return false
-    }
-    const r = Number.parseInt(cleanHex.slice(0, 2), 16)
-    const g = Number.parseInt(cleanHex.slice(2, 4), 16)
-    const b = Number.parseInt(cleanHex.slice(4, 6), 16)
-    const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-    return luminance < 0.5
-  }
-
   const semanticColor = getSemanticColor()
-  const darkMode = isDarkBackground()
+
+  const getSoftSemanticColor = () => {
+    switch (toast.type) {
+      case 'success':
+        return theme.semantic.successSoft
+      case 'error':
+        return theme.semantic.errorSoft
+      case 'warning':
+        return theme.semantic.warningSoft
+      case 'info':
+        return theme.semantic.infoSoft
+      default:
+        return theme.semantic.infoSoft
+    }
+  }
+
   const palette = {
-    containerBackground: hexToRgba(semanticColor, darkMode ? 0.36 : 0.24),
-    containerBorder: hexToRgba(semanticColor, darkMode ? 0.78 : 0.6),
+    containerBackground: getSoftSemanticColor(),
+    containerBorder: theme.borderStrong,
     iconColor: semanticColor,
-    closeBackground: hexToRgba(semanticColor, darkMode ? 0.5 : 0.35),
-    actionBorder: hexToRgba(semanticColor, darkMode ? 0.82 : 0.66),
+    closeBackground: theme.surface,
+    actionBorder: semanticColor,
     actionText: semanticColor,
   }
 
@@ -307,7 +296,7 @@ const styles = StyleSheet.create({
   toastContainer: {
     padding: 14,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     marginVertical: 6,
     maxWidth: 280,
     minHeight: 48,
@@ -333,7 +322,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     textAlign: 'left',
   },
   message: {
@@ -353,20 +342,15 @@ const styles = StyleSheet.create({
     right: -6,
     borderRadius: 10,
   },
-  closeText: {
-    fontSize: 14,
-    color: '#667085',
-    fontWeight: 'bold',
-  },
   actionButton: {
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     marginLeft: 8,
   },
   actionText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 })

@@ -9,14 +9,17 @@ export interface SwitchBtnProps {
 
 export function SwitchBtn({ value, onValueChange, disabled }: SwitchBtnProps) {
   const { theme } = useTheme()
+  const isDisabled = Boolean(disabled)
 
   return (
     <Switch
       value={value}
       onValueChange={onValueChange}
-      disabled={disabled}
-      trackColor={{ false: theme.border, true: theme.primary }}
-      thumbColor={theme.background}
+      disabled={isDisabled}
+      trackColor={{ false: theme.borderStrong, true: theme.primary }}
+      thumbColor={value ? theme.surface : theme.background}
+      ios_backgroundColor={theme.borderStrong}
+      style={{ opacity: isDisabled ? theme.state.disabledOpacity : 1 }}
     />
   )
 }

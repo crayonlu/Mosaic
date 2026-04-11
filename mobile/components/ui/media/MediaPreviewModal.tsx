@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   counterText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     fontVariant: ['tabular-nums'],
   },
 })

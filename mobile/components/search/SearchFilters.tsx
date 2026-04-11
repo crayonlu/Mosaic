@@ -1,16 +1,14 @@
-import { Badge } from '@/components/ui'
+import { Badge, DatePickerSheet } from '@/components/ui'
 import { useThemeStore } from '@/stores/themeStore'
 import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-  type BottomSheetBackdropProps,
+    BottomSheetBackdrop,
+    BottomSheetModal,
+    BottomSheetScrollView,
+    type BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet'
-import DateTimePicker from '@react-native-community/datetimepicker'
-import dayjs from 'dayjs'
 import { Calendar, Filter } from 'lucide-react-native'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface SearchFiltersProps {
   selectedTags: string[]
@@ -35,8 +33,7 @@ export function SearchFilters({
 }: SearchFiltersProps) {
   const { theme } = useThemeStore()
   const sheetRef = useRef<BottomSheetModal>(null)
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false)
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false)
+  const [activeDateTarget, setActiveDateTarget] = useState<'start' | 'end' | null>(null)
 
   const [tempSelectedTags, setTempSelectedTags] = useState<string[]>(selectedTags)
   const [tempIsArchived, setTempIsArchived] = useState<boolean | undefined>(isArchived)
@@ -103,21 +100,7 @@ export function SearchFilters({
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
   }
 
-  const onStartDateChange = (event: { type: string }, selectedDate?: Date) => {
-    setShowStartDatePicker(Platform.OS === 'ios')
-    if (selectedDate && event.type !== 'dismissed') {
-      const dateString = dayjs(selectedDate).format('YYYY-MM-DD')
-      setTempStartDate(dateString)
-    }
-  }
-
-  const onEndDateChange = (event: { type: string }, selectedDate?: Date) => {
-    setShowEndDatePicker(Platform.OS === 'ios')
-    if (selectedDate && event.type !== 'dismissed') {
-      const dateString = dayjs(selectedDate).format('YYYY-MM-DD')
-      setTempEndDate(dateString)
-    }
-  }
+  const activePickerDate = activeDateTarget === 'start' ? tempStartDate : tempEndDate
 
   return (
     <>
@@ -126,8 +109,11 @@ export function SearchFilters({
           style={[
             styles.filterButton,
             {
-              backgroundColor: theme.surface,
-              borderColor: hasActiveFilters ? theme.primary : theme.border,
+              backgroundColor: hasActiveFilters ? theme.semantic.infoSoft : theme.surfaceMuted,
+              borderColor: 'transparent',
+              borderRadius: theme.radius.medium,
+              paddingHorizontal: theme.spacingScale.medium,
+              paddingVertical: theme.spacingScale.medium,
             },
           ]}
           onPress={handleOpenFilters}
@@ -143,7 +129,7 @@ export function SearchFilters({
           </Text>
           {hasActiveFilters && (
             <View style={[styles.badge, { backgroundColor: theme.primary }]}>
-              <Text style={styles.badgeText}>
+              <Text style={[styles.badgeText, { color: theme.onPrimary }]}>
                 {selectedTags.length +
                   (startDate || endDate ? 1 : 0) +
                   (isArchived !== undefined ? 1 : 0)}
@@ -178,8 +164,9 @@ export function SearchFilters({
                       styles.archiveOption,
                       {
                         backgroundColor:
-                          tempIsArchived === option.value ? theme.primary : theme.surface,
-                        borderColor: theme.border,
+                          tempIsArchived === option.value ? theme.primary : theme.surfaceMuted,
+                        borderColor: 'transparent',
+                        borderRadius: theme.radius.medium,
                       },
                     ]}
                     onPress={() => setTempIsArchived(option.value as boolean | undefined)}
@@ -187,7 +174,7 @@ export function SearchFilters({
                     <Text
                       style={[
                         styles.archiveOptionText,
-                        { color: tempIsArchived === option.value ? '#FFFFFF' : theme.text },
+                        { color: tempIsArchived === option.value ? theme.onPrimary : theme.text },
                       ]}
                     >
                       {option.label}
@@ -219,9 +206,13 @@ export function SearchFilters({
                 <TouchableOpacity
                   style={[
                     styles.dateButton,
-                    { backgroundColor: theme.surface, borderColor: theme.border },
+                    {
+                      backgroundColor: theme.surfaceMuted,
+                      borderColor: 'transparent',
+                      borderRadius: theme.radius.medium,
+                    },
                   ]}
-                  onPress={() => setShowStartDatePicker(true)}
+                  onPress={() => setActiveDateTarget('start')}
                 >
                   <Calendar size={16} color={theme.textSecondary} />
                   <Text
@@ -237,9 +228,13 @@ export function SearchFilters({
                 <TouchableOpacity
                   style={[
                     styles.dateButton,
-                    { backgroundColor: theme.surface, borderColor: theme.border },
+                    {
+                      backgroundColor: theme.surfaceMuted,
+                      borderColor: 'transparent',
+                      borderRadius: theme.radius.medium,
+                    },
                   ]}
-                  onPress={() => setShowEndDatePicker(true)}
+                  onPress={() => setActiveDateTarget('end')}
                 >
                   <Calendar size={16} color={theme.textSecondary} />
                   <Text
@@ -252,45 +247,57 @@ export function SearchFilters({
                   </Text>
                 </TouchableOpacity>
               </View>
-
-              {showStartDatePicker && (
-                <DateTimePicker
-                  value={tempStartDate ? new Date(tempStartDate) : new Date()}
-                  mode="date"
-                  display="default"
-                  onChange={onStartDateChange}
-                  maximumDate={tempEndDate ? new Date(tempEndDate) : new Date()}
-                />
-              )}
-
-              {showEndDatePicker && (
-                <DateTimePicker
-                  value={tempEndDate ? new Date(tempEndDate) : new Date()}
-                  mode="date"
-                  display="default"
-                  onChange={onEndDateChange}
-                  minimumDate={tempStartDate ? new Date(tempStartDate) : undefined}
-                  maximumDate={new Date()}
-                />
-              )}
             </View>
           </View>
           <View style={[styles.modalFooter, { borderTopColor: theme.border }]}>
             <TouchableOpacity
-              style={[styles.resetButton, { borderColor: theme.border }]}
+              style={[
+                styles.resetButton,
+                {
+                  backgroundColor: theme.surfaceMuted,
+                  borderColor: 'transparent',
+                  borderRadius: theme.radius.medium,
+                },
+              ]}
               onPress={clearFilters}
             >
               <Text style={[styles.resetButtonText, { color: theme.text }]}>重置</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.applyButton, { backgroundColor: theme.primary }]}
+              style={[
+                styles.applyButton,
+                { backgroundColor: theme.primary, borderRadius: theme.radius.medium },
+              ]}
               onPress={handleApplyFilters}
             >
-              <Text style={styles.applyButtonText}>应用</Text>
+              <Text style={[styles.applyButtonText, { color: theme.onPrimary }]}>应用</Text>
             </TouchableOpacity>
           </View>
         </BottomSheetScrollView>
       </BottomSheetModal>
+
+      <DatePickerSheet
+        visible={activeDateTarget !== null}
+        title={activeDateTarget === 'start' ? '开始日期' : '结束日期'}
+        selectedDate={activePickerDate}
+        minDate={activeDateTarget === 'end' ? tempStartDate : undefined}
+        maxDate={activeDateTarget === 'start' ? tempEndDate : undefined}
+        onSelect={date => {
+          if (activeDateTarget === 'start') {
+            setTempStartDate(date)
+          } else if (activeDateTarget === 'end') {
+            setTempEndDate(date)
+          }
+        }}
+        onClear={() => {
+          if (activeDateTarget === 'start') {
+            setTempStartDate(undefined)
+          } else if (activeDateTarget === 'end') {
+            setTempEndDate(undefined)
+          }
+        }}
+        onClose={() => setActiveDateTarget(null)}
+      />
     </>
   )
 }
@@ -304,10 +311,6 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
     gap: 6,
   },
   filterText: {
@@ -322,9 +325,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: {
-    color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   modalBody: {
     paddingHorizontal: 16,
@@ -337,16 +339,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 16,
     gap: 12,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   filterSection: {
     marginBottom: 24,
   },
   sectionLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 12,
-    textTransform: 'uppercase',
   },
   archiveOptions: {
     flexDirection: 'row',
@@ -355,8 +356,6 @@ const styles = StyleSheet.create({
   archiveOption: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
   },
   archiveOptionText: {
     fontSize: 14,
@@ -378,8 +377,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
     gap: 8,
   },
   dateButtonText: {
@@ -391,23 +388,19 @@ const styles = StyleSheet.create({
   resetButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
     alignItems: 'center',
   },
   resetButtonText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   applyButton: {
     flex: 2,
     paddingVertical: 12,
-    borderRadius: 8,
     alignItems: 'center',
   },
   applyButtonText: {
-    color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 })

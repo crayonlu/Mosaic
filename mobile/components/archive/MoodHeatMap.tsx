@@ -168,6 +168,13 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
 
   // Handle date click
   const handleDateClick = (cell: HeatMapCell) => {
+    if (__DEV__) {
+      console.log('[MoodHeatMap] cell pressed', {
+        date: cell.date,
+        count: cell.count,
+        moodKey: cell.moodKey,
+      })
+    }
     if (cell.date && onDateClick) {
       onDateClick(cell.date)
     }
@@ -184,7 +191,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container]}> 
       {/* Heat map grid */}
       <ScrollView
         ref={scrollViewRef}
@@ -202,6 +209,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
                     styles.cell,
                     {
                       backgroundColor: cell.color === 'transparent' ? 'transparent' : cell.color,
+                      borderColor: theme.border,
                     },
                   ]}
                   onPress={() => handleDateClick(cell)}
@@ -246,11 +254,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   scrollContent: {
     paddingVertical: 4,
@@ -267,8 +275,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderWidth: StyleSheet.hairlineWidth,
   },
   legend: {
     flexDirection: 'row',
