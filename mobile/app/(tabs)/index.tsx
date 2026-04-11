@@ -68,9 +68,6 @@ export default function HomeScreen() {
   }
 
   const handleDateClick = (date: string) => {
-    if (__DEV__) {
-      console.log('[HomeScreen] navigate from heatmap', { date })
-    }
     router.push({ pathname: '/diaries', params: { date } })
   }
 

@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   filterButton: {
     flexDirection: 'row',

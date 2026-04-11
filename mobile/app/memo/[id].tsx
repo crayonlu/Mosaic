@@ -172,7 +172,7 @@ export default function MemoDetailScreen() {
           </View>
         )}
 
-        <View style={{ minHeight: 150, padding: 16 }}>
+        <View style={{ padding: 16 }}>
           <MarkdownRenderer content={memo.content} />
         </View>
         {memo.resources.length > 0 && (
@@ -291,6 +291,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    paddingTop: 8
   },
   tagsContainer: {
     flexDirection: 'row',

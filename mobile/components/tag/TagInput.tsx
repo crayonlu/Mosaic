@@ -107,7 +107,7 @@ export function TagInput({
   }, [aiError])
 
   return (
-    <View>
+    <View style={styles.root}>
       <View
         style={[
           styles.container,
@@ -176,24 +176,23 @@ export function TagInput({
             onPress={handleAISuggest}
             disabled={!canShowAIRecommend || aiLoading}
           >
-            {aiLoading ? (
-              <Loading size="small" />
-            ) : (
-              <View
-                style={{
+            <View
+              style={[
+                styles.aiButtonBadge,
+                {
                   backgroundColor: isPlain ? theme.surfaceMuted : theme.semantic.infoSoft,
                   borderColor: theme.border,
                   borderWidth: isPlain ? 0 : 1,
-                  paddingHorizontal: 8,
-                  paddingVertical: 6,
-                  flexDirection: 'row',
-                  gap: 4,
                   borderRadius: theme.radius.pill,
-                }}
-              >
+                },
+              ]}
+            >
+              {aiLoading ? (
+                <Loading size="small" />
+              ) : (
                 <Text style={[styles.aiButtonText, { color: theme.primary }]}>AI 推荐</Text>
-              </View>
-            )}
+              )}
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -247,6 +246,9 @@ export function TagInput({
 }
 
 const styles = StyleSheet.create({
+  root: {
+    position: 'relative',
+  },
   container: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -302,7 +304,14 @@ const styles = StyleSheet.create({
   },
   aiButtonSlot: {
     minWidth: 74,
-    minHeight: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiButtonBadge: {
+    minWidth: 66,
+    height: 30,
+    paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -316,8 +325,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   suggestionsContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
     marginTop: 8,
     maxHeight: 150,
+    zIndex: 20,
+    elevation: 8,
   },
   suggestionItem: {
     padding: 12,

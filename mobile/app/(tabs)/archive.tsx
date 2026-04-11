@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   headerRow: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
