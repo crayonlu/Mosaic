@@ -106,13 +106,13 @@ export class ApiClient {
   }
 
   private async refreshTokenIfNeeded(): Promise<boolean> {
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise
+    }
+
     const now = Date.now()
     if (now - this.lastRefreshTime < REFRESH_COOLDOWN) {
       return false
-    }
-
-    if (this.isRefreshing && this.refreshPromise) {
-      return this.refreshPromise
     }
 
     this.isRefreshing = true
@@ -151,15 +151,24 @@ export class ApiClient {
       )
 
       if (response.status !== 200) {
-        await this.tokenStorage.clearTokens()
+        if (response.status === 400 || response.status === 401) {
+          await this.tokenStorage.clearTokens()
+        }
         return false
       }
 
       const data = response.data
       await this.tokenStorage.setTokens(data.accessToken, data.refreshToken)
       return true
-    } catch {
-      await this.tokenStorage.clearTokens()
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status
+        if (status === 400 || status === 401) {
+          await this.tokenStorage.clearTokens()
+        }
+        return false
+      }
+
       return false
     }
   }

@@ -44,12 +44,9 @@ apiClient.setTokenStorage({
 
 const savedServerUrl = tokenStorage.getServerUrl()
 if (savedServerUrl) {
-  console.log('setting base url to', savedServerUrl)
   try {
     apiClient.setBaseUrl(savedServerUrl)
-  } catch (error) {
-    console.error('error setting base url', error)
-  }
+  } catch {}
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -87,13 +84,30 @@ export const useAuthStore = create<AuthStore>()(
               serverUrl,
               error: null,
             })
-          } catch {
-            await tokenStorage.clearTokens()
+          } catch (error) {
+            const apiError = error as ApiError
+
+            if (apiError?.status === 401) {
+              await tokenStorage.clearTokens()
+              set({
+                isAuthenticated: false,
+                isInitialized: true,
+                isLoading: false,
+                user: null,
+                serverUrl,
+                error: null,
+              })
+              return
+            }
+
+            // Keep session state during transient startup failures (network/race),
+            // so users are not incorrectly redirected to setup.
             set({
-              isAuthenticated: false,
+              isAuthenticated: true,
               isInitialized: true,
               isLoading: false,
-              user: null,
+              user: get().user,
+              serverUrl,
               error: null,
             })
           }
