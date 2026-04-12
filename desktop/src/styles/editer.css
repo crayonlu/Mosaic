@@ -110,6 +110,266 @@
   margin: 0.25em 0;
 }
 
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose th {
+  background: color-mix(in oklch, var(--muted) 80%, transparent);
+  font-weight: 600;
+}
+
+.prose code {
+  background: linear-gradient(to bottom, var(--muted), var(--muted));
+  color: var(--foreground);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.375rem;
+  font-size: 0.875em;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.dark .prose code {
+  background: oklch(0.2 0.02 264);
+  border-color: oklch(0.3 0.02 264);
+  box-shadow: none;
+}
+
+.prose pre {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  position: relative;
+  box-shadow: none;
+}
+
+.dark .prose pre {
+  background: oklch(0.15 0.02 264);
+  border-color: oklch(0.25 0.02 264);
+  box-shadow: none;
+}
+
+.prose .md-code-block {
+  margin: 1.5rem 0;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--muted);
+}
+
+.prose .md-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklch, var(--muted) 88%, var(--accent) 12%);
+}
+
+.prose .md-code-lang {
+  font-size: 0.72rem;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  color: var(--muted-foreground);
+}
+
+.prose .md-code-copy {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: color-mix(in oklch, var(--background) 85%, transparent);
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  line-height: 1;
+  padding: 0.35rem 0.55rem;
+  transition: all 0.16s ease;
+}
+
+.prose .md-code-copy:hover {
+  color: var(--foreground);
+  border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
+  background: color-mix(in oklch, var(--background) 65%, transparent);
+}
+
+.prose .md-code-block pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 1rem 1.25rem;
+  background: transparent;
+}
+
+.dark .prose .md-code-block {
+  background: oklch(0.15 0.02 264);
+  border-color: oklch(0.25 0.02 264);
+}
+
+.dark .prose .md-code-header {
+  border-color: oklch(0.25 0.02 264);
+  background: color-mix(in oklch, oklch(0.2 0.02 264) 82%, transparent);
+}
+
+.dark .prose .md-code-copy {
+  border-color: oklch(0.28 0.02 264);
+  background: color-mix(in oklch, oklch(0.24 0.02 264) 84%, transparent);
+  color: oklch(0.82 0.01 264);
+}
+
+.dark .prose .md-code-copy:hover {
+  color: var(--foreground);
+  border-color: color-mix(in oklch, var(--primary) 36%, oklch(0.3 0.02 264));
+  background: color-mix(in oklch, oklch(0.28 0.02 264) 88%, transparent);
+}
+
+.prose pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  color: inherit;
+  font-size: 0.9em;
+  line-height: 1.6;
+  font-family: var(--font-mono);
+}
+
+.prose pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0;
+  background: transparent;
+}
+
+.prose pre code .hljs-keyword,
+.prose pre code .hljs-selector-tag,
+.prose pre code .hljs-literal,
+.prose pre code .hljs-title,
+.prose pre code .hljs-section,
+.prose pre code .hljs-doctag,
+.prose pre code .hljs-type,
+.prose pre code .hljs-name,
+.prose pre code .hljs-strong {
+  color: #d73a49;
+  font-weight: 600;
+}
+
+.prose pre code .hljs-string {
+  color: #005cc5;
+}
+
+.prose pre code .hljs-comment,
+.prose pre code .hljs-deletion,
+.prose pre code .hljs-meta {
+  color: #6a737d;
+  font-style: italic;
+}
+
+.prose pre code .hljs-number,
+.prose pre code .hljs-regexp,
+.prose pre code .hljs-symbol,
+.prose pre code .hljs-variable,
+.prose pre code .hljs-template-variable,
+.prose pre code .hljs-link,
+.prose pre code .hljs-selector-attr,
+.prose pre code .hljs-selector-pseudo {
+  color: #e36209;
+}
+
+.prose pre code .hljs-function,
+.prose pre code .hljs-attr {
+  color: #6f42c1;
+}
+
+.prose pre code .hljs-class .hljs-title {
+  color: #005cc5;
+}
+
+.dark .prose pre code .hljs-keyword,
+.dark .prose pre code .hljs-selector-tag,
+.dark .prose pre code .hljs-literal,
+.dark .prose pre code .hljs-title,
+.dark .prose pre code .hljs-section,
+.dark .prose pre code .hljs-doctag,
+.dark .prose pre code .hljs-type,
+.dark .prose pre code .hljs-name,
+.dark .prose pre code .hljs-strong {
+  color: #ff7b72;
+  font-weight: 600;
+}
+
+.dark .prose pre code .hljs-string {
+  color: #a5d6ff;
+}
+
+.dark .prose pre code .hljs-comment,
+.dark .prose pre code .hljs-deletion,
+.dark .prose pre code .hljs-meta {
+  color: #8b949e;
+  font-style: italic;
+}
+
+.dark .prose pre code .hljs-number,
+.dark .prose pre code .hljs-regexp,
+.dark .prose pre code .hljs-symbol,
+.dark .prose pre code .hljs-variable,
+.dark .prose pre code .hljs-template-variable,
+.dark .prose pre code .hljs-link,
+.dark .prose pre code .hljs-selector-attr,
+.dark .prose pre code .hljs-selector-pseudo {
+  color: #ffa657;
+}
+
+.dark .prose pre code .hljs-function,
+.dark .prose pre code .hljs-attr {
+  color: #d2a8ff;
+}
+
+.dark .prose pre code .hljs-class .hljs-title {
+  color: #79c0ff;
+}
+
+.ProseMirror table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.ProseMirror th {
+  background: color-mix(in oklch, var(--muted) 80%, transparent);
+  font-weight: 600;
+}
+
 .ProseMirror code {
   background: linear-gradient(to bottom, var(--muted), var(--muted));
   color: var(--foreground);

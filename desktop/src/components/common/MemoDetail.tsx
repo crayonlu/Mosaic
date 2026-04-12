@@ -1,20 +1,20 @@
+import { MarkdownPreview } from '@/components/common/MarkdownPreview'
 import { MemoImageGrid } from '@/components/common/MemoImageGrid'
-import { RichTextEditor } from '@/components/common/RichTextEditor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
 } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { useAI } from '@/hooks/useAI'
@@ -28,17 +28,17 @@ import { resourcesApi, useDeleteMemo, useUpdateMemo } from '@mosaic/api'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
-  ArrowLeft,
-  Calendar,
-  Edit2,
-  Image as ImageIcon,
-  Loader2,
-  Save,
-  Sparkles,
-  Tag,
-  Trash2,
-  Upload,
-  X,
+    ArrowLeft,
+    Calendar,
+    Edit2,
+    Image as ImageIcon,
+    Loader2,
+    Save,
+    Sparkles,
+    Tag,
+    Trash2,
+    Upload,
+    X,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -255,7 +255,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
     }
 
     const result = await suggestTags({
-      content: editedContent.replace(/<[^>]*>/g, '').trim(),
+      content: editedContent.trim(),
       existingTags: editedTags,
     })
 
@@ -425,7 +425,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto p-0">
-        <SheetHeader className="sticky top-0 z-10 bg-background border-b px-6 py-4">
+        <SheetHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur px-6 py-4">
           <SheetTitle className="sr-only">备忘录详情</SheetTitle>
           <SheetDescription className="sr-only">查看和编辑备忘录详情</SheetDescription>
           <div className="flex items-center gap-3">
@@ -485,12 +485,11 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
           {isEditing ? (
             <div className="space-y-4">
               <div className="overflow-hidden rounded-xl border border-border/80 bg-card">
-                <RichTextEditor
-                  content={editedContent}
-                  onChange={setEditedContent}
+                <Textarea
+                  value={editedContent}
+                  onChange={e => setEditedContent(e.target.value)}
                   placeholder="输入内容..."
-                  editable={true}
-                  className="border-0"
+                  className="min-h-80 resize-y rounded-none border-0 bg-transparent p-4 font-mono text-sm leading-6 focus-visible:ring-0"
                 />
               </div>
 
@@ -637,12 +636,10 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
             <>
               <div className="prose prose-sm max-w-none">
                 {normalizeContent(memo.content) ? (
-                  <div className="overflow-hidden rounded-xl border border-border/80 bg-card">
-                    <RichTextEditor
+                  <div className="overflow-hidden rounded-xl bg-card/55">
+                    <MarkdownPreview
                       content={memo.content}
-                      onChange={() => {}}
-                      editable={false}
-                      className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1 border-0"
+                      className="p-4 prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1"
                     />
                   </div>
                 ) : (
@@ -650,7 +647,7 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                 )}
               </div>
 
-              <div className="space-y-2 rounded-xl border border-border/80 bg-muted/20 p-4">
+              <div className="space-y-2 rounded-xl bg-muted/20 p-4">
                 <div className="text-sm font-medium text-foreground">AI 摘要</div>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                   {memo.aiSummary?.trim() ? memo.aiSummary : '暂无摘要'}
