@@ -20,5 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     })
   )
 
+  merged.plugins?.push(['./plugins/withFirstFrameTheme'])
+
   return merged
 }
