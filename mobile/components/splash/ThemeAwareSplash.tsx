@@ -1,18 +1,11 @@
-import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
 import { StyleSheet, View } from 'react-native'
 
 export default function ThemeAwareSplash() {
-  const { themeMode, theme } = useThemeStore()
-
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={styles.container}>
       <Image
-        source={
-          themeMode === 'dark'
-            ? require('@/assets/images/mosaic-dark.png')
-            : require('@/assets/images/mosaic-light.png')
-        }
+        source={require('@/assets/images/mosaic-light.png')}
         style={styles.logo}
         contentFit="contain"
       />
@@ -23,11 +16,12 @@ export default function ThemeAwareSplash() {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#FFF5EB',
     justifyContent: 'center',
     alignItems: 'center',
   },
   logo: {
-    width: 200,
-    height: 200,
+    width: 120,
+    height: 120,
   },
 })
