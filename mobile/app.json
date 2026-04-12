@@ -2,7 +2,8 @@
   "expo": {
     "name": "Mosaic",
     "slug": "Mosaic",
-    "version": "2.4.4",
+    "platforms": ["android", "ios", "web"],
+    "version": "2.4.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mosaic",
@@ -28,19 +29,6 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/mosaic-light.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#FFF5EB",
-          "dark": {
-            "image": "./assets/images/mosaic-dark.png",
-            "backgroundColor": "#212124"
-          }
-        }
-      ],
       [
         "expo-image-picker",
         {

@@ -11,10 +11,10 @@ import { getMoodColorWithIntensity } from '@mosaic/utils'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
-import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
+import BootSplash from 'react-native-bootsplash'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, {
   runOnJS,
@@ -23,9 +23,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
-SplashScreen.preventAutoHideAsync().catch(() => {
-  // Ignore repeated calls while the root layout mounts.
-})
 
 function SafeAreaContainer({
   children,
@@ -67,7 +64,7 @@ export default function RootLayout() {
   const hideNativeSplash = useCallback(() => {
     if (hasHiddenNativeSplash.current) return
     hasHiddenNativeSplash.current = true
-    SplashScreen.hideAsync().catch(() => {
+    BootSplash.hide({ fade: false }).catch(() => {
       // Ignore hide races during startup.
     })
   }, [])
