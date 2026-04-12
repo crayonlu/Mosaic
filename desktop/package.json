@@ -64,6 +64,8 @@
     "idb": "^8.0.3",
     "lowlight": "^3.3.0",
     "lucide-react": "^0.562.0",
+    "markdown-it": "^14.1.0",
+    "markdown-it-task-lists": "^2.1.1",
     "marked": "^17.0.1",
     "react": "^19.1.0",
     "react-day-picker": "^9.13.0",

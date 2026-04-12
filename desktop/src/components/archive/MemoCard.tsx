@@ -1,5 +1,5 @@
 import { AuthImage } from '@/components/common/AuthImage'
-import { RichTextEditor } from '@/components/common/RichTextEditor'
+import { MarkdownPreview } from '@/components/common/MarkdownPreview'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { resolveApiUrl } from '@/lib/sharedApi'
@@ -101,10 +101,10 @@ export const MemoCard = memo<MemoCardProps>(
     return (
       <div
         className={cn(
-          'group relative rounded-lg border bg-card text-sm text-card-foreground transition-all',
-          mode === 'select' && !isArchived && 'hover:border-primary/30 cursor-pointer',
-          mode === 'view' && !isArchived && 'hover:border-primary/50 cursor-pointer',
-          selected && 'ring-2 ring-primary/50 border-primary',
+          'group relative rounded-lg bg-card/55 text-sm text-card-foreground transition-all',
+          mode === 'select' && !isArchived && 'hover:bg-card/80 cursor-pointer',
+          mode === 'view' && !isArchived && 'hover:bg-card/80 cursor-pointer',
+          selected && 'ring-2 ring-primary/50',
           isArchived && 'opacity-60 cursor-pointer hover:opacity-80 transition-all'
         )}
         onClick={() => {
@@ -151,10 +151,8 @@ export const MemoCard = memo<MemoCardProps>(
             <div className="flex-1 min-w-0">
               {memo.content ? (
                 <div className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1 max-w-none">
-                  <RichTextEditor
+                  <MarkdownPreview
                     content={memo.content}
-                    onChange={() => {}}
-                    editable={false}
                     className="text-sm"
                   />
                 </div>

@@ -5,7 +5,7 @@ import { useCacheStore } from '@/stores/cacheStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MarkdownRenderer } from './MarkdownRenderer'
 
@@ -54,7 +54,12 @@ export function PostPreview({ visible, content, items, tags, onClose, onPost }: 
           <View style={styles.headerButton} />
         </View>
 
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentInner}
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled
+        >
           {content.trim() ? (
             <View style={styles.textContent}>
               <MarkdownRenderer content={content} />
@@ -81,7 +86,7 @@ export function PostPreview({ visible, content, items, tags, onClose, onPost }: 
               ))}
             </View>
           )}
-        </View>
+        </ScrollView>
       </View>
     </Modal>
   )
@@ -108,19 +113,20 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentInner: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 16,
+    paddingBottom: 24,
   },
   textContent: {
-    flex: 1,
+    flexShrink: 1,
   },
   emptyText: {
     fontSize: 14,
     fontStyle: 'italic',
   },
   imageGridContainer: {
-    flex: 1,
     marginTop: 16,
   },
   tagsContainer: {

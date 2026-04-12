@@ -1,5 +1,4 @@
 import { useInputStore } from '@/stores/inputStore'
-import { extractTextFromHtml } from '@mosaic/utils'
 import { useCallback, useRef } from 'react'
 
 interface UseInputOptions {
@@ -27,7 +26,7 @@ export function useInput(options?: UseInputOptions) {
   )
 
   const handleSubmit = useCallback(() => {
-    const textContent = extractTextFromHtml(inputValue)
+    const textContent = inputValue.trim()
     if (textContent || resourceFilenames.length > 0) {
       options?.onSubmit?.(inputValue || '', resourceFilenames, clearInputValue)
     }

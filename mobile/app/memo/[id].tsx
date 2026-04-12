@@ -13,7 +13,7 @@ import { resourcesApi, type ResourceResponse } from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -154,7 +154,15 @@ export default function MemoDetailScreen() {
         </View>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        scrollEnabled
+        nestedScrollEnabled
+        showsVerticalScrollIndicator
+        alwaysBounceVertical
+        keyboardShouldPersistTaps="handled"
+      >
         {memo.aiSummary && (
           <View
             style={[
@@ -228,7 +236,7 @@ export default function MemoDetailScreen() {
             </View>
           )}
         </View>
-      </View>
+      </ScrollView>
 
       <FullScreenEditor
         visible={isEditorVisible}
@@ -291,7 +299,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
+    flexGrow: 1,
     paddingTop: 8,
+    paddingBottom: 20,
   },
   tagsContainer: {
     flexDirection: 'row',

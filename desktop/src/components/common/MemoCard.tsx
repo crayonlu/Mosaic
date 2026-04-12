@@ -1,5 +1,5 @@
+import { MarkdownPreview } from '@/components/common/MarkdownPreview'
 import { ResourceThumbnails } from '@/components/common/ResourceThumbnails'
-import { RichTextEditor } from '@/components/common/RichTextEditor'
 import { cn } from '@/lib/utils'
 import type { MemoWithResources } from '@mosaic/api'
 import { useEffect, useRef } from 'react'
@@ -150,8 +150,8 @@ export function MemoCard({ memo, onClick, searchWords = [], className }: MemoCar
   return (
     <div
       className={cn(
-        'group overflow-hidden rounded-xl border bg-card text-sm text-card-foreground transition-colors',
-        'border-border/90 hover:border-primary/35',
+        'group overflow-hidden rounded-xl bg-card/55 text-sm text-card-foreground transition-colors',
+        'hover:bg-card/80',
         onClick && 'cursor-pointer',
         className
       )}
@@ -159,17 +159,15 @@ export function MemoCard({ memo, onClick, searchWords = [], className }: MemoCar
     >
       <div ref={editorRef}>
         {memo.content ? (
-          <RichTextEditor
+          <MarkdownPreview
             content={memo.content}
-            onChange={() => {}}
-            editable={false}
-            className="p-3 prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1"
+            className="p-3 prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1"
           />
         ) : null}
       </div>
 
       {memo.aiSummary?.trim() && (
-        <div className="border-t border-border/80 bg-muted/20 px-3 py-2">
+        <div className="mt-1 rounded-lg bg-muted/25 px-3 py-2">
           <div className="mb-1 text-[11px] font-medium text-muted-foreground">AI摘要</div>
           <p className="line-clamp-2 whitespace-pre-wrap text-xs text-muted-foreground">
             {memo.aiSummary}
@@ -178,7 +176,7 @@ export function MemoCard({ memo, onClick, searchWords = [], className }: MemoCar
       )}
 
       {(memo.resources.length > 0 || (memo.tags && memo.tags.length > 0)) && (
-        <div className="space-y-3 border-t border-border/80 p-3">
+        <div className="space-y-3 px-3 pb-3">
           {memo.resources.length > 0 && <ResourceThumbnails resources={memo.resources} />}
 
           {memo.tags && memo.tags.length > 0 && (

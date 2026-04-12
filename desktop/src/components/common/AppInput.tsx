@@ -2,22 +2,22 @@ import { CornerDownLeft, Loader2, Maximize2, Minimize2, Sparkles, Upload } from 
 import { forwardRef, useImperativeHandle, useState } from 'react'
 
 import { InputResources } from '@/components/common/InputResources'
-import { RichTextEditor } from '@/components/common/RichTextEditor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupText,
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupText,
 } from '@/components/ui/input-group'
+import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAI } from '@/hooks/useAI'
 import { useInput } from '@/hooks/useInput'
@@ -106,7 +106,7 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
       }
 
       const result = await suggestTags({
-        content: inputValue.replace(/<[^>]*>/g, '').trim(),
+        content: inputValue.trim(),
         existingTags: tags,
       })
 
@@ -177,14 +177,20 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
             <div
               className={`w-full overflow-auto flex-1 min-h-0 ${isExpanded ? 'flex flex-col' : ''}`}
             >
-              <RichTextEditor
-                content={inputValue}
-                onChange={handleInputChange}
+              <Textarea
+                value={inputValue}
+                onChange={e => handleInputChange(e.target.value)}
                 placeholder={placeholder}
-                editable={true}
-                onSave={handleSubmit}
-                isExpanded={isExpanded}
-                className={cn(isExpanded ? 'flex-1' : '', 'border-0')}
+                onKeyDown={e => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault()
+                    handleSubmit()
+                  }
+                }}
+                className={cn(
+                  'border-0 rounded-none bg-transparent font-mono text-sm leading-6 focus-visible:ring-0',
+                  isExpanded ? 'flex-1 min-h-80 resize-none' : 'min-h-30 resize-y'
+                )}
               />
 
               {isExpanded && (
@@ -340,8 +346,7 @@ export const AppInput = forwardRef<AppInputRef, AppInputProps>(
                     onClick={handleSubmit}
                     disabled={
                       !inputValue ||
-                      (inputValue.replace(/<[^>]*>/g, '').trim() === '' &&
-                        resourceFilenames.length === 0) ||
+                      (inputValue.trim() === '' && resourceFilenames.length === 0) ||
                       uploadingFiles.length > 0
                     }
                     className="gap-2"

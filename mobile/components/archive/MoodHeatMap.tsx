@@ -168,13 +168,6 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
 
   // Handle date click
   const handleDateClick = (cell: HeatMapCell) => {
-    if (__DEV__) {
-      console.log('[MoodHeatMap] cell pressed', {
-        date: cell.date,
-        count: cell.count,
-        moodKey: cell.moodKey,
-      })
-    }
     if (cell.date && onDateClick) {
       onDateClick(cell.date)
     }
