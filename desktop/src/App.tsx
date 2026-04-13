@@ -14,7 +14,6 @@ import DiaryPage from './pages/desktop/DiaryPage'
 import SearchPage from './pages/desktop/SearchPage'
 import SettingsPage from './pages/desktop/SettingsPage'
 import SetupWizard from './pages/desktop/SetupWizard'
-import ThemeDemoPage from './pages/desktop/ThemeDemoPage'
 
 // Toast
 import { Toaster } from './components/ui/toaster'
@@ -37,7 +36,6 @@ function App() {
             <Route element={<SetupLayout />}>
               <Route path="/setup" element={<SetupWizard />} />
             </Route>
-            <Route path="/theme-demo" element={<ThemeDemoPage />} />
             <Route path="*" element={<Navigate to="/setup" replace />} />
           </>
         ) : (
@@ -50,7 +48,6 @@ function App() {
               <Route path="/search" element={<SearchPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
-            <Route path="/theme-demo" element={<ThemeDemoPage />} />
             <Route element={<SetupLayout />}>
               <Route path="/setup" element={<Navigate to="/" replace />} />
             </Route>
