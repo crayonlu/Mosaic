@@ -16,11 +16,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     bootsplash({
       logo: './assets/images/mosaic-light.png',
       logoWidth: 120,
-      background: '#FFF5EB',
+      background: '#EFE8DD',
     })
   )
-
-  merged.plugins?.push(['./plugins/withFirstFrameTheme'])
 
   return merged
 }
