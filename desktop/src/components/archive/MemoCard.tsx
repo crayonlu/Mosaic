@@ -151,10 +151,7 @@ export const MemoCard = memo<MemoCardProps>(
             <div className="flex-1 min-w-0">
               {memo.content ? (
                 <div className="prose-sm prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1 max-w-none">
-                  <MarkdownPreview
-                    content={memo.content}
-                    className="text-sm"
-                  />
+                  <MarkdownPreview content={memo.content} className="text-sm" />
                 </div>
               ) : (
                 <></>

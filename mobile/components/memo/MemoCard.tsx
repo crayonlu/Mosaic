@@ -4,7 +4,6 @@ import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { normalizeContent } from '@/lib/utils/content'
 import { stringUtils } from '@/lib/utils/string'
-import { useCacheStore } from '@/stores/cacheStore'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
@@ -32,7 +31,6 @@ export function MemoCard({
   showPressFeedback = true,
 }: MemoCardProps) {
   const { theme } = useThemeStore()
-  const { isReady: isCacheReady } = useCacheStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -82,12 +80,7 @@ export function MemoCard({
 
         {mediaItems.length > 0 && (
           <View style={styles.imageGridContainer}>
-            <DraggableImageGrid
-              items={mediaItems}
-              authHeaders={authHeaders}
-              draggable={false}
-              isCacheLoading={!isCacheReady}
-            />
+            <DraggableImageGrid items={mediaItems} authHeaders={authHeaders} draggable={false} />
           </View>
         )}
       </View>

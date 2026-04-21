@@ -8,7 +8,6 @@ import { formatBytes, getStorageSummary, type StorageItem } from '@/lib/storage/
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi } from '@mosaic/api'
-import { useResourceCache } from '@mosaic/cache'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 // import { router } from 'expo-router'
@@ -31,8 +30,6 @@ const appVersion = Constants.expoConfig?.version ?? 'unknown'
 const expandLayoutTransition = LinearTransition.duration(220)
 
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
-  const { cachedUris } = useResourceCache([avatarUrl])
-  const cachedAvatarUrl = cachedUris[avatarUrl] || avatarUrl
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -44,9 +41,7 @@ function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
     loadAuthHeaders()
   }, [])
 
-  return (
-    <Image source={{ uri: cachedAvatarUrl, headers: authHeaders }} style={styles.avatarImage} />
-  )
+  return <Image source={{ uri: avatarUrl, headers: authHeaders }} style={styles.avatarImage} />
 }
 
 export default function SettingsScreen() {
@@ -96,11 +91,6 @@ export default function SettingsScreen() {
         string,
         { title: string; message: string; requiresRestart?: boolean }
       > = {
-        'resource-cache': {
-          title: '确认清除缓存',
-          message: '清除后图片和视频需要重新加载，确定吗？',
-          requiresRestart: true,
-        },
         sqlite: {
           title: '确认清除本地数据',
           message: '清除后需要重启应用才能正常使用，确定吗？',
