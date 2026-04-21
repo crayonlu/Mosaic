@@ -6,13 +6,6 @@ export interface MediaGridItem {
   headers?: Record<string, string>
 }
 
-export interface MediaCacheMaps {
-  imageThumbUris: Record<string, string>
-  imageOptUris: Record<string, string>
-  videoThumbUris: Record<string, string>
-  videoOptUris: Record<string, string>
-}
-
 export interface ResolvedMediaSource {
   item: MediaGridItem
   gridUri?: string

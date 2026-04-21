@@ -1,9 +1,10 @@
 // API exports
 export { authApi } from './auth'
+export { botsApi } from './bots'
 export { ApiClient, apiClient, type TokenStorage } from './client'
 export { diariesApi } from './diaries'
 export { memosApi } from './memos'
-export { resourcesApi, uploadResourceFiles, toAbsoluteUrl } from './resources'
+export { resourcesApi, toAbsoluteUrl, uploadResourceFiles } from './resources'
 export { statsApi } from './stats'
 
 // Hooks exports

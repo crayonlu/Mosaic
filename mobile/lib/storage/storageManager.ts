@@ -1,5 +1,5 @@
-import { mmkv } from './mmkv'
 import { getDatabase } from './database'
+import { mmkv } from './mmkv'
 
 export interface StorageItem {
   id: string
@@ -70,7 +70,6 @@ async function getSQLiteStorage(): Promise<StorageItem> {
     let memoCount = 0
     let diaryCount = 0
     let resourceCount = 0
-    let cacheEntryCount = 0
     try {
       const memoRow = (await db.getFirstAsync('SELECT COUNT(*) as c FROM memos')) as { c?: number }
       const diaryRow = (await db.getFirstAsync('SELECT COUNT(*) as c FROM diaries')) as {
@@ -79,16 +78,12 @@ async function getSQLiteStorage(): Promise<StorageItem> {
       const resourceRow = (await db.getFirstAsync('SELECT COUNT(*) as c FROM resources')) as {
         c?: number
       }
-      const cacheRow = (await db.getFirstAsync('SELECT COUNT(*) as c FROM cache_entries')) as {
-        c?: number
-      }
       memoCount = memoRow?.c ?? 0
       diaryCount = diaryRow?.c ?? 0
       resourceCount = resourceRow?.c ?? 0
-      cacheEntryCount = cacheRow?.c ?? 0
     } catch {}
 
-    const totalRows = memoCount + diaryCount + resourceCount + cacheEntryCount
+    const totalRows = memoCount + diaryCount + resourceCount
 
     return {
       id: 'sqlite',
@@ -122,41 +117,14 @@ async function getSQLiteStorage(): Promise<StorageItem> {
   }
 }
 
-async function getResourceCacheStorage(): Promise<StorageItem> {
-  const { getMobileResourceLoader, initializeMobileCache } = await import('@/lib/cache')
-  let loader = getMobileResourceLoader()
-  if (!loader) {
-    loader = await initializeMobileCache()
-  }
-
-  const usage = await loader.getCacheUsage()
-  const totalSize = usage?.totalSize ?? 0
-  const itemCount = usage?.itemCount ?? 0
-
-  return {
-    id: 'resource-cache',
-    label: '图片/视频缓存',
-    description: `已缓存的图片和视频 - 共${itemCount}个`,
-    size: totalSize,
-    itemCount,
-    clearable: true,
-    clear: async () => {
-      const { getMobileResourceLoader } = await import('@/lib/cache')
-      const l = getMobileResourceLoader()
-      if (l) await l.clearCache()
-    },
-  }
-}
-
 export async function getStorageSummary(): Promise<StorageSummary> {
-  const [mmkvItem, secureItem, sqliteItem, cacheItem] = await Promise.all([
+  const [mmkvItem, secureItem, sqliteItem] = await Promise.all([
     Promise.resolve(getMMKVStorage()),
     Promise.resolve(getSecureStorage()),
     getSQLiteStorage(),
-    getResourceCacheStorage(),
   ])
 
-  const items = [mmkvItem, secureItem, sqliteItem, cacheItem]
+  const items = [mmkvItem, secureItem, sqliteItem]
   const totalSize = items.reduce((sum, i) => sum + i.size, 0)
 
   return {

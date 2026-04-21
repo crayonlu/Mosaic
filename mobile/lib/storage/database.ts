@@ -16,23 +16,6 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
       await database.execAsync(`PRAGMA foreign_keys = ON;`)
 
       await database.execAsync(`
-        CREATE TABLE IF NOT EXISTS cache_entries (
-          url           TEXT PRIMARY KEY NOT NULL,
-          local_path    TEXT NOT NULL,
-          mime_type     TEXT NOT NULL DEFAULT 'application/octet-stream',
-          etag          TEXT,
-          size          INTEGER NOT NULL DEFAULT 0,
-          created_at    INTEGER NOT NULL,
-          last_accessed INTEGER NOT NULL,
-          expires_at    INTEGER,
-          access_count  INTEGER NOT NULL DEFAULT 1,
-          is_pinned     INTEGER NOT NULL DEFAULT 0
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_cache_last_accessed ON cache_entries(last_accessed);
-        CREATE INDEX IF NOT EXISTS idx_cache_expires ON cache_entries(expires_at);
-        CREATE INDEX IF NOT EXISTS idx_cache_mime ON cache_entries(mime_type);
-
         CREATE TABLE IF NOT EXISTS memos (
           id          TEXT PRIMARY KEY NOT NULL,
           content     TEXT,

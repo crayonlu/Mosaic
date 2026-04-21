@@ -1,0 +1,200 @@
+use crate::middleware::get_user_id;
+use crate::models::{CreateBotRequest, ReorderBotsRequest, ReplyToBotRequest, UpdateBotRequest};
+use crate::services::{bot_service::AiConfig, BotService};
+use actix_web::{web, HttpRequest, HttpResponse};
+use uuid::Uuid;
+
+fn extract_ai_config(req: &HttpRequest) -> Option<AiConfig> {
+    let headers = req.headers();
+    let provider = headers.get("x-ai-provider")?.to_str().ok()?.to_string();
+    let base_url = headers.get("x-ai-base-url")?.to_str().ok()?.to_string();
+    let api_key = headers.get("x-ai-api-key")?.to_str().ok()?.to_string();
+    let model = headers.get("x-ai-model")?.to_str().ok()?.to_string();
+
+    if api_key.is_empty() || base_url.is_empty() || model.is_empty() {
+        return None;
+    }
+
+    Some(AiConfig {
+        provider,
+        base_url,
+        api_key,
+        model,
+    })
+}
+
+pub async fn list_bots(req: HttpRequest, bot_service: web::Data<BotService>) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match bot_service.list_bots(&user_id).await {
+        Ok(bots) => HttpResponse::Ok().json(bots),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+pub async fn create_bot(
+    req: HttpRequest,
+    payload: web::Json<CreateBotRequest>,
+    bot_service: web::Data<BotService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match bot_service.create_bot(&user_id, payload.into_inner()).await {
+        Ok(bot) => HttpResponse::Created().json(bot),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+pub async fn update_bot(
+    req: HttpRequest,
+    path: web::Path<Uuid>,
+    payload: web::Json<UpdateBotRequest>,
+    bot_service: web::Data<BotService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match bot_service
+        .update_bot(&user_id, path.into_inner(), payload.into_inner())
+        .await
+    {
+        Ok(bot) => HttpResponse::Ok().json(bot),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+pub async fn delete_bot(
+    req: HttpRequest,
+    path: web::Path<Uuid>,
+    bot_service: web::Data<BotService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match bot_service.delete_bot(&user_id, path.into_inner()).await {
+        Ok(_) => HttpResponse::NoContent().finish(),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+pub async fn reorder_bots(
+    req: HttpRequest,
+    payload: web::Json<ReorderBotsRequest>,
+    bot_service: web::Data<BotService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match bot_service
+        .reorder_bots(&user_id, payload.into_inner())
+        .await
+    {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+pub async fn get_bot_replies(
+    req: HttpRequest,
+    path: web::Path<Uuid>,
+    bot_service: web::Data<BotService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match bot_service
+        .get_bot_replies(&user_id, path.into_inner())
+        .await
+    {
+        Ok(replies) => HttpResponse::Ok().json(replies),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+pub async fn trigger_replies(
+    req: HttpRequest,
+    path: web::Path<Uuid>,
+    bot_service: web::Data<BotService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    let ai_config = match extract_ai_config(&req) {
+        Some(c) => c,
+        None => return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "Bad Request",
+            "message": "Missing required AI config headers (x-ai-provider, x-ai-base-url, x-ai-api-key, x-ai-model)"
+        })),
+    };
+
+    match bot_service
+        .trigger_replies(&user_id, path.into_inner(), ai_config)
+        .await
+    {
+        Ok(_) => HttpResponse::Accepted().finish(),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+pub async fn reply_to_bot(
+    req: HttpRequest,
+    path: web::Path<Uuid>,
+    payload: web::Json<ReplyToBotRequest>,
+    bot_service: web::Data<BotService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    let ai_config = match extract_ai_config(&req) {
+        Some(c) => c,
+        None => {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "Bad Request",
+                "message": "Missing required AI config headers"
+            }))
+        }
+    };
+
+    match bot_service
+        .reply_to_bot(&user_id, path.into_inner(), payload.into_inner(), ai_config)
+        .await
+    {
+        Ok(reply) => HttpResponse::Created().json(reply),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+pub fn configure_bot_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::resource("/bots")
+            .route(web::get().to(list_bots))
+            .route(web::post().to(create_bot)),
+    )
+    .service(web::resource("/bots/reorder").route(web::put().to(reorder_bots)))
+    .service(
+        web::resource("/bots/{id}")
+            .route(web::put().to(update_bot))
+            .route(web::delete().to(delete_bot)),
+    )
+    .service(web::resource("/memos/{id}/bot-replies").route(web::get().to(get_bot_replies)))
+    .service(web::resource("/memos/{id}/trigger-replies").route(web::post().to(trigger_replies)))
+    .service(web::resource("/bot-replies/{id}/reply").route(web::post().to(reply_to_bot)));
+}

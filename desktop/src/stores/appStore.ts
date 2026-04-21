@@ -1,18 +1,22 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-type Theme = 'light' | 'dark'
+type ColorMode = 'light' | 'dark'
+type ThemeName = 'quietPaper' | 'cleanSlate'
+type Theme = ColorMode // kept for backward compat; represents color mode
 
 interface AppState {
   theme: Theme
+  themeName: ThemeName
   sidebarOpen: boolean
   setTheme: (theme: Theme, x?: number, y?: number) => void
+  setThemeName: (name: ThemeName) => void
   toggleTheme: (event?: React.MouseEvent) => void
   setSidebarOpen: (open: boolean) => void
   toggleSidebar: () => void
 }
 
-const applyTheme = (theme: Theme, x?: number, y?: number) => {
+const applyTheme = (theme: Theme, themeName?: ThemeName, x?: number, y?: number) => {
   if (typeof window === 'undefined') return
 
   const root = document.documentElement
@@ -22,6 +26,11 @@ const applyTheme = (theme: Theme, x?: number, y?: number) => {
       root.classList.add('dark')
     } else {
       root.classList.remove('dark')
+    }
+    if (themeName === 'cleanSlate') {
+      root.classList.add('clean-slate')
+    } else {
+      root.classList.remove('clean-slate')
     }
   }
 
@@ -36,12 +45,17 @@ const applyTheme = (theme: Theme, x?: number, y?: number) => {
 
 export const useAppStore = create<AppState>()(
   persist(
-    set => ({
+    (set, get) => ({
       theme: 'light',
+      themeName: 'quietPaper',
       sidebarOpen: true,
       setTheme: (theme, x?: number, y?: number) => {
         set({ theme })
-        applyTheme(theme, x, y)
+        applyTheme(theme, get().themeName, x, y)
+      },
+      setThemeName: (name: ThemeName) => {
+        set({ themeName: name })
+        applyTheme(get().theme, name)
       },
       toggleTheme: (event?: React.MouseEvent) => {
         set(state => {
@@ -50,9 +64,9 @@ export const useAppStore = create<AppState>()(
             const rect = (event.target as HTMLElement).getBoundingClientRect()
             const x = event.clientX - rect.left
             const y = event.clientY - rect.top
-            applyTheme(newTheme, x, y)
+            applyTheme(newTheme, state.themeName, x, y)
           } else {
-            applyTheme(newTheme)
+            applyTheme(newTheme, state.themeName)
           }
           return { theme: newTheme }
         })
@@ -63,7 +77,7 @@ export const useAppStore = create<AppState>()(
     {
       name: 'app-storage',
       onRehydrateStorage: () => state => {
-        if (state) applyTheme(state.theme)
+        if (state) applyTheme(state.theme, state.themeName)
       },
     }
   )

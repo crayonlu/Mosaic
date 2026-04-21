@@ -25,12 +25,17 @@ pub struct DiaryWithMemosResponse {
     pub memos: Vec<MemoWithResources>,
 }
 
+pub mod bot;
 pub mod diary;
 pub mod memo;
 pub mod resource;
 pub mod stats;
 pub mod user;
 
+pub use bot::{
+    Bot, BotReply, BotReplyResponse, BotResponse, BotSummary, CreateBotRequest, ReorderBotsRequest,
+    ReplyToBotRequest, UpdateBotRequest,
+};
 pub use diary::{CreateDiaryRequest, Diary, DiaryListQuery, DiaryResponse, UpdateDiaryRequest};
 pub use memo::{
     CreateMemoRequest, Memo, MemoListQuery, MemoWithResources,

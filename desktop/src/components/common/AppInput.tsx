@@ -5,17 +5,17 @@ import { InputResources } from '@/components/common/InputResources'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
 import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupButton,
-    InputGroupText,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupText,
 } from '@/components/ui/input-group'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'

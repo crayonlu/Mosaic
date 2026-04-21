@@ -2,7 +2,6 @@ import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
-import { useResourceCache } from '@mosaic/cache'
 import { Image } from 'expo-image'
 import { Check, Play } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -73,17 +72,10 @@ export function CoverImagePicker({
     [memos]
   )
 
-  // Use the reusable useResourceCache hook for caching images
-  const imageUrls = useMemo(
-    () => allImages.filter(item => item.type === 'image').map(item => item.url),
-    [allImages]
-  )
-  const { cachedUris } = useResourceCache(imageUrls)
-
   const renderImage = useCallback(
     ({ item }: { item: CoverMediaItem }) => {
       const isSelected = item.resourceId === selectedCoverId
-      const imageUri = cachedUris[item.url] || item.url
+      const imageUri = item.url
 
       return (
         <Pressable onPress={() => onSelect(item.resourceId)} style={[styles.imageContainer]}>

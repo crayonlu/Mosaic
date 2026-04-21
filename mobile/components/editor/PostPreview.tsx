@@ -1,7 +1,6 @@
 import { Badge, DraggableImageGrid } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
-import { useCacheStore } from '@/stores/cacheStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
@@ -20,7 +19,6 @@ interface PostPreviewProps {
 
 export function PostPreview({ visible, content, items, tags, onClose, onPost }: PostPreviewProps) {
   const { theme } = useThemeStore()
-  const { isReady: isCacheReady } = useCacheStore()
   const insets = useSafeAreaInsets()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
@@ -70,12 +68,7 @@ export function PostPreview({ visible, content, items, tags, onClose, onPost }: 
 
           {items.length > 0 && (
             <View style={styles.imageGridContainer}>
-              <DraggableImageGrid
-                items={items}
-                authHeaders={authHeaders}
-                draggable={false}
-                isCacheLoading={!isCacheReady}
-              />
+              <DraggableImageGrid items={items} authHeaders={authHeaders} draggable={false} />
             </View>
           )}
 

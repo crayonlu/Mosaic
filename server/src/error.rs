@@ -32,6 +32,9 @@ pub enum AppError {
     #[error("Diary not found")]
     DiaryNotFound,
 
+    #[error("Not found: {0}")]
+    NotFound(String),
+
     #[error("Invalid input: {0}")]
     InvalidInput(String),
 
@@ -61,6 +64,7 @@ impl ResponseError for AppError {
             AppError::MemoNotFound => StatusCode::NOT_FOUND,
             AppError::ResourceNotFound => StatusCode::NOT_FOUND,
             AppError::DiaryNotFound => StatusCode::NOT_FOUND,
+            AppError::NotFound(_) => StatusCode::NOT_FOUND,
             AppError::InvalidInput(_) => StatusCode::BAD_REQUEST,
             AppError::Storage(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,

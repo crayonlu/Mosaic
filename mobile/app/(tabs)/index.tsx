@@ -6,7 +6,7 @@ import { toast } from '@/components/ui'
 import { useConnection } from '@/hooks/useConnection'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
-import { useCreateMemo, useDeleteMemo } from '@/lib/query'
+import { useCreateMemo, useDeleteMemo, useTriggerReplies } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
 import { router } from 'expo-router'
@@ -21,6 +21,7 @@ export default function HomeScreen() {
   const { confirm } = useToastConfirm()
   const { mutateAsync: createMemo, isPending: isCreating } = useCreateMemo()
   const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
+  const { mutateAsync: triggerReplies } = useTriggerReplies()
 
   const isPending = isCreating || isDeleting
 
@@ -54,13 +55,14 @@ export default function HomeScreen() {
     }
 
     try {
-      await createMemo({
+      const newMemo = await createMemo({
         content: trimmedContent,
         tags,
         resourceIds: resources,
         aiSummary,
       })
       toast.success('成功', '已创建')
+      triggerReplies(newMemo.id).catch(() => {})
     } catch (error) {
       handleError(error)
       toast.error('错误', '创建失败')

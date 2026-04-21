@@ -1,26 +1,30 @@
+import { BotEditorSheet } from '@/components/bot/BotEditorSheet'
 import { Button, Input, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
+import { ModelCombobox } from '@/components/ui/ModelCombobox'
+import { SlidingSegmentedControl } from '@/components/ui/SlidingSegmentedControl'
 import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
+import { useBots, useUpdateBot } from '@/lib/query'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { formatBytes, getStorageSummary, type StorageItem } from '@/lib/storage/storageManager'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi } from '@mosaic/api'
-import { useResourceCache } from '@mosaic/cache'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 // import { router } from 'expo-router'
 import {
   // Bell,
+  Bot,
   Info,
   LogOut,
-  Moon,
-  // Plus,
+  Palette,
+  Pencil,
+  Plus,
   ShieldCheck,
   Sparkles,
-  Sun,
   Trash,
 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
@@ -31,8 +35,6 @@ const appVersion = Constants.expoConfig?.version ?? 'unknown'
 const expandLayoutTransition = LinearTransition.duration(220)
 
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
-  const { cachedUris } = useResourceCache([avatarUrl])
-  const cachedAvatarUrl = cachedUris[avatarUrl] || avatarUrl
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -44,17 +46,21 @@ function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
     loadAuthHeaders()
   }, [])
 
-  return (
-    <Image source={{ uri: cachedAvatarUrl, headers: authHeaders }} style={styles.avatarImage} />
-  )
+  return <Image source={{ uri: avatarUrl, headers: authHeaders }} style={styles.avatarImage} />
 }
 
 export default function SettingsScreen() {
-  const { theme, themeMode, setThemeMode } = useThemeStore()
+  const { theme, themeMode, themeName, setThemeMode, setThemeName } = useThemeStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
   // const { data: customPushCount = 0 } = useCustomPushCount()
   const [aiConfig, setLocalAIConfig] = useState<AIConfig | null>(null)
+  const [showBotSettings, setShowBotSettings] = useState(false)
+  const [showAppearanceSettings, setShowAppearanceSettings] = useState(false)
   const [showAISettings, setShowAISettings] = useState(false)
+  const [botEditorVisible, setBotEditorVisible] = useState(false)
+  const [editingBot, setEditingBot] = useState<import('@mosaic/api').Bot | undefined>(undefined)
+  const { data: bots = [] } = useBots()
+  const { mutateAsync: updateBot } = useUpdateBot()
   const [showPermissionSettings, setShowPermissionSettings] = useState(false)
   const [savingAI, setSavingAI] = useState(false)
   const [testingAI, setTestingAI] = useState(false)
@@ -96,11 +102,6 @@ export default function SettingsScreen() {
         string,
         { title: string; message: string; requiresRestart?: boolean }
       > = {
-        'resource-cache': {
-          title: '确认清除缓存',
-          message: '清除后图片和视频需要重新加载，确定吗？',
-          requiresRestart: true,
-        },
         sqlite: {
           title: '确认清除本地数据',
           message: '清除后需要重启应用才能正常使用，确定吗？',
@@ -224,10 +225,6 @@ export default function SettingsScreen() {
       })
       await loadPushStatus()
     }
-  }
-
-  const toggleTheme = () => {
-    setThemeMode(themeMode === 'light' ? 'dark' : 'light')
   }
 
   const handleSaveAIConfig = async () => {
@@ -363,24 +360,156 @@ export default function SettingsScreen() {
     )
   }
 
-  const renderAppearanceSection = () => (
+  const renderBotSection = () => (
     <View style={[styles.section]}>
       <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <TouchableOpacity style={styles.menuItem} onPress={toggleTheme}>
-          {themeMode === 'light' ? (
-            <Sun size={18} color={theme.text} />
-          ) : (
-            <Moon size={18} color={theme.text} />
-          )}
-          <Text style={[styles.menuItemText, { color: theme.text }]}>
-            {themeMode === 'light' ? '浅色模式' : '深色模式'}
-          </Text>
+        <TouchableOpacity
+          style={[styles.menuItem, showBotSettings && { borderBottomColor: theme.border }]}
+          onPress={() => toggleSectionWithAnimation(setShowBotSettings)}
+        >
+          <Bot size={18} color={theme.text} />
+          <Text style={[styles.menuItemText, { color: theme.text }]}>AI Bot</Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              点击切换主题
+              {showBotSettings ? '收起' : bots.length > 0 ? `${bots.length} 个 Bot` : '暂无'}
             </Text>
           </View>
         </TouchableOpacity>
+        {showBotSettings && (
+          <Animated.View
+            entering={FadeIn.duration(400)}
+            exiting={FadeOut.duration(240)}
+            layout={expandLayoutTransition}
+            style={[styles.botSettings, { borderTopColor: theme.border }]}
+          >
+            {bots.map((bot, index) => (
+              <View
+                key={bot.id}
+                style={[
+                  styles.botItem,
+                  index > 0 && {
+                    borderTopWidth: StyleSheet.hairlineWidth,
+                    borderTopColor: theme.border,
+                  },
+                ]}
+              >
+                <View style={[styles.botAvatar, { backgroundColor: theme.primary }]}>
+                  <Text style={[styles.botAvatarText, { color: theme.onPrimary }]}>
+                    {bot.name.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.botName, { color: theme.text }]}>{bot.name}</Text>
+                  {bot.tags.length > 0 && (
+                    <Text style={[styles.botTags, { color: theme.textSecondary }]}>
+                      {bot.tags.map(t => `#${t}`).join(' ')}
+                    </Text>
+                  )}
+                </View>
+                <SwitchBtn
+                  value={bot.autoReply}
+                  onValueChange={v => updateBot({ id: bot.id, data: { autoReply: v } })}
+                />
+                <TouchableOpacity
+                  onPress={() => {
+                    setEditingBot(bot)
+                    setBotEditorVisible(true)
+                  }}
+                  hitSlop={12}
+                >
+                  <Pencil size={16} color={theme.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            ))}
+            <TouchableOpacity
+              style={[
+                styles.addBotBtn,
+                {
+                  borderTopColor: theme.border,
+                  borderTopWidth: bots.length > 0 ? StyleSheet.hairlineWidth : 0,
+                },
+              ]}
+              onPress={() => {
+                setEditingBot(undefined)
+                setBotEditorVisible(true)
+              }}
+            >
+              <Plus size={16} color={theme.primary} />
+              <Text style={[styles.addBotText, { color: theme.primary }]}>添加 Bot</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+      </View>
+      <BotEditorSheet
+        visible={botEditorVisible}
+        bot={editingBot}
+        onClose={() => setBotEditorVisible(false)}
+      />
+    </View>
+  )
+
+  const appearanceSummary = `${themeName === 'quietPaper' ? '暖纸' : '清冷'} · ${themeMode === 'light' ? '浅色' : '深色'}`
+
+  const renderAppearanceSection = () => (
+    <View style={[styles.section]}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
+        <TouchableOpacity
+          style={[styles.menuItem, showAppearanceSettings && { borderBottomColor: theme.border }]}
+          onPress={() => toggleSectionWithAnimation(setShowAppearanceSettings)}
+        >
+          <Palette size={18} color={theme.text} />
+          <Text style={[styles.menuItemText, { color: theme.text }]}>外观</Text>
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
+              {showAppearanceSettings ? '收起' : appearanceSummary}
+            </Text>
+          </View>
+        </TouchableOpacity>
+        {showAppearanceSettings && (
+          <View style={[styles.appearanceSettings, { borderTopColor: theme.border }]}>
+            <View style={styles.appearanceRow}>
+              <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>配色风格</Text>
+              <View style={styles.appearanceControl}>
+                <SlidingSegmentedControl
+                  options={[
+                    { label: '暖纸', value: 'quietPaper' },
+                    { label: '清冷', value: 'cleanSlate' },
+                  ]}
+                  value={themeName}
+                  onChange={v => setThemeName(v as 'quietPaper' | 'cleanSlate')}
+                  surfaceMuted={theme.surfaceMuted}
+                  surface={theme.surface}
+                  textColor={theme.text}
+                  textMuted={theme.textSecondary}
+                  radius={theme.radius.small}
+                />
+              </View>
+            </View>
+            <View
+              style={[
+                styles.appearanceRow,
+                { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border },
+              ]}
+            >
+              <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>明暗模式</Text>
+              <View style={styles.appearanceControl}>
+                <SlidingSegmentedControl
+                  options={[
+                    { label: '浅色', value: 'light' },
+                    { label: '深色', value: 'dark' },
+                  ]}
+                  value={themeMode ?? 'light'}
+                  onChange={v => setThemeMode(v as 'light' | 'dark')}
+                  surfaceMuted={theme.surfaceMuted}
+                  surface={theme.surface}
+                  textColor={theme.text}
+                  textMuted={theme.textSecondary}
+                  radius={theme.radius.small}
+                />
+              </View>
+            </View>
+          </View>
+        )}
       </View>
     </View>
   )
@@ -401,12 +530,7 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
         {showAISettings && aiConfig && (
-          <Animated.View
-            entering={FadeIn.duration(400)}
-            exiting={FadeOut.duration(240)}
-            layout={expandLayoutTransition}
-            style={[styles.aiSettings, { borderTopColor: theme.border }]}
-          >
+          <View style={[styles.aiSettings, { borderTopColor: theme.border }]}>
             <View style={styles.settingRow}>
               <View style={styles.providerButtons}>
                 <TouchableOpacity
@@ -466,12 +590,13 @@ export default function SettingsScreen() {
               />
             </View>
             <View style={styles.settingRow}>
-              <Input
+              <ModelCombobox
                 label="模型"
                 value={aiConfig.model}
-                onChangeText={text => setLocalAIConfig({ ...aiConfig, model: text })}
+                onChange={model => setLocalAIConfig({ ...aiConfig, model })}
+                baseUrl={aiConfig.baseUrl}
+                apiKey={aiConfig.apiKey}
                 placeholder={aiConfig.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'}
-                style={styles.aiInputCompact}
               />
             </View>
             <View style={styles.settingRow}>
@@ -529,7 +654,7 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             )}
-          </Animated.View>
+          </View>
         )}
       </View>
     </View>
@@ -551,12 +676,7 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
         {showPermissionSettings && (
-          <Animated.View
-            entering={FadeIn.duration(400)}
-            exiting={FadeOut.duration(240)}
-            layout={expandLayoutTransition}
-            style={[styles.permissionSettings, { borderTopColor: theme.border }]}
-          >
+          <View style={[styles.permissionSettings, { borderTopColor: theme.border }]}>
             <View>
               <View
                 style={{
@@ -634,7 +754,7 @@ export default function SettingsScreen() {
                 <Plus size={16} color={theme.textSecondary} />
               </View>
             </TouchableOpacity> */}
-          </Animated.View>
+          </View>
         )}
       </View>
     </View>
@@ -677,12 +797,7 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
         {showStorageSettings && (
-          <Animated.View
-            entering={FadeIn.duration(400)}
-            exiting={FadeOut.duration(240)}
-            layout={expandLayoutTransition}
-            style={[styles.storageSettings, { borderTopColor: theme.border }]}
-          >
+          <View style={[styles.storageSettings, { borderTopColor: theme.border }]}>
             {storageItems.map(item => (
               <View
                 key={item.id}
@@ -717,7 +832,7 @@ export default function SettingsScreen() {
                 )}
               </View>
             ))}
-          </Animated.View>
+          </View>
         )}
       </View>
     </View>
@@ -728,6 +843,7 @@ export default function SettingsScreen() {
       <View style={styles.content}>
         {renderAccountSection()}
         {renderAppearanceSection()}
+        {renderBotSection()}
         {renderAISettings()}
         {renderPermissionSection()}
         {renderStorageSection()}
@@ -800,6 +916,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     flex: 1,
   },
+  appearanceSettings: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: 0,
+  },
+  appearanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 12,
+  },
+  appearanceLabel: {
+    fontSize: 13,
+    flexShrink: 0,
+  },
+  appearanceControl: {
+    width: 140,
+  },
   aiSettings: {
     padding: 12,
     gap: 10,
@@ -854,5 +989,46 @@ const styles = StyleSheet.create({
   },
   testResultText: {
     fontSize: 13,
+  },
+  botSettings: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  botItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  botAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  botAvatarText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  botName: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  botTags: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  addBotBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
+  },
+  addBotText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 })

@@ -1,16 +1,11 @@
-import { useResourceCache } from '@mosaic/cache'
 import { useCallback, useMemo, useState } from 'react'
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native'
 import { DraggableGrid } from 'react-native-draggable-grid'
 
 import { MediaGridTile } from './media/MediaGridTile'
 import { MediaPreviewModal } from './media/MediaPreviewModal'
-import {
-  getMediaTileSize,
-  getOptimizedMediaUri,
-  resolveMediaSource,
-} from './media/mediaPreviewUtils'
-import type { MediaCacheMaps, MediaGridItem } from './media/types'
+import { getMediaTileSize, resolveMediaSource } from './media/mediaPreviewUtils'
+import type { MediaGridItem } from './media/types'
 
 export type { MediaGridItem } from './media/types'
 
@@ -25,7 +20,6 @@ interface DraggableImageGridProps {
   onDragStart?: () => void
   onDragEnd?: () => void
   draggable?: boolean
-  isCacheLoading?: boolean
 }
 
 export function DraggableImageGrid({
@@ -37,7 +31,6 @@ export function DraggableImageGrid({
   onDragStart,
   onDragEnd,
   draggable = true,
-  isCacheLoading = false,
 }: DraggableImageGridProps) {
   const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null)
   const [gridWidth, setGridWidth] = useState(0)
@@ -45,72 +38,6 @@ export function DraggableImageGrid({
   const resolvedItems: MediaGridItem[] = useMemo(() => {
     return items
   }, [items])
-
-  const imageThumbUrls = useMemo(() => {
-    const urls: string[] = []
-    for (const item of resolvedItems) {
-      if (item.type === 'image') {
-        const url = getOptimizedMediaUri(item.uri, 'thumb')
-        if (url) urls.push(url)
-      }
-    }
-    return urls
-  }, [resolvedItems])
-
-  const imageOptUrls = useMemo(() => {
-    const urls: string[] = []
-    for (const item of resolvedItems) {
-      if (item.type === 'image') {
-        const url = getOptimizedMediaUri(item.uri, 'opt')
-        if (url) urls.push(url)
-      }
-    }
-    return urls
-  }, [resolvedItems])
-
-  const videoThumbUrls = useMemo(() => {
-    const urls: string[] = []
-    for (const item of resolvedItems) {
-      if (item.type === 'video' && item.thumbnailUri) {
-        urls.push(item.thumbnailUri)
-      }
-    }
-    return urls
-  }, [resolvedItems])
-
-  const videoOptUrls = useMemo(() => {
-    const urls: string[] = []
-    for (const item of resolvedItems) {
-      if (item.type === 'video') {
-        const url = getOptimizedMediaUri(item.uri, 'opt')
-        if (url) urls.push(url)
-      }
-    }
-    return urls
-  }, [resolvedItems])
-
-  const { cachedUris: cachedImageThumbUris, isLoading: isLoadingImageThumb } =
-    useResourceCache(imageThumbUrls)
-  const { cachedUris: cachedImageOptUris, isLoading: isLoadingImageOpt } =
-    useResourceCache(imageOptUrls)
-  const { cachedUris: cachedVideoThumbUris, isLoading: isLoadingVideoThumb } =
-    useResourceCache(videoThumbUrls)
-  const { cachedUris: cachedVideoOptUris, isLoading: isLoadingVideoOpt } =
-    useResourceCache(videoOptUrls)
-
-  const isResourceCacheLoading =
-    isLoadingImageThumb || isLoadingImageOpt || isLoadingVideoThumb || isLoadingVideoOpt
-  const showLoading = isCacheLoading || isResourceCacheLoading
-
-  const cacheMaps = useMemo<MediaCacheMaps>(
-    () => ({
-      imageThumbUris: cachedImageThumbUris,
-      imageOptUris: cachedImageOptUris,
-      videoThumbUris: cachedVideoThumbUris,
-      videoOptUris: cachedVideoOptUris,
-    }),
-    [cachedImageOptUris, cachedImageThumbUris, cachedVideoOptUris, cachedVideoThumbUris]
-  )
 
   const gridData: GridItem[] = useMemo(
     () =>
@@ -122,8 +49,8 @@ export function DraggableImageGrid({
 
   const mediaTileSize = getMediaTileSize(resolvedItems.length, gridWidth)
   const resolvedMediaSources = useMemo(
-    () => resolvedItems.map(item => resolveMediaSource(item, cacheMaps, authHeaders)),
-    [authHeaders, cacheMaps, resolvedItems]
+    () => resolvedItems.map(item => resolveMediaSource(item, authHeaders)),
+    [authHeaders, resolvedItems]
   )
   const showRemoveButton = Boolean(onItemsChange)
 
@@ -156,7 +83,7 @@ export function DraggableImageGrid({
 
   const renderGridItem = useCallback(
     (item: GridItem, index: number, pressable: boolean) => {
-      const source = resolvedMediaSources[index] ?? resolveMediaSource(item, cacheMaps, authHeaders)
+      const source = resolvedMediaSources[index] ?? resolveMediaSource(item, authHeaders)
 
       return (
         <View key={`${item.key}_${index}`} style={styles.tileMargin}>
@@ -167,7 +94,7 @@ export function DraggableImageGrid({
             previewUri={source.gridUri}
             previewHeaders={source.gridHeaders}
             uploadProgress={uploadProgressById?.[item.key]}
-            isLoading={showLoading}
+            isLoading={false}
             onPress={pressable ? () => handleItemPress(index) : undefined}
             onRemove={showRemoveButton ? () => handleRemove(index) : undefined}
             showRemoveButton={showRemoveButton}
@@ -177,13 +104,11 @@ export function DraggableImageGrid({
     },
     [
       authHeaders,
-      cacheMaps,
       handleItemPress,
       handleRemove,
       mediaTileSize.height,
       mediaTileSize.width,
       resolvedMediaSources,
-      showLoading,
       showRemoveButton,
       uploadProgressById,
     ]

@@ -135,9 +135,7 @@ function CodeBlock({ language, code, theme }: { language: string; code: string; 
 }
 
 function normalizeMarkdownForRender(source: string): string {
-  const normalized = source
-    .replace(/[｜﹨|]/g, '|')
-    .replace(/[－—–]/g, '-')
+  const normalized = source.replace(/[｜﹨|]/g, '|').replace(/[－—–]/g, '-')
 
   const lines = normalized.split('\n').map(line => {
     const trimmed = line.trim()
@@ -285,7 +283,9 @@ function MarkdownContent({
         markdownit={markdownIt}
         style={markdownStyles as any}
         rules={{
-          hr: node => <View key={node.key} style={[styles.hr, { backgroundColor: theme.border }]} />,
+          hr: node => (
+            <View key={node.key} style={[styles.hr, { backgroundColor: theme.border }]} />
+          ),
           blockquote: (node, children) => (
             <View key={node.key} style={styles.blockquoteContainer}>
               <View style={[styles.blockquoteBar, { backgroundColor: theme.border }]} />
@@ -293,14 +293,21 @@ function MarkdownContent({
             </View>
           ),
           table: (node, children) => (
-            <ScrollView key={node.key} horizontal showsHorizontalScrollIndicator={false} style={styles.tableScroll}>
+            <ScrollView
+              key={node.key}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.tableScroll}
+            >
               <View style={[styles.tableContainer, { borderColor: theme.border }]}>{children}</View>
             </ScrollView>
           ),
           thead: (node, children) => <View key={node.key}>{children}</View>,
           tbody: (node, children) => <View key={node.key}>{children}</View>,
           tr: (node, children) => (
-            <View key={node.key} style={[styles.tableRow, { borderBottomColor: theme.border }]}>{children}</View>
+            <View key={node.key} style={[styles.tableRow, { borderBottomColor: theme.border }]}>
+              {children}
+            </View>
           ),
           th: (node, children) => (
             <View

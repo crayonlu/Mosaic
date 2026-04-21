@@ -1,4 +1,5 @@
 export * from './auth'
+export * from './bots'
 export * from './client'
 export * from './common'
 export * from './diaries'
