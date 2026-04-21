@@ -1,0 +1,48 @@
+import { apiClient } from './client'
+import type {
+  AiHeaders,
+  Bot,
+  BotReply,
+  CreateBotRequest,
+  ReorderBotsRequest,
+  ReplyToBotRequest,
+  UpdateBotRequest,
+} from './types'
+
+export const botsApi = {
+  list(): Promise<Bot[]> {
+    return apiClient.get<Bot[]>('/api/bots')
+  },
+
+  create(data: CreateBotRequest): Promise<Bot> {
+    return apiClient.post<Bot>('/api/bots', data)
+  },
+
+  update(id: string, data: UpdateBotRequest): Promise<Bot> {
+    return apiClient.put<Bot>(`/api/bots/${id}`, data)
+  },
+
+  delete(id: string): Promise<void> {
+    return apiClient.delete<void>(`/api/bots/${id}`)
+  },
+
+  reorder(data: ReorderBotsRequest): Promise<void> {
+    return apiClient.put<void>('/api/bots/reorder', data)
+  },
+
+  getBotReplies(memoId: string): Promise<BotReply[]> {
+    return apiClient.get<BotReply[]>(`/api/memos/${memoId}/bot-replies`)
+  },
+
+  triggerReplies(memoId: string, aiHeaders: AiHeaders): Promise<void> {
+    return apiClient.postWithHeaders<void>(
+      `/api/memos/${memoId}/trigger-replies`,
+      undefined,
+      aiHeaders
+    )
+  },
+
+  replyToBot(replyId: string, data: ReplyToBotRequest, aiHeaders: AiHeaders): Promise<BotReply> {
+    return apiClient.postWithHeaders<BotReply>(`/api/bot-replies/${replyId}/reply`, data, aiHeaders)
+  },
+}

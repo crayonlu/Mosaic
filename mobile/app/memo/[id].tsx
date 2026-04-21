@@ -1,3 +1,4 @@
+import { BotReplyList } from '@/components/bot/BotReplyList'
 import { FullScreenEditor } from '@/components/editor/FullScreenEditor'
 import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
 import { DraggableImageGrid, Loading, toast } from '@/components/ui'
@@ -233,6 +234,8 @@ export default function MemoDetailScreen() {
             </View>
           )}
         </View>
+
+        <BotReplyList memoId={memo.id} />
       </ScrollView>
 
       <FullScreenEditor

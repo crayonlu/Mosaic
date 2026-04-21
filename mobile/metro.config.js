@@ -8,10 +8,7 @@ const bunStore = path.resolve(workspaceRoot, 'node_modules', '.bun')
 
 const config = getDefaultConfig(projectRoot)
 
-config.watchFolders = [
-  path.resolve(workspaceRoot, 'packages'),
-  bunStore,
-]
+config.watchFolders = [path.resolve(workspaceRoot, 'packages'), bunStore]
 
 config.resolver.nodeModulesPaths = [projectNodeModules, path.resolve(workspaceRoot, 'node_modules')]
 config.resolver.extraNodeModules = {

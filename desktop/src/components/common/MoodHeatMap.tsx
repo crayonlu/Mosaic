@@ -112,12 +112,20 @@ export function MoodHeatMap({
   const isCleanSlate = themeName === 'cleanSlate'
 
   const emptyColor = dark
-    ? (isCleanSlate ? '#1e1e1e' : '#2A2B30')
-    : (isCleanSlate ? '#D4D4D4' : '#CFC6B8')
+    ? isCleanSlate
+      ? '#1e1e1e'
+      : '#2A2B30'
+    : isCleanSlate
+      ? '#D4D4D4'
+      : '#CFC6B8'
 
   const todayOutlineColor = dark
-    ? (isCleanSlate ? '#a8f099' : '#D39B66')
-    : (isCleanSlate ? '#16a34a' : '#9A6B3F')
+    ? isCleanSlate
+      ? '#a8f099'
+      : '#D39B66'
+    : isCleanSlate
+      ? '#16a34a'
+      : '#9A6B3F'
 
   const formatTooltipContent = (cell: HeatMapCell) => {
     const date = new Date(cell.date)
@@ -144,11 +152,19 @@ export function MoodHeatMap({
         className="w-full overflow-hidden rounded-xl border py-2 transition-all"
         style={{
           borderColor: dark
-            ? (isCleanSlate ? '#262626' : '#3A352D')
-            : (isCleanSlate ? '#E5E5E5' : '#D9D2C6'),
+            ? isCleanSlate
+              ? '#262626'
+              : '#3A352D'
+            : isCleanSlate
+              ? '#E5E5E5'
+              : '#D9D2C6',
           backgroundColor: dark
-            ? (isCleanSlate ? '#141414' : '#1F1F22')
-            : (isCleanSlate ? '#FFFFFF' : '#F2ECE2'),
+            ? isCleanSlate
+              ? '#141414'
+              : '#1F1F22'
+            : isCleanSlate
+              ? '#FFFFFF'
+              : '#F2ECE2',
         }}
       >
         <div className="mx-auto flex w-fit gap-1.5 justify-start">
@@ -166,10 +182,7 @@ export function MoodHeatMap({
                       )}
                       style={{
                         backgroundColor: cell.count === 0 ? emptyColor : cell.color,
-                        outline:
-                          cell.date === today
-                            ? `1px solid ${todayOutlineColor}`
-                            : 'none',
+                        outline: cell.date === today ? `1px solid ${todayOutlineColor}` : 'none',
                         outlineOffset: cell.date === today ? '1px' : '0px',
                       }}
                       onClick={() => onDateClick?.(cell.date)}

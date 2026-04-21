@@ -1,11 +1,11 @@
 import {
-    CleanSlateDarkTheme,
-    CleanSlateLightTheme,
-    DarkTheme,
-    LightTheme,
-    ThemeMode,
-    ThemeName,
-    type Theme,
+  CleanSlateDarkTheme,
+  CleanSlateLightTheme,
+  DarkTheme,
+  LightTheme,
+  ThemeMode,
+  ThemeName,
+  type Theme,
 } from '@/constants/theme'
 import { mmkv, mmkvZustandStorage } from '@/lib/storage/mmkv'
 import { useEffect, useRef } from 'react'

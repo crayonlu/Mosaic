@@ -261,7 +261,10 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
         {isEditing ? (
           <TouchableOpacity
             style={styles.headerAction}
-            onPress={() => { refreshEditState(); void handleSave() }}
+            onPress={() => {
+              refreshEditState()
+              void handleSave()
+            }}
             disabled={!hasChanges || isSaving}
           >
             <Text

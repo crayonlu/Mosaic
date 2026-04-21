@@ -11,10 +11,7 @@ function HeatMapSkeleton() {
           {Array.from({ length: 18 }).map((_, wi) => (
             <div key={wi} className="flex flex-col gap-1.5">
               {Array.from({ length: 7 }).map((_, di) => (
-                <div
-                  key={di}
-                  className="h-2.5 w-2.5 rounded-sm animate-pulse bg-muted"
-                />
+                <div key={di} className="h-2.5 w-2.5 rounded-sm animate-pulse bg-muted" />
               ))}
             </div>
           ))}

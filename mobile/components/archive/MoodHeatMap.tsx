@@ -4,7 +4,13 @@ import { MOODS, getMoodColor } from '@mosaic/utils'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated'
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated'
 interface HeatMapCell {
   date: string
   color: string
@@ -29,10 +35,7 @@ function HeatMapSkeleton() {
 
   useEffect(() => {
     opacity.value = withRepeat(
-      withSequence(
-        withTiming(0.35, { duration: 700 }),
-        withTiming(1, { duration: 700 })
-      ),
+      withSequence(withTiming(0.35, { duration: 700 }), withTiming(1, { duration: 700 })),
       -1,
       false
     )
@@ -51,7 +54,10 @@ function HeatMapSkeleton() {
               {Array.from({ length: 7 }).map((_, di) => (
                 <View
                   key={di}
-                  style={[styles.cell, { backgroundColor: skeletonColor, borderColor: 'transparent' }]}
+                  style={[
+                    styles.cell,
+                    { backgroundColor: skeletonColor, borderColor: 'transparent' },
+                  ]}
                 />
               ))}
             </View>
@@ -59,13 +65,25 @@ function HeatMapSkeleton() {
         </Animated.View>
       </View>
       <View style={[styles.legend]}>
-        <Animated.View style={[{ width: 56, height: 12, borderRadius: 4, backgroundColor: skeletonColor }, animStyle]} />
+        <Animated.View
+          style={[
+            { width: 56, height: 12, borderRadius: 4, backgroundColor: skeletonColor },
+            animStyle,
+          ]}
+        />
         <View style={styles.legendScrollContent}>
           <View style={styles.legendItems}>
             {MOODS.map(item => (
               <View key={item.key} style={styles.legendItem}>
-                <Animated.View style={[styles.legendColor, { backgroundColor: skeletonColor }, animStyle]} />
-                <Animated.View style={[{ width: 24, height: 10, borderRadius: 3, backgroundColor: skeletonColor }, animStyle]} />
+                <Animated.View
+                  style={[styles.legendColor, { backgroundColor: skeletonColor }, animStyle]}
+                />
+                <Animated.View
+                  style={[
+                    { width: 24, height: 10, borderRadius: 3, backgroundColor: skeletonColor },
+                    animStyle,
+                  ]}
+                />
               </View>
             ))}
           </View>

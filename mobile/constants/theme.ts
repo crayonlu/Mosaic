@@ -1,8 +1,8 @@
 import {
-    CLEAN_SLATE_DARK,
-    CLEAN_SLATE_LIGHT,
-    QUIET_PAPER_DARK,
-    QUIET_PAPER_LIGHT,
+  CLEAN_SLATE_DARK,
+  CLEAN_SLATE_LIGHT,
+  QUIET_PAPER_DARK,
+  QUIET_PAPER_LIGHT,
 } from '@mosaic/utils'
 import { Platform } from 'react-native'
 
