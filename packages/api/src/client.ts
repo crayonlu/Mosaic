@@ -296,12 +296,16 @@ export class ApiClient {
       query?: Record<string, unknown>
       auth?: boolean
       retry?: boolean
+      extraHeaders?: Record<string, string>
     } = {}
   ): Promise<T> {
-    const { body, query, auth = true, retry = true } = options
+    const { body, query, auth = true, retry = true, extraHeaders } = options
 
     try {
       const headers = await this.getHeaders(auth)
+      if (extraHeaders) {
+        Object.assign(headers, extraHeaders)
+      }
 
       const response = await this.httpClient.request<T>({
         url: path,
@@ -463,6 +467,14 @@ export class ApiClient {
 
   post<T>(path: string, body?: unknown): Promise<T> {
     return this.request<T>('POST', path, { body })
+  }
+
+  postWithHeaders<T>(
+    path: string,
+    body?: unknown,
+    extraHeaders?: Record<string, string>
+  ): Promise<T> {
+    return this.request<T>('POST', path, { body, extraHeaders })
   }
 
   put<T>(path: string, body?: unknown): Promise<T> {

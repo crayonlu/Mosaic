@@ -1,7 +1,6 @@
-import { File } from 'expo-file-system'
 import { Dimensions } from 'react-native'
 
-import type { MediaCacheMaps, MediaGridItem, ResolvedMediaSource } from './types'
+import type { MediaGridItem, ResolvedMediaSource } from './types'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const GRID_GAP = 0
@@ -31,22 +30,6 @@ export function getOptimizedMediaUri(uri: string, variant?: 'thumb' | 'opt'): st
 
 export function isRemoteUri(uri?: string): uri is string {
   return typeof uri === 'string' && /^https?:/i.test(uri)
-}
-
-export function resolveCachedUri(originalUri?: string, cachedUri?: string): string | undefined {
-  if (!cachedUri) {
-    return originalUri
-  }
-
-  if (!/^file:/i.test(cachedUri)) {
-    return cachedUri
-  }
-
-  try {
-    return new File(cachedUri).exists ? cachedUri : originalUri
-  } catch {
-    return originalUri
-  }
 }
 
 export function withAlpha(color: string, alpha: number): string {
@@ -97,7 +80,6 @@ export function formatPlaybackTime(seconds: number): string {
 
 export function resolveMediaSource(
   item: MediaGridItem,
-  cacheMaps: MediaCacheMaps,
   authHeaders?: Record<string, string>
 ): ResolvedMediaSource {
   const requestHeaders = item.headers ?? authHeaders
@@ -105,37 +87,26 @@ export function resolveMediaSource(
   if (item.type === 'image') {
     const thumbUri = getOptimizedMediaUri(item.uri, 'thumb')
     const previewUri = getOptimizedMediaUri(item.uri, 'opt')
-    const cachedThumbUri = cacheMaps.imageThumbUris[thumbUri]
-    const cachedPreviewUri = cacheMaps.imageOptUris[previewUri]
-    const resolvedThumbUri = resolveCachedUri(thumbUri, cachedThumbUri) || thumbUri
-    const resolvedPreviewUri = resolveCachedUri(previewUri, cachedPreviewUri) || previewUri
 
     return {
       item,
-      gridUri: resolvedThumbUri,
-      gridHeaders: isRemoteUri(resolvedThumbUri) ? requestHeaders : undefined,
-      previewUri: resolvedPreviewUri,
-      previewHeaders: isRemoteUri(resolvedPreviewUri) ? requestHeaders : undefined,
+      gridUri: thumbUri,
+      gridHeaders: isRemoteUri(thumbUri) ? requestHeaders : undefined,
+      previewUri,
+      previewHeaders: isRemoteUri(previewUri) ? requestHeaders : undefined,
     }
   }
 
   const videoThumbUri = item.thumbnailUri
-  const cachedVideoThumbUri = item.thumbnailUri
-    ? cacheMaps.videoThumbUris[item.thumbnailUri]
-    : undefined
-  const resolvedVideoThumbUri =
-    resolveCachedUri(videoThumbUri, cachedVideoThumbUri) || videoThumbUri
   const videoOptUri = getOptimizedMediaUri(item.uri, 'opt')
-  const cachedVideoOptUri = cacheMaps.videoOptUris[videoOptUri]
-  const resolvedVideoUri = resolveCachedUri(videoOptUri, cachedVideoOptUri) || videoOptUri
 
   return {
     item,
-    gridUri: resolvedVideoThumbUri,
-    gridHeaders: isRemoteUri(resolvedVideoThumbUri) ? requestHeaders : undefined,
-    previewUri: resolvedVideoUri,
-    previewHeaders: isRemoteUri(resolvedVideoUri) ? requestHeaders : undefined,
-    previewThumbnailUri: resolvedVideoThumbUri,
-    previewThumbnailHeaders: isRemoteUri(resolvedVideoThumbUri) ? requestHeaders : undefined,
+    gridUri: videoThumbUri,
+    gridHeaders: isRemoteUri(videoThumbUri) ? requestHeaders : undefined,
+    previewUri: videoOptUri,
+    previewHeaders: isRemoteUri(videoOptUri) ? requestHeaders : undefined,
+    previewThumbnailUri: videoThumbUri,
+    previewThumbnailHeaders: isRemoteUri(videoThumbUri) ? requestHeaders : undefined,
   }
 }

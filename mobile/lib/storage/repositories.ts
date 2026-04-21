@@ -6,7 +6,33 @@ import type {
   Resource,
   ResourceMetadata,
 } from '@mosaic/api'
+import type { SQLiteDatabase } from 'expo-sqlite'
 import { getDatabase } from './database'
+
+async function withTransaction<T>(db: SQLiteDatabase, fn: () => Promise<T>): Promise<T> {
+  await db.execAsync('BEGIN')
+  try {
+    const result = await fn()
+    await db.execAsync('COMMIT')
+    return result
+  } catch (error) {
+    try {
+      await db.execAsync('ROLLBACK')
+    } catch {
+      // ignore rollback errors if transaction was already closed
+    }
+    throw error
+  }
+}
+
+// Serial queue: ensures only one transaction runs at a time
+let dbQueue: Promise<unknown> = Promise.resolve()
+
+export function enqueueDbWrite<T>(fn: () => Promise<T>): Promise<T> {
+  const next = dbQueue.then(() => fn()).catch(() => fn())
+  dbQueue = next.catch(() => {})
+  return next
+}
 
 // ─── Memos ───
 
@@ -29,10 +55,10 @@ export interface LocalMemoSearchQuery {
 }
 
 export async function upsertMemo(memo: Memo): Promise<void> {
-  try {
+  return enqueueDbWrite(async () => {
     const db = await getDatabase()
 
-    await db.withTransactionAsync(async () => {
+    await withTransaction(db, async () => {
       await db.runAsync(
         `INSERT INTO memos (id, content, is_archived, diary_date, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?)
@@ -54,18 +80,15 @@ export async function upsertMemo(memo: Memo): Promise<void> {
         await db.runAsync('INSERT INTO memo_tags (memo_id, tag) VALUES (?, ?)', memo.id, tag)
       }
     })
-  } catch (error) {
-    console.error('[upsertMemo] Failed:', error)
-    throw error
-  }
+  })
 }
 
 export async function upsertMemos(memos: Memo[]): Promise<void> {
   if (memos.length === 0) return
-  try {
+  return enqueueDbWrite(async () => {
     const db = await getDatabase()
 
-    await db.withTransactionAsync(async () => {
+    await withTransaction(db, async () => {
       for (const memo of memos) {
         await db.runAsync(
           `INSERT INTO memos (id, content, is_archived, diary_date, created_at, updated_at)
@@ -89,10 +112,7 @@ export async function upsertMemos(memos: Memo[]): Promise<void> {
         }
       }
     })
-  } catch (error) {
-    console.error('[upsertMemos] Failed:', error)
-    throw error
-  }
+  })
 }
 
 export async function getMemo(id: string): Promise<MemoWithResources | null> {
@@ -221,12 +241,13 @@ export async function upsertDiary(diary: Diary): Promise<void> {
 
 export async function upsertDiaries(diaries: Diary[]): Promise<void> {
   if (diaries.length === 0) return
-  const db = await getDatabase()
+  return enqueueDbWrite(async () => {
+    const db = await getDatabase()
 
-  await db.withTransactionAsync(async () => {
-    for (const diary of diaries) {
-      await db.runAsync(
-        `INSERT INTO diaries (date, summary, mood_key, mood_score, cover_image_id, created_at, updated_at)
+    await withTransaction(db, async () => {
+      for (const diary of diaries) {
+        await db.runAsync(
+          `INSERT INTO diaries (date, summary, mood_key, mood_score, cover_image_id, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(date) DO UPDATE SET
            summary = excluded.summary,
@@ -234,15 +255,16 @@ export async function upsertDiaries(diaries: Diary[]): Promise<void> {
            mood_score = excluded.mood_score,
            cover_image_id = excluded.cover_image_id,
            updated_at = excluded.updated_at`,
-        diary.date,
-        diary.summary,
-        diary.moodKey,
-        diary.moodScore,
-        diary.coverImageId ?? null,
-        diary.createdAt,
-        diary.updatedAt
-      )
-    }
+          diary.date,
+          diary.summary,
+          diary.moodKey,
+          diary.moodScore,
+          diary.coverImageId ?? null,
+          diary.createdAt,
+          diary.updatedAt
+        )
+      }
+    })
   })
 }
 
@@ -343,12 +365,13 @@ export async function upsertResource(resource: Resource): Promise<void> {
 
 export async function upsertResources(resources: Resource[]): Promise<void> {
   if (resources.length === 0) return
-  const db = await getDatabase()
+  return enqueueDbWrite(async () => {
+    const db = await getDatabase()
 
-  await db.withTransactionAsync(async () => {
-    for (const resource of resources) {
-      await db.runAsync(
-        `INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, url, thumbnail_url, metadata, created_at)
+    await withTransaction(db, async () => {
+      for (const resource of resources) {
+        await db.runAsync(
+          `INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, url, thumbnail_url, metadata, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            memo_id = excluded.memo_id,
@@ -360,19 +383,20 @@ export async function upsertResources(resources: Resource[]): Promise<void> {
            url = excluded.url,
            thumbnail_url = excluded.thumbnail_url,
            metadata = excluded.metadata`,
-        resource.id,
-        resource.memoId ?? null,
-        resource.filename,
-        resource.resourceType,
-        resource.mimeType,
-        resource.fileSize ?? 0,
-        resource.storageType ?? 'local',
-        resource.url,
-        resource.thumbnailUrl ?? null,
-        JSON.stringify(resource.metadata),
-        resource.createdAt
-      )
-    }
+          resource.id,
+          resource.memoId ?? null,
+          resource.filename,
+          resource.resourceType,
+          resource.mimeType,
+          resource.fileSize ?? 0,
+          resource.storageType ?? 'local',
+          resource.url,
+          resource.thumbnailUrl ?? null,
+          JSON.stringify(resource.metadata),
+          resource.createdAt
+        )
+      }
+    })
   })
 }
 

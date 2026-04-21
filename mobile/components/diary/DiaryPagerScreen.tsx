@@ -3,11 +3,11 @@ import { useMoodStore } from '@/stores/moodStore'
 import { useThemeStore } from '@/stores/themeStore'
 import dayjs from 'dayjs'
 import { router } from 'expo-router'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Pencil } from 'lucide-react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { type DayPageViewRef, DayPageView } from './DayPageView'
 import PagerView from 'react-native-pager-view'
-import { DayPageView } from './DayPageView'
 
 const PREFETCH_DAYS = 2
 
@@ -19,10 +19,13 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
   const { theme } = useThemeStore()
   const { setCurrentMood } = useMoodStore()
   const pagerRef = useRef<PagerView>(null)
+  const dayPageRef = useRef<DayPageViewRef>(null)
   const currentPageRef = useRef(PREFETCH_DAYS)
   const skipNextPageSelectedRef = useRef(false)
   const handledRouteDateRef = useRef<string | null>(null)
   const pendingRouteDateRef = useRef<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editTick, setEditTick] = useState(0)
 
   const { currentDate, setCurrentDate, diaryQuery } = useDiaryPager({
     prefetchDays: PREFETCH_DAYS,
@@ -60,6 +63,10 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     }
   }, [currentDate, setCurrentDate, today])
 
+  useEffect(() => {
+    setIsEditing(false)
+  }, [currentDate])
+
   const currentPageIndex = PREFETCH_DAYS
 
   const displayDates = useMemo(() => {
@@ -86,6 +93,24 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
 
   const handleMemoPress = useCallback((memoId: string) => {
     router.push({ pathname: '/memo/[id]', params: { id: memoId } })
+  }, [])
+
+  const handleStartEdit = useCallback(() => {
+    setIsEditing(true)
+  }, [])
+
+  const handleCancelEdit = useCallback(() => {
+    dayPageRef.current?.cancel()
+    setIsEditing(false)
+  }, [])
+
+  const handleSave = useCallback(async () => {
+    await dayPageRef.current?.save()
+    setIsEditing(false)
+  }, [])
+
+  const refreshEditState = useCallback(() => {
+    setEditTick(t => t + 1)
   }, [])
 
   const normalizeAndClampDate = useCallback(
@@ -187,15 +212,26 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     navigateToDate(dayjs(currentDate).add(1, 'year').format('YYYY-MM-DD'))
   }, [currentDate, navigateToDate])
 
+  const hasDiary = dayPageRef.current?.hasDiary ?? false
+  const hasChanges = dayPageRef.current?.hasChanges ?? false
+  const isSaving = dayPageRef.current?.isPending ?? false
+
   const renderPage = useCallback(
     (date: string) => {
+      const isCurrent = date === currentDate
       return (
         <View key={date} style={styles.pageContainer}>
-          <DayPageView date={date} onMemoPress={handleMemoPress} />
+          <DayPageView
+            ref={isCurrent ? dayPageRef : undefined}
+            date={date}
+            onMemoPress={handleMemoPress}
+            isEditing={isCurrent && isEditing}
+          />
         </View>
       )
     },
-    [handleMemoPress]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [handleMemoPress, isEditing, currentDate, editTick]
   )
 
   const pages = displayDates.map(renderPage)
@@ -203,43 +239,76 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
   return (
     <View style={[styles.container]}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.navButton} onPress={handlePreviousYear} hitSlop={8}>
-          <ChevronsLeft size={22} color={theme.text} strokeWidth={2.2} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navButton} onPress={handlePreviousMonth} hitSlop={8}>
-          <ChevronLeft size={22} color={theme.text} strokeWidth={2.2} />
-        </TouchableOpacity>
+        {isEditing ? (
+          <TouchableOpacity style={styles.headerAction} onPress={handleCancelEdit}>
+            <Text style={[styles.headerActionText, { color: theme.textSecondary }]}>取消</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerNavGroup}>
+            <TouchableOpacity style={styles.navButton} onPress={handlePreviousYear} hitSlop={8}>
+              <ChevronsLeft size={22} color={theme.text} strokeWidth={2.2} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navButton} onPress={handlePreviousMonth} hitSlop={8}>
+              <ChevronLeft size={22} color={theme.text} strokeWidth={2.2} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         <Text style={[styles.currentDate, { color: theme.text }]}>
           {dayjs(currentDate).format('YYYY-MM-DD')}
         </Text>
 
-        <TouchableOpacity
-          style={styles.navButton}
-          onPress={handleNextMonth}
-          disabled={isToday}
-          hitSlop={8}
-        >
-          <ChevronRight
-            size={22}
-            color={isToday ? theme.textSecondary : theme.text}
-            strokeWidth={2.2}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navButton}
-          onPress={handleNextYear}
-          disabled={isToday}
-          hitSlop={8}
-        >
-          <ChevronsRight
-            size={22}
-            color={isToday ? theme.textSecondary : theme.text}
-            strokeWidth={2.2}
-          />
-        </TouchableOpacity>
+        {isEditing ? (
+          <TouchableOpacity
+            style={styles.headerAction}
+            onPress={() => {
+              refreshEditState()
+              void handleSave()
+            }}
+            disabled={!hasChanges || isSaving}
+          >
+            <Text
+              style={[
+                styles.headerActionText,
+                { color: hasChanges && !isSaving ? theme.primary : theme.textSecondary },
+              ]}
+            >
+              {isSaving ? '保存中...' : '保存'}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerNavGroup}>
+            <TouchableOpacity
+              style={styles.navButton}
+              onPress={handleNextMonth}
+              disabled={isToday}
+              hitSlop={8}
+            >
+              <ChevronRight
+                size={22}
+                color={isToday ? theme.textSecondary : theme.text}
+                strokeWidth={2.2}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.navButton}
+              onPress={handleNextYear}
+              disabled={isToday}
+              hitSlop={8}
+            >
+              <ChevronsRight
+                size={22}
+                color={isToday ? theme.textSecondary : theme.text}
+                strokeWidth={2.2}
+              />
+            </TouchableOpacity>
+            {hasDiary && (
+              <TouchableOpacity style={styles.navButton} onPress={handleStartEdit} hitSlop={8}>
+                <Pencil size={18} color={theme.textSecondary} strokeWidth={2} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
 
       <PagerView
@@ -264,16 +333,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
+    paddingHorizontal: 4,
     paddingBottom: 4,
+  },
+  headerNavGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   navButton: {
     padding: 8,
-    width: 52,
-    height: 52,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  headerAction: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minWidth: 72,
+  },
+  headerActionText: {
+    fontSize: 15,
+    fontWeight: '500',
   },
   currentDate: {
     fontSize: 16,

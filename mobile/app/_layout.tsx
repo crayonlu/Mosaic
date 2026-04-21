@@ -2,7 +2,6 @@ import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
 import { useAuthStore } from '@/stores/authStore'
-import { useCacheStore } from '@/stores/cacheStore'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useMoodStore } from '@/stores/moodStore'
 import { useThemeInit, useThemeStore } from '@/stores/themeStore'
@@ -50,11 +49,10 @@ function SafeAreaContainer({
 }
 
 export default function RootLayout() {
-  const { theme } = useThemeStore()
+  const { theme, themeName } = useThemeStore()
   const { currentMood, currentMoodIntensity } = useMoodStore()
   const { isServerReachable, initialize, lastError } = useConnectionStore()
   const { isAuthenticated, isInitialized, isLoading, initialize: initAuth } = useAuthStore()
-  const { setReady: setCacheReady } = useCacheStore()
   const segments = useSegments()
   const router = useRouter()
   const hasHiddenNativeSplash = useRef(false)
@@ -101,35 +99,6 @@ export default function RootLayout() {
 
     bootstrap()
   }, [])
-
-  useEffect(() => {
-    const initCache = async () => {
-      const checkAuth = () => useAuthStore.getState().isInitialized
-      const maxWait = 10000
-      const startTime = Date.now()
-
-      while (!checkAuth() && Date.now() - startTime < maxWait) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
-
-      const authState = useAuthStore.getState()
-      if (!authState.isAuthenticated) {
-        setCacheReady(true)
-        return
-      }
-
-      try {
-        const { initializeMobileCache } = await import('../lib/cache')
-        await initializeMobileCache()
-        setCacheReady(true)
-      } catch (error) {
-        console.warn('Mobile cache initialization failed:', error)
-        setCacheReady(true)
-      }
-    }
-
-    initCache()
-  }, [setCacheReady])
 
   useEffect(() => {
     const timeoutId = setTimeout(hideNativeSplash, 80)
@@ -240,13 +209,15 @@ export default function RootLayout() {
                     }}
                   />
                 </Stack>
-                <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.noiseOverlay]}>
-                  <Image
-                    source={require('../assets/images/noise.png')}
-                    contentFit="cover"
-                    style={[styles.noiseImage, { opacity: 0.6 }]}
-                  />
-                </View>
+                {themeName !== 'cleanSlate' && (
+                  <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.noiseOverlay]}>
+                    <Image
+                      source={require('../assets/images/noise.png')}
+                      contentFit="cover"
+                      style={[styles.noiseImage, { opacity: 0.6 }]}
+                    />
+                  </View>
+                )}
                 <ToastContainer />
                 {!isAppReady && (
                   <View style={styles.splashOverlay}>

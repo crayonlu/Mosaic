@@ -3,18 +3,18 @@ import { MemoImageGrid } from '@/components/common/MemoImageGrid'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
 import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
 } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { useAI } from '@/hooks/useAI'
@@ -28,17 +28,17 @@ import { resourcesApi, useDeleteMemo, useUpdateMemo } from '@mosaic/api'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
-    ArrowLeft,
-    Calendar,
-    Edit2,
-    Image as ImageIcon,
-    Loader2,
-    Save,
-    Sparkles,
-    Tag,
-    Trash2,
-    Upload,
-    X,
+  ArrowLeft,
+  Calendar,
+  Edit2,
+  Image as ImageIcon,
+  Loader2,
+  Save,
+  Sparkles,
+  Tag,
+  Trash2,
+  Upload,
+  X,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 

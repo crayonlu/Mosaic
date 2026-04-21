@@ -12,7 +12,7 @@ import { Label } from '@radix-ui/react-label'
 import { Monitor } from 'lucide-react'
 
 export function AppSettings() {
-  const { theme, setTheme } = useTheme()
+  const { theme, themeName, setTheme, setThemeName } = useTheme()
   const { sidebarOpen, setSidebarOpen } = useAppStore()
 
   const handleThemeChange = (newTheme: 'light' | 'dark') => {
@@ -25,6 +25,10 @@ export function AppSettings() {
     } else {
       setTheme(newTheme)
     }
+  }
+
+  const handleThemeNameChange = (value: 'quietPaper' | 'cleanSlate') => {
+    setThemeName(value)
   }
 
   const handleSidebarChange = (value: string) => {
@@ -43,11 +47,27 @@ export function AppSettings() {
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <Label className="text-sm font-medium">主题</Label>
-            <p className="text-xs text-muted-foreground">选择应用的视觉主题</p>
+            <Label className="text-sm font-medium">配色风格</Label>
+            <p className="text-xs text-muted-foreground">选择界面的整体配色方案</p>
+          </div>
+          <Select value={themeName} onValueChange={handleThemeNameChange}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="quietPaper">暖纸</SelectItem>
+              <SelectItem value="cleanSlate">清冷</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-sm font-medium">明暗模式</Label>
+            <p className="text-xs text-muted-foreground">选择应用的明暗显示模式</p>
           </div>
           <Select value={theme} onValueChange={handleThemeChange}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-36">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -63,7 +83,7 @@ export function AppSettings() {
             <p className="text-xs text-muted-foreground">应用启动时侧边栏的显示状态</p>
           </div>
           <Select value={sidebarOpen ? 'open' : 'closed'} onValueChange={handleSidebarChange}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-36">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
