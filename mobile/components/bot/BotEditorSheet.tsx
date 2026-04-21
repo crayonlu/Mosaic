@@ -1,20 +1,24 @@
 import { SwitchBtn } from '@/components/ui'
+import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
 import { useCreateBot, useDeleteBot, useUpdateBot } from '@/lib/query'
+import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
-import type { Bot } from '@mosaic/api'
-import { X } from 'lucide-react-native'
+import { resourcesApi, type Bot } from '@mosaic/api'
+import { Image } from 'expo-image'
+import { Camera, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -31,6 +35,9 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
   const [description, setDescription] = useState('')
   const [tagsInput, setTagsInput] = useState('')
   const [autoReply, setAutoReply] = useState(true)
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
   const { mutateAsync: createBot, isPending: isCreating } = useCreateBot()
   const { mutateAsync: updateBot, isPending: isUpdating } = useUpdateBot()
@@ -44,6 +51,8 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
       setDescription(bot?.description ?? '')
       setTagsInput(bot?.tags.join(' ') ?? '')
       setAutoReply(bot?.autoReply ?? true)
+      setAvatarUrl(bot?.avatarUrl)
+      getBearerAuthHeaders().then(setAuthHeaders)
     }
   }, [visible, bot])
 
@@ -51,6 +60,20 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
     .split(/[\s,，]+/)
     .map(t => t.replace(/^#/, '').trim())
     .filter(Boolean)
+
+  const handleAvatarPress = async () => {
+    const uri = await pickAndCropAvatar()
+    if (!uri) return
+    setUploadingAvatar(true)
+    try {
+      const resource = await resourcesApi.upload({ uri, name: 'bot-avatar.jpg', type: 'image/jpeg' })
+      setAvatarUrl(resourcesApi.getDownloadUrl(resource.id))
+    } catch {
+      toast.error('头像上传失败')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -62,7 +85,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
       if (bot) {
         await updateBot({
           id: bot.id,
-          data: { name: name.trim(), description: description.trim(), tags: parsedTags, autoReply },
+          data: { name: name.trim(), description: description.trim(), tags: parsedTags, autoReply, avatarUrl },
         })
         toast.success('已更新')
       } else {
@@ -71,6 +94,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
           description: description.trim(),
           tags: parsedTags,
           autoReply,
+          avatarUrl,
         })
         toast.success('已创建')
       }
@@ -133,6 +157,35 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
           contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 16 }]}
           keyboardShouldPersistTaps="handled"
         >
+          <TouchableOpacity
+            style={styles.avatarRow}
+            onPress={handleAvatarPress}
+            disabled={uploadingAvatar}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.avatarCircle, { backgroundColor: theme.primary }]}>
+              {uploadingAvatar ? (
+                <ActivityIndicator size="small" color={theme.onPrimary} />
+              ) : avatarUrl ? (
+                <Image
+                  source={{ uri: avatarUrl, headers: authHeaders }}
+                  style={styles.avatarImage}
+                  contentFit="cover"
+                />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Camera size={22} color={theme.onPrimary} />
+                  <Text style={[styles.avatarPlaceholderText, { color: theme.onPrimary }]}>
+                    {name.charAt(0).toUpperCase() || '?'}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.avatarHint, { color: theme.textSecondary }]}>
+              {avatarUrl ? '点击更换头像' : '点击上传头像'}
+            </Text>
+          </TouchableOpacity>
+
           <View
             style={[
               styles.section,
@@ -228,6 +281,36 @@ const styles = StyleSheet.create({
   body: {
     padding: 16,
     gap: 12,
+  },
+  avatarRow: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  avatarCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  avatarPlaceholder: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  avatarPlaceholderText: {
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 20,
+  },
+  avatarHint: {
+    fontSize: 12,
   },
   section: {
     overflow: 'hidden',

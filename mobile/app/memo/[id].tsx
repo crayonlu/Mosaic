@@ -5,15 +5,17 @@ import { DraggableImageGrid, Loading, toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { useConnection } from '@/hooks/useConnection'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { useDeleteMemo, useMemo as useQueryMemo, useUpdateMemo } from '@/lib/query'
+import { useBotReplies, useDeleteMemo, useMemo as useQueryMemo, useReplyToBot, useUpdateMemo } from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/themeStore'
-import { resourcesApi, type ResourceResponse } from '@mosaic/api'
+import { resourcesApi, type BotReply, type ResourceResponse } from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
-import { ArrowLeft } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ArrowLeft, Send } from 'lucide-react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { KeyboardStickyView } from 'react-native-keyboard-controller'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -26,6 +28,13 @@ export default function MemoDetailScreen() {
 
   const [isEditorVisible, setIsEditorVisible] = useState(false)
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
+  const [targetReply, setTargetReply] = useState<BotReply | null>(null)
+  const [replyText, setReplyText] = useState('')
+  const replyInputRef = useRef<TextInput>(null)
+  const insets = useSafeAreaInsets()
+
+  const { refetch: refetchReplies } = useBotReplies(id || '')
+  const { mutateAsync: replyToBot, isPending: isReplying } = useReplyToBot()
 
   const isPending = isUpdating || isDeleting
 
@@ -110,6 +119,25 @@ export default function MemoDetailScreen() {
       },
     })
   }, [memo, deleteMemo, handleError])
+
+  const handleBotReply = useCallback((reply: BotReply) => {
+    setTargetReply(reply)
+    setReplyText('')
+    setTimeout(() => replyInputRef.current?.focus(), 80)
+  }, [])
+
+  const handleReplySend = useCallback(async () => {
+    if (!targetReply || !replyText.trim() || isReplying) return
+    try {
+      await replyToBot({ replyId: targetReply.id, question: replyText.trim() })
+      setTargetReply(null)
+      setReplyText('')
+      await refetchReplies()
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '发送失败'
+      toast.error(msg)
+    }
+  }, [targetReply, replyText, isReplying, replyToBot, refetchReplies])
 
   if (isLoading) {
     return (
@@ -235,8 +263,55 @@ export default function MemoDetailScreen() {
           )}
         </View>
 
-        <BotReplyList memoId={memo.id} />
+        <BotReplyList memoId={memo.id} onReply={handleBotReply} />
       </ScrollView>
+
+      {targetReply && (
+        <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+        <View
+          style={[
+            styles.replyBar,
+            {
+              borderTopColor: theme.border,
+              backgroundColor: theme.surface,
+              paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+            },
+          ]}
+        >
+            <TextInput
+              ref={replyInputRef}
+              style={[
+                styles.replyInput,
+                { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceMuted },
+              ]}
+              value={replyText}
+              onChangeText={setReplyText}
+              placeholder={`回复 ${targetReply.bot.name}...`}
+              placeholderTextColor={theme.textSecondary}
+              multiline
+              maxLength={500}
+              onBlur={() => {
+                setTargetReply(null)
+                setReplyText('')
+              }}
+            />
+            <TouchableOpacity
+              style={[
+                styles.replySendBtn,
+                { backgroundColor: replyText.trim() ? theme.primary : theme.surfaceMuted },
+              ]}
+              onPress={handleReplySend}
+              disabled={!replyText.trim() || isReplying}
+            >
+              {isReplying ? (
+                <Send size={18} color={theme.textSecondary} />
+              ) : (
+                <Send size={18} color={replyText.trim() ? theme.onPrimary : theme.textSecondary} />
+              )}
+            </TouchableOpacity>
+        </View>
+        </KeyboardStickyView>
+      )}
 
       <FullScreenEditor
         visible={isEditorVisible}
@@ -362,5 +437,31 @@ const styles = StyleSheet.create({
   },
   metadataValue: {
     fontSize: 12,
+  },
+  replyBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 8,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  replyInput: {
+    flex: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    fontSize: 14,
+    maxHeight: 100,
+  },
+  replySendBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
 })
