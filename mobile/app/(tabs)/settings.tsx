@@ -1,5 +1,6 @@
 import { Button, Input, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
+import { SlidingSegmentedControl } from '@/components/ui/SlidingSegmentedControl'
 import { toast } from '@/components/ui/Toast'
 import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
@@ -15,19 +16,16 @@ import {
   // Bell,
   Info,
   LogOut,
-  Moon,
+  Palette,
   // Plus,
   ShieldCheck,
   Sparkles,
-  Sun,
   Trash,
 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated'
 
 const appVersion = Constants.expoConfig?.version ?? 'unknown'
-const expandLayoutTransition = LinearTransition.duration(220)
 
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
@@ -45,10 +43,11 @@ function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
 }
 
 export default function SettingsScreen() {
-  const { theme, themeMode, setThemeMode } = useThemeStore()
+  const { theme, themeMode, themeName, setThemeMode, setThemeName } = useThemeStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
   // const { data: customPushCount = 0 } = useCustomPushCount()
   const [aiConfig, setLocalAIConfig] = useState<AIConfig | null>(null)
+  const [showAppearanceSettings, setShowAppearanceSettings] = useState(false)
   const [showAISettings, setShowAISettings] = useState(false)
   const [showPermissionSettings, setShowPermissionSettings] = useState(false)
   const [savingAI, setSavingAI] = useState(false)
@@ -216,10 +215,6 @@ export default function SettingsScreen() {
     }
   }
 
-  const toggleTheme = () => {
-    setThemeMode(themeMode === 'light' ? 'dark' : 'light')
-  }
-
   const handleSaveAIConfig = async () => {
     if (!aiConfig) return
     setSavingAI(true)
@@ -353,24 +348,65 @@ export default function SettingsScreen() {
     )
   }
 
+  const appearanceSummary = `${themeName === 'quietPaper' ? '暖纸' : '清冷'} · ${themeMode === 'light' ? '浅色' : '深色'}`
+
   const renderAppearanceSection = () => (
     <View style={[styles.section]}>
       <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <TouchableOpacity style={styles.menuItem} onPress={toggleTheme}>
-          {themeMode === 'light' ? (
-            <Sun size={18} color={theme.text} />
-          ) : (
-            <Moon size={18} color={theme.text} />
-          )}
-          <Text style={[styles.menuItemText, { color: theme.text }]}>
-            {themeMode === 'light' ? '浅色模式' : '深色模式'}
-          </Text>
+        <TouchableOpacity
+          style={[styles.menuItem, showAppearanceSettings && { borderBottomColor: theme.border }]}
+          onPress={() => toggleSectionWithAnimation(setShowAppearanceSettings)}
+        >
+          <Palette size={18} color={theme.text} />
+          <Text style={[styles.menuItemText, { color: theme.text }]}>外观</Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              点击切换主题
+              {showAppearanceSettings ? '收起' : appearanceSummary}
             </Text>
           </View>
         </TouchableOpacity>
+        {showAppearanceSettings && (
+          <View
+            style={[styles.appearanceSettings, { borderTopColor: theme.border }]}
+          >
+            <View style={styles.appearanceRow}>
+              <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>配色风格</Text>
+              <View style={styles.appearanceControl}>
+                <SlidingSegmentedControl
+                  options={[
+                    { label: '暖纸', value: 'quietPaper' },
+                    { label: '清冷', value: 'cleanSlate' },
+                  ]}
+                  value={themeName}
+                  onChange={v => setThemeName(v as 'quietPaper' | 'cleanSlate')}
+                  surfaceMuted={theme.surfaceMuted}
+                  surface={theme.surface}
+                  textColor={theme.text}
+                  textMuted={theme.textSecondary}
+                  radius={theme.radius.small}
+                />
+              </View>
+            </View>
+            <View style={[styles.appearanceRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border }]}>
+              <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>明暗模式</Text>
+              <View style={styles.appearanceControl}>
+                <SlidingSegmentedControl
+                  options={[
+                    { label: '浅色', value: 'light' },
+                    { label: '深色', value: 'dark' },
+                  ]}
+                  value={themeMode ?? 'light'}
+                  onChange={v => setThemeMode(v as 'light' | 'dark')}
+                  surfaceMuted={theme.surfaceMuted}
+                  surface={theme.surface}
+                  textColor={theme.text}
+                  textMuted={theme.textSecondary}
+                  radius={theme.radius.small}
+                />
+              </View>
+            </View>
+          </View>
+        )}
       </View>
     </View>
   )
@@ -391,10 +427,7 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
         {showAISettings && aiConfig && (
-          <Animated.View
-            entering={FadeIn.duration(400)}
-            exiting={FadeOut.duration(240)}
-            layout={expandLayoutTransition}
+          <View
             style={[styles.aiSettings, { borderTopColor: theme.border }]}
           >
             <View style={styles.settingRow}>
@@ -519,7 +552,7 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             )}
-          </Animated.View>
+          </View>
         )}
       </View>
     </View>
@@ -541,10 +574,7 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
         {showPermissionSettings && (
-          <Animated.View
-            entering={FadeIn.duration(400)}
-            exiting={FadeOut.duration(240)}
-            layout={expandLayoutTransition}
+          <View
             style={[styles.permissionSettings, { borderTopColor: theme.border }]}
           >
             <View>
@@ -624,7 +654,7 @@ export default function SettingsScreen() {
                 <Plus size={16} color={theme.textSecondary} />
               </View>
             </TouchableOpacity> */}
-          </Animated.View>
+          </View>
         )}
       </View>
     </View>
@@ -667,10 +697,7 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
         {showStorageSettings && (
-          <Animated.View
-            entering={FadeIn.duration(400)}
-            exiting={FadeOut.duration(240)}
-            layout={expandLayoutTransition}
+          <View
             style={[styles.storageSettings, { borderTopColor: theme.border }]}
           >
             {storageItems.map(item => (
@@ -707,7 +734,7 @@ export default function SettingsScreen() {
                 )}
               </View>
             ))}
-          </Animated.View>
+          </View>
         )}
       </View>
     </View>
@@ -789,6 +816,25 @@ const styles = StyleSheet.create({
   menuItemSubText: {
     fontSize: 12,
     flex: 1,
+  },
+  appearanceSettings: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: 0,
+  },
+  appearanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 12,
+  },
+  appearanceLabel: {
+    fontSize: 13,
+    flexShrink: 0,
+  },
+  appearanceControl: {
+    width: 140,
   },
   aiSettings: {
     padding: 12,

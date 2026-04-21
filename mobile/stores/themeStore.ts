@@ -1,4 +1,12 @@
-import { DarkTheme, LightTheme, ThemeMode, type Theme } from '@/constants/theme'
+import {
+    CleanSlateDarkTheme,
+    CleanSlateLightTheme,
+    DarkTheme,
+    LightTheme,
+    ThemeMode,
+    ThemeName,
+    type Theme,
+} from '@/constants/theme'
 import { mmkv, mmkvZustandStorage } from '@/lib/storage/mmkv'
 import { useEffect, useRef } from 'react'
 import { useColorScheme } from 'react-native'
@@ -7,60 +15,77 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 
 const THEME_STORAGE_KEY = 'mosaic-theme-storage'
 
-function getPersistedThemeMode(): ThemeMode | null {
+function getPersistedState(): { themeMode: ThemeMode | null; themeName: ThemeName } {
   const raw = mmkv.getString(THEME_STORAGE_KEY)
-  if (!raw) {
-    return null
-  }
+  const fallback = { themeMode: null, themeName: 'quietPaper' as ThemeName }
+  if (!raw) return fallback
 
   try {
     const parsed = JSON.parse(raw) as {
-      state?: { themeMode?: ThemeMode | null }
+      state?: { themeMode?: ThemeMode | null; themeName?: ThemeName }
     }
     const mode = parsed?.state?.themeMode
-    return mode === 'dark' || mode === 'light' ? mode : null
+    const name = parsed?.state?.themeName
+    return {
+      themeMode: mode === 'dark' || mode === 'light' ? mode : null,
+      themeName: name === 'cleanSlate' ? 'cleanSlate' : 'quietPaper',
+    }
   } catch {
-    return null
+    return fallback
   }
 }
 
-const initialThemeMode = getPersistedThemeMode()
+const initialState = getPersistedState()
 
-const getTheme = (mode: ThemeMode): Theme => {
+const getTheme = (mode: ThemeMode, name: ThemeName): Theme => {
+  if (name === 'cleanSlate') {
+    return mode === 'dark' ? CleanSlateDarkTheme : CleanSlateLightTheme
+  }
   return mode === 'dark' ? DarkTheme : LightTheme
 }
 
 interface ThemeState {
   themeMode: ThemeMode | null
+  themeName: ThemeName
   theme: Theme
   isDark: boolean
   setThemeMode: (mode: ThemeMode) => void
+  setThemeName: (name: ThemeName) => void
   toggleTheme: () => void
 }
 
 export const useThemeStore = create<ThemeState>()(
   persist(
-    set => ({
-      themeMode: initialThemeMode,
-      theme: initialThemeMode ? getTheme(initialThemeMode) : LightTheme,
-      isDark: initialThemeMode === 'dark',
+    (set, get) => ({
+      themeMode: initialState.themeMode,
+      themeName: initialState.themeName,
+      theme: initialState.themeMode
+        ? getTheme(initialState.themeMode, initialState.themeName)
+        : LightTheme,
+      isDark: initialState.themeMode === 'dark',
       setThemeMode: (mode: ThemeMode) => {
-        const isDark = mode === 'dark'
+        const { themeName } = get()
         set({
           themeMode: mode,
-          theme: getTheme(mode),
-          isDark,
+          theme: getTheme(mode, themeName),
+          isDark: mode === 'dark',
+        })
+      },
+      setThemeName: (name: ThemeName) => {
+        const mode = get().themeMode ?? 'light'
+        set({
+          themeName: name,
+          theme: getTheme(mode, name),
         })
       },
       toggleTheme: () => {
         set(state => {
           const currentMode = state.themeMode ?? 'light'
           const newMode = currentMode === 'light' ? 'dark' : 'light'
-          const isDark = newMode === 'dark'
           return {
             themeMode: newMode,
-            theme: getTheme(newMode),
-            isDark,
+            theme: getTheme(newMode, state.themeName),
+            isDark: newMode === 'dark',
           }
         })
       },
@@ -68,17 +93,18 @@ export const useThemeStore = create<ThemeState>()(
     {
       name: 'mosaic-theme-storage',
       storage: createJSONStorage(() => mmkvZustandStorage),
-      partialize: state => ({ themeMode: state.themeMode }),
+      partialize: state => ({ themeMode: state.themeMode, themeName: state.themeName }),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<ThemeState> | undefined
         const mode = persisted?.themeMode ?? currentState.themeMode ?? null
-        const isDark = mode === 'dark'
+        const name: ThemeName = persisted?.themeName === 'cleanSlate' ? 'cleanSlate' : 'quietPaper'
 
         return {
           ...currentState,
           themeMode: mode,
-          theme: mode ? getTheme(mode) : currentState.theme,
-          isDark,
+          themeName: name,
+          theme: mode ? getTheme(mode, name) : currentState.theme,
+          isDark: mode === 'dark',
         }
       },
     }

@@ -1,37 +1,45 @@
-import { CoverImagePicker } from '@/components/archive/CoverImagePicker'
+﻿import { CoverImagePicker } from '@/components/archive/CoverImagePicker'
 import { MemoCard } from '@/components/memo/MemoCard'
 import { Loading } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
 import { useDiary, useUpdateDiary } from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
+import type { MemoWithResources, Resource } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
 import { Image } from 'expo-image'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react'
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+
+export interface DayPageViewRef {
+  hasChanges: boolean
+  isPending: boolean
+  hasDiary: boolean
+  save: () => Promise<void>
+  cancel: () => void
+}
 
 interface DayPageViewProps {
   date: string
   onMemoPress?: (memoId: string) => void
+  isEditing: boolean
 }
 
-export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
+export const DayPageView = forwardRef<DayPageViewRef, DayPageViewProps>(function DayPageView(
+  { date, onMemoPress, isEditing },
+  ref
+) {
   const { theme } = useThemeStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
-  const [isEditing, setIsEditing] = useState(false)
   const [summaryDraft, setSummaryDraft] = useState('')
   const [coverImageIdDraft, setCoverImageIdDraft] = useState<string | undefined>(undefined)
 
   const { data: diary, isLoading } = useDiary(date)
   const updateDiary = useUpdateDiary()
-  const archivedMemos = useMemo(() => diary?.memos ?? [], [diary?.memos])
+  const archivedMemos = useMemo<MemoWithResources[]>(() => diary?.memos ?? [], [diary?.memos])
 
   useEffect(() => {
-    const loadAuthHeaders = async () => {
-      const headers = await getBearerAuthHeaders()
-      setAuthHeaders(headers)
-    }
-    loadAuthHeaders()
+    getBearerAuthHeaders().then(setAuthHeaders)
   }, [])
 
   useEffect(() => {
@@ -42,15 +50,63 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
   }, [diary?.summary, diary?.coverImageId, isEditing])
 
   useEffect(() => {
-    setIsEditing(false)
+    setSummaryDraft(diary?.summary ?? '')
+    setCoverImageIdDraft(diary?.coverImageId)
+    // Reset drafts on date change regardless of edit state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date])
+
+  const hasChanges =
+    summaryDraft.trim() !== (diary?.summary ?? '').trim() ||
+    (coverImageIdDraft ?? null) !== (diary?.coverImageId ?? null)
+
+  const handleSave = useCallback(async () => {
+    if (!diary) return
+    try {
+      await updateDiary.mutateAsync({
+        date,
+        data: {
+          summary: summaryDraft.trim(),
+          coverImageId: coverImageIdDraft ?? null,
+        },
+      })
+      toast.success('保存成功')
+    } catch (error) {
+      console.error('更新日记失败:', error)
+      toast.error('保存失败')
+    }
+  }, [diary, date, summaryDraft, coverImageIdDraft, updateDiary])
+
+  const handleCancel = useCallback(() => {
+    setSummaryDraft(diary?.summary ?? '')
+    setCoverImageIdDraft(diary?.coverImageId)
+  }, [diary?.summary, diary?.coverImageId])
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      hasChanges,
+      isPending: updateDiary.isPending,
+      hasDiary: !!diary,
+      save: handleSave,
+      cancel: handleCancel,
+    }),
+    [hasChanges, updateDiary.isPending, diary, handleSave, handleCancel]
+  )
+
+  const handleMemoPress = useCallback(
+    (memoId: string) => {
+      onMemoPress?.(memoId)
+    },
+    [onMemoPress]
+  )
 
   const displayCoverImageId = isEditing ? coverImageIdDraft : diary?.coverImageId
   const coverResource = useMemo(
     () =>
       archivedMemos
-        .flatMap(memo => memo.resources)
-        .find(resource => resource.id === displayCoverImageId),
+        .flatMap((memo: MemoWithResources) => memo.resources as Resource[])
+        .find((resource: Resource) => resource.id === displayCoverImageId),
     [archivedMemos, displayCoverImageId]
   )
 
@@ -64,47 +120,6 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
     }
     return resourcesApi.getDownloadUrl(displayCoverImageId)
   }, [coverResource, displayCoverImageId])
-
-  const hasChanges =
-    summaryDraft.trim() !== (diary?.summary ?? '').trim() ||
-    (coverImageIdDraft ?? null) !== (diary?.coverImageId ?? null)
-
-  const handleMemoPress = useCallback(
-    (memoId: string) => {
-      onMemoPress?.(memoId)
-    },
-    [onMemoPress]
-  )
-
-  const handleStartEdit = () => {
-    setSummaryDraft(diary?.summary ?? '')
-    setCoverImageIdDraft(diary?.coverImageId)
-    setIsEditing(true)
-  }
-
-  const handleCancelEdit = () => {
-    setSummaryDraft(diary?.summary ?? '')
-    setCoverImageIdDraft(diary?.coverImageId)
-    setIsEditing(false)
-  }
-
-  const handleSave = async () => {
-    if (!diary) return
-    try {
-      await updateDiary.mutateAsync({
-        date,
-        data: {
-          summary: summaryDraft.trim(),
-          coverImageId: coverImageIdDraft ?? null,
-        },
-      })
-      toast.success('保存成功')
-      setIsEditing(false)
-    } catch (error) {
-      console.error('更新日记失败:', error)
-      toast.error('保存失败')
-    }
-  }
 
   if (isLoading) {
     return (
@@ -130,104 +145,57 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {diary && (
-        <View style={styles.editActionsRow}>
-          {!isEditing ? (
-            <Pressable
-              style={[styles.editActionButton, { backgroundColor: theme.semantic.infoSoft }]}
-              onPress={handleStartEdit}
-            >
-              <Text style={[styles.editActionText, { color: theme.primary }]}>编辑</Text>
-            </Pressable>
+      {coverImageUrl && (
+        <View style={styles.coverCard}>
+          <Image
+            source={{ uri: coverImageUrl, headers: authHeaders }}
+            style={styles.coverImage}
+            contentFit="cover"
+          />
+        </View>
+      )}
+
+      {(diary.summary || isEditing) && (
+        <View style={[styles.card, { borderRadius: theme.radius.medium }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>今日总结</Text>
+          {isEditing ? (
+            <TextInput
+              value={summaryDraft}
+              onChangeText={setSummaryDraft}
+              placeholder="写下今天的心情或总结..."
+              placeholderTextColor={theme.textSecondary}
+              multiline
+              textAlignVertical="top"
+              style={[
+                styles.summaryInput,
+                {
+                  color: theme.text,
+                  backgroundColor: theme.surfaceMuted,
+                  borderColor: theme.border,
+                  borderRadius: theme.radius.medium,
+                },
+              ]}
+            />
           ) : (
-            <>
-              <Pressable style={styles.actionTextButton} onPress={handleCancelEdit}>
-                <Text style={[styles.actionText, { color: theme.textSecondary }]}>取消</Text>
-              </Pressable>
-              <Pressable
-                style={styles.actionTextButton}
-                onPress={handleSave}
-                disabled={!hasChanges || updateDiary.isPending}
-              >
-                <Text
-                  style={[
-                    styles.actionText,
-                    {
-                      color:
-                        !hasChanges || updateDiary.isPending ? theme.textSecondary : theme.primary,
-                    },
-                  ]}
-                >
-                  {updateDiary.isPending ? '保存中...' : '保存'}
-                </Text>
-              </Pressable>
-            </>
+            <Text style={[styles.summaryText, { color: theme.text }]}>{diary.summary}</Text>
           )}
         </View>
       )}
 
-      {diary && (
-        <>
-          {coverImageUrl && (
-            <View style={styles.coverCard}>
-              <Image
-                source={{ uri: coverImageUrl, headers: authHeaders }}
-                style={styles.coverImage}
-                contentFit="cover"
-              />
-            </View>
-          )}
-
-          {(diary.summary || isEditing) && (
-            <View
-              style={[
-                styles.card,
-                {
-                  borderRadius: theme.radius.medium,
-                },
-              ]}
-            >
-              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>今日总结</Text>
-              {isEditing ? (
-                <TextInput
-                  value={summaryDraft}
-                  onChangeText={setSummaryDraft}
-                  placeholder="写下今天的心情或总结..."
-                  placeholderTextColor={theme.textSecondary}
-                  multiline
-                  textAlignVertical="top"
-                  style={[
-                    styles.summaryInput,
-                    {
-                      color: theme.text,
-                      backgroundColor: theme.surfaceMuted,
-                      borderColor: theme.border,
-                      borderRadius: theme.radius.medium,
-                    },
-                  ]}
-                />
-              ) : (
-                <Text style={[styles.summaryText, { color: theme.text }]}>{diary.summary}</Text>
-              )}
-            </View>
-          )}
-
-          {isEditing && (
-            <View style={styles.coverPickerSection}>
-              <CoverImagePicker
-                memos={archivedMemos}
-                selectedCoverId={coverImageIdDraft}
-                onSelect={setCoverImageIdDraft}
-                onClear={() => setCoverImageIdDraft(undefined)}
-              />
-            </View>
-          )}
-        </>
+      {isEditing && (
+        <View style={styles.coverPickerSection}>
+          <CoverImagePicker
+            memos={archivedMemos}
+            selectedCoverId={coverImageIdDraft}
+            onSelect={setCoverImageIdDraft}
+            onClear={() => setCoverImageIdDraft(undefined)}
+          />
+        </View>
       )}
 
       <View style={styles.memosSection}>
         {archivedMemos.length > 0 ? (
-          <View style={[styles.memosList]}>
+          <View style={styles.memosList}>
             {archivedMemos.map(memo => (
               <MemoCard
                 key={memo.id}
@@ -239,7 +207,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
             ))}
           </View>
         ) : (
-          <View style={[styles.emptyArchiveCard]}>
+          <View style={styles.emptyArchiveCard}>
             <Text style={[styles.emptyArchiveText, { color: theme.textSecondary }]}>
               当天暂无已归档 Memo
             </Text>
@@ -248,7 +216,7 @@ export function DayPageView({ date, onMemoPress }: DayPageViewProps) {
       </View>
     </ScrollView>
   )
-}
+})
 
 const styles = StyleSheet.create({
   container: {
@@ -264,30 +232,6 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 16,
     gap: 10,
-  },
-  editActionsRow: {
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 12,
-  },
-  editActionButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  editActionText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  actionTextButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 2,
-  },
-  actionText: {
-    fontSize: 14,
-    fontWeight: '500',
   },
   card: {
     padding: 12,
@@ -319,35 +263,9 @@ const styles = StyleSheet.create({
   coverPickerSection: {
     paddingHorizontal: 8,
   },
-  // Compact mood display styles
-  moodDisplay: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  moodIntensity: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
   memosSection: {
     marginTop: 2,
     gap: 8,
-  },
-  memosHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  memoCount: {
-    fontSize: 13,
-    fontWeight: '500',
   },
   memosList: {
     overflow: 'hidden',

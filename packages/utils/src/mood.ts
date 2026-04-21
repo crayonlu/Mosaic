@@ -1,5 +1,5 @@
 import type { MoodKey } from '@mosaic/api'
-import { QUIET_PAPER_MOOD_COLORS } from './designTokens'
+import { MOOD_COLORS } from './designTokens'
 
 export type { MoodKey }
 
@@ -10,14 +10,14 @@ export interface MoodConfig {
 }
 
 export const MOODS: MoodConfig[] = [
-  { key: 'joy', label: '愉悦', color: QUIET_PAPER_MOOD_COLORS.joy },
-  { key: 'anger', label: '愤怒', color: QUIET_PAPER_MOOD_COLORS.anger },
-  { key: 'sadness', label: '悲伤', color: QUIET_PAPER_MOOD_COLORS.sadness },
-  { key: 'calm', label: '平静', color: QUIET_PAPER_MOOD_COLORS.calm },
-  { key: 'anxiety', label: '焦虑', color: QUIET_PAPER_MOOD_COLORS.anxiety },
-  { key: 'focus', label: '专注', color: QUIET_PAPER_MOOD_COLORS.focus },
-  { key: 'tired', label: '疲惫', color: QUIET_PAPER_MOOD_COLORS.tired },
-  { key: 'neutral', label: '无感', color: QUIET_PAPER_MOOD_COLORS.neutral },
+  { key: 'joy', label: '愉悦', color: MOOD_COLORS.joy },
+  { key: 'anger', label: '愤怒', color: MOOD_COLORS.anger },
+  { key: 'sadness', label: '悲伤', color: MOOD_COLORS.sadness },
+  { key: 'calm', label: '平静', color: MOOD_COLORS.calm },
+  { key: 'anxiety', label: '焦虑', color: MOOD_COLORS.anxiety },
+  { key: 'focus', label: '专注', color: MOOD_COLORS.focus },
+  { key: 'tired', label: '疲惫', color: MOOD_COLORS.tired },
+  { key: 'neutral', label: '无感', color: MOOD_COLORS.neutral },
 ] as const
 
 export const MOOD_LABEL_MAP: Record<MoodKey, string> = {
@@ -32,14 +32,14 @@ export const MOOD_LABEL_MAP: Record<MoodKey, string> = {
 }
 
 export const MOOD_COLOR_MAP: Record<MoodKey, string> = {
-  joy: QUIET_PAPER_MOOD_COLORS.joy,
-  anger: QUIET_PAPER_MOOD_COLORS.anger,
-  sadness: QUIET_PAPER_MOOD_COLORS.sadness,
-  calm: QUIET_PAPER_MOOD_COLORS.calm,
-  anxiety: QUIET_PAPER_MOOD_COLORS.anxiety,
-  focus: QUIET_PAPER_MOOD_COLORS.focus,
-  tired: QUIET_PAPER_MOOD_COLORS.tired,
-  neutral: QUIET_PAPER_MOOD_COLORS.neutral,
+  joy: MOOD_COLORS.joy,
+  anger: MOOD_COLORS.anger,
+  sadness: MOOD_COLORS.sadness,
+  calm: MOOD_COLORS.calm,
+  anxiety: MOOD_COLORS.anxiety,
+  focus: MOOD_COLORS.focus,
+  tired: MOOD_COLORS.tired,
+  neutral: MOOD_COLORS.neutral,
 }
 
 function isValidMoodKey(value: string | null | undefined): value is MoodKey {

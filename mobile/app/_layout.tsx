@@ -49,7 +49,7 @@ function SafeAreaContainer({
 }
 
 export default function RootLayout() {
-  const { theme } = useThemeStore()
+  const { theme, themeName } = useThemeStore()
   const { currentMood, currentMoodIntensity } = useMoodStore()
   const { isServerReachable, initialize, lastError } = useConnectionStore()
   const { isAuthenticated, isInitialized, isLoading, initialize: initAuth } = useAuthStore()
@@ -209,13 +209,15 @@ export default function RootLayout() {
                     }}
                   />
                 </Stack>
-                <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.noiseOverlay]}>
-                  <Image
-                    source={require('../assets/images/noise.png')}
-                    contentFit="cover"
-                    style={[styles.noiseImage, { opacity: 0.6 }]}
-                  />
-                </View>
+                {themeName !== 'cleanSlate' && (
+                  <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.noiseOverlay]}>
+                    <Image
+                      source={require('../assets/images/noise.png')}
+                      contentFit="cover"
+                      style={[styles.noiseImage, { opacity: 0.6 }]}
+                    />
+                  </View>
+                )}
                 <ToastContainer />
                 {!isAppReady && (
                   <View style={styles.splashOverlay}>

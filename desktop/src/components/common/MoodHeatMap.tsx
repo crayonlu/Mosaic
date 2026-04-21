@@ -107,8 +107,17 @@ export function MoodHeatMap({
     return weeks.slice(-maxWeeks)
   }, [containerWidth, weeks])
 
-  const { theme } = useTheme()
+  const { theme, themeName } = useTheme()
   const dark = theme === 'dark'
+  const isCleanSlate = themeName === 'cleanSlate'
+
+  const emptyColor = dark
+    ? (isCleanSlate ? '#1e1e1e' : '#2A2B30')
+    : (isCleanSlate ? '#D4D4D4' : '#CFC6B8')
+
+  const todayOutlineColor = dark
+    ? (isCleanSlate ? '#a8f099' : '#D39B66')
+    : (isCleanSlate ? '#16a34a' : '#9A6B3F')
 
   const formatTooltipContent = (cell: HeatMapCell) => {
     const date = new Date(cell.date)
@@ -134,8 +143,12 @@ export function MoodHeatMap({
         ref={containerRef}
         className="w-full overflow-hidden rounded-xl border py-2 transition-all"
         style={{
-          borderColor: dark ? '#3A352D' : '#D9D2C6',
-          backgroundColor: dark ? '#1F1F22' : '#F2ECE2',
+          borderColor: dark
+            ? (isCleanSlate ? '#262626' : '#3A352D')
+            : (isCleanSlate ? '#E5E5E5' : '#D9D2C6'),
+          backgroundColor: dark
+            ? (isCleanSlate ? '#141414' : '#1F1F22')
+            : (isCleanSlate ? '#FFFFFF' : '#F2ECE2'),
         }}
       >
         <div className="mx-auto flex w-fit gap-1.5 justify-start">
@@ -152,11 +165,10 @@ export function MoodHeatMap({
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40'
                       )}
                       style={{
-                        backgroundColor:
-                          cell.count === 0 ? (dark ? '#2A2B30' : '#CFC6B8') : cell.color,
+                        backgroundColor: cell.count === 0 ? emptyColor : cell.color,
                         outline:
                           cell.date === today
-                            ? `1px solid ${dark ? '#D39B66' : '#9A6B3F'}`
+                            ? `1px solid ${todayOutlineColor}`
                             : 'none',
                         outlineOffset: cell.date === today ? '1px' : '0px',
                       }}
