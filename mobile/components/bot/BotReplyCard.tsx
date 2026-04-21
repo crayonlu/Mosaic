@@ -3,6 +3,7 @@ import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/themeStore'
 import type { BotReply } from '@mosaic/api'
 import * as Clipboard from 'expo-clipboard'
+import { Image } from 'expo-image'
 import { useCallback } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -45,9 +46,17 @@ export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardP
           >
             <View style={styles.header}>
               <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-                <Text style={[styles.avatarText, { color: theme.onPrimary }]}>
-                  {reply.bot.name.charAt(0).toUpperCase()}
-                </Text>
+                {reply.bot.avatarUrl ? (
+                  <Image
+                    source={{ uri: reply.bot.avatarUrl }}
+                    style={styles.avatarImg}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Text style={[styles.avatarText, { color: theme.onPrimary }]}>
+                    {reply.bot.name.charAt(0).toUpperCase()}
+                  </Text>
+                )}
               </View>
               <Text style={[styles.botName, { color: theme.text }]}>{reply.bot.name}</Text>
               <Text style={[styles.time, { color: theme.textTertiary }]}>
@@ -104,6 +113,11 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  avatarImg: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
   },
   botName: {
     fontSize: 13,

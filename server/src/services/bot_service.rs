@@ -354,7 +354,7 @@ impl BotService {
 
         #[derive(sqlx::FromRow)]
         struct ParentRow {
-            _id: Uuid,
+            reply_id: Uuid,
             memo_id: Uuid,
             bot_id: Uuid,
             content: String,
@@ -365,13 +365,13 @@ impl BotService {
         }
 
         let parent = sqlx::query_as::<_, ParentRow>(
-            "SELECT br.id, br.memo_id, br.bot_id, br.content,
+            "SELECT br.id as reply_id, br.memo_id, br.bot_id, br.content,
                     m.content as memo_content,
                     b.name as bot_name, b.avatar_url as bot_avatar_url, b.description as bot_description
              FROM bot_replies br
              JOIN bots b ON b.id = br.bot_id
              JOIN memos m ON m.id = br.memo_id
-             WHERE br.id = $1 AND b.user_id = $2 AND br.parent_reply_id IS NULL",
+             WHERE br.id = $1 AND b.user_id = $2",
         )
         .bind(parent_reply_id)
         .bind(user_uuid)

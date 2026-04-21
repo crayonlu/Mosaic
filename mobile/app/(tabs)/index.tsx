@@ -1,6 +1,5 @@
 import { MoodHeatMap } from '@/components/archive/MoodHeatMap'
 import { MemoInput } from '@/components/editor/MemoInput'
-import { KeyboardAvoidProvider } from '@/components/KeyboardAvoidProvider'
 import { MemoList } from '@/components/memo/MemoList'
 import { toast } from '@/components/ui'
 import { useConnection } from '@/hooks/useConnection'
@@ -11,6 +10,7 @@ import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
 import { router } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
+import { KeyboardStickyView } from 'react-native-keyboard-controller'
 
 const TAB_BAR_HEIGHT = 54
 
@@ -87,15 +87,16 @@ export default function HomeScreen() {
         />
       </View>
 
-      <KeyboardAvoidProvider
-        style={[
-          styles.inputContainer,
-          { backgroundColor: theme.background, borderColor: theme.border },
-        ]}
-        extraBottom={-TAB_BAR_HEIGHT}
-      >
-        <MemoInput onSubmit={handleSubmit} disabled={!canUseNetwork || isPending} />
-      </KeyboardAvoidProvider>
+      <KeyboardStickyView offset={{ closed: 0, opened: TAB_BAR_HEIGHT }}>
+        <View
+          style={[
+            styles.inputContainer,
+            { backgroundColor: theme.background, borderColor: theme.border },
+          ]}
+        >
+          <MemoInput onSubmit={handleSubmit} disabled={!canUseNetwork || isPending} />
+        </View>
+      </KeyboardStickyView>
     </View>
   )
 }

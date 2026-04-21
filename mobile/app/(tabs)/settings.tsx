@@ -394,9 +394,13 @@ export default function SettingsScreen() {
                 ]}
               >
                 <View style={[styles.botAvatar, { backgroundColor: theme.primary }]}>
-                  <Text style={[styles.botAvatarText, { color: theme.onPrimary }]}>
-                    {bot.name.charAt(0).toUpperCase()}
-                  </Text>
+                  {bot.avatarUrl ? (
+                    <Image source={{ uri: bot.avatarUrl }} style={styles.botAvatarImage} contentFit="cover" />
+                  ) : (
+                    <Text style={[styles.botAvatarText, { color: theme.onPrimary }]}>
+                      {bot.name.charAt(0).toUpperCase()}
+                    </Text>
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.botName, { color: theme.text }]}>{bot.name}</Text>
@@ -1011,6 +1015,11 @@ const styles = StyleSheet.create({
   botAvatarText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  botAvatarImage: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
   },
   botName: {
     fontSize: 14,
