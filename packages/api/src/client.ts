@@ -64,6 +64,51 @@ export class ApiClient {
   private lastRefreshTime = 0
   private isRefreshing = false
   private refreshPromise: Promise<boolean> | null = null
+  private authFailedEmitted = false
+
+  private requestQueue: Array<{
+    resolve: (value: unknown) => void
+    reject: (reason?: unknown) => void
+    method: string
+    path: string
+    options: object
+  }> = []
+
+  onAuthFailed: (() => void) | null = null
+
+  private enqueueRequest<T>(method: string, path: string, options: object): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.requestQueue.push({
+        resolve: resolve as (value: unknown) => void,
+        reject,
+        method,
+        path,
+        options,
+      })
+    })
+  }
+
+  private flushRequestQueue(success: boolean): void {
+    const queue = this.requestQueue
+    this.requestQueue = []
+    for (const item of queue) {
+      if (success) {
+        this.request(item.method, item.path, item.options).then(item.resolve).catch(item.reject)
+      } else {
+        item.reject({ error: 'Unauthorized', status: 401 } as ApiError)
+      }
+    }
+  }
+
+  private emitAuthFailed(): void {
+    if (this.authFailedEmitted) return
+    this.authFailedEmitted = true
+    this.onAuthFailed?.()
+  }
+
+  resetAuthFailed(): void {
+    this.authFailedEmitted = false
+  }
 
   setBaseUrl(url: string): void {
     this.baseUrl = url.replace(/\/$/, '')
@@ -96,6 +141,9 @@ export class ApiClient {
     }
 
     if (includeAuth && this.tokenStorage) {
+      if (this.isRefreshing && this.refreshPromise) {
+        await this.refreshPromise
+      }
       const token = await this.tokenStorage.getAccessToken()
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
@@ -121,7 +169,12 @@ export class ApiClient {
     this.refreshPromise = this.doRefreshToken()
 
     try {
-      return await this.refreshPromise
+      const success = await this.refreshPromise
+      if (!success) {
+        this.emitAuthFailed()
+      }
+      this.flushRequestQueue(success)
+      return success
     } finally {
       this.isRefreshing = false
       this.refreshPromise = null
@@ -323,10 +376,14 @@ export class ApiClient {
       return response.data
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401 && auth && retry) {
+        if (this.isRefreshing && this.refreshPromise) {
+          return this.enqueueRequest<T>(method, path, options)
+        }
         const refreshed = await this.refreshTokenIfNeeded()
         if (refreshed) {
           return this.request<T>(method, path, { ...options, retry: false })
         }
+        this.emitAuthFailed()
         throw { error: 'Unauthorized', status: 401 } as ApiError
       }
 
@@ -423,10 +480,15 @@ export class ApiClient {
       return response.data
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
+        if (this.isRefreshing && this.refreshPromise) {
+          await this.refreshPromise
+          return this.uploadFile<T>(path, file, options)
+        }
         const refreshed = await this.refreshTokenIfNeeded()
         if (refreshed) {
           return this.uploadFile<T>(path, file, options)
         }
+        this.emitAuthFailed()
         throw { error: 'Unauthorized', status: 401 } as ApiError
       }
 

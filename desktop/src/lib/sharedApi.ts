@@ -36,6 +36,7 @@ const tokenStorage = {
   async setTokens(accessToken: string, refreshToken: string): Promise<void> {
     useAuthStore.getState().setTokens(accessToken, refreshToken)
     await configCommands.setAuthTokens(accessToken, refreshToken)
+    apiClient.resetAuthFailed()
   },
   async clearTokens(): Promise<void> {
     useAuthStore.getState().clearTokens()
@@ -64,6 +65,10 @@ export async function clearAuth(): Promise<void> {
 
 export async function setAuthTokens(accessToken: string, refreshToken: string): Promise<void> {
   await tokenStorage.setTokens(accessToken, refreshToken)
+}
+
+export function setupApiAuthHandler(onAuthFailed: () => void): void {
+  apiClient.onAuthFailed = onAuthFailed
 }
 
 export function resolveApiUrl(url: string | undefined | null): string {

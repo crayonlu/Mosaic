@@ -1,9 +1,7 @@
-// CSS Imports
 import './styles/App.css'
 import './styles/editer.css'
 import './styles/scroll-bar.css'
 
-// Router Imports
 import { Navigate, Route, Routes } from 'react-router-dom'
 import DeskTopLayout from './components/layout/DeskTopLayout'
 import SetupLayout from './components/layout/SetupLayout'
@@ -15,14 +13,20 @@ import SearchPage from './pages/desktop/SearchPage'
 import SettingsPage from './pages/desktop/SettingsPage'
 import SetupWizard from './pages/desktop/SetupWizard'
 
-// Toast
 import { Toaster } from './components/ui/toaster'
 
-// Stores
+import { useEffect } from 'react'
 import { useServerConfig } from './hooks/useServerConfig'
+import { setupApiAuthHandler } from './lib/sharedApi'
 
 function App() {
-  const { isConfigured, loading: configLoading } = useServerConfig()
+  const { isConfigured, loading: configLoading, logout } = useServerConfig()
+
+  useEffect(() => {
+    setupApiAuthHandler(async () => {
+      await logout()
+    })
+  }, [logout])
 
   if (configLoading) {
     return null

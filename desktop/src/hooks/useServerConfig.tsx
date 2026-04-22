@@ -22,9 +22,12 @@ export function useServerConfig() {
         ...rawConfig,
         proxyMode: rawConfig.proxyMode || 'direct',
       }
-      const configured = !!serverConfig.url && !!serverConfig.username && !!serverConfig.password
+      const configured =
+        !!serverConfig.url &&
+        !!serverConfig.username &&
+        !!serverConfig.password &&
+        !!serverConfig.apiToken
 
-      // Only initialize API client if we have a valid URL
       if (serverConfig.url) {
         initSharedApiClient(serverConfig.url)
       }
