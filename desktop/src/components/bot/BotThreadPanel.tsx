@@ -16,6 +16,12 @@ import { useBotThread, useReplyToBot } from '@mosaic/api'
 import { ImagePlus, Loader2, Send, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+interface PendingMessage {
+  id: string
+  role: 'user'
+  content: string
+}
+
 interface BotThreadPanelProps {
   reply: BotReply | null
   open: boolean
@@ -28,14 +34,22 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
   const [text, setText] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [aiConfig, setAiConfig] = useState<AIConfig | null>(null)
+  const [pendingMessage, setPendingMessage] = useState<PendingMessage | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const bot = thread?.bot ?? reply?.bot
   const latestReplyId = thread?.latestReplyId ?? reply?.latestReplyId ?? reply?.id
+  const messages = pendingMessage
+    ? [...(thread?.messages ?? []), pendingMessage]
+    : (thread?.messages ?? [])
 
   useEffect(() => {
     if (open) {
       void loadAIConfig().then(setAiConfig)
+    } else {
+      setText('')
+      setFiles([])
+      setPendingMessage(null)
     }
   }, [open])
 
@@ -65,12 +79,23 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
       return
     }
 
+    const sentText = question || '请根据图片内容继续回复。'
+    const sentFiles = files
+
+    setText('')
+    setFiles([])
+    setPendingMessage({
+      id: `pending-${Date.now()}`,
+      role: 'user',
+      content: sentText,
+    })
+
     try {
-      const uploaded = files.length > 0 ? await uploadFiles(files) : []
+      const uploaded = sentFiles.length > 0 ? await uploadFiles(sentFiles) : []
       await replyToBot({
         replyId: latestReplyId,
         data: {
-          question: question || '请根据图片内容继续回复。',
+          question: sentText,
           resourceIds: uploaded.map(resource => resource.id),
         },
         aiHeaders: {
@@ -81,10 +106,12 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
           'x-ai-supports-vision': config.supportsVision ? 'true' : 'false',
         },
       })
-      setText('')
-      setFiles([])
+      setPendingMessage(null)
     } catch (error) {
       console.error(error)
+      setText(question)
+      setFiles(sentFiles)
+      setPendingMessage(null)
       toast.error('追问失败')
     }
   }
@@ -103,25 +130,34 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            thread?.messages.map((message, index) => {
-              const isUser = message.role === 'user'
-              return (
-                <div
-                  key={`${message.id}-${message.role}-${index}`}
-                  className={isUser ? 'flex justify-end' : 'flex justify-start'}
-                >
+            <>
+              {messages.map((message, index) => {
+                const isUser = message.role === 'user'
+                return (
                   <div
-                    className={
-                      isUser
-                        ? 'max-w-[82%] rounded-2xl bg-primary px-3 py-2 text-sm text-primary-foreground whitespace-pre-wrap'
-                        : 'max-w-[82%] rounded-2xl border bg-card px-3 py-2 text-sm text-foreground whitespace-pre-wrap'
-                    }
+                    key={`${message.id}-${message.role}-${index}`}
+                    className={isUser ? 'flex justify-end' : 'flex justify-start'}
                   >
-                    {message.content}
+                    <div
+                      className={
+                        isUser
+                          ? 'max-w-[82%] rounded-2xl bg-primary px-3 py-2 text-sm text-primary-foreground whitespace-pre-wrap'
+                          : 'max-w-[82%] rounded-2xl border bg-card px-3 py-2 text-sm text-foreground whitespace-pre-wrap'
+                      }
+                    >
+                      {message.content}
+                    </div>
+                  </div>
+                )
+              })}
+              {isPending && (
+                <div className="flex justify-start">
+                  <div className="max-w-[82%] rounded-2xl border bg-card px-3 py-2 text-sm text-muted-foreground">
+                    正在回复...
                   </div>
                 </div>
-              )
-            })
+              )}
+            </>
           )}
         </div>
 
@@ -164,7 +200,6 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
               value={text}
               onChange={event => setText(event.target.value)}
               placeholder="继续追问..."
-              disabled={isPending}
               onKeyDown={event => {
                 if (event.key === 'Enter' && !event.shiftKey) {
                   event.preventDefault()

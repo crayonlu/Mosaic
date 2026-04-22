@@ -25,6 +25,12 @@ import {
 import { KeyboardStickyView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+interface PendingMessage {
+  id: string
+  role: 'user'
+  content: string
+}
+
 interface BotThreadSheetProps {
   visible: boolean
   reply: BotReply | null
@@ -43,6 +49,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
   const [uploadProgressItems, setUploadProgressItems] = useState<
     { id: string; progress: number }[]
   >([])
+  const [pendingMessage, setPendingMessage] = useState<PendingMessage | null>(null)
 
   useEffect(() => {
     if (!visible) {
@@ -50,11 +57,15 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       setMediaItems([])
       setUploadCandidates({})
       setUploadProgressItems([])
+      setPendingMessage(null)
     }
   }, [visible])
 
   const bot = thread?.bot ?? reply?.bot
   const latestReplyId = thread?.latestReplyId ?? reply?.latestReplyId ?? reply?.id
+  const messages = pendingMessage
+    ? [...(thread?.messages ?? []), pendingMessage]
+    : (thread?.messages ?? [])
   const uploadProgressById = useMemo(
     () => Object.fromEntries(uploadProgressItems.map(item => [item.id, item.progress])),
     [uploadProgressItems]
@@ -98,9 +109,22 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       return
     }
 
+    const sentText = question || '请根据图片内容继续回复。'
+    const sentMediaItems = mediaItems
+    const sentUploadCandidates = uploadCandidates
+
+    setText('')
+    setMediaItems([])
+    setUploadCandidates({})
+    setPendingMessage({
+      id: `pending-${Date.now()}`,
+      role: 'user',
+      content: sentText,
+    })
+
     try {
-      const pendingUploadItems = mediaItems
-        .map(item => uploadCandidates[item.key])
+      const pendingUploadItems = sentMediaItems
+        .map(item => sentUploadCandidates[item.key])
         .filter((item): item is SelectedMediaItem => Boolean(item))
       const resourceIds: string[] = []
 
@@ -121,15 +145,17 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       await replyToBot({
         replyId: latestReplyId,
         data: {
-          question: question || '请根据图片内容继续回复。',
+          question: sentText,
           resourceIds,
         },
       })
-      setText('')
-      setMediaItems([])
-      setUploadCandidates({})
       setUploadProgressItems([])
+      setPendingMessage(null)
     } catch (error) {
+      setText(question)
+      setMediaItems(sentMediaItems)
+      setUploadCandidates(sentUploadCandidates)
+      setPendingMessage(null)
       toast.error(error instanceof Error ? error.message : '发送失败')
     }
   }, [aiConfig?.apiKey, isPending, latestReplyId, mediaItems, replyToBot, text, uploadCandidates])
@@ -162,31 +188,53 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
           {isLoading ? (
             <Loading text="加载中..." />
           ) : (
-            thread?.messages.map((message, index) => {
-              const isUser = message.role === 'user'
-              return (
-                <View
-                  key={`${message.id}-${message.role}-${index}`}
-                  style={[styles.messageRow, isUser && styles.userMessageRow]}
-                >
+            <>
+              {messages.map((message, index) => {
+                const isUser = message.role === 'user'
+                return (
+                  <View
+                    key={`${message.id}-${message.role}-${index}`}
+                    style={[styles.messageRow, isUser && styles.userMessageRow]}
+                  >
+                    <View
+                      style={[
+                        styles.messageBubble,
+                        {
+                          backgroundColor: isUser ? theme.primary : theme.surface,
+                          borderRadius: theme.radius.medium,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.messageText,
+                          { color: isUser ? theme.onPrimary : theme.text },
+                        ]}
+                      >
+                        {message.content}
+                      </Text>
+                    </View>
+                  </View>
+                )
+              })}
+              {isPending && (
+                <View style={styles.messageRow}>
                   <View
                     style={[
                       styles.messageBubble,
                       {
-                        backgroundColor: isUser ? theme.primary : theme.surface,
+                        backgroundColor: theme.surface,
                         borderRadius: theme.radius.medium,
                       },
                     ]}
                   >
-                    <Text
-                      style={[styles.messageText, { color: isUser ? theme.onPrimary : theme.text }]}
-                    >
-                      {message.content}
+                    <Text style={[styles.messageText, { color: theme.textSecondary }]}>
+                      正在回复...
                     </Text>
                   </View>
                 </View>
-              )
-            })
+              )}
+            </>
           )}
         </ScrollView>
 
