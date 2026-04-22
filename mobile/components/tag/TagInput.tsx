@@ -1,4 +1,3 @@
-import { Loading } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
 import { useAIConfig } from '@/hooks/useAIConfig'
 import { useAITags } from '@/hooks/useAITags'
@@ -7,7 +6,8 @@ import { useConnectionStore } from '@/stores/connectionStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { X } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated'
 
 interface TagInputProps {
   tags: string[]
@@ -20,6 +20,44 @@ interface TagInputProps {
 }
 
 type SuggestionItem = string
+
+const SKELETON_WIDTHS = [64, 52, 72]
+
+function SuggestionSkeleton() {
+  const opacity = useSharedValue(1)
+
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.35, { duration: 600 }),
+        withTiming(1, { duration: 600 })
+      ),
+      -1,
+      false
+    )
+  }, [opacity])
+
+  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
+
+  return (
+    <>
+      {SKELETON_WIDTHS.map((w, i) => (
+        <Animated.View
+          key={i}
+          style={[
+            animStyle,
+            {
+              width: w,
+              height: 27,
+              borderRadius: 999,
+              backgroundColor: '#d0d0d0',
+            },
+          ]}
+        />
+      ))}
+    </>
+  )
+}
 
 export function TagInput({
   tags,
@@ -188,7 +226,7 @@ export function TagInput({
               ]}
             >
               {aiLoading ? (
-                <Loading size="small" />
+                <ActivityIndicator size="small" />
               ) : (
                 <Text style={[styles.aiButtonText, { color: theme.primary }]}>AI 推荐</Text>
               )}
@@ -198,47 +236,33 @@ export function TagInput({
       </View>
 
       {shouldShowSuggestionPanel && (
-        <View
-          style={[
-            styles.suggestionsContainer,
-            {
-              backgroundColor: isPlain ? theme.surfaceMuted : theme.surface,
-              borderColor: theme.border,
-              borderWidth: isPlain ? 0 : 1,
-              borderRadius: theme.radius.medium,
-            },
-          ]}
-        >
-          <ScrollView keyboardShouldPersistTaps="handled">
-            {showAISuggestionsOnly && aiError && !aiLoading && (
-              <View style={styles.feedbackItem}>
-                <Text style={[styles.feedbackText, { color: theme.error }]}>{aiError}</Text>
-              </View>
-            )}
-
-            {showAISuggestionsOnly && !aiLoading && !aiError && aiSuggestions.length === 0 && (
-              <View style={styles.feedbackItem}>
-                <Text style={[styles.feedbackText, { color: theme.textSecondary }]}>
-                  暂无推荐标签，可稍后重试
+        <View style={styles.suggestionsInline}>
+          {showAISuggestionsOnly && aiLoading && (
+            <SuggestionSkeleton />
+          )}
+          {showAISuggestionsOnly && !aiLoading && !aiError && aiSuggestions.length === 0 && (
+            <Text style={[styles.feedbackText, { color: theme.textSecondary }]}>暂无推荐标签</Text>
+          )}
+          {(showAISuggestionsOnly ? aiSuggestions : filteredSuggestions).map((suggestion, index) => {
+            const tagName = typeof suggestion === 'string' ? suggestion : suggestion.name
+            return (
+              <TouchableOpacity
+                key={`${tagName}-${index}`}
+                onPress={() => addTag(tagName)}
+                style={[
+                  styles.suggestionChip,
+                  {
+                    backgroundColor: theme.surfaceMuted,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.suggestionChipText, { color: theme.textSecondary }]}>
+                  + {tagName}
                 </Text>
-              </View>
-            )}
-
-            {(showAISuggestionsOnly ? aiSuggestions : filteredSuggestions).map(
-              (suggestion, index) => {
-                const tagName = typeof suggestion === 'string' ? suggestion : suggestion.name
-                return (
-                  <TouchableOpacity
-                    key={`${tagName}-${index}`}
-                    onPress={() => addTag(tagName)}
-                    style={[styles.suggestionItem, { borderBottomColor: theme.border }]}
-                  >
-                    <Text style={[styles.suggestionText, { color: theme.text }]}>{tagName}</Text>
-                  </TouchableOpacity>
-                )
-              }
-            )}
-          </ScrollView>
+              </TouchableOpacity>
+            )
+          })}
         </View>
       )}
     </View>
@@ -247,7 +271,7 @@ export function TagInput({
 
 const styles = StyleSheet.create({
   root: {
-    position: 'relative',
+    gap: 6,
   },
   container: {
     flexDirection: 'row',
@@ -324,29 +348,24 @@ const styles = StyleSheet.create({
   aiButtonText: {
     fontSize: 12,
   },
-  suggestionsContainer: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    marginTop: 8,
-    maxHeight: 150,
-    zIndex: 20,
-    elevation: 8,
+  suggestionsInline: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    alignItems: 'center',
   },
-  suggestionItem: {
-    padding: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  suggestionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
-  suggestionText: {
-    fontSize: 14,
-  },
-  feedbackItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  suggestionChipText: {
+    fontSize: 12,
   },
   feedbackText: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
   },
 })
