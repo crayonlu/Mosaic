@@ -27,6 +27,15 @@ export function useBotReplies(memoId: string) {
   })
 }
 
+export function useBotThread(replyId?: string | null) {
+  return useQuery({
+    queryKey: ['bot-thread', replyId],
+    queryFn: () => botsApi.getBotThread(replyId as string),
+    staleTime: 0,
+    enabled: !!replyId,
+  })
+}
+
 export function useCreateBot() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -88,6 +97,7 @@ export function useReplyToBot() {
     }) => botsApi.replyToBot(replyId, data, aiHeaders),
     onSuccess: newReply => {
       queryClient.invalidateQueries({ queryKey: ['bot-replies', newReply.memoId] })
+      queryClient.invalidateQueries({ queryKey: ['bot-thread'] })
     },
   })
 }

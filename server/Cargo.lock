@@ -3004,6 +3004,7 @@ dependencies = [
  "actix-web",
  "anyhow",
  "async-trait",
+ "base64",
  "bcrypt",
  "bytes",
  "chrono",

@@ -65,7 +65,7 @@ export function MarkdownPreview({ content, className }: MarkdownPreviewProps) {
 
     const onClick = (event: Event) => {
       const target = event.target as HTMLElement | null
-      const button = target?.closest('[data-copy-code]') as HTMLButtonElement | null
+      const button = target?.closest('[data-copy-code]')
       if (!button) {
         return
       }

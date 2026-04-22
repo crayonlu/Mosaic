@@ -20,6 +20,7 @@ import type { AIConfig } from '@/types/settings'
 import { loadAIConfig, saveAIConfig, settingsCommands } from '@/utils/settingsHelpers'
 import { Label } from '@radix-ui/react-label'
 import { Bot, CheckCircle2, XCircle } from 'lucide-react'
+import * as Switch from '@radix-ui/react-switch'
 import { useEffect, useState } from 'react'
 
 const DEFAULT_BASE_URLS = {
@@ -32,6 +33,7 @@ export function AISettings() {
     provider: 'openai',
     baseUrl: DEFAULT_BASE_URLS.openai,
     apiKey: '',
+    supportsVision: true,
   })
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -227,6 +229,22 @@ export function AISettings() {
               placeholder="30"
             />
           </div>
+        </div>
+
+        <div className="flex items-center justify-between rounded-lg border p-4">
+          <div className="space-y-0.5">
+            <Label className="text-base">模型支持图片输入</Label>
+            <p className="text-sm text-muted-foreground">
+              开启后，已启用图片理解的 Bot 可以结合图片继续回复
+            </p>
+          </div>
+          <Switch.Root
+            checked={config.supportsVision ?? false}
+            onCheckedChange={supportsVision => setConfig({ ...config, supportsVision })}
+            className="peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
+          >
+            <Switch.Thumb className="pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0" />
+          </Switch.Root>
         </div>
       </CardContent>
       <CardFooter className="flex gap-3">

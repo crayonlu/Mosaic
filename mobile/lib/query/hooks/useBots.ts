@@ -1,5 +1,11 @@
 import { getAIConfig } from '@/lib/ai'
-import type { AiHeaders, CreateBotRequest, ReorderBotsRequest, UpdateBotRequest } from '@mosaic/api'
+import type {
+  AiHeaders,
+  CreateBotRequest,
+  ReorderBotsRequest,
+  ReplyToBotRequest,
+  UpdateBotRequest,
+} from '@mosaic/api'
 import { botsApi } from '@mosaic/api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -11,6 +17,7 @@ async function buildAiHeaders(): Promise<AiHeaders | null> {
     'x-ai-base-url': config.baseUrl,
     'x-ai-api-key': config.apiKey,
     'x-ai-model': config.model,
+    'x-ai-supports-vision': config.supportsVision ? 'true' : 'false',
   }
 }
 
@@ -28,6 +35,15 @@ export function useBotReplies(memoId: string) {
     queryFn: () => botsApi.getBotReplies(memoId),
     staleTime: 0,
     enabled: !!memoId,
+  })
+}
+
+export function useBotThread(replyId?: string | null) {
+  return useQuery({
+    queryKey: ['bot-thread', replyId],
+    queryFn: () => botsApi.getBotThread(replyId as string),
+    staleTime: 0,
+    enabled: !!replyId,
   })
 }
 
@@ -84,13 +100,14 @@ export function useTriggerReplies() {
 export function useReplyToBot() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ replyId, question }: { replyId: string; question: string }) => {
+    mutationFn: async ({ replyId, data }: { replyId: string; data: ReplyToBotRequest }) => {
       const aiHeaders = await buildAiHeaders()
       if (!aiHeaders) throw new Error('AI 未配置，无法回复')
-      return botsApi.replyToBot(replyId, { question }, aiHeaders)
+      return botsApi.replyToBot(replyId, data, aiHeaders)
     },
     onSuccess: newReply => {
       queryClient.invalidateQueries({ queryKey: ['bot-replies', newReply.memoId] })
+      queryClient.invalidateQueries({ queryKey: ['bot-thread'] })
     },
   })
 }

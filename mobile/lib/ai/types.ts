@@ -8,6 +8,7 @@ export interface AIConfig {
   temperature: number
   maxTokens: number
   timeout: number
+  supportsVision: boolean
 }
 
 export interface TagSuggestion {
@@ -32,4 +33,5 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
   temperature: 0.3,
   maxTokens: 1000,
   timeout: 30000,
+  supportsVision: true,
 }

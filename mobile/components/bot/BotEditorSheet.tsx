@@ -35,6 +35,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
   const [description, setDescription] = useState('')
   const [tagsInput, setTagsInput] = useState('')
   const [autoReply, setAutoReply] = useState(true)
+  const [visionEnabled, setVisionEnabled] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
@@ -51,6 +52,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
       setDescription(bot?.description ?? '')
       setTagsInput(bot?.tags.join(' ') ?? '')
       setAutoReply(bot?.autoReply ?? true)
+      setVisionEnabled(bot?.visionEnabled ?? false)
       setAvatarUrl(bot?.avatarUrl)
       getBearerAuthHeaders().then(setAuthHeaders)
     }
@@ -94,6 +96,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
             description: description.trim(),
             tags: parsedTags,
             autoReply,
+            visionEnabled,
             avatarUrl,
           },
         })
@@ -104,6 +107,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
           description: description.trim(),
           tags: parsedTags,
           autoReply,
+          visionEnabled,
           avatarUrl,
         })
         toast.success('已创建')
@@ -229,6 +233,21 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
               <Text style={[styles.label, { color: theme.textSecondary }]}>自动回复</Text>
               <SwitchBtn value={autoReply} onValueChange={setAutoReply} />
             </View>
+
+            <View
+              style={[
+                styles.fieldRow,
+                { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border },
+              ]}
+            >
+              <View style={styles.switchCopy}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>图片理解</Text>
+                <Text style={[styles.helperText, { color: theme.textTertiary }]}>
+                  允许这个 Bot 在回复时读取 Memo 或追问里的图片
+                </Text>
+              </View>
+              <SwitchBtn value={visionEnabled} onValueChange={setVisionEnabled} />
+            </View>
           </View>
 
           <View
@@ -340,9 +359,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
+  switchCopy: {
+    flex: 1,
+    gap: 3,
+  },
   label: {
     fontSize: 14,
     minWidth: 60,
+  },
+  helperText: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   input: {
     flex: 1,

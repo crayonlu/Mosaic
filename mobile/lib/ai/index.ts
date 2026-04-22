@@ -29,6 +29,7 @@ export async function getAIConfig(): Promise<AIConfig> {
     temperature: metadata.temperature,
     maxTokens: metadata.maxTokens,
     timeout: metadata.timeout,
+    supportsVision: metadata.supportsVision ?? DEFAULT_AI_CONFIG.supportsVision,
   }
 }
 
@@ -40,6 +41,7 @@ export async function setAIConfig(config: AIConfig): Promise<void> {
     temperature: config.temperature,
     maxTokens: config.maxTokens,
     timeout: config.timeout,
+    supportsVision: config.supportsVision,
   }
 
   await Promise.all([setAIApiKey(config.apiKey), setAIConfigMetadata(metadata)])

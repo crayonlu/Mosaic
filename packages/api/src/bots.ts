@@ -3,6 +3,7 @@ import type {
   AiHeaders,
   Bot,
   BotReply,
+  BotThread,
   CreateBotRequest,
   ReorderBotsRequest,
   ReplyToBotRequest,
@@ -32,6 +33,10 @@ export const botsApi = {
 
   getBotReplies(memoId: string): Promise<BotReply[]> {
     return apiClient.get<BotReply[]>(`/api/memos/${memoId}/bot-replies`)
+  },
+
+  getBotThread(replyId: string): Promise<BotThread> {
+    return apiClient.get<BotThread>(`/api/bot-replies/${replyId}/thread`)
   },
 
   triggerReplies(memoId: string, aiHeaders: AiHeaders): Promise<void> {

@@ -1,10 +1,7 @@
-import { toast } from '@/components/ui/Toast'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/themeStore'
 import type { BotReply } from '@mosaic/api'
-import * as Clipboard from 'expo-clipboard'
 import { Image } from 'expo-image'
-import { useCallback } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface BotReplyCardProps {
@@ -15,11 +12,7 @@ interface BotReplyCardProps {
 
 export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardProps) {
   const { theme } = useThemeStore()
-
-  const handleLongPress = useCallback(async () => {
-    await Clipboard.setStringAsync(reply.content)
-    toast.success('已复制')
-  }, [reply.content])
+  const threadCount = Math.max(reply.threadCount - 1, 0)
 
   return (
     <View style={[styles.container, isThread && styles.threadContainer]}>
@@ -37,7 +30,7 @@ export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardP
             </Text>
           </View>
         )}
-        <TouchableOpacity onLongPress={handleLongPress} activeOpacity={0.85} delayLongPress={400}>
+        <TouchableOpacity onPress={() => onReply(reply)} activeOpacity={0.85}>
           <View
             style={[
               styles.bubble,
@@ -63,17 +56,17 @@ export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardP
                 {stringUtils.formatRelativeTime(reply.createdAt)}
               </Text>
               {!isThread && (
-                <TouchableOpacity onPress={() => onReply(reply)} hitSlop={10}>
-                  <Text style={[styles.replyBtn, { color: theme.textSecondary }]}>回复</Text>
-                </TouchableOpacity>
+                <Text style={[styles.replyBtn, { color: theme.textSecondary }]}>继续聊</Text>
               )}
             </View>
             <Text style={[styles.content, { color: theme.text }]}>{reply.content}</Text>
+            {!isThread && threadCount > 0 && (
+              <Text style={[styles.threadHint, { color: theme.textSecondary }]}>
+                已追问 {threadCount} 轮
+              </Text>
+            )}
           </View>
         </TouchableOpacity>
-        {reply.children.map(child => (
-          <BotReplyCard key={child.id} reply={child} onReply={onReply} isThread />
-        ))}
       </View>
     </View>
   )
@@ -130,6 +123,9 @@ const styles = StyleSheet.create({
   replyBtn: {
     fontSize: 12,
     paddingLeft: 4,
+  },
+  threadHint: {
+    fontSize: 12,
   },
   content: {
     fontSize: 14,
