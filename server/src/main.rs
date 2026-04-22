@@ -72,7 +72,7 @@ async fn main() -> anyhow::Result<()> {
     let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone());
     let diary_service = DiaryService::new(pool.clone());
     let stats_service = StatsService::new(pool.clone());
-    let bot_service = BotService::new(pool.clone());
+    let bot_service = BotService::new(pool.clone(), storage.clone());
     log::info!("[OK] Business services initialized");
 
     match auth_service

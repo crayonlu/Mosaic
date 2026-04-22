@@ -20,6 +20,7 @@ log = "0.4"
 dotenv = "0.15"
 opendal = { version = "0.50", features = ["services-s3"] }
 bytes = "1.0"
+base64 = "0.22"
 async-trait = "0.1"
 anyhow = "1.0"
 thiserror = "2.0"

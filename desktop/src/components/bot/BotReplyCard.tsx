@@ -12,6 +12,8 @@ interface BotReplyCardProps {
 }
 
 export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardProps) {
+  const threadCount = Math.max(reply.threadCount - 1, 0)
+
   return (
     <div className={cn('flex gap-3', isThread && 'ml-3 pl-6 border-l-2 border-muted')}>
       <Avatar className="h-8 w-8 shrink-0">
@@ -47,9 +49,9 @@ export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardP
           </div>
           <p className="text-sm whitespace-pre-wrap text-foreground">{reply.content}</p>
         </div>
-        {reply.children.map(child => (
-          <BotReplyCard key={child.id} reply={child} onReply={onReply} isThread />
-        ))}
+        {threadCount > 0 && !isThread && (
+          <div className="text-xs text-muted-foreground">已追问 {threadCount} 轮</div>
+        )}
       </div>
     </div>
   )

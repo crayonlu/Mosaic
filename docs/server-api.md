@@ -557,7 +557,59 @@ Query（required）：
 
 ---
 
-## 12. 环境变量（接口行为相关）
+## 12. AI 图片输入与资源鉴权约定
+
+该约定服务于 v2.6 Bot 伴侣系统的 AI 评论/追问能力。
+
+### 12.1 客户端传参原则
+
+- AI 评论接口只接收 `resourceIds`，不接收图片下载 URL。
+- `resourceIds` 必须是当前用户有权限访问的资源。
+- 仅 `resourceType=image` 的资源可进入 AI 视觉输入。
+- 视频资源、头像资源暂不作为 AI 评论图片输入。
+
+### 12.2 服务端转交原则
+
+`GET /api/resources/{id}/download` 需要 Bearer 鉴权，AI Provider 不能直接访问该地址。服务端必须先校验资源权限，再通过内部存储层读取图片，并由 Provider Adapter 转换为对应格式：
+
+- Provider 支持 inline image：传 base64 / data URL。
+- Provider 支持文件上传：上传到 Provider 后传文件 ID。
+- Provider 只支持 URL：生成短时、一次性、不可枚举的临时 URL。
+
+严禁向 AI Provider 发送以下内容：
+
+- `/api/resources/{id}/download` 原始业务 URL
+- 用户 `Authorization` Header
+- Cookie / Refresh Token
+- 内部对象存储路径或长期公开 URL
+
+### 12.3 校验与限制
+
+- 支持 MIME：`image/jpeg`、`image/png`、`image/webp`
+- 默认单次最多 4 张图片
+- 默认单张最大 10MB
+- 超限、无权限、非图片资源返回 `400` 或在异步初始回复中静默忽略该 Bot 的图片输入
+- 审计日志只能记录 `resourceId`、`mimeType`、`fileSize`、`provider`、`botId`、`memoId` 等元信息，不记录图片二进制
+
+### 12.4 Bot 线程接口
+
+Bot 评论采用 Memo 内线程模型。同一 `memoId + botId` 是一条连续线程，Memo 详情页只展示入口卡片，完整对话通过线程接口读取。
+
+#### GET /api/bot-replies/{id}/thread
+
+- `id` 可以是该线程内任意一条 Bot 回复 ID
+- 返回线性 `messages`，包含用户追问和 Bot 回复
+- `latestReplyId` 用于下一次 `POST /api/bot-replies/{id}/reply`
+
+#### POST /api/bot-replies/{id}/reply
+
+- 推荐传入当前线程的 `latestReplyId`
+- 请求体可包含 `question` 和 `resourceIds`
+- 服务端会以原始 Memo + 线程最近若干轮作为上下文生成回复
+
+---
+
+## 13. 环境变量（接口行为相关）
 
 - `PORT`：服务端口（默认 `8080`）
 - `JWT_SECRET`：JWT 签名密钥（必填）
@@ -567,4 +619,3 @@ Query（required）：
 - `ADMIN_USERNAME`、`ADMIN_PASSWORD`：启动时自动确保管理员账号存在
 
 ---
-

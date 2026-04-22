@@ -22,6 +22,7 @@ export interface AIConfig {
   temperature?: number
   maxTokens?: number
   timeout?: number
+  supportsVision?: boolean
 }
 
 export interface ShortcutConfig {

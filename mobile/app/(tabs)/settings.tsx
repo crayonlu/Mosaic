@@ -413,6 +413,9 @@ export default function SettingsScreen() {
                       {bot.tags.map(t => `#${t}`).join(' ')}
                     </Text>
                   )}
+                  {bot.visionEnabled && (
+                    <Text style={[styles.botTags, { color: theme.textSecondary }]}>图片理解</Text>
+                  )}
                 </View>
                 <SwitchBtn
                   value={bot.autoReply}
@@ -605,6 +608,18 @@ export default function SettingsScreen() {
                 baseUrl={aiConfig.baseUrl}
                 apiKey={aiConfig.apiKey}
                 placeholder={aiConfig.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'}
+              />
+            </View>
+            <View style={styles.visionSettingRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.visionTitle, { color: theme.text }]}>模型支持图片输入</Text>
+                <Text style={[styles.visionHint, { color: theme.textSecondary }]}>
+                  开启后，已启用图片理解的 Bot 可以结合图片生成回复
+                </Text>
+              </View>
+              <SwitchBtn
+                value={aiConfig.supportsVision}
+                onValueChange={supportsVision => setLocalAIConfig({ ...aiConfig, supportsVision })}
               />
             </View>
             <View style={styles.settingRow}>
@@ -969,6 +984,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  visionSettingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 4,
+  },
+  visionTitle: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  visionHint: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
   },
   providerButtons: {
     flexDirection: 'row',

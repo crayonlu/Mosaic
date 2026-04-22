@@ -1,5 +1,6 @@
 export {
   useBotReplies,
+  useBotThread,
   useBots,
   useCreateBot,
   useDeleteBot,

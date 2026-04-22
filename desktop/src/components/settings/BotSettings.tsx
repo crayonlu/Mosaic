@@ -32,6 +32,7 @@ export function BotSettings() {
     description: string
     tags: string[]
     autoReply: boolean
+    visionEnabled: boolean
     avatarUrl?: string
   }) => {
     try {
@@ -130,6 +131,11 @@ export function BotSettings() {
                         {bot.autoReply && (
                           <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs">
                             自动回复
+                          </span>
+                        )}
+                        {bot.visionEnabled && (
+                          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                            图片理解
                           </span>
                         )}
                       </div>

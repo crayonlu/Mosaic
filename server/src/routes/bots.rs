@@ -20,7 +20,15 @@ fn extract_ai_config(req: &HttpRequest) -> Option<AiConfig> {
         base_url,
         api_key,
         model,
+        supports_vision: parse_bool_header(headers.get("x-ai-supports-vision")),
     })
+}
+
+fn parse_bool_header(value: Option<&actix_web::http::header::HeaderValue>) -> bool {
+    value
+        .and_then(|v| v.to_str().ok())
+        .map(|v| matches!(v.to_ascii_lowercase().as_str(), "true" | "1" | "yes"))
+        .unwrap_or(false)
 }
 
 pub async fn list_bots(req: HttpRequest, bot_service: web::Data<BotService>) -> HttpResponse {
@@ -125,6 +133,25 @@ pub async fn get_bot_replies(
     }
 }
 
+pub async fn get_bot_thread(
+    req: HttpRequest,
+    path: web::Path<Uuid>,
+    bot_service: web::Data<BotService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match bot_service
+        .get_bot_thread(&user_id, path.into_inner())
+        .await
+    {
+        Ok(thread) => HttpResponse::Ok().json(thread),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
 pub async fn trigger_replies(
     req: HttpRequest,
     path: web::Path<Uuid>,
@@ -195,6 +222,7 @@ pub fn configure_bot_routes(cfg: &mut web::ServiceConfig) {
             .route(web::delete().to(delete_bot)),
     )
     .service(web::resource("/memos/{id}/bot-replies").route(web::get().to(get_bot_replies)))
+    .service(web::resource("/bot-replies/{id}/thread").route(web::get().to(get_bot_thread)))
     .service(web::resource("/memos/{id}/trigger-replies").route(web::post().to(trigger_replies)))
     .service(web::resource("/bot-replies/{id}/reply").route(web::post().to(reply_to_bot)));
 }

@@ -100,7 +100,7 @@ export function CoverImagePicker({
         </Pressable>
       )
     },
-    [authHeaders, cachedUris, onSelect, selectedCoverId, theme]
+    [authHeaders, onSelect, selectedCoverId, theme]
   )
 
   if (allImages.length === 0) {

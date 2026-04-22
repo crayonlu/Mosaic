@@ -33,8 +33,8 @@ pub mod stats;
 pub mod user;
 
 pub use bot::{
-    Bot, BotReply, BotReplyResponse, BotResponse, BotSummary, CreateBotRequest, ReorderBotsRequest,
-    ReplyToBotRequest, UpdateBotRequest,
+    Bot, BotReplyResponse, BotResponse, BotSummary, BotThreadMessage, BotThreadResponse,
+    CreateBotRequest, ReorderBotsRequest, ReplyToBotRequest, UpdateBotRequest,
 };
 pub use diary::{CreateDiaryRequest, Diary, DiaryListQuery, DiaryResponse, UpdateDiaryRequest};
 pub use memo::{

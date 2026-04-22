@@ -58,6 +58,7 @@ export interface AIConfigMetadata {
   temperature: number
   maxTokens: number
   timeout: number
+  supportsVision?: boolean
 }
 
 export async function getAIConfigMetadata(): Promise<AIConfigMetadata | null> {
