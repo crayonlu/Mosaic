@@ -395,7 +395,11 @@ export default function SettingsScreen() {
               >
                 <View style={[styles.botAvatar, { backgroundColor: theme.primary }]}>
                   {bot.avatarUrl ? (
-                    <Image source={{ uri: bot.avatarUrl }} style={styles.botAvatarImage} contentFit="cover" />
+                    <Image
+                      source={{ uri: bot.avatarUrl }}
+                      style={styles.botAvatarImage}
+                      contentFit="cover"
+                    />
                   ) : (
                     <Text style={[styles.botAvatarText, { color: theme.onPrimary }]}>
                       {bot.name.charAt(0).toUpperCase()}

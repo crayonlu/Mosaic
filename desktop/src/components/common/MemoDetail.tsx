@@ -1,3 +1,5 @@
+import { BotReplyInput } from '@/components/bot/BotReplyInput'
+import { BotReplyList } from '@/components/bot/BotReplyList'
 import { MarkdownPreview } from '@/components/common/MarkdownPreview'
 import { MemoImageGrid } from '@/components/common/MemoImageGrid'
 import { Badge } from '@/components/ui/badge'
@@ -23,8 +25,16 @@ import { toast } from '@/hooks/useToast'
 import { resolveApiUrl } from '@/lib/sharedApi'
 import { cn } from '@/lib/utils'
 import { normalizeContent } from '@/utils/content'
-import type { MemoWithResources, Resource } from '@mosaic/api'
-import { resourcesApi, useDeleteMemo, useUpdateMemo } from '@mosaic/api'
+import { loadAIConfig } from '@/utils/settingsHelpers'
+import type { BotReply, MemoWithResources, Resource } from '@mosaic/api'
+import {
+  resourcesApi,
+  useBotReplies,
+  useDeleteMemo,
+  useReplyToBot,
+  useTriggerReplies,
+  useUpdateMemo,
+} from '@mosaic/api'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
@@ -74,10 +84,15 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
   const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
   const [videoUrls, setVideoUrls] = useState<Map<string, string>>(new Map())
   const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map())
+  const [targetReply, setTargetReply] = useState<BotReply | null>(null)
+  const [showBotInput, setShowBotInput] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const { suggestTags, summarizeText, loading: aiLoading } = useAI()
   const updateMemo = useUpdateMemo()
   const deleteMemo = useDeleteMemo()
+  const { refetch: refetchReplies } = useBotReplies(memo?.id ?? '')
+  const { mutateAsync: replyToBot, isPending: isReplying } = useReplyToBot()
+  const { mutateAsync: triggerReplies, isPending: isTriggering } = useTriggerReplies()
 
   const displayResources = useMemo(
     () => (isEditing ? editingResources : memo?.resources || []),
@@ -218,6 +233,25 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       setIsEditing(false)
       onUpdate?.()
       toast.success('Memo保存成功')
+
+      // 触发 Bot 自动回复
+      try {
+        const config = await loadAIConfig()
+        if (config && config.model) {
+          await triggerReplies({
+            memoId: memo.id,
+            aiHeaders: {
+              'x-ai-provider': config.provider,
+              'x-ai-base-url': config.baseUrl,
+              'x-ai-api-key': config.apiKey,
+              'x-ai-model': config.model,
+            },
+          })
+          refetchReplies()
+        }
+      } catch (err) {
+        console.error('触发 Bot 回复失败:', err)
+      }
     } catch (error) {
       console.error('保存失败:', error)
       toast.error('Memo保存失败')
@@ -407,6 +441,38 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
   const handleUploadButtonClick = () => {
     uploadInputRef.current?.click()
+  }
+
+  const handleReplyToBot = async (text: string) => {
+    if (!targetReply || !memo) return
+    try {
+      const config = await loadAIConfig()
+      if (!config || !config.model) {
+        toast.error('AI 功能未配置')
+        return
+      }
+      await replyToBot({
+        replyId: targetReply.id,
+        data: { question: text },
+        aiHeaders: {
+          'x-ai-provider': config.provider,
+          'x-ai-base-url': config.baseUrl,
+          'x-ai-api-key': config.apiKey,
+          'x-ai-model': config.model,
+        },
+      })
+      setTargetReply(null)
+      setShowBotInput(false)
+      toast.success('追问已发送')
+    } catch (err) {
+      console.error('追问失败:', err)
+      toast.error('追问失败')
+    }
+  }
+
+  const handleBotReplyClick = (reply: BotReply) => {
+    setTargetReply(reply)
+    setShowBotInput(true)
   }
 
   const hasContentChanged = editedContent !== memo?.content
@@ -722,6 +788,34 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {!isEditing && memo?.id && (
+            <div className="space-y-4 pt-4 border-t">
+              <BotReplyList memoId={memo.id} onReply={handleBotReplyClick} />
+              {showBotInput && targetReply && (
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground">
+                    回复 <span className="font-medium text-foreground">{targetReply.bot.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowBotInput(false)
+                        setTargetReply(null)
+                      }}
+                      className="ml-2 text-destructive hover:underline"
+                    >
+                      取消
+                    </button>
+                  </div>
+                  <BotReplyInput
+                    placeholder={`向 ${targetReply.bot.name} 提问...`}
+                    onSend={handleReplyToBot}
+                    isLoading={isReplying || isTriggering}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

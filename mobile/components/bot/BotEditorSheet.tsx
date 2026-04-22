@@ -9,16 +9,16 @@ import { Image } from 'expo-image'
 import { Camera, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -66,7 +66,11 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
     if (!uri) return
     setUploadingAvatar(true)
     try {
-      const resource = await resourcesApi.upload({ uri, name: 'bot-avatar.jpg', type: 'image/jpeg' })
+      const resource = await resourcesApi.upload({
+        uri,
+        name: 'bot-avatar.jpg',
+        type: 'image/jpeg',
+      })
       setAvatarUrl(resourcesApi.getDownloadUrl(resource.id))
     } catch {
       toast.error('头像上传失败')
@@ -85,7 +89,13 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
       if (bot) {
         await updateBot({
           id: bot.id,
-          data: { name: name.trim(), description: description.trim(), tags: parsedTags, autoReply, avatarUrl },
+          data: {
+            name: name.trim(),
+            description: description.trim(),
+            tags: parsedTags,
+            autoReply,
+            avatarUrl,
+          },
         })
         toast.success('已更新')
       } else {

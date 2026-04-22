@@ -5,7 +5,13 @@ import { DraggableImageGrid, Loading, toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { useConnection } from '@/hooks/useConnection'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { useBotReplies, useDeleteMemo, useMemo as useQueryMemo, useReplyToBot, useUpdateMemo } from '@/lib/query'
+import {
+  useBotReplies,
+  useDeleteMemo,
+  useMemo as useQueryMemo,
+  useReplyToBot,
+  useUpdateMemo,
+} from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/themeStore'
@@ -268,21 +274,25 @@ export default function MemoDetailScreen() {
 
       {targetReply && (
         <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
-        <View
-          style={[
-            styles.replyBar,
-            {
-              borderTopColor: theme.border,
-              backgroundColor: theme.surface,
-              paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-            },
-          ]}
-        >
+          <View
+            style={[
+              styles.replyBar,
+              {
+                borderTopColor: theme.border,
+                backgroundColor: theme.surface,
+                paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+              },
+            ]}
+          >
             <TextInput
               ref={replyInputRef}
               style={[
                 styles.replyInput,
-                { color: theme.text, borderColor: theme.border, backgroundColor: theme.surfaceMuted },
+                {
+                  color: theme.text,
+                  borderColor: theme.border,
+                  backgroundColor: theme.surfaceMuted,
+                },
               ]}
               value={replyText}
               onChangeText={setReplyText}
@@ -309,7 +319,7 @@ export default function MemoDetailScreen() {
                 <Send size={18} color={replyText.trim() ? theme.onPrimary : theme.textSecondary} />
               )}
             </TouchableOpacity>
-        </View>
+          </View>
         </KeyboardStickyView>
       )}
 

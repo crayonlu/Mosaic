@@ -3,20 +3,20 @@
 - [Server API](./server-api.md)
 
 ```bash
-pnpm desktop:dev                # Desktop开发
-pnpm mobile:start               # Mobile开发
+bun desktop:dev                # Desktop开发
+bun mobile:start               # Mobile开发
 
-pnpm check                      # 运行所有检查
+bun check                      # 运行所有检查
 
-pnpm lint                       # 检查所有
-pnpm lint:desktop:fix           # 修复Desktop
-pnpm lint:mobile:fix            # 修复Mobile
+bun lint                       # 检查所有
+bun lint:desktop:fix           # 修复Desktop
+bun lint:mobile:fix            # 修复Mobile
 
-pnpm format                     # 格式化所有
-pnpm format:desktop             # 格式化Desktop
-pnpm format:mobile              # 格式化Mobile
+bun format                     # 格式化所有
+bun format:desktop             # 格式化Desktop
+bun format:mobile              # 格式化Mobile
 
-pnpm install                    # 安装所有依赖
-pnpm install --filter desktop   # 仅Desktop
-pnpm install --filter mobile    # 仅Mobile
+bun install                    # 安装所有依赖
+bun install --filter desktop   # 仅Desktop
+bun install --filter mobile    # 仅Mobile
 ```
