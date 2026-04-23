@@ -86,14 +86,15 @@ export function resolveMediaSource(
 
   if (item.type === 'image') {
     const thumbUri = getOptimizedMediaUri(item.uri, 'thumb')
-    const previewUri = getOptimizedMediaUri(item.uri, 'opt')
 
     return {
       item,
       gridUri: thumbUri,
       gridHeaders: isRemoteUri(thumbUri) ? requestHeaders : undefined,
-      previewUri,
-      previewHeaders: isRemoteUri(previewUri) ? requestHeaders : undefined,
+      previewLowQualityUri: thumbUri,
+      previewLowQualityHeaders: isRemoteUri(thumbUri) ? requestHeaders : undefined,
+      previewUri: item.uri,
+      previewHeaders: isRemoteUri(item.uri) ? requestHeaders : undefined,
     }
   }
 

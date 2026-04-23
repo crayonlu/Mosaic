@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import type { BotReply } from '@mosaic/api'
 import dayjs from 'dayjs'
@@ -16,12 +15,19 @@ export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardP
 
   return (
     <div className={cn('flex gap-3', isThread && 'ml-3 pl-6 border-l-2 border-muted')}>
-      <Avatar className="h-8 w-8 shrink-0">
-        {reply.bot.avatarUrl ? <AuthImage src={reply.bot.avatarUrl} alt={reply.bot.name} /> : null}
-        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-          {reply.bot.name.charAt(0).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
+      <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-primary text-primary-foreground">
+        {reply.bot.avatarUrl ? (
+          <AuthImage
+            src={reply.bot.avatarUrl}
+            alt={reply.bot.name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-xs">
+            {reply.bot.name.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
       <div className="flex-1 min-w-0 space-y-2">
         {reply.userQuestion && (
           <div className="bg-muted rounded-lg px-3 py-2 text-sm text-muted-foreground">

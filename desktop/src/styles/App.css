@@ -61,6 +61,68 @@ body::before {
   display: none;
 }
 
+solid-media {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+}
+
+solid-media[data-fill='true'] > img,
+solid-media[data-fill='true'] > video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: inherit;
+}
+
+solid-media:not([data-fill='true']) > img,
+solid-media:not([data-fill='true']) > video {
+  display: block;
+  max-width: 100%;
+}
+
+.mosaic-video-player > video {
+  background: #000;
+}
+
+.mosaic-media-stage {
+  width: min(82vw, 980px);
+  height: min(76vh, 720px);
+  min-width: min(78vw, 320px);
+  min-height: min(42vh, 260px);
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #11110f;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 0.35);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.mosaic-media-stage > solid-media {
+  width: 100%;
+  height: 100%;
+}
+
+.mosaic-video-player > video::-webkit-media-controls,
+.mosaic-video-player > video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+
+.mosaic-video-range {
+  appearance: none;
+  background: linear-gradient(90deg, #fff var(--video-progress, 0%), rgb(255 255 255 / 0) 0);
+  display: block;
+}
+
+.mosaic-video-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgb(255 255 255 / 0.18);
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
