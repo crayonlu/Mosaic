@@ -35,6 +35,7 @@ export interface BotThreadMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
+  resourceIds: string[]
   createdAt: number
 }
 

@@ -7,11 +7,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { AuthImage } from '@/components/common/AuthImage'
 import { toast } from '@/hooks/useToast'
 import { uploadFiles } from '@/hooks/useFileUpload'
 import { loadAIConfig } from '@/utils/settingsHelpers'
 import type { AIConfig } from '@/types/settings'
-import type { BotReply } from '@mosaic/api'
+import { resourcesApi, type BotReply } from '@mosaic/api'
 import { useBotThread, useReplyToBot } from '@mosaic/api'
 import { ImagePlus, Loader2, Send, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -20,12 +21,25 @@ interface PendingMessage {
   id: string
   role: 'user'
   content: string
+  previewUrls?: string[]
 }
 
 interface BotThreadPanelProps {
   reply: BotReply | null
   open: boolean
   onClose: () => void
+}
+
+function LocalFileThumb({ file }: { file: File }) {
+  const [url, setUrl] = useState('')
+
+  useEffect(() => {
+    const nextUrl = URL.createObjectURL(file)
+    setUrl(nextUrl)
+    return () => URL.revokeObjectURL(nextUrl)
+  }, [file])
+
+  return url ? <img src={url} alt="" className="h-full w-full object-cover" /> : null
 }
 
 export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
@@ -52,6 +66,13 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
       setPendingMessage(null)
     }
   }, [open])
+
+  useEffect(() => {
+    const urls = pendingMessage?.previewUrls ?? []
+    return () => {
+      urls.forEach(url => URL.revokeObjectURL(url))
+    }
+  }, [pendingMessage])
 
   const handlePickImages = () => {
     fileInputRef.current?.click()
@@ -88,6 +109,7 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
       id: `pending-${Date.now()}`,
       role: 'user',
       content: sentText,
+      previewUrls: sentFiles.map(file => URL.createObjectURL(file)),
     })
 
     try {
@@ -141,11 +163,42 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
                     <div
                       className={
                         isUser
-                          ? 'max-w-[82%] rounded-2xl bg-primary px-3 py-2 text-sm text-primary-foreground whitespace-pre-wrap'
-                          : 'max-w-[82%] rounded-2xl border bg-card px-3 py-2 text-sm text-foreground whitespace-pre-wrap'
+                          ? 'max-w-[82%] rounded-2xl bg-primary px-3 py-2 text-sm text-primary-foreground'
+                          : 'max-w-[82%] rounded-2xl border bg-card px-3 py-2 text-sm text-foreground'
                       }
                     >
-                      {message.content}
+                      <div className="whitespace-pre-wrap">{message.content}</div>
+                      {'resourceIds' in message && message.resourceIds.length > 0 && (
+                        <div className="mt-2 grid grid-cols-2 gap-1.5">
+                          {message.resourceIds.map(resourceId => (
+                            <div
+                              key={resourceId}
+                              className="h-24 overflow-hidden rounded-xl bg-black/10"
+                            >
+                              <AuthImage
+                                src={resourcesApi.getDownloadUrl(resourceId)}
+                                variant="thumb"
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {'previewUrls' in message &&
+                        message.previewUrls &&
+                        message.previewUrls.length > 0 && (
+                          <div className="mt-2 grid grid-cols-2 gap-1.5">
+                            {message.previewUrls.map(previewUrl => (
+                              <img
+                                key={previewUrl}
+                                src={previewUrl}
+                                alt=""
+                                className="h-24 rounded-xl object-cover"
+                              />
+                            ))}
+                          </div>
+                        )}
                     </div>
                   </div>
                 )
@@ -161,29 +214,36 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
           )}
         </div>
 
-        <div className="border-t p-4 space-y-3">
+        <div className="border-t bg-background/95 p-4 space-y-3">
           {files.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {files.map(file => (
-                <span
+                <div
                   key={`${file.name}-${file.lastModified}`}
-                  className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground"
+                  className="group relative aspect-square overflow-hidden rounded-xl border bg-muted"
                 >
-                  {file.name}
+                  <LocalFileThumb file={file} />
                   <button
                     type="button"
+                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground opacity-90 shadow-sm"
                     onClick={() => setFiles(prev => prev.filter(item => item !== file))}
+                    aria-label="移除图片"
                   >
                     <X className="h-3 w-3" />
                   </button>
-                </span>
+                </div>
               ))}
             </div>
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex items-end gap-2">
             {bot?.visionEnabled && aiConfig?.supportsVision && (
               <>
-                <Button variant="ghost" size="icon" onClick={handlePickImages} disabled={isPending}>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={handlePickImages}
+                  disabled={isPending || files.length >= 4}
+                >
                   <ImagePlus className="h-4 w-4" />
                 </Button>
                 <input

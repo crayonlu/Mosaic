@@ -1,4 +1,4 @@
-import { DraggableImageGrid, Loading, toast } from '@/components/ui'
+import { Loading, toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { useAIConfig } from '@/hooks/useAIConfig'
 import {
@@ -7,8 +7,10 @@ import {
   type SelectedMediaItem,
 } from '@/lib/media/upload'
 import { useBotThread, useReplyToBot } from '@/lib/query'
+import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
-import type { BotReply } from '@mosaic/api'
+import { resourcesApi, type BotReply } from '@mosaic/api'
+import { Image } from 'expo-image'
 import { ImagePlus, Send, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
@@ -29,6 +31,7 @@ interface PendingMessage {
   id: string
   role: 'user'
   content: string
+  previewUris?: string[]
 }
 
 interface BotThreadSheetProps {
@@ -46,6 +49,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
   const [text, setText] = useState('')
   const [mediaItems, setMediaItems] = useState<MediaGridItem[]>([])
   const [uploadCandidates, setUploadCandidates] = useState<Record<string, SelectedMediaItem>>({})
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
   const [uploadProgressItems, setUploadProgressItems] = useState<
     { id: string; progress: number }[]
   >([])
@@ -59,6 +63,11 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       setUploadProgressItems([])
       setPendingMessage(null)
     }
+  }, [visible])
+
+  useEffect(() => {
+    if (!visible) return
+    void getBearerAuthHeaders().then(setAuthHeaders)
   }, [visible])
 
   const bot = thread?.bot ?? reply?.bot
@@ -120,6 +129,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       id: `pending-${Date.now()}`,
       role: 'user',
       content: sentText,
+      previewUris: sentMediaItems.map(item => item.uri),
     })
 
     try {
@@ -159,6 +169,15 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       toast.error(error instanceof Error ? error.message : '发送失败')
     }
   }, [aiConfig?.apiKey, isPending, latestReplyId, mediaItems, replyToBot, text, uploadCandidates])
+
+  const removeMediaItem = useCallback((key: string) => {
+    setMediaItems(prev => prev.filter(item => item.key !== key))
+    setUploadCandidates(prev => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+  }, [])
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
@@ -213,6 +232,35 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                       >
                         {message.content}
                       </Text>
+                      {'resourceIds' in message && message.resourceIds.length > 0 && (
+                        <View style={styles.messageImages}>
+                          {message.resourceIds.map(resourceId => (
+                            <Image
+                              key={resourceId}
+                              source={{
+                                uri: resourcesApi.getDownloadUrl(resourceId, 'thumb'),
+                                headers: authHeaders,
+                              }}
+                              style={styles.messageImage}
+                              contentFit="cover"
+                            />
+                          ))}
+                        </View>
+                      )}
+                      {'previewUris' in message &&
+                        message.previewUris &&
+                        message.previewUris.length > 0 && (
+                          <View style={styles.messageImages}>
+                            {message.previewUris.map(uri => (
+                              <Image
+                                key={uri}
+                                source={{ uri }}
+                                style={styles.messageImage}
+                                contentFit="cover"
+                              />
+                            ))}
+                          </View>
+                        )}
                     </View>
                   </View>
                 )
@@ -250,12 +298,44 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
             ]}
           >
             <View style={styles.inputArea}>
+              {mediaItems.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.mediaStrip}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {mediaItems.map(item => (
+                    <View key={item.key} style={styles.mediaThumb}>
+                      <Image
+                        source={{ uri: item.uri }}
+                        style={styles.mediaThumbImage}
+                        contentFit="cover"
+                      />
+                      {uploadProgressById[item.key] != null && (
+                        <View style={styles.uploadProgressOverlay}>
+                          <Text style={styles.uploadProgressText}>
+                            {uploadProgressById[item.key]}%
+                          </Text>
+                        </View>
+                      )}
+                      <TouchableOpacity
+                        style={[styles.mediaRemoveBtn, { backgroundColor: theme.surface }]}
+                        onPress={() => removeMediaItem(item.key)}
+                        hitSlop={8}
+                      >
+                        <X size={12} color={theme.text} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
               <View style={styles.inputRow}>
                 {bot?.visionEnabled && aiConfig?.supportsVision && (
                   <TouchableOpacity
                     style={[styles.imageBtn, { backgroundColor: theme.surfaceMuted }]}
                     onPress={handlePickImages}
-                    disabled={isPending}
+                    disabled={isPending || mediaItems.length >= 4}
                   >
                     <ImagePlus size={18} color={theme.textSecondary} />
                   </TouchableOpacity>
@@ -276,34 +356,26 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                   multiline
                   maxLength={500}
                 />
-              </View>
-              {mediaItems.length > 0 && (
-                <View style={styles.mediaGrid}>
-                  <DraggableImageGrid
-                    items={mediaItems}
-                    uploadProgressById={uploadProgressById}
-                    onItemsChange={setMediaItems}
-                    draggable={false}
+                <TouchableOpacity
+                  style={[
+                    styles.sendBtn,
+                    {
+                      backgroundColor:
+                        text.trim() || mediaItems.length > 0 ? theme.primary : theme.surfaceMuted,
+                    },
+                  ]}
+                  onPress={handleSend}
+                  disabled={(!text.trim() && mediaItems.length === 0) || isPending}
+                >
+                  <Send
+                    size={18}
+                    color={
+                      text.trim() || mediaItems.length > 0 ? theme.onPrimary : theme.textSecondary
+                    }
                   />
-                </View>
-              )}
+                </TouchableOpacity>
+              </View>
             </View>
-            <TouchableOpacity
-              style={[
-                styles.sendBtn,
-                {
-                  backgroundColor:
-                    text.trim() || mediaItems.length > 0 ? theme.primary : theme.surfaceMuted,
-                },
-              ]}
-              onPress={handleSend}
-              disabled={(!text.trim() && mediaItems.length === 0) || isPending}
-            >
-              <Send
-                size={18}
-                color={text.trim() || mediaItems.length > 0 ? theme.onPrimary : theme.textSecondary}
-              />
-            </TouchableOpacity>
           </View>
         </KeyboardStickyView>
       </KeyboardAvoidingView>
@@ -348,21 +420,29 @@ const styles = StyleSheet.create({
     maxWidth: '84%',
     paddingHorizontal: 12,
     paddingVertical: 9,
+    gap: 8,
   },
   messageText: {
     fontSize: 14,
     lineHeight: 21,
   },
-  replyBar: {
+  messageImages: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 2,
+  },
+  messageImage: {
+    width: 96,
+    height: 96,
+    borderRadius: 10,
+  },
+  replyBar: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 8,
+    paddingTop: 10,
     paddingHorizontal: 12,
-    gap: 8,
   },
   inputArea: {
-    flex: 1,
     gap: 8,
   },
   inputRow: {
@@ -387,8 +467,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     maxHeight: 100,
   },
-  mediaGrid: {
-    maxWidth: 220,
+  mediaStrip: {
+    gap: 8,
+    paddingRight: 2,
+  },
+  mediaThumb: {
+    width: 58,
+    height: 58,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  mediaThumbImage: {
+    width: '100%',
+    height: '100%',
+  },
+  mediaRemoveBtn: {
+    position: 'absolute',
+    right: 4,
+    top: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadProgressOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.34)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadProgressText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
   },
   sendBtn: {
     width: 38,

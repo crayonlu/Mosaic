@@ -92,6 +92,7 @@ pub struct BotThreadMessage {
     pub id: Uuid,
     pub role: String,
     pub content: String,
+    pub resource_ids: Vec<Uuid>,
     pub created_at: i64,
 }
 

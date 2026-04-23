@@ -329,14 +329,20 @@ impl ResourceService {
 
     pub async fn download_resource_thumbnail(
         &self,
+        user_id: &str,
         resource_id: Uuid,
     ) -> Result<(Bytes, String), AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+        let storage_prefix = format!("resources/{}/%", user_uuid);
         let mut resource = sqlx::query_as::<_, Resource>(
             "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
              FROM resources r
-             WHERE r.id = $1",
+             LEFT JOIN memos m ON m.id = r.memo_id
+             WHERE r.id = $1 AND (m.user_id = $2 OR r.storage_path LIKE $3)",
         )
         .bind(resource_id)
+        .bind(user_uuid)
+        .bind(storage_prefix)
         .fetch_optional(&self.pool)
         .await?
         .ok_or(AppError::ResourceNotFound)?;
@@ -357,15 +363,21 @@ impl ResourceService {
 
     pub async fn download_resource_variant(
         &self,
+        user_id: &str,
         resource_id: Uuid,
         variant: &str,
     ) -> Result<Option<(Bytes, String)>, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+        let storage_prefix = format!("resources/{}/%", user_uuid);
         let resource = sqlx::query_as::<_, Resource>(
             "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
              FROM resources r
-             WHERE r.id = $1",
+             LEFT JOIN memos m ON m.id = r.memo_id
+             WHERE r.id = $1 AND (m.user_id = $2 OR r.storage_path LIKE $3)",
         )
         .bind(resource_id)
+        .bind(user_uuid)
+        .bind(storage_prefix)
         .fetch_optional(&self.pool)
         .await?
         .ok_or(AppError::ResourceNotFound)?;
