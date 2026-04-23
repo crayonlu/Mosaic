@@ -438,18 +438,42 @@ impl BotService {
         .map_err(AppError::Database)?
         .ok_or(AppError::NotFound("Bot reply not found".into()))?;
 
-        let question_images = if ai_config.supports_vision
-            && parent.bot_vision_enabled
-            && !req.resource_ids.is_empty()
-        {
-            self.load_owned_images(user_uuid, &req.resource_ids, 4)
+        let question_resources = if req.resource_ids.is_empty() {
+            vec![]
+        } else {
+            self.load_owned_image_resources(user_uuid, &req.resource_ids, 4)
+                .await?
+        };
+
+        let thread = self.load_thread(user_uuid, parent_reply_id).await?;
+        let history = if ai_config.supports_vision && parent.bot_vision_enabled {
+            self.build_recent_thread_context(
+                user_uuid,
+                &thread.replies,
+                8,
+                8,
+                true,
+                ai_config.provider.as_str(),
+            )
+            .await?
+        } else {
+            self.build_recent_thread_context(
+                user_uuid,
+                &thread.replies,
+                8,
+                0,
+                false,
+                ai_config.provider.as_str(),
+            )
+            .await?
+        };
+
+        let question_images = if ai_config.supports_vision && parent.bot_vision_enabled {
+            self.load_images_from_resources(question_resources.clone())
                 .await?
         } else {
             vec![]
         };
-
-        let thread = self.load_thread(user_uuid, parent_reply_id).await?;
-        let history = build_recent_thread_context(&thread.replies, 8);
 
         let reply_content = call_ai_for_thread_reply(
             &ai_config,
@@ -480,6 +504,23 @@ impl BotService {
         .execute(&self.pool)
         .await
         .map_err(AppError::Database)?;
+
+        if !question_resources.is_empty() {
+            for (index, resource) in question_resources.iter().enumerate() {
+                sqlx::query(
+                    "INSERT INTO bot_reply_resources (reply_id, resource_id, sort_order, created_at)
+                     VALUES ($1, $2, $3, $4)
+                     ON CONFLICT (reply_id, resource_id) DO NOTHING",
+                )
+                .bind(new_id)
+                .bind(resource.id)
+                .bind(index as i32)
+                .bind(now)
+                .execute(&self.pool)
+                .await
+                .map_err(AppError::Database)?;
+            }
+        }
 
         Ok(BotReplyResponse {
             id: new_id,
@@ -525,9 +566,17 @@ impl BotService {
         .ok_or(AppError::NotFound("Bot reply not found".into()))?;
 
         let replies = sqlx::query_as::<_, ThreadReplyRow>(
-            "SELECT br.id, br.content, br.user_question, br.created_at
+            "SELECT br.id, br.content, br.user_question,
+                    COALESCE(
+                        ARRAY_AGG(brr.resource_id ORDER BY brr.sort_order)
+                            FILTER (WHERE brr.resource_id IS NOT NULL),
+                        ARRAY[]::uuid[]
+                    ) as resource_ids,
+                    br.created_at
              FROM bot_replies br
+             LEFT JOIN bot_reply_resources brr ON brr.reply_id = br.id
              WHERE br.memo_id = $1 AND br.bot_id = $2
+             GROUP BY br.id, br.content, br.user_question, br.created_at
              ORDER BY br.created_at ASC",
         )
         .bind(seed.memo_id)
@@ -576,16 +625,42 @@ impl BotService {
         self.load_images_from_resources(resources).await
     }
 
-    async fn load_owned_images(
+    async fn load_owned_image_resources(
         &self,
         user_uuid: Uuid,
         resource_ids: &[Uuid],
         limit: i64,
-    ) -> Result<Vec<AiImageInput>, AppError> {
+    ) -> Result<Vec<Resource>, AppError> {
         if resource_ids.len() > limit as usize {
             return Err(AppError::InvalidInput(format!("最多添加 {} 张图片", limit)));
         }
 
+        let resources = self
+            .load_authorized_image_resources(user_uuid, resource_ids, limit as usize)
+            .await?;
+
+        if resources.len() != resource_ids.len() {
+            return Err(AppError::InvalidInput(
+                "图片不存在或没有访问权限".to_string(),
+            ));
+        }
+
+        validate_ai_image_resources(&resources)?;
+
+        Ok(resources)
+    }
+
+    async fn load_authorized_image_resources(
+        &self,
+        user_uuid: Uuid,
+        resource_ids: &[Uuid],
+        limit: usize,
+    ) -> Result<Vec<Resource>, AppError> {
+        if resource_ids.is_empty() || limit == 0 {
+            return Ok(vec![]);
+        }
+
+        let limited_ids: Vec<Uuid> = resource_ids.iter().copied().take(limit).collect();
         let storage_prefix = format!("resources/{}/%", user_uuid);
         let resources = sqlx::query_as::<_, Resource>(
             "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
@@ -594,20 +669,67 @@ impl BotService {
              WHERE r.id = ANY($1) AND r.resource_type = 'image'
                AND (m.user_id = $2 OR r.storage_path LIKE $3)",
         )
-        .bind(resource_ids)
+        .bind(&limited_ids)
         .bind(user_uuid)
         .bind(storage_prefix)
         .fetch_all(&self.pool)
         .await
         .map_err(AppError::Database)?;
 
-        if resources.len() != resource_ids.len() {
-            return Err(AppError::InvalidInput(
-                "图片不存在或没有访问权限".to_string(),
-            ));
+        let mut by_id: std::collections::HashMap<Uuid, Resource> = resources
+            .into_iter()
+            .map(|resource| (resource.id, resource))
+            .collect();
+        let mut ordered = Vec::with_capacity(limited_ids.len());
+
+        for resource_id in limited_ids {
+            if let Some(resource) = by_id.remove(&resource_id) {
+                ordered.push(resource);
+            }
         }
 
-        self.load_images_from_resources(resources).await
+        Ok(ordered)
+    }
+
+    async fn build_recent_thread_context(
+        &self,
+        user_uuid: Uuid,
+        replies: &[ThreadReplyRow],
+        max_replies: usize,
+        max_images: usize,
+        include_images: bool,
+        provider: &str,
+    ) -> Result<Vec<serde_json::Value>, AppError> {
+        let start = replies.len().saturating_sub(max_replies);
+        let mut messages = Vec::new();
+        let mut remaining_images = max_images;
+
+        for reply in &replies[start..] {
+            if let Some(question) = &reply.user_question {
+                let images = if include_images && remaining_images > 0 {
+                    let resources = self
+                        .load_authorized_image_resources(
+                            user_uuid,
+                            &reply.resource_ids,
+                            remaining_images.min(4),
+                        )
+                        .await?;
+                    let resources: Vec<Resource> = resources
+                        .into_iter()
+                        .filter(is_supported_ai_image_resource)
+                        .collect();
+                    remaining_images = remaining_images.saturating_sub(resources.len());
+                    self.load_images_from_resources(resources).await?
+                } else {
+                    vec![]
+                };
+
+                messages.push(build_user_message(question, &images, provider));
+            }
+            messages.push(json!({ "role": "assistant", "content": reply.content }));
+        }
+
+        Ok(messages)
     }
 
     async fn load_images_from_resources(
@@ -617,16 +739,7 @@ impl BotService {
         let mut images = Vec::with_capacity(resources.len());
 
         for resource in resources {
-            if !matches!(
-                resource.mime_type.as_str(),
-                "image/jpeg" | "image/png" | "image/webp"
-            ) {
-                return Err(AppError::InvalidInput("不支持的图片格式".to_string()));
-            }
-
-            if resource.file_size > 10 * 1024 * 1024 {
-                return Err(AppError::InvalidInput("单张图片不能超过 10MB".to_string()));
-            }
+            validate_ai_image_resources(std::slice::from_ref(&resource))?;
 
             let data = self
                 .storage
@@ -642,6 +755,23 @@ impl BotService {
 
         Ok(images)
     }
+}
+
+fn validate_ai_image_resources(resources: &[Resource]) -> Result<(), AppError> {
+    for resource in resources {
+        if !is_supported_ai_image_resource(resource) {
+            return Err(AppError::InvalidInput("不支持的图片格式".to_string()));
+        }
+    }
+
+    Ok(())
+}
+
+fn is_supported_ai_image_resource(resource: &Resource) -> bool {
+    matches!(
+        resource.mime_type.as_str(),
+        "image/jpeg" | "image/png" | "image/webp"
+    ) && resource.file_size <= 10 * 1024 * 1024
 }
 
 fn build_reply_tree(replies: Vec<BotReplyResponse>) -> Vec<BotReplyResponse> {
@@ -672,6 +802,7 @@ struct ThreadReplyRow {
     id: Uuid,
     content: String,
     user_question: Option<String>,
+    resource_ids: Vec<Uuid>,
     created_at: i64,
 }
 
@@ -694,6 +825,7 @@ fn build_thread_messages(replies: &[ThreadReplyRow]) -> Vec<BotThreadMessage> {
                 id: reply.id,
                 role: "user".to_string(),
                 content: question.clone(),
+                resource_ids: reply.resource_ids.clone(),
                 created_at: reply.created_at,
             });
         }
@@ -702,25 +834,9 @@ fn build_thread_messages(replies: &[ThreadReplyRow]) -> Vec<BotThreadMessage> {
             id: reply.id,
             role: "assistant".to_string(),
             content: reply.content.clone(),
+            resource_ids: vec![],
             created_at: reply.created_at,
         });
-    }
-
-    messages
-}
-
-fn build_recent_thread_context(
-    replies: &[ThreadReplyRow],
-    max_replies: usize,
-) -> Vec<serde_json::Value> {
-    let start = replies.len().saturating_sub(max_replies);
-    let mut messages = Vec::new();
-
-    for reply in &replies[start..] {
-        if let Some(question) = &reply.user_question {
-            messages.push(json!({ "role": "user", "content": question }));
-        }
-        messages.push(json!({ "role": "assistant", "content": reply.content }));
     }
 
     messages

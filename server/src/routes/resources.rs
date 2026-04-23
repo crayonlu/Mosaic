@@ -150,9 +150,10 @@ pub async fn download_resource_proxy(
     req: HttpRequest,
     resource_service: web::Data<ResourceService>,
 ) -> HttpResponse {
-    if let Err(e) = get_user_id(&req) {
-        return HttpResponse::from_error(e);
-    }
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
 
     let variant = query.variant.as_deref().unwrap_or("original");
 
@@ -169,7 +170,7 @@ pub async fn download_resource_proxy(
         .map(str::to_owned);
 
     match resource_service
-        .download_resource_variant(path.into_inner(), variant)
+        .download_resource_variant(&user_id, path.into_inner(), variant)
         .await
     {
         Ok(Some((data, mime_type))) => {
@@ -231,9 +232,10 @@ pub async fn download_resource_thumbnail(
     req: HttpRequest,
     resource_service: web::Data<ResourceService>,
 ) -> HttpResponse {
-    if let Err(e) = get_user_id(&req) {
-        return HttpResponse::from_error(e);
-    }
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
 
     let client_etag = req
         .headers()
@@ -242,7 +244,7 @@ pub async fn download_resource_thumbnail(
         .map(String::from);
 
     match resource_service
-        .download_resource_thumbnail(path.into_inner())
+        .download_resource_thumbnail(&user_id, path.into_inner())
         .await
     {
         Ok((data, mime_type)) => {

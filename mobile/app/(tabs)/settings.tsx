@@ -21,7 +21,6 @@ import {
   Info,
   LogOut,
   Palette,
-  Pencil,
   Plus,
   ShieldCheck,
   Sparkles,
@@ -383,7 +382,7 @@ export default function SettingsScreen() {
             style={[styles.botSettings, { borderTopColor: theme.border }]}
           >
             {bots.map((bot, index) => (
-              <View
+              <TouchableOpacity
                 key={bot.id}
                 style={[
                   styles.botItem,
@@ -392,6 +391,11 @@ export default function SettingsScreen() {
                     borderTopColor: theme.border,
                   },
                 ]}
+                activeOpacity={0.82}
+                onPress={() => {
+                  setEditingBot(bot)
+                  setBotEditorVisible(true)
+                }}
               >
                 <View style={[styles.botAvatar, { backgroundColor: theme.primary }]}>
                   {bot.avatarUrl ? (
@@ -417,20 +421,13 @@ export default function SettingsScreen() {
                     <Text style={[styles.botTags, { color: theme.textSecondary }]}>图片理解</Text>
                   )}
                 </View>
-                <SwitchBtn
-                  value={bot.autoReply}
-                  onValueChange={v => updateBot({ id: bot.id, data: { autoReply: v } })}
-                />
-                <TouchableOpacity
-                  onPress={() => {
-                    setEditingBot(bot)
-                    setBotEditorVisible(true)
-                  }}
-                  hitSlop={12}
-                >
-                  <Pencil size={16} color={theme.textSecondary} />
-                </TouchableOpacity>
-              </View>
+                <View onStartShouldSetResponder={() => true}>
+                  <SwitchBtn
+                    value={bot.autoReply}
+                    onValueChange={v => updateBot({ id: bot.id, data: { autoReply: v } })}
+                  />
+                </View>
+              </TouchableOpacity>
             ))}
             <TouchableOpacity
               style={[
