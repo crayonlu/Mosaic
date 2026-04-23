@@ -1,17 +1,9 @@
 import { useThemeStore } from '@/stores/themeStore'
 import { X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  FlatList,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, View, type NativeSyntheticEvent } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import PagerView from 'react-native-pager-view'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ImagePreviewContent } from './ImagePreviewContent'
@@ -25,12 +17,19 @@ interface MediaPreviewModalProps {
   onRequestClose: () => void
 }
 
+interface PagerPageSelectedEvent {
+  position: number
+}
+
 export function MediaPreviewModal({ items, initialIndex, onRequestClose }: MediaPreviewModalProps) {
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
-  const { width } = useWindowDimensions()
-  const listRef = useRef<FlatList<ResolvedMediaSource>>(null)
+  const pagerRef = useRef<PagerView>(null)
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
+  const [isImageZoomActive, setIsImageZoomActive] = useState(false)
+  const debugSetZoomActive = (val: boolean) => {
+    setIsImageZoomActive(val)
+  }
   const overlayColor = useMemo(() => withAlpha(theme.background, 0.96), [theme.background])
   const closeButtonColor = useMemo(() => withAlpha(theme.surface, 0.82), [theme.surface])
   const closeButtonPressedColor = useMemo(() => withAlpha(theme.surface, 0.96), [theme.surface])
@@ -38,21 +37,14 @@ export function MediaPreviewModal({ items, initialIndex, onRequestClose }: Media
 
   useEffect(() => {
     setCurrentIndex(initialIndex)
+    setIsImageZoomActive(false)
+    pagerRef.current?.setPageWithoutAnimation(initialIndex)
   }, [initialIndex])
 
-  useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollToIndex({ index: initialIndex, animated: false })
-    }
-  }, [initialIndex, width])
-
-  const handleMomentumScrollEnd = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width)
-      setCurrentIndex(Math.max(0, Math.min(nextIndex, items.length - 1)))
-    },
-    [items.length, width]
-  )
+  const handlePageSelected = useCallback((event: NativeSyntheticEvent<PagerPageSelectedEvent>) => {
+    setCurrentIndex(event.nativeEvent.position)
+    setIsImageZoomActive(false)
+  }, [])
 
   return (
     <Modal
@@ -63,77 +55,73 @@ export function MediaPreviewModal({ items, initialIndex, onRequestClose }: Media
       statusBarTranslucent
       onRequestClose={onRequestClose}
     >
-      <View style={[styles.container, { backgroundColor: overlayColor }]}>
-        <FlatList
-          ref={listRef}
-          data={items}
-          horizontal
-          pagingEnabled
-          bounces={false}
-          showsHorizontalScrollIndicator={false}
-          initialScrollIndex={initialIndex}
-          getItemLayout={(_, index) => ({
-            length: width,
-            offset: width * index,
-            index,
-          })}
-          keyExtractor={item => item.item.key}
-          scrollEnabled={items.length > 1}
-          onMomentumScrollEnd={handleMomentumScrollEnd}
-          renderItem={({ item, index }) => (
-            <View style={[styles.page, { width }]}>
-              {item.item.type === 'image' ? (
-                <ImagePreviewContent
-                  uri={item.previewUri}
-                  headers={item.previewHeaders}
-                  isActive={index === currentIndex}
-                />
-              ) : (
-                <VideoPreviewContent
-                  uri={item.previewUri}
-                  headers={item.previewHeaders}
-                  thumbnailUri={item.previewThumbnailUri}
-                  thumbnailHeaders={item.previewThumbnailHeaders}
-                  isActive={index === currentIndex}
-                />
-              )}
+      <GestureHandlerRootView style={styles.container}>
+        <View style={[styles.container, { backgroundColor: overlayColor }]}>
+          <PagerView
+            ref={pagerRef}
+            style={styles.pager}
+            initialPage={initialIndex}
+            scrollEnabled={items.length > 1 && !isImageZoomActive}
+            onPageSelected={handlePageSelected}
+          >
+            {items.map((item, index) => (
+              <View key={item.item.key} style={styles.page}>
+                {item.item.type === 'image' ? (
+                  <ImagePreviewContent
+                    uri={item.previewUri}
+                    headers={item.previewHeaders}
+                    lowQualityUri={item.previewLowQualityUri}
+                    lowQualityHeaders={item.previewLowQualityHeaders}
+                    isActive={index === currentIndex}
+                    onZoomActiveChange={index === currentIndex ? debugSetZoomActive : undefined}
+                  />
+                ) : (
+                  <VideoPreviewContent
+                    uri={item.previewUri}
+                    headers={item.previewHeaders}
+                    thumbnailUri={item.previewThumbnailUri}
+                    thumbnailHeaders={item.previewThumbnailHeaders}
+                    isActive={index === currentIndex}
+                  />
+                )}
+              </View>
+            ))}
+          </PagerView>
+
+          <View style={styles.chromeLayer} pointerEvents="box-none">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="关闭图像预览"
+              onPress={onRequestClose}
+              style={({ pressed }) => [
+                styles.closeButton,
+                {
+                  top: insets.top + 4,
+                  right: insets.right + 8,
+                  backgroundColor: pressed ? closeButtonPressedColor : closeButtonColor,
+                },
+              ]}
+            >
+              <X size={18} color={theme.text} />
+            </Pressable>
+
+            <View
+              pointerEvents="none"
+              style={[
+                styles.counterWrap,
+                {
+                  top: insets.top + 14,
+                  backgroundColor: counterBackgroundColor,
+                },
+              ]}
+            >
+              <Text style={[styles.counterText, { color: theme.text }]}>
+                {currentIndex + 1}/{items.length}
+              </Text>
             </View>
-          )}
-        />
-
-        <View style={styles.chromeLayer} pointerEvents="box-none">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="关闭图像预览"
-            onPress={onRequestClose}
-            style={({ pressed }) => [
-              styles.closeButton,
-              {
-                top: insets.top + 4,
-                right: insets.right + 8,
-                backgroundColor: pressed ? closeButtonPressedColor : closeButtonColor,
-              },
-            ]}
-          >
-            <X size={18} color={theme.text} />
-          </Pressable>
-
-          <View
-            pointerEvents="none"
-            style={[
-              styles.counterWrap,
-              {
-                top: insets.top + 14,
-                backgroundColor: counterBackgroundColor,
-              },
-            ]}
-          >
-            <Text style={[styles.counterText, { color: theme.text }]}>
-              {currentIndex + 1}/{items.length}
-            </Text>
           </View>
         </View>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   )
 }
@@ -143,6 +131,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   page: {
+    flex: 1,
+  },
+  pager: {
     flex: 1,
   },
   chromeLayer: {

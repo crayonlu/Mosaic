@@ -4,7 +4,9 @@ import * as ExpoImagePicker from 'expo-image-picker'
 import { ImagePlus, Upload, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Button } from './Button'
+import { ImagePreviewContent } from './media/ImagePreviewContent'
 
 interface ImagePickerProps {
   images: string[]
@@ -128,27 +130,19 @@ export function ImagePicker({
         animationType="fade"
         onRequestClose={() => setPreviewIndex(null)}
       >
-        <View style={styles.modalContainer}>
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setPreviewIndex(null)}
-          >
-            {previewIndex !== null && (
-              <Image
-                source={{ uri: images[previewIndex] }}
-                style={styles.previewImage}
-                contentFit="contain"
-              />
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.closeButton, { backgroundColor: theme.background }]}
-            onPress={() => setPreviewIndex(null)}
-          >
-            <X size={24} color={theme.text} />
-          </TouchableOpacity>
-        </View>
+        <GestureHandlerRootView style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
+            <View style={styles.modalOverlay}>
+              {previewIndex !== null && <ImagePreviewContent uri={images[previewIndex]} isActive />}
+            </View>
+            <TouchableOpacity
+              style={[styles.closeButton, { backgroundColor: theme.background }]}
+              onPress={() => setPreviewIndex(null)}
+            >
+              <X size={24} color={theme.text} />
+            </TouchableOpacity>
+          </View>
+        </GestureHandlerRootView>
       </Modal>
     </View>
   )
@@ -200,10 +194,6 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
   },
   closeButton: {
     position: 'absolute',

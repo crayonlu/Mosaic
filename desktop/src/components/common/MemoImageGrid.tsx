@@ -1,12 +1,13 @@
 import { AuthImage } from '@/components/common/AuthImage'
-import { AuthVideo } from '@/components/common/AuthVideo'
+import { DesktopVideoPreview } from '@/components/common/DesktopVideoPreview'
+import { ZoomableImagePreview } from '@/components/common/ZoomableImagePreview'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core'
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Resource } from '@mosaic/api'
-import { ChevronLeft, ChevronRight, Plus, Trash2, Upload, Video } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ImageOff, Plus, Trash2, Upload, Video } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 interface MemoImageGridProps {
@@ -87,13 +88,13 @@ const SortableMedia = ({
           draggable={false}
         />
       ) : isVideo && videoUrl ? (
-        <AuthVideo
-          src={videoUrl}
-          variant="thumb"
-          className={`w-full h-full object-cover ${isLarge ? 'aspect-4/3' : 'aspect-square'}`}
-          muted
-          playsInline
-        />
+        <div
+          className={`flex w-full h-full items-center justify-center bg-black/80 ${
+            isLarge ? 'aspect-4/3' : 'aspect-square'
+          }`}
+        >
+          <Video className="h-8 w-8 text-white/70" />
+        </div>
       ) : null}
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
       {isVideo && previewUrl && (
@@ -245,23 +246,28 @@ function MediaPreviewDialog({
   const imageUrl = !isVideo ? imageUrls.get(currentResource?.id || '') : undefined
   const videoUrl = isVideo ? videoUrls?.get(currentResource?.id || '') : undefined
   const thumbnailUrl = isVideo ? thumbnailUrls?.get(currentResource?.id || '') : undefined
+  const hasMedia = Boolean((isVideo && videoUrl) || (!isVideo && imageUrl))
 
   const goToPrev = () => {
+    if (resources.length === 0) return
     setCurrentIndex(prev => (prev > 0 ? prev - 1 : resources.length - 1))
   }
 
   const goToNext = () => {
+    if (resources.length === 0) return
     setCurrentIndex(prev => (prev < resources.length - 1 ? prev + 1 : 0))
   }
 
   return (
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
       <DialogContent
+        aria-describedby={undefined}
         showCloseButton={false}
-        className="max-w-4xl w-auto p-0 overflow-hidden bg-black/95 border-none"
+        className="left-1/2 top-1/2 flex w-screen max-w-none -translate-x-1/2 -translate-y-1/2 items-center justify-center border-0 bg-transparent p-0 shadow-none"
       >
-        <div className="relative flex items-center justify-center">
-          {resources.length > 1 && (
+        <DialogTitle className="sr-only">媒体预览</DialogTitle>
+        <div className="relative flex max-h-[calc(100vh-2rem)] max-w-[calc(100vw-2rem)] items-center justify-center">
+          {resources.length > 1 && hasMedia && (
             <>
               <Button
                 variant="ghost"
@@ -282,31 +288,33 @@ function MediaPreviewDialog({
             </>
           )}
 
-          {currentResource && (
+          {currentResource && hasMedia ? (
             <>
               {isVideo && videoUrl ? (
-                <AuthVideo
+                <DesktopVideoPreview
                   key={currentResource.id}
                   src={videoUrl}
-                  className="max-w-full max-h-[80vh] object-contain"
-                  controls
                   autoPlay
-                  preload="metadata"
                   poster={thumbnailUrl}
-                  playsInline
+                  filename={currentResource.filename}
                 />
               ) : imageUrl ? (
-                <AuthImage
+                <ZoomableImagePreview
+                  key={currentResource.id}
                   src={imageUrl}
                   alt={currentResource.filename}
-                  className="max-w-full max-h-[80vh] object-contain"
                 />
               ) : null}
             </>
+          ) : (
+            <div className="flex h-56 w-80 flex-col items-center justify-center gap-3 rounded-2xl bg-black/80 text-white shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+              <ImageOff className="h-8 w-8 text-white/60" />
+              <div className="text-sm text-white/70">资源暂不可预览</div>
+            </div>
           )}
 
-          {resources.length > 1 && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-3 py-1 rounded-full">
+          {resources.length > 1 && hasMedia && (
+            <div className="absolute top-3 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/45 px-3 py-1 text-sm text-white shadow-lg backdrop-blur-md">
               {currentIndex + 1} / {resources.length}
             </div>
           )}
@@ -357,15 +365,8 @@ export function MemoImageGrid({
       return
     }
 
-    const sameTypeResources = displayResources.filter(
-      resource => resource.resourceType === selectedResource.resourceType
-    )
-    const sameTypeIndex = sameTypeResources.findIndex(
-      resource => resource.id === selectedResource.id
-    )
-
-    setPreviewResources(sameTypeResources)
-    setPreviewIndex(sameTypeIndex === -1 ? 0 : sameTypeIndex)
+    setPreviewResources(displayResources)
+    setPreviewIndex(index)
     setPreviewOpen(true)
     onImageClick?.(index)
   }

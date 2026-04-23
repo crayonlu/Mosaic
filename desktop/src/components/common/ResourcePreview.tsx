@@ -1,7 +1,8 @@
 import { AuthImage } from '@/components/common/AuthImage'
-import { AuthVideo } from '@/components/common/AuthVideo'
+import { DesktopVideoPreview } from '@/components/common/DesktopVideoPreview'
+import { ZoomableImagePreview } from '@/components/common/ZoomableImagePreview'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { Image as ImageIcon, Video } from 'lucide-react'
 import { useState } from 'react'
@@ -35,19 +36,17 @@ export function ResourcePreview({
   return (
     <>
       {type === 'video' ? (
-        <div className="group relative rounded-lg border bg-card overflow-hidden">
-          <AuthVideo
-            src={previewUrl}
-            variant="thumb"
+        <div
+          className="group relative rounded-lg border bg-card overflow-hidden cursor-pointer"
+          onClick={() => setPreviewOpen(true)}
+        >
+          <div
             className={cn(
-              'w-full object-cover cursor-pointer transition-opacity hover:opacity-90',
+              'flex w-full items-center justify-center bg-black/80 transition-opacity hover:opacity-90',
               compact ? 'h-14' : 'h-18'
             )}
-            onClick={() => setPreviewOpen(true)}
           />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-            <Video className="h-6 w-6 text-white" />
-          </div>
+          <Video className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-white" />
           <Button
             variant="ghost"
             size="icon"
@@ -102,22 +101,19 @@ export function ResourcePreview({
       )}
 
       <Dialog open={previewOpen} onOpenChange={open => !open && setPreviewOpen(false)}>
-        <DialogContent className="max-w-4xl w-full h-auto max-h-[90vh] p-0 overflow-hidden bg-black/95 border-none">
+        <DialogContent
+          aria-describedby={undefined}
+          className="left-1/2 top-1/2 flex w-screen max-w-none -translate-x-1/2 -translate-y-1/2 items-center justify-center border-0 bg-transparent p-0 shadow-none"
+        >
+          <DialogTitle className="sr-only">资源预览</DialogTitle>
           {type === 'video' ? (
-            <AuthVideo
-              src={previewUrl}
-              variant="opt"
-              className="w-full h-auto max-h-[80vh] object-contain"
-              controls
-              playsInline
-            />
+            <div className="relative flex max-h-[calc(100vh-2rem)] max-w-[calc(100vw-2rem)] items-center justify-center">
+              <DesktopVideoPreview src={previewUrl} variant="opt" filename={filename} />
+            </div>
           ) : (
-            <AuthImage
-              src={previewUrl}
-              variant="opt"
-              alt={filename}
-              className="w-full h-auto max-h-[80vh] object-contain"
-            />
+            <div className="relative flex max-h-[calc(100vh-2rem)] max-w-[calc(100vw-2rem)] items-center justify-center">
+              <ZoomableImagePreview src={previewUrl} variant="opt" alt={filename} />
+            </div>
           )}
         </DialogContent>
       </Dialog>

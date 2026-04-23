@@ -10,6 +10,8 @@ export interface ResolvedMediaSource {
   item: MediaGridItem
   gridUri?: string
   gridHeaders?: Record<string, string>
+  previewLowQualityUri?: string
+  previewLowQualityHeaders?: Record<string, string>
   previewUri: string
   previewHeaders?: Record<string, string>
   previewThumbnailUri?: string

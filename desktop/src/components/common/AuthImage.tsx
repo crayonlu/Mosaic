@@ -1,8 +1,7 @@
+import '@/lib/solidMedia'
 import { cn } from '@/lib/utils'
 import { resourcesApi } from '@mosaic/api'
-import { getResourceLoader } from '@mosaic/cache'
-import { useEffect, useMemo, useState } from 'react'
-import { LoadingSpinner } from '../ui/loading/loading-spinner'
+import { useEffect, useMemo } from 'react'
 
 type NativeImgProps = React.ComponentPropsWithoutRef<'img'>
 
@@ -21,150 +20,50 @@ function extractResourceId(url: string): string | null {
   return match ? match[1] : null
 }
 
-const srcCache = new Map<string, string>()
-const loadingPromises = new Map<string, Promise<string | null>>()
+function resolveVariantSource(source: string, variant: AuthImageProps['variant']): string {
+  const resourceId = extractResourceId(source)
+  if (!resourceId || variant === 'original') return source
+  return resourcesApi.getDownloadUrl(resourceId, variant)
+}
 
 export function AuthImage({
   src,
   withAuth = true,
   variant = 'original',
   onLoadingChange,
+  alt,
+  className,
+  style,
   ...props
 }: AuthImageProps) {
-  const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(() => {
-    if (typeof src === 'string' && srcCache.has(src)) {
-      return srcCache.get(src)
-    }
-    return undefined
-  })
-
-  const [isLoading, setIsLoading] = useState(() => {
-    if (typeof src === 'string' && srcCache.has(src)) {
-      return false
-    }
-    return true
-  })
-  const [hasError, setHasError] = useState(false)
-
   const source = useMemo(() => (typeof src === 'string' ? src : undefined), [src])
+  const resolvedSource = useMemo(
+    () => (source ? resolveVariantSource(source, variant) : undefined),
+    [source, variant]
+  )
 
   useEffect(() => {
-    if (!source) {
-      setResolvedSrc(undefined)
-      setIsLoading(false)
-      setHasError(false)
-      return
-    }
+    onLoadingChange?.(false)
+  }, [onLoadingChange, resolvedSource])
 
-    if (srcCache.has(source)) {
-      setResolvedSrc(srcCache.get(source))
-      setIsLoading(false)
-      setHasError(false)
-      return
-    }
-
-    if (!withAuth || isBypassSource(source)) {
-      srcCache.set(source, source)
-      setResolvedSrc(source)
-      setIsLoading(false)
-      setHasError(false)
-      return
-    }
-
-    let cancelled = false
-
-    const loadImage = async () => {
-      try {
-        setIsLoading(true)
-        setHasError(false)
-
-        const resourceId = extractResourceId(source)
-        let urlToLoad = source
-
-        if (resourceId && variant !== 'original') {
-          const variantUrl = resourcesApi.getDownloadUrl(resourceId, variant)
-          urlToLoad = variantUrl
-        }
-
-        if (loadingPromises.has(urlToLoad)) {
-          const cachedPromise = loadingPromises.get(urlToLoad)!
-          const result = await cachedPromise
-          if (!cancelled) {
-            if (result) {
-              srcCache.set(source, result)
-              setResolvedSrc(result)
-            } else {
-              setHasError(true)
-            }
-            setIsLoading(false)
-          }
-          return
-        }
-
-        const promise = (async () => {
-          const loader = await getResourceLoader()
-          if (!loader) {
-            return null
-          }
-          const result = await loader.load(urlToLoad, { forceRefresh: false, allowCache: true })
-
-          if (result.path) {
-            return result.path
-          }
-
-          if (result.data) {
-            const blob = new Blob([result.data])
-            return URL.createObjectURL(blob)
-          }
-
-          return null
-        })()
-
-        loadingPromises.set(urlToLoad, promise)
-
-        const result = await promise
-        loadingPromises.delete(urlToLoad)
-
-        if (cancelled) return
-
-        if (result) {
-          srcCache.set(source, result)
-          setResolvedSrc(result)
-        } else {
-          setHasError(true)
-        }
-        setIsLoading(false)
-      } catch (error) {
-        if ((error as Error).name !== 'AbortError' && !cancelled) {
-          setHasError(true)
-        }
-        setIsLoading(false)
-      }
-    }
-    loadImage()
-
-    return () => {
-      cancelled = true
-    }
-  }, [source, withAuth, variant])
-
-  useEffect(() => {
-    onLoadingChange?.(isLoading)
-  }, [isLoading, onLoadingChange])
-
-  const { className: classNameRest, ...imgProps } = props
-
-  if (isLoading) {
-    return (
-      <div className={cn('flex size-full items-center justify-center', classNameRest)}>
-        <LoadingSpinner size="md" />
-      </div>
-    )
-  }
-
-  if (hasError || !resolvedSrc) {
+  if (!source || !resolvedSource) {
     return null
   }
 
-  return <img className={classNameRest} src={resolvedSrc} {...imgProps} />
+  if (!withAuth || isBypassSource(resolvedSource)) {
+    return <img src={resolvedSource} alt={alt} className={className} style={style} {...props} />
+  }
+
+  return (
+    <solid-media
+      key={resolvedSource}
+      {...(props as React.HTMLAttributes<HTMLElement>)}
+      src={resolvedSource}
+      type="image"
+      alt={alt}
+      className={cn(className)}
+      style={style}
+      data-fill={className ? 'true' : undefined}
+    />
+  )
 }
