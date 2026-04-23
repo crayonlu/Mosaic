@@ -60,12 +60,14 @@ export function ImagePreviewContent({
   const shouldStartWithOriginal = !canLoadOriginal || hasViewedOriginal
   const [shouldLoadOriginal, setShouldLoadOriginal] = useState(shouldStartWithOriginal)
   const [isOriginalLoaded, setIsOriginalLoaded] = useState(shouldStartWithOriginal)
+  const [isOriginalLoading, setIsOriginalLoading] = useState(false)
   const [isZoomedJS, setIsZoomedJS] = useState(false)
 
   useEffect(() => {
     setIsInitialLoading(true)
     setShouldLoadOriginal(shouldStartWithOriginal)
     setIsOriginalLoaded(shouldStartWithOriginal)
+    setIsOriginalLoading(false)
     isZoomedShared.value = false
     scale.value = 1
     savedScale.value = 1
@@ -243,7 +245,8 @@ export function ImagePreviewContent({
   }
 
   const loadOriginalImage = () => {
-    markOriginalViewed(uri)
+    setIsInitialLoading(false)
+    setIsOriginalLoading(true)
     setShouldLoadOriginal(true)
   }
 
@@ -259,18 +262,33 @@ export function ImagePreviewContent({
                   style={[styles.image, isOriginalLoaded ? styles.hiddenImage : undefined]}
                   contentFit="contain"
                   transition={isOriginalLoaded ? 0 : undefined}
-                  onLoadStart={() => setIsInitialLoading(true)}
+                  onLoadStart={() => {
+                    if (!shouldLoadOriginal) {
+                      setIsInitialLoading(true)
+                    }
+                  }}
                   onLoad={() => setIsInitialLoading(false)}
                   onError={() => setIsInitialLoading(false)}
                 />
                 {shouldLoadOriginal ? (
                   <Image
                     source={{ uri, headers }}
-                    style={styles.originalImage}
+                    style={[
+                      styles.originalImage,
+                      !isOriginalLoaded ? styles.hiddenImage : undefined,
+                    ]}
                     contentFit="contain"
-                    transition={{ duration: 220, effect: 'cross-dissolve', timing: 'ease-in-out' }}
-                    onLoad={() => setIsOriginalLoaded(true)}
-                    onError={() => setShouldLoadOriginal(false)}
+                    transition={0}
+                    onLoad={() => {
+                      setIsInitialLoading(false)
+                      setIsOriginalLoaded(true)
+                      setIsOriginalLoading(false)
+                      markOriginalViewed(uri)
+                    }}
+                    onError={() => {
+                      setShouldLoadOriginal(false)
+                      setIsOriginalLoading(false)
+                    }}
                   />
                 ) : null}
               </Animated.View>
@@ -279,7 +297,7 @@ export function ImagePreviewContent({
         </Animated.View>
       </GestureDetector>
 
-      {isActive && isInitialLoading ? (
+      {isActive && isInitialLoading && !shouldLoadOriginal ? (
         <View style={[styles.loadingOverlay, { backgroundColor: loadingOverlayColor }]}>
           <ActivityIndicator size="large" color={theme.primary} />
         </View>
@@ -287,7 +305,7 @@ export function ImagePreviewContent({
 
       {isActive ? (
         <>
-          {canLoadOriginal && !shouldLoadOriginal && !isOriginalLoaded ? (
+          {canLoadOriginal && !shouldLoadOriginal && !isOriginalLoaded && !isOriginalLoading ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="查看原图"
