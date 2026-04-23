@@ -49,6 +49,7 @@ export function ImagePreviewContent({
   const savedTranslateX = useSharedValue(0)
   const savedTranslateY = useSharedValue(0)
   const rotation = useSharedValue(0)
+  const rotationTarget = useSharedValue(0)
   const isZoomedShared = useSharedValue(false)
   const [scaleLabel, setScaleLabel] = useState(100)
   const initialUri = lowQualityUri ?? uri
@@ -72,6 +73,7 @@ export function ImagePreviewContent({
     translateY.value = 0
     savedTranslateX.value = 0
     savedTranslateY.value = 0
+    rotationTarget.value = 0
     rotation.value = 0
     setScaleLabel(100)
     setIsZoomedJS(false)
@@ -88,6 +90,7 @@ export function ImagePreviewContent({
     translateY.value = withTiming(0)
     savedTranslateX.value = 0
     savedTranslateY.value = 0
+    rotationTarget.value = 0
     rotation.value = withTiming(0)
     setScaleLabel(100)
     setIsZoomedJS(false)
@@ -96,6 +99,7 @@ export function ImagePreviewContent({
     isActive,
     onZoomActiveChange,
     rotation,
+    rotationTarget,
     savedScale,
     savedTranslateX,
     savedTranslateY,
@@ -172,6 +176,7 @@ export function ImagePreviewContent({
       if (scale.value > 1.01) {
         scale.value = withTiming(1)
         savedScale.value = 1
+        rotationTarget.value = 0
         rotation.value = withTiming(0)
         translateX.value = withTiming(0)
         translateY.value = withTiming(0)
@@ -225,13 +230,16 @@ export function ImagePreviewContent({
     translateY.value = withTiming(0)
     savedTranslateX.value = 0
     savedTranslateY.value = 0
+    rotationTarget.value = 0
     rotation.value = withTiming(0)
     isZoomedShared.value = false
     syncZoomState(1)
   }
 
   const rotateImage = () => {
-    rotation.value = withTiming((rotation.value + 90) % 360)
+    const nextRotation = (rotationTarget.value + 90) % 360
+    rotationTarget.value = nextRotation
+    rotation.value = withTiming(nextRotation)
   }
 
   const loadOriginalImage = () => {
