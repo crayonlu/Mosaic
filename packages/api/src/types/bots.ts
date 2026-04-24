@@ -5,7 +5,6 @@ export interface Bot {
   description: string
   tags: string[]
   autoReply: boolean
-  visionEnabled: boolean
   sortOrder: number
   createdAt: number
   updatedAt: number
@@ -15,7 +14,6 @@ export interface BotSummary {
   id: string
   name: string
   avatarUrl?: string
-  visionEnabled: boolean
 }
 
 export interface BotReply {
@@ -23,6 +21,7 @@ export interface BotReply {
   memoId: string
   bot: BotSummary
   content: string
+  thinkingContent?: string
   parentReplyId: string | null
   userQuestion: string | null
   createdAt: number
@@ -35,6 +34,7 @@ export interface BotThreadMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
+  thinkingContent?: string
   resourceIds: string[]
   createdAt: number
 }
@@ -52,7 +52,6 @@ export interface CreateBotRequest {
   description: string
   tags: string[]
   autoReply: boolean
-  visionEnabled: boolean
 }
 
 export interface UpdateBotRequest {
@@ -61,7 +60,6 @@ export interface UpdateBotRequest {
   description?: string
   tags?: string[]
   autoReply?: boolean
-  visionEnabled?: boolean
   sortOrder?: number
 }
 
@@ -79,6 +77,5 @@ export interface AiHeaders {
   'x-ai-base-url': string
   'x-ai-api-key': string
   'x-ai-model': string
-  'x-ai-supports-vision': string
   [key: string]: string
 }

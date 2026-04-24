@@ -1,5 +1,10 @@
 export type AIProvider = 'openai' | 'anthropic'
 
+export interface ModelCapabilities {
+  supportsVision: boolean
+  supportsThinking: boolean
+}
+
 export interface AIConfig {
   provider: AIProvider
   apiKey: string
@@ -8,7 +13,6 @@ export interface AIConfig {
   temperature: number
   maxTokens: number
   timeout: number
-  supportsVision: boolean
 }
 
 export interface TagSuggestion {
@@ -33,5 +37,4 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
   temperature: 0.3,
   maxTokens: 1000,
   timeout: 30000,
-  supportsVision: true,
 }

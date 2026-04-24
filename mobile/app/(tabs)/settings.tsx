@@ -4,8 +4,9 @@ import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { ModelCombobox } from '@/components/ui/ModelCombobox'
 import { SlidingSegmentedControl } from '@/components/ui/SlidingSegmentedControl'
 import { toast } from '@/components/ui/Toast'
-import { getAIConfig, setAIConfig, type AIConfig } from '@/lib/ai'
+import { getAIConfig, setAIConfig, type AIConfig, type ModelCapabilities } from '@/lib/ai'
 import { useBots, useUpdateBot } from '@/lib/query'
+import { detectModelCapabilities } from '@mosaic/utils'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { formatBytes, getStorageSummary, type StorageItem } from '@/lib/storage/storageManager'
@@ -72,6 +73,8 @@ export default function SettingsScreen() {
   const [totalStorageSize, setTotalStorageSize] = useState(0)
   const [isLoadingStorage, setIsLoadingStorage] = useState(false)
   const [clearingId, setClearingId] = useState<string | null>(null)
+  const [aiCapabilities, setAiCapabilities] = useState<ModelCapabilities | null>(null)
+  const [aiDetecting, setAiDetecting] = useState(false)
 
   useEffect(() => {
     loadAIConfig()
@@ -165,7 +168,19 @@ export default function SettingsScreen() {
   const loadAIConfig = async () => {
     const config = await getAIConfig()
     setLocalAIConfig(config)
+    detectCapabilities(config.model, config.baseUrl, config.apiKey)
   }
+
+  const detectCapabilities = useCallback(async (model: string, baseUrl: string, apiKey: string) => {
+    if (!model || !baseUrl || !apiKey) {
+      setAiCapabilities(null)
+      return
+    }
+    setAiDetecting(true)
+    const result = await detectModelCapabilities(baseUrl, apiKey, model)
+    setAiCapabilities(result)
+    setAiDetecting(false)
+  }, [])
 
   const loadPushStatus = async () => {
     const { LocalPushService } = await import('@/lib/services/local-push')
@@ -417,9 +432,6 @@ export default function SettingsScreen() {
                       {bot.tags.map(t => `#${t}`).join(' ')}
                     </Text>
                   )}
-                  {bot.visionEnabled && (
-                    <Text style={[styles.botTags, { color: theme.textSecondary }]}>图片理解</Text>
-                  )}
                 </View>
                 <View onStartShouldSetResponder={() => true}>
                   <SwitchBtn
@@ -601,23 +613,48 @@ export default function SettingsScreen() {
               <ModelCombobox
                 label="模型"
                 value={aiConfig.model}
-                onChange={model => setLocalAIConfig({ ...aiConfig, model })}
+                onChange={model => {
+                  setLocalAIConfig(prev => (prev ? { ...prev, model } : prev))
+                  setTimeout(() => {
+                    detectCapabilities(model, aiConfig.baseUrl, aiConfig.apiKey)
+                  }, 500)
+                }}
                 baseUrl={aiConfig.baseUrl}
                 apiKey={aiConfig.apiKey}
                 placeholder={aiConfig.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'}
               />
-            </View>
-            <View style={styles.visionSettingRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.visionTitle, { color: theme.text }]}>模型支持图片输入</Text>
-                <Text style={[styles.visionHint, { color: theme.textSecondary }]}>
-                  开启后，已启用图片理解的 Bot 可以结合图片生成回复
-                </Text>
+              <View style={styles.capabilityHints}>
+                {aiDetecting && (
+                  <Text style={[styles.capabilityHint, { color: theme.textSecondary }]}>
+                    检测中...
+                  </Text>
+                )}
+                {!aiDetecting &&
+                  aiCapabilities &&
+                  (aiCapabilities.supportsVision || aiCapabilities.supportsThinking) && (
+                    <View style={styles.capabilityRow}>
+                      {aiCapabilities.supportsVision && (
+                        <Text style={[styles.capabilityHint, { color: theme.textSecondary }]}>
+                          ✓ 支持图片输入
+                        </Text>
+                      )}
+                      {aiCapabilities.supportsThinking && (
+                        <Text style={[styles.capabilityHint, { color: theme.textSecondary }]}>
+                          ✓ 支持心路历程
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                {!aiDetecting &&
+                  aiCapabilities &&
+                  !aiCapabilities.supportsVision &&
+                  !aiCapabilities.supportsThinking &&
+                  aiConfig.model && (
+                    <Text style={[styles.capabilityHint, { color: theme.textSecondary }]}>
+                      无法识别模型能力，图片和心路历程功能可能不可用
+                    </Text>
+                  )}
               </View>
-              <SwitchBtn
-                value={aiConfig.supportsVision}
-                onValueChange={supportsVision => setLocalAIConfig({ ...aiConfig, supportsVision })}
-              />
             </View>
             <View style={styles.settingRow}>
               <Button
@@ -1070,5 +1107,16 @@ const styles = StyleSheet.create({
   addBotText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  capabilityHints: {
+    marginTop: 4,
+    minHeight: 18,
+  },
+  capabilityHint: {
+    fontSize: 12,
+  },
+  capabilityRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
 })

@@ -11,7 +11,6 @@ pub struct Bot {
     pub description: String,
     pub tags: serde_json::Value,
     pub auto_reply: bool,
-    pub vision_enabled: bool,
     pub sort_order: i32,
     pub created_at: i64,
     pub updated_at: i64,
@@ -26,7 +25,6 @@ pub struct BotResponse {
     pub description: String,
     pub tags: Vec<String>,
     pub auto_reply: bool,
-    pub vision_enabled: bool,
     pub sort_order: i32,
     pub created_at: i64,
     pub updated_at: i64,
@@ -42,7 +40,6 @@ impl BotResponse {
             description: bot.description,
             tags,
             auto_reply: bot.auto_reply,
-            vision_enabled: bot.vision_enabled,
             sort_order: bot.sort_order,
             created_at: bot.created_at,
             updated_at: bot.updated_at,
@@ -56,7 +53,6 @@ pub struct BotSummary {
     pub id: Uuid,
     pub name: String,
     pub avatar_url: Option<String>,
-    pub vision_enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -78,6 +74,7 @@ pub struct BotReplyResponse {
     pub memo_id: Uuid,
     pub bot: BotSummary,
     pub content: String,
+    pub thinking_content: Option<String>,
     pub parent_reply_id: Option<Uuid>,
     pub user_question: Option<String>,
     pub created_at: i64,
@@ -92,6 +89,7 @@ pub struct BotThreadMessage {
     pub id: Uuid,
     pub role: String,
     pub content: String,
+    pub thinking_content: Option<String>,
     pub resource_ids: Vec<Uuid>,
     pub created_at: i64,
 }
@@ -116,8 +114,6 @@ pub struct CreateBotRequest {
     pub tags: Vec<String>,
     #[serde(default = "default_true")]
     pub auto_reply: bool,
-    #[serde(default)]
-    pub vision_enabled: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -128,7 +124,6 @@ pub struct UpdateBotRequest {
     pub description: Option<String>,
     pub tags: Option<Vec<String>>,
     pub auto_reply: Option<bool>,
-    pub vision_enabled: Option<bool>,
     pub sort_order: Option<i32>,
 }
 

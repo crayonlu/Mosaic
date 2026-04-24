@@ -20,15 +20,7 @@ fn extract_ai_config(req: &HttpRequest) -> Option<AiConfig> {
         base_url,
         api_key,
         model,
-        supports_vision: parse_bool_header(headers.get("x-ai-supports-vision")),
     })
-}
-
-fn parse_bool_header(value: Option<&actix_web::http::header::HeaderValue>) -> bool {
-    value
-        .and_then(|v| v.to_str().ok())
-        .map(|v| matches!(v.to_ascii_lowercase().as_str(), "true" | "1" | "yes"))
-        .unwrap_or(false)
 }
 
 pub async fn list_bots(req: HttpRequest, bot_service: web::Data<BotService>) -> HttpResponse {

@@ -2,12 +2,42 @@ import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/themeStore'
 import type { BotReply } from '@mosaic/api'
 import { Image } from 'expo-image'
+import { ChevronDown, ChevronUp, Lightbulb } from 'lucide-react-native'
+import { useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface BotReplyCardProps {
   reply: BotReply
   onReply: (reply: BotReply) => void
   isThread?: boolean
+}
+
+function ThinkingPanel({ content, theme }: { content?: string; theme: any }) {
+  if (!content) return null
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <View style={[styles.thinkingContainer, { backgroundColor: theme.surfaceMuted }]}>
+      <TouchableOpacity
+        onPress={() => setExpanded(v => !v)}
+        style={styles.thinkingHeader}
+        activeOpacity={0.7}
+        accessibilityLabel="展开/折叠心路历程"
+      >
+        <Lightbulb size={14} color={theme.textSecondary} />
+        <Text style={[styles.thinkingTitle, { color: theme.textSecondary }]}>心路历程</Text>
+        {expanded ? (
+          <ChevronUp size={14} color={theme.textSecondary} style={{ marginLeft: 'auto' }} />
+        ) : (
+          <ChevronDown size={14} color={theme.textSecondary} style={{ marginLeft: 'auto' }} />
+        )}
+      </TouchableOpacity>
+      {expanded && (
+        <View accessibilityRole="text" accessibilityLabel="心路历程内容">
+          <Text style={[styles.thinkingContent, { color: theme.textSecondary }]}>{content}</Text>
+        </View>
+      )}
+    </View>
+  )
 }
 
 export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardProps) {
@@ -60,6 +90,7 @@ export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardP
               )}
             </View>
             <Text style={[styles.content, { color: theme.text }]}>{reply.content}</Text>
+            <ThinkingPanel content={reply.thinkingContent} theme={theme} />
             {!isThread && threadCount > 0 && (
               <Text style={[styles.threadHint, { color: theme.textSecondary }]}>
                 已追问 {threadCount} 轮
@@ -141,5 +172,27 @@ const styles = StyleSheet.create({
   questionText: {
     fontSize: 13,
     lineHeight: 19,
+  },
+  thinkingContainer: {
+    borderRadius: 6,
+    overflow: 'hidden',
+    marginTop: 8,
+  },
+  thinkingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minHeight: 36,
+  },
+  thinkingTitle: {
+    fontSize: 13,
+  },
+  thinkingContent: {
+    fontSize: 13,
+    lineHeight: 19.5,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
   },
 })

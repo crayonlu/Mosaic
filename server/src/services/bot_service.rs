@@ -17,7 +17,12 @@ pub struct AiConfig {
     pub base_url: String,
     pub api_key: String,
     pub model: String,
-    pub supports_vision: bool,
+}
+
+#[derive(Debug, Clone)]
+struct AiReply {
+    pub content: String,
+    pub thinking_content: Option<String>,
 }
 
 #[derive(Clone)]
@@ -42,7 +47,7 @@ impl BotService {
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
 
         let bots = sqlx::query_as::<_, Bot>(
-            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, vision_enabled, sort_order, created_at, updated_at
+            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at
              FROM bots WHERE user_id = $1 ORDER BY sort_order ASC, created_at ASC",
         )
         .bind(user_uuid)
@@ -74,9 +79,9 @@ impl BotService {
         let sort_order = max_order.unwrap_or(-1) + 1;
 
         let bot = sqlx::query_as::<_, Bot>(
-            "INSERT INTO bots (id, user_id, name, avatar_url, description, tags, auto_reply, vision_enabled, sort_order, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-             RETURNING id, user_id, name, avatar_url, description, tags, auto_reply, vision_enabled, sort_order, created_at, updated_at",
+            "INSERT INTO bots (id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             RETURNING id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at",
         )
         .bind(Uuid::new_v4())
         .bind(user_uuid)
@@ -85,7 +90,6 @@ impl BotService {
         .bind(&req.description)
         .bind(tags_json)
         .bind(req.auto_reply)
-        .bind(req.vision_enabled)
         .bind(sort_order)
         .bind(now)
         .bind(now)
@@ -106,7 +110,7 @@ impl BotService {
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
 
         let existing = sqlx::query_as::<_, Bot>(
-            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, vision_enabled, sort_order, created_at, updated_at
+            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at
              FROM bots WHERE id = $1 AND user_id = $2",
         )
         .bind(bot_id)
@@ -120,7 +124,6 @@ impl BotService {
         let name = req.name.unwrap_or(existing.name);
         let description = req.description.unwrap_or(existing.description);
         let auto_reply = req.auto_reply.unwrap_or(existing.auto_reply);
-        let vision_enabled = req.vision_enabled.unwrap_or(existing.vision_enabled);
         let sort_order = req.sort_order.unwrap_or(existing.sort_order);
 
         let avatar_url = match req.avatar_url {
@@ -135,16 +138,15 @@ impl BotService {
 
         let bot = sqlx::query_as::<_, Bot>(
             "UPDATE bots SET name = $1, avatar_url = $2, description = $3, tags = $4,
-             auto_reply = $5, vision_enabled = $6, sort_order = $7, updated_at = $8
-             WHERE id = $9 AND user_id = $10
-             RETURNING id, user_id, name, avatar_url, description, tags, auto_reply, vision_enabled, sort_order, created_at, updated_at",
+             auto_reply = $5, sort_order = $6, updated_at = $7
+             WHERE id = $8 AND user_id = $9
+             RETURNING id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at",
         )
         .bind(&name)
         .bind(&avatar_url)
         .bind(&description)
         .bind(tags_json)
         .bind(auto_reply)
-        .bind(vision_enabled)
         .bind(sort_order)
         .bind(now)
         .bind(bot_id)
@@ -213,20 +215,20 @@ impl BotService {
             memo_id: Uuid,
             bot_id: Uuid,
             content: String,
+            thinking_content: Option<String>,
             parent_reply_id: Option<Uuid>,
             user_question: Option<String>,
             created_at: i64,
             bot_name: String,
             bot_avatar_url: Option<String>,
-            bot_vision_enabled: bool,
             thread_count: i64,
             latest_reply_id: Uuid,
         }
 
         let rows = sqlx::query_as::<_, ReplyRow>(
-            "SELECT br.id, br.memo_id, br.bot_id, br.content, br.parent_reply_id,
+            "SELECT br.id, br.memo_id, br.bot_id, br.content, br.thinking_content, br.parent_reply_id,
                     br.user_question, br.created_at,
-                    b.name as bot_name, b.avatar_url as bot_avatar_url, b.vision_enabled as bot_vision_enabled,
+                    b.name as bot_name, b.avatar_url as bot_avatar_url,
                     COUNT(*) OVER (PARTITION BY br.memo_id, br.bot_id) as thread_count,
                     FIRST_VALUE(br.id) OVER (PARTITION BY br.memo_id, br.bot_id ORDER BY br.created_at DESC) as latest_reply_id
              FROM bot_replies br
@@ -249,9 +251,9 @@ impl BotService {
                     id: r.bot_id,
                     name: r.bot_name,
                     avatar_url: r.bot_avatar_url,
-                    vision_enabled: r.bot_vision_enabled,
                 },
                 content: r.content,
+                thinking_content: r.thinking_content,
                 parent_reply_id: r.parent_reply_id,
                 user_question: r.user_question,
                 created_at: r.created_at,
@@ -279,7 +281,6 @@ impl BotService {
                 id: thread.bot_id,
                 name: thread.bot_name,
                 avatar_url: thread.bot_avatar_url,
-                vision_enabled: thread.bot_vision_enabled,
             },
             latest_reply_id: thread.latest_reply_id,
             messages: build_thread_messages(&thread.replies),
@@ -327,7 +328,7 @@ impl BotService {
         let mood_info = mood_row.map(|r| (r.mood_key, r.mood_score));
 
         let bots = sqlx::query_as::<_, Bot>(
-            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, vision_enabled, sort_order, created_at, updated_at
+            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at
              FROM bots WHERE user_id = $1 AND auto_reply = TRUE",
         )
         .bind(user_uuid)
@@ -339,12 +340,7 @@ impl BotService {
             return Ok(());
         }
 
-        let memo_images = if ai_config.supports_vision && bots.iter().any(|bot| bot.vision_enabled)
-        {
-            self.load_memo_images(user_uuid, memo_id, 4).await?
-        } else {
-            vec![]
-        };
+        let memo_images = self.load_memo_images(user_uuid, memo_id, 4).await?;
 
         let pool = self.pool.clone();
         let memo_content = memo_content.clone();
@@ -357,14 +353,10 @@ impl BotService {
                 let memo_content = memo_content.clone();
                 let mood_info = mood_info.clone();
                 let ai_config = ai_config.clone();
-                let memo_images = if bot.vision_enabled {
-                    memo_images.clone()
-                } else {
-                    vec![]
-                };
+                let memo_images = memo_images.clone();
 
                 handles.push(tokio::spawn(async move {
-                    if let Ok(content) = call_ai_for_reply(
+                    if let Ok(reply) = call_ai_for_reply(
                         &ai_config,
                         &bot.name,
                         &bot.description,
@@ -378,13 +370,14 @@ impl BotService {
                     {
                         let now = Utc::now().timestamp_millis();
                         let _ = sqlx::query(
-                            "INSERT INTO bot_replies (id, memo_id, bot_id, content, parent_reply_id, user_question, created_at)
-                             VALUES ($1, $2, $3, $4, NULL, NULL, $5)",
+                            "INSERT INTO bot_replies (id, memo_id, bot_id, content, thinking_content, parent_reply_id, user_question, created_at)
+                             VALUES ($1, $2, $3, $4, $5, NULL, NULL, $6)",
                         )
                         .bind(Uuid::new_v4())
                         .bind(memo_id)
                         .bind(bot.id)
-                        .bind(&content)
+                        .bind(&reply.content)
+                        .bind(&reply.thinking_content)
                         .bind(now)
                         .execute(&pool)
                         .await;
@@ -418,14 +411,12 @@ impl BotService {
             bot_name: String,
             bot_avatar_url: Option<String>,
             bot_description: String,
-            bot_vision_enabled: bool,
         }
 
         let parent = sqlx::query_as::<_, ParentRow>(
             "SELECT br.memo_id, br.bot_id,
                     m.content as memo_content,
-                    b.name as bot_name, b.avatar_url as bot_avatar_url, b.description as bot_description,
-                    b.vision_enabled as bot_vision_enabled
+                    b.name as bot_name, b.avatar_url as bot_avatar_url, b.description as bot_description
              FROM bot_replies br
              JOIN bots b ON b.id = br.bot_id
              JOIN memos m ON m.id = br.memo_id
@@ -446,8 +437,8 @@ impl BotService {
         };
 
         let thread = self.load_thread(user_uuid, parent_reply_id).await?;
-        let history = if ai_config.supports_vision && parent.bot_vision_enabled {
-            self.build_recent_thread_context(
+        let history = self
+            .build_recent_thread_context(
                 user_uuid,
                 &thread.replies,
                 8,
@@ -455,27 +446,13 @@ impl BotService {
                 true,
                 ai_config.provider.as_str(),
             )
-            .await?
-        } else {
-            self.build_recent_thread_context(
-                user_uuid,
-                &thread.replies,
-                8,
-                0,
-                false,
-                ai_config.provider.as_str(),
-            )
-            .await?
-        };
+            .await?;
 
-        let question_images = if ai_config.supports_vision && parent.bot_vision_enabled {
-            self.load_images_from_resources(question_resources.clone())
-                .await?
-        } else {
-            vec![]
-        };
+        let question_images = self
+            .load_images_from_resources(question_resources.clone())
+            .await?;
 
-        let reply_content = call_ai_for_thread_reply(
+        let reply = call_ai_for_thread_reply(
             &ai_config,
             &parent.bot_name,
             &parent.bot_description,
@@ -491,13 +468,14 @@ impl BotService {
         let new_id = Uuid::new_v4();
 
         sqlx::query(
-            "INSERT INTO bot_replies (id, memo_id, bot_id, content, parent_reply_id, user_question, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            "INSERT INTO bot_replies (id, memo_id, bot_id, content, thinking_content, parent_reply_id, user_question, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         )
         .bind(new_id)
         .bind(parent.memo_id)
         .bind(parent.bot_id)
-        .bind(&reply_content)
+        .bind(&reply.content)
+        .bind(&reply.thinking_content)
         .bind(parent_reply_id)
         .bind(&req.question)
         .bind(now)
@@ -529,9 +507,9 @@ impl BotService {
                 id: parent.bot_id,
                 name: parent.bot_name,
                 avatar_url: parent.bot_avatar_url,
-                vision_enabled: parent.bot_vision_enabled,
             },
-            content: reply_content,
+            content: reply.content,
+            thinking_content: reply.thinking_content,
             parent_reply_id: Some(parent_reply_id),
             user_question: Some(req.question),
             created_at: now,
@@ -548,12 +526,10 @@ impl BotService {
             bot_id: Uuid,
             bot_name: String,
             bot_avatar_url: Option<String>,
-            bot_vision_enabled: bool,
         }
 
         let seed = sqlx::query_as::<_, ThreadSeed>(
-            "SELECT br.memo_id, br.bot_id, b.name as bot_name, b.avatar_url as bot_avatar_url,
-                    b.vision_enabled as bot_vision_enabled
+            "SELECT br.memo_id, br.bot_id, b.name as bot_name, b.avatar_url as bot_avatar_url
              FROM bot_replies br
              JOIN bots b ON b.id = br.bot_id
              WHERE br.id = $1 AND b.user_id = $2",
@@ -595,7 +571,6 @@ impl BotService {
             bot_id: seed.bot_id,
             bot_name: seed.bot_name,
             bot_avatar_url: seed.bot_avatar_url,
-            bot_vision_enabled: seed.bot_vision_enabled,
             latest_reply_id,
             replies,
         })
@@ -801,6 +776,7 @@ fn build_reply_tree(replies: Vec<BotReplyResponse>) -> Vec<BotReplyResponse> {
 struct ThreadReplyRow {
     id: Uuid,
     content: String,
+    thinking_content: Option<String>,
     user_question: Option<String>,
     resource_ids: Vec<Uuid>,
     created_at: i64,
@@ -811,7 +787,6 @@ struct ThreadData {
     bot_id: Uuid,
     bot_name: String,
     bot_avatar_url: Option<String>,
-    bot_vision_enabled: bool,
     latest_reply_id: Uuid,
     replies: Vec<ThreadReplyRow>,
 }
@@ -825,6 +800,7 @@ fn build_thread_messages(replies: &[ThreadReplyRow]) -> Vec<BotThreadMessage> {
                 id: reply.id,
                 role: "user".to_string(),
                 content: question.clone(),
+                thinking_content: None,
                 resource_ids: reply.resource_ids.clone(),
                 created_at: reply.created_at,
             });
@@ -834,6 +810,7 @@ fn build_thread_messages(replies: &[ThreadReplyRow]) -> Vec<BotThreadMessage> {
             id: reply.id,
             role: "assistant".to_string(),
             content: reply.content.clone(),
+            thinking_content: reply.thinking_content.clone(),
             resource_ids: vec![],
             created_at: reply.created_at,
         });
@@ -850,7 +827,7 @@ async fn call_ai_for_thread_reply(
     history: &[serde_json::Value],
     user_question: &str,
     images: &[AiImageInput],
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
     let system_prompt = format!(
         "你是 {}。{}\n\n你正在围绕同一条 Memo 和用户连续对话。请始终以这条 Memo 为上下文锚点，不要把它当成普通闲聊。请用中文回复，语言风格符合你的人格设定。",
         bot_name, bot_description
@@ -879,7 +856,7 @@ async fn call_ai_for_reply(
     previous_reply: Option<&str>,
     user_question: Option<&str>,
     images: &[AiImageInput],
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
     let mood_context = mood_info.map(|(key, score)| {
         format!(
             "\n\n用户当前的情绪状态：{}（强度 {}/100）。请在回复时自然地感知这个情绪，不需要直接点出情绪名称。",
@@ -930,7 +907,7 @@ async fn send_ai_messages(
     config: &AiConfig,
     system_prompt: String,
     messages: Vec<serde_json::Value>,
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
     let client = reqwest::Client::new();
     let base_url = config.base_url.trim_end_matches('/');
 
@@ -975,18 +952,48 @@ async fn send_ai_messages(
     let response = request.send().await?;
     let json: serde_json::Value = response.json().await?;
 
-    let content = match config.provider.as_str() {
-        "anthropic" => json["content"][0]["text"]
-            .as_str()
-            .unwrap_or_default()
-            .to_string(),
-        _ => json["choices"][0]["message"]["content"]
-            .as_str()
-            .unwrap_or_default()
-            .to_string(),
+    let (content, thinking_content) = match config.provider.as_str() {
+        "anthropic" => {
+            let mut thinking_parts: Vec<String> = Vec::new();
+            let mut text_content = String::new();
+            if let Some(contents) = json["content"].as_array() {
+                for item in contents {
+                    match item["type"].as_str() {
+                        Some("thinking") => {
+                            if let Some(t) = item["thinking"].as_str() {
+                                thinking_parts.push(t.to_string());
+                            }
+                        }
+                        Some("text") => {
+                            if let Some(t) = item["text"].as_str() {
+                                text_content.push_str(t);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            (
+                text_content,
+                if thinking_parts.is_empty() {
+                    None
+                } else {
+                    Some(thinking_parts.join("\n"))
+                },
+            )
+        }
+        _ => {
+            let message = &json["choices"][0]["message"];
+            let content = message["content"].as_str().unwrap_or_default().to_string();
+            let thinking = message["reasoning_content"].as_str().map(|s| s.to_string());
+            (content, thinking)
+        }
     };
 
-    Ok(content)
+    Ok(AiReply {
+        content,
+        thinking_content,
+    })
 }
 
 fn build_user_message(text: &str, images: &[AiImageInput], provider: &str) -> serde_json::Value {

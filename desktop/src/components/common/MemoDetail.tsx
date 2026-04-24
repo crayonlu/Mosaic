@@ -242,7 +242,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
               'x-ai-base-url': config.baseUrl,
               'x-ai-api-key': config.apiKey,
               'x-ai-model': config.model,
-              'x-ai-supports-vision': config.supportsVision ? 'true' : 'false',
             },
           })
           refetchReplies()
