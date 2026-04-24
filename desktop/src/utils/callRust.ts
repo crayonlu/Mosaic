@@ -64,7 +64,6 @@ export async function loadAIConfig(): Promise<AIConfig | null> {
     const temperature = await settingsCommands.getSetting('ai.temperature')
     const maxTokens = await settingsCommands.getSetting('ai.maxTokens')
     const timeout = await settingsCommands.getSetting('ai.timeout')
-    const supportsVision = await settingsCommands.getSetting('ai.supportsVision')
 
     if (!provider || !baseUrl || !apiKey) {
       return null
@@ -78,7 +77,6 @@ export async function loadAIConfig(): Promise<AIConfig | null> {
       temperature: temperature ? parseFloat(temperature.value) : undefined,
       maxTokens: maxTokens ? parseInt(maxTokens.value, 10) : undefined,
       timeout: timeout ? parseInt(timeout.value, 10) : undefined,
-      supportsVision: supportsVision?.value === 'true',
     }
   } catch (error) {
     console.error('Failed to load AI config:', error)
@@ -114,11 +112,6 @@ export async function saveAIConfig(config: AIConfig): Promise<void> {
       category: 'ai',
     })
   }
-  await settingsCommands.setSetting({
-    key: 'ai.supportsVision',
-    value: config.supportsVision ? 'true' : 'false',
-    category: 'ai',
-  })
 }
 
 export async function loadShortcutConfig(): Promise<ShortcutConfig | null> {

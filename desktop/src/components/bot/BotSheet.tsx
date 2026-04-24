@@ -27,7 +27,6 @@ interface BotSheetProps {
     description: string
     tags: string[]
     autoReply: boolean
-    visionEnabled: boolean
     avatarUrl?: string
   }) => void
   isPending: boolean
@@ -38,7 +37,6 @@ export function BotSheet({ bot, open, onClose, onSave, isPending }: BotSheetProp
   const [description, setDescription] = useState(bot?.description ?? '')
   const [tagsInput, setTagsInput] = useState(bot?.tags.join(' ') ?? '')
   const [autoReply, setAutoReply] = useState(bot?.autoReply ?? true)
-  const [visionEnabled, setVisionEnabled] = useState(bot?.visionEnabled ?? false)
   const [avatarUrl, setAvatarUrl] = useState(bot?.avatarUrl ?? '')
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
@@ -51,7 +49,6 @@ export function BotSheet({ bot, open, onClose, onSave, isPending }: BotSheetProp
       setDescription(bot.description ?? '')
       setTagsInput(bot.tags?.join(' ') ?? '')
       setAutoReply(bot.autoReply ?? true)
-      setVisionEnabled(bot.visionEnabled ?? false)
       setAvatarUrl(bot.avatarUrl ?? '')
       setAvatarPreview(null)
       setDirty(false)
@@ -60,7 +57,6 @@ export function BotSheet({ bot, open, onClose, onSave, isPending }: BotSheetProp
       setDescription('')
       setTagsInput('')
       setAutoReply(true)
-      setVisionEnabled(false)
       setAvatarUrl('')
       setAvatarPreview(null)
       setDirty(false)
@@ -84,11 +80,6 @@ export function BotSheet({ bot, open, onClose, onSave, isPending }: BotSheetProp
 
   const handleAutoReplyChange = (v: boolean) => {
     setAutoReply(v)
-    setDirty(true)
-  }
-
-  const handleVisionEnabledChange = (v: boolean) => {
-    setVisionEnabled(v)
     setDirty(true)
   }
 
@@ -158,7 +149,6 @@ export function BotSheet({ bot, open, onClose, onSave, isPending }: BotSheetProp
       description: description.trim(),
       tags,
       autoReply,
-      visionEnabled,
       avatarUrl: avatarUrl || undefined,
     })
   }
@@ -276,22 +266,6 @@ export function BotSheet({ bot, open, onClose, onSave, isPending }: BotSheetProp
             <Switch.Root
               checked={autoReply}
               onCheckedChange={handleAutoReplyChange}
-              className="peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
-            >
-              <Switch.Thumb className="pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0" />
-            </Switch.Root>
-          </div>
-
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <Label className="text-base">图片理解</Label>
-              <p className="text-sm text-muted-foreground">
-                允许这个 Bot 在回复时读取 Memo 或追问里的图片
-              </p>
-            </div>
-            <Switch.Root
-              checked={visionEnabled}
-              onCheckedChange={handleVisionEnabledChange}
               className="peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
             >
               <Switch.Thumb className="pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0" />

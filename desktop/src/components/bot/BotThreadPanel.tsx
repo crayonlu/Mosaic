@@ -14,7 +14,7 @@ import { loadAIConfig } from '@/utils/settingsHelpers'
 import type { AIConfig } from '@/types/settings'
 import { resourcesApi, type BotReply } from '@mosaic/api'
 import { useBotThread, useReplyToBot } from '@mosaic/api'
-import { ImagePlus, Loader2, Send, X } from 'lucide-react'
+import { ImagePlus, Lightbulb, Loader2, Send, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 interface PendingMessage {
@@ -49,6 +49,7 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
   const [files, setFiles] = useState<File[]>([])
   const [aiConfig, setAiConfig] = useState<AIConfig | null>(null)
   const [pendingMessage, setPendingMessage] = useState<PendingMessage | null>(null)
+  const [expandedThinking, setExpandedThinking] = useState<Set<string>>(new Set())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const bot = thread?.bot ?? reply?.bot
@@ -125,7 +126,6 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
           'x-ai-base-url': config.baseUrl,
           'x-ai-api-key': config.apiKey,
           'x-ai-model': config.model ?? '',
-          'x-ai-supports-vision': config.supportsVision ? 'true' : 'false',
         },
       })
       setPendingMessage(null)
@@ -168,6 +168,30 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
                       }
                     >
                       <div className="whitespace-pre-wrap">{message.content}</div>
+                      {'thinkingContent' in message && message.thinkingContent && (
+                        <div className="mt-2 border-t pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExpandedThinking(prev => {
+                                const next = new Set(prev)
+                                if (next.has(message.id)) next.delete(message.id)
+                                else next.add(message.id)
+                                return next
+                              })
+                            }}
+                            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <Lightbulb className="h-3.5 w-3.5" />
+                            心路历程
+                          </button>
+                          {expandedThinking.has(message.id) && (
+                            <div className="mt-2 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground whitespace-pre-wrap">
+                              {message.thinkingContent}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       {'resourceIds' in message && message.resourceIds.length > 0 && (
                         <div className="mt-2 grid grid-cols-2 gap-1.5">
                           {message.resourceIds.map(resourceId => (
@@ -236,26 +260,22 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
             </div>
           )}
           <div className="flex items-end gap-2">
-            {bot?.visionEnabled && aiConfig?.supportsVision && (
-              <>
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  onClick={handlePickImages}
-                  disabled={isPending || files.length >= 4}
-                >
-                  <ImagePlus className="h-4 w-4" />
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleFilesChange}
-                />
-              </>
-            )}
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handlePickImages}
+              disabled={isPending || files.length >= 4}
+            >
+              <ImagePlus className="h-4 w-4" />
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFilesChange}
+            />
             <Input
               value={text}
               onChange={event => setText(event.target.value)}

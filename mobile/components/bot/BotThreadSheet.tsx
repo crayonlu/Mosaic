@@ -11,7 +11,7 @@ import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type BotReply } from '@mosaic/api'
 import { Image } from 'expo-image'
-import { ImagePlus, Send, X } from 'lucide-react-native'
+import { ChevronDown, ChevronUp, ImagePlus, Lightbulb, Send, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   KeyboardAvoidingView,
@@ -32,6 +32,33 @@ interface PendingMessage {
   role: 'user'
   content: string
   previewUris?: string[]
+}
+
+function ThinkingContentBlock({ content, theme }: { content: string; theme: any }) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <View style={[styles.thinkingContainer, { backgroundColor: theme.surfaceMuted }]}>
+      <TouchableOpacity
+        onPress={() => setExpanded(v => !v)}
+        style={styles.thinkingHeader}
+        activeOpacity={0.7}
+        accessibilityLabel="展开/折叠心路历程"
+      >
+        <Lightbulb size={14} color={theme.textSecondary} />
+        <Text style={[styles.thinkingTitle, { color: theme.textSecondary }]}>心路历程</Text>
+        {expanded ? (
+          <ChevronUp size={14} color={theme.textSecondary} style={{ marginLeft: 'auto' }} />
+        ) : (
+          <ChevronDown size={14} color={theme.textSecondary} style={{ marginLeft: 'auto' }} />
+        )}
+      </TouchableOpacity>
+      {expanded && (
+        <View>
+          <Text style={[styles.thinkingContent, { color: theme.textSecondary }]}>{content}</Text>
+        </View>
+      )}
+    </View>
+  )
 }
 
 interface BotThreadSheetProps {
@@ -81,11 +108,6 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
   )
 
   const handlePickImages = useCallback(async () => {
-    if (!bot?.visionEnabled || !aiConfig?.supportsVision) {
-      toast.error('该 Bot 未启用图片理解')
-      return
-    }
-
     const { launchImageLibraryAsync } = await import('expo-image-picker')
     const result = await launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -107,7 +129,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       ...Object.fromEntries(selected.map(item => [item.key, item])),
     }))
     setMediaItems(prev => [...prev, ...selected])
-  }, [aiConfig?.supportsVision, bot?.visionEnabled, mediaItems.length])
+  }, [mediaItems.length])
 
   const handleSend = useCallback(async () => {
     const question = text.trim()
@@ -237,6 +259,9 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                       >
                         {message.content}
                       </Text>
+                      {!isUser && 'thinkingContent' in message && message.thinkingContent && (
+                        <ThinkingContentBlock content={message.thinkingContent} theme={theme} />
+                      )}
                       {'resourceIds' in message && message.resourceIds.length > 0 && (
                         <View style={styles.messageImages}>
                           {message.resourceIds.map(resourceId => (
@@ -336,15 +361,13 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                 </ScrollView>
               )}
               <View style={styles.inputRow}>
-                {bot?.visionEnabled && aiConfig?.supportsVision && (
-                  <TouchableOpacity
-                    style={[styles.imageBtn, { backgroundColor: theme.surfaceMuted }]}
-                    onPress={handlePickImages}
-                    disabled={isPending || mediaItems.length >= 4}
-                  >
-                    <ImagePlus size={18} color={theme.textSecondary} />
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={[styles.imageBtn, { backgroundColor: theme.surfaceMuted }]}
+                  onPress={handlePickImages}
+                  disabled={isPending || mediaItems.length >= 4}
+                >
+                  <ImagePlus size={18} color={theme.textSecondary} />
+                </TouchableOpacity>
                 <TextInput
                   style={[
                     styles.input,
@@ -513,5 +536,27 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  thinkingContainer: {
+    borderRadius: 6,
+    overflow: 'hidden',
+    marginTop: 6,
+  },
+  thinkingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minHeight: 36,
+  },
+  thinkingTitle: {
+    fontSize: 13,
+  },
+  thinkingContent: {
+    fontSize: 13,
+    lineHeight: 19.5,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
   },
 })

@@ -1,7 +1,8 @@
 import { cn } from '@/lib/utils'
 import type { BotReply } from '@mosaic/api'
 import dayjs from 'dayjs'
-import { MessageCircle } from 'lucide-react'
+import { MessageCircle, Lightbulb } from 'lucide-react'
+import { useState } from 'react'
 import { AuthImage } from '../common/AuthImage'
 
 interface BotReplyCardProps {
@@ -12,6 +13,7 @@ interface BotReplyCardProps {
 
 export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardProps) {
   const threadCount = Math.max(reply.threadCount - 1, 0)
+  const [thinkingExpanded, setThinkingExpanded] = useState(false)
 
   return (
     <div className={cn('flex gap-3', isThread && 'ml-3 pl-6 border-l-2 border-muted')}>
@@ -54,6 +56,23 @@ export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardP
             )}
           </div>
           <p className="text-sm whitespace-pre-wrap text-foreground">{reply.content}</p>
+          {reply.thinkingContent && (
+            <div className="border-t pt-2">
+              <button
+                type="button"
+                onClick={() => setThinkingExpanded(!thinkingExpanded)}
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Lightbulb className="h-3.5 w-3.5" />
+                心路历程
+              </button>
+              {thinkingExpanded && (
+                <div className="mt-2 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground whitespace-pre-wrap">
+                  {reply.thinkingContent}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         {threadCount > 0 && !isThread && (
           <div className="text-xs text-muted-foreground">已追问 {threadCount} 轮</div>

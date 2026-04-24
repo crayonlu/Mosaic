@@ -18,10 +18,10 @@ import {
 } from '@/components/ui/select'
 import type { AIConfig } from '@/types/settings'
 import { loadAIConfig, saveAIConfig, settingsCommands } from '@/utils/settingsHelpers'
+import { detectModelCapabilities, type ModelCapabilities } from '@mosaic/utils'
 import { Label } from '@radix-ui/react-label'
-import { Bot, CheckCircle2, XCircle } from 'lucide-react'
-import * as Switch from '@radix-ui/react-switch'
-import { useEffect, useState } from 'react'
+import { Bot, CheckCircle2, Eye, Lightbulb, Loader2, XCircle } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const DEFAULT_BASE_URLS = {
   openai: 'https://api.openai.com',
@@ -33,16 +33,33 @@ export function AISettings() {
     provider: 'openai',
     baseUrl: DEFAULT_BASE_URLS.openai,
     apiKey: '',
-    supportsVision: true,
   })
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<boolean | null>(null)
   const [saved, setSaved] = useState(false)
+  const [capabilities, setCapabilities] = useState<ModelCapabilities | null>(null)
+  const [detecting, setDetecting] = useState(false)
+  const detectTimer = useRef<ReturnType<typeof setTimeout>>(null)
 
   useEffect(() => {
     loadConfig()
   }, [])
+
+  const detectCapabilities = useCallback(
+    (model: string | undefined, baseUrl: string, apiKey: string) => {
+      if (!model || !baseUrl || !apiKey) {
+        setCapabilities(null)
+        return
+      }
+      setDetecting(true)
+      detectModelCapabilities(baseUrl, apiKey, model).then(result => {
+        setCapabilities(result)
+        setDetecting(false)
+      })
+    },
+    []
+  )
 
   async function loadConfig() {
     setLoading(true)
@@ -50,6 +67,7 @@ export function AISettings() {
       const loaded = await loadAIConfig()
       if (loaded) {
         setConfig(loaded)
+        detectCapabilities(loaded.model, loaded.baseUrl, loaded.apiKey)
       }
     } catch (error) {
       console.error('Failed to load AI config:', error)
@@ -70,6 +88,14 @@ export function AISettings() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleModelChange(model: string) {
+    setConfig({ ...config, model: model || undefined })
+    if (detectTimer.current) clearTimeout(detectTimer.current)
+    detectTimer.current = setTimeout(() => {
+      detectCapabilities(model || undefined, config.baseUrl, config.apiKey)
+    }, 500)
   }
 
   async function handleTest() {
@@ -165,9 +191,44 @@ export function AISettings() {
           <Input
             id="model"
             value={config.model || ''}
-            onChange={e => setConfig({ ...config, model: e.target.value })}
+            onChange={e => handleModelChange(e.target.value)}
             placeholder="例如: gpt-4o, claude-3-5-sonnet-20241022"
           />
+          <div className="min-h-5">
+            {detecting && (
+              <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                检测中...
+              </span>
+            )}
+            {!detecting &&
+              capabilities &&
+              (capabilities.supportsVision || capabilities.supportsThinking) && (
+                <span className="inline-flex items-center gap-3 text-[13px] text-muted-foreground">
+                  {capabilities.supportsVision && (
+                    <span className="inline-flex items-center gap-1">
+                      <Eye className="h-3.5 w-3.5" />
+                      支持图片输入
+                    </span>
+                  )}
+                  {capabilities.supportsThinking && (
+                    <span className="inline-flex items-center gap-1">
+                      <Lightbulb className="h-3.5 w-3.5" />
+                      支持心路历程
+                    </span>
+                  )}
+                </span>
+              )}
+            {!detecting &&
+              capabilities &&
+              !capabilities.supportsVision &&
+              !capabilities.supportsThinking &&
+              config.model && (
+                <span className="text-[13px] text-muted-foreground">
+                  无法识别模型能力，图片和心路历程功能可能不可用
+                </span>
+              )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
@@ -229,22 +290,6 @@ export function AISettings() {
               placeholder="30"
             />
           </div>
-        </div>
-
-        <div className="flex items-center justify-between rounded-lg border p-4">
-          <div className="space-y-0.5">
-            <Label className="text-base">模型支持图片输入</Label>
-            <p className="text-sm text-muted-foreground">
-              开启后，已启用图片理解的 Bot 可以结合图片继续回复
-            </p>
-          </div>
-          <Switch.Root
-            checked={config.supportsVision ?? false}
-            onCheckedChange={supportsVision => setConfig({ ...config, supportsVision })}
-            className="peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
-          >
-            <Switch.Thumb className="pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0" />
-          </Switch.Root>
         </div>
       </CardContent>
       <CardFooter className="flex gap-3">
