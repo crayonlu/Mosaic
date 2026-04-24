@@ -1,4 +1,5 @@
 import { useThemeStore } from '@/stores/themeStore'
+import { fetchAvailableModels } from '@mosaic/utils'
 import { ChevronDown, X } from 'lucide-react-native'
 import { useRef, useState } from 'react'
 import {
@@ -17,44 +18,14 @@ interface ModelComboboxProps {
   value: string
   onChange: (model: string) => void
   baseUrl: string
-  apiKey: string
   placeholder?: string
   label?: string
-}
-
-async function fetchModels(baseUrl: string, apiKey: string): Promise<string[]> {
-  const url = `${baseUrl.replace(/\/$/, '')}/models`
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-  })
-  if (!res.ok) throw new Error(`${res.status}`)
-  const json = (await res.json()) as { data?: { id: string }[] } | { models?: { name: string }[] }
-
-  // OpenAI-compatible: { data: [{ id: string }] }
-  if ('data' in json && Array.isArray(json.data)) {
-    return json.data
-      .map(m => m.id)
-      .filter(Boolean)
-      .sort()
-  }
-  // Anthropic-compatible: { models: [{ api_name/id/name }] }
-  if ('models' in json && Array.isArray(json.models)) {
-    return (json.models as { id?: string; api_name?: string; name?: string }[])
-      .map(m => m.id ?? m.api_name ?? m.name ?? '')
-      .filter(Boolean)
-      .sort()
-  }
-  return []
 }
 
 export function ModelCombobox({
   value,
   onChange,
   baseUrl,
-  apiKey,
   placeholder = 'gpt-4o',
   label = '模型',
 }: ModelComboboxProps) {
@@ -69,11 +40,11 @@ export function ModelCombobox({
   const searchRef = useRef<TextInput>(null)
 
   const loadModels = async () => {
-    if (!baseUrl.trim() || !apiKey.trim()) return
+    if (!baseUrl.trim()) return
     setLoading(true)
     setFetchError(null)
     try {
-      const list = await fetchModels(baseUrl, apiKey)
+      const list = await fetchAvailableModels(baseUrl)
       setModels(list)
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : '获取失败')
@@ -180,7 +151,7 @@ export function ModelCombobox({
           {!loading && fetchError && (
             <View style={styles.errorRow}>
               <Text style={[styles.errorText, { color: theme.error }]}>
-                {fetchError === '401' ? '请先填写正确的 API Key' : `获取失败: ${fetchError}`}
+                {fetchError === '401' ? '当前 URL 未授权访问模型列表' : `获取失败: ${fetchError}`}
               </Text>
               <TouchableOpacity onPress={loadModels}>
                 <Text style={[styles.retryText, { color: theme.primary }]}>重试</Text>
@@ -191,7 +162,7 @@ export function ModelCombobox({
           {!loading && !fetchError && models.length === 0 && !search && (
             <View style={styles.emptyRow}>
               <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                {!baseUrl.trim() || !apiKey.trim() ? '请先填写 API URL 和 Key' : '未获取到模型列表'}
+                {!baseUrl.trim() ? '请先填写 API URL' : '未获取到模型列表'}
               </Text>
             </View>
           )}

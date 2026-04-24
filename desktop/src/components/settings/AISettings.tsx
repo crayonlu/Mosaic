@@ -9,6 +9,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { LoadingButton } from '@/components/ui/loading/loading-button'
 import { LoadingSkeleton } from '@/components/ui/loading/loading-skeleton'
+import { ModelCombobox } from '@/components/ui/model-combobox'
 import {
   Select,
   SelectContent,
@@ -42,10 +43,6 @@ export function AISettings() {
   const [detecting, setDetecting] = useState(false)
   const detectTimer = useRef<ReturnType<typeof setTimeout>>(null)
 
-  useEffect(() => {
-    loadConfig()
-  }, [])
-
   const detectCapabilities = useCallback(
     (model: string | undefined, baseUrl: string, apiKey: string) => {
       if (!model || !baseUrl || !apiKey) {
@@ -61,20 +58,34 @@ export function AISettings() {
     []
   )
 
-  async function loadConfig() {
+  const loadConfig = useCallback(async () => {
     setLoading(true)
     try {
       const loaded = await loadAIConfig()
       if (loaded) {
         setConfig(loaded)
-        detectCapabilities(loaded.model, loaded.baseUrl, loaded.apiKey)
       }
     } catch (error) {
       console.error('Failed to load AI config:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadConfig()
+  }, [loadConfig])
+
+  useEffect(() => {
+    if (detectTimer.current) clearTimeout(detectTimer.current)
+    detectTimer.current = setTimeout(() => {
+      detectCapabilities(config.model, config.baseUrl, config.apiKey)
+    }, 250)
+
+    return () => {
+      if (detectTimer.current) clearTimeout(detectTimer.current)
+    }
+  }, [config.model, config.baseUrl, config.apiKey, detectCapabilities])
 
   async function handleSave() {
     setLoading(true)
@@ -92,10 +103,6 @@ export function AISettings() {
 
   function handleModelChange(model: string) {
     setConfig({ ...config, model: model || undefined })
-    if (detectTimer.current) clearTimeout(detectTimer.current)
-    detectTimer.current = setTimeout(() => {
-      detectCapabilities(model || undefined, config.baseUrl, config.apiKey)
-    }, 500)
   }
 
   async function handleTest() {
@@ -131,6 +138,36 @@ export function AISettings() {
   if (loading && !config.apiKey) {
     return <LoadingSkeleton lines={3} />
   }
+
+  const capabilityHint =
+    detecting ? (
+      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        检测中...
+      </span>
+    ) : capabilities && (capabilities.supportsVision || capabilities.supportsThinking) ? (
+      <span className="inline-flex items-center gap-3 text-xs text-muted-foreground">
+        {capabilities.supportsVision && (
+          <span className="inline-flex items-center gap-1">
+            <Eye className="h-3 w-3" />
+            支持图片输入
+          </span>
+        )}
+        {capabilities.supportsThinking && (
+          <span className="inline-flex items-center gap-1">
+            <Lightbulb className="h-3 w-3" />
+            支持心路历程
+          </span>
+        )}
+      </span>
+    ) : capabilities &&
+      !capabilities.supportsVision &&
+      !capabilities.supportsThinking &&
+      config.model ? (
+      <span className="text-xs text-muted-foreground">
+        无法识别模型能力，图片和心路历程功能可能不可用
+      </span>
+    ) : null
 
   return (
     <Card>
@@ -188,47 +225,18 @@ export function AISettings() {
           <Label className="text-sm font-medium" htmlFor="model">
             模型名称
           </Label>
-          <Input
+          <ModelCombobox
             id="model"
             value={config.model || ''}
-            onChange={e => handleModelChange(e.target.value)}
-            placeholder="例如: gpt-4o, claude-3-5-sonnet-20241022"
+            onChange={handleModelChange}
+            baseUrl={config.baseUrl}
+            placeholder="例如: gpt-4o, claude-sonnet-4-20250514"
           />
-          <div className="min-h-5">
-            {detecting && (
-              <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                检测中...
-              </span>
-            )}
-            {!detecting &&
-              capabilities &&
-              (capabilities.supportsVision || capabilities.supportsThinking) && (
-                <span className="inline-flex items-center gap-3 text-[13px] text-muted-foreground">
-                  {capabilities.supportsVision && (
-                    <span className="inline-flex items-center gap-1">
-                      <Eye className="h-3.5 w-3.5" />
-                      支持图片输入
-                    </span>
-                  )}
-                  {capabilities.supportsThinking && (
-                    <span className="inline-flex items-center gap-1">
-                      <Lightbulb className="h-3.5 w-3.5" />
-                      支持心路历程
-                    </span>
-                  )}
-                </span>
-              )}
-            {!detecting &&
-              capabilities &&
-              !capabilities.supportsVision &&
-              !capabilities.supportsThinking &&
-              config.model && (
-                <span className="text-[13px] text-muted-foreground">
-                  无法识别模型能力，图片和心路历程功能可能不可用
-                </span>
-              )}
-          </div>
+          {capabilityHint && (
+            <div>
+              {capabilityHint}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">

@@ -620,9 +620,16 @@ export default function SettingsScreen() {
                   }, 500)
                 }}
                 baseUrl={aiConfig.baseUrl}
-                apiKey={aiConfig.apiKey}
                 placeholder={aiConfig.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'}
               />
+            </View>
+            {(aiDetecting ||
+              (aiCapabilities &&
+                (aiCapabilities.supportsVision ||
+                  aiCapabilities.supportsThinking ||
+                  (!!aiConfig.model &&
+                    !aiCapabilities.supportsVision &&
+                    !aiCapabilities.supportsThinking)))) && (
               <View style={styles.capabilityHints}>
                 {aiDetecting && (
                   <Text style={[styles.capabilityHint, { color: theme.textSecondary }]}>
@@ -655,7 +662,7 @@ export default function SettingsScreen() {
                     </Text>
                   )}
               </View>
-            </View>
+            )}
             <View style={styles.settingRow}>
               <Button
                 title="测试连接"
@@ -1109,14 +1116,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   capabilityHints: {
-    marginTop: 4,
-    minHeight: 18,
+    marginTop: -2,
+    paddingLeft: 2,
   },
   capabilityHint: {
     fontSize: 12,
+    lineHeight: 17,
   },
   capabilityRow: {
     flexDirection: 'row',
     gap: 12,
+    flexWrap: 'wrap',
   },
 })
