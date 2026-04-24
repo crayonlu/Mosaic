@@ -1,4 +1,4 @@
-import { Loading, toast } from '@/components/ui'
+import { toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { useAIConfig } from '@/hooks/useAIConfig'
 import {
@@ -232,7 +232,17 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
           keyboardShouldPersistTaps="handled"
         >
           {isLoading ? (
-            <Loading text="加载中..." />
+            <View style={styles.skeletonContainer}>
+              <View style={[styles.messageRow, styles.userMessageRow]}>
+                <View style={[styles.skeletonBubble, styles.skeletonShort, { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium }]} />
+              </View>
+              <View style={styles.messageRow}>
+                <View style={[styles.skeletonBubble, styles.skeletonTall, { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium }]} />
+              </View>
+              <View style={[styles.messageRow, styles.userMessageRow]}>
+                <View style={[styles.skeletonBubble, styles.skeletonMedium, { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium }]} />
+              </View>
+            </View>
           ) : (
             <>
               {messages.map((message, index) => {
@@ -558,5 +568,24 @@ const styles = StyleSheet.create({
     lineHeight: 19.5,
     paddingHorizontal: 10,
     paddingBottom: 10,
+  },
+  skeletonContainer: {
+    gap: 10,
+    paddingVertical: 4,
+  },
+  skeletonBubble: {
+    maxWidth: '84%',
+  },
+  skeletonShort: {
+    width: '55%',
+    height: 36,
+  },
+  skeletonMedium: {
+    width: '42%',
+    height: 36,
+  },
+  skeletonTall: {
+    width: '78%',
+    height: 72,
   },
 })

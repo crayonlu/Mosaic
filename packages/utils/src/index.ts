@@ -1,4 +1,5 @@
 export * from './ai/modelCapabilities'
+export * from './ai/modelList'
 export * from './designTokens'
 export * from './html'
 export * from './mood'

@@ -1,19 +1,18 @@
+import { AuthImage } from '@/components/common/AuthImage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
 } from '@/components/ui/sheet'
-import { AuthImage } from '@/components/common/AuthImage'
-import { toast } from '@/hooks/useToast'
 import { uploadFiles } from '@/hooks/useFileUpload'
-import { loadAIConfig } from '@/utils/settingsHelpers'
+import { toast } from '@/hooks/useToast'
 import type { AIConfig } from '@/types/settings'
-import { resourcesApi, type BotReply } from '@mosaic/api'
-import { useBotThread, useReplyToBot } from '@mosaic/api'
+import { loadAIConfig } from '@/utils/settingsHelpers'
+import { resourcesApi, useBotThread, useReplyToBot, type BotReply } from '@mosaic/api'
 import { ImagePlus, Lightbulb, Loader2, Send, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -148,8 +147,16 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           {isLoading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <div className="space-y-3 py-2">
+              <div className="flex justify-end">
+                <div className="w-3/5 h-10 rounded-2xl bg-muted animate-pulse" />
+              </div>
+              <div className="flex justify-start">
+                <div className="w-4/5 h-20 rounded-2xl bg-muted animate-pulse" />
+              </div>
+              <div className="flex justify-end">
+                <div className="w-2/5 h-10 rounded-2xl bg-muted animate-pulse" />
+              </div>
             </div>
           ) : (
             <>
