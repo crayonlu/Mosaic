@@ -10,9 +10,7 @@ import { Camera, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 interface BotEditorSheetProps {
@@ -38,6 +37,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
+  const bottomInset = insets.bottom + 16
 
   const { mutateAsync: createBot, isPending: isCreating } = useCreateBot()
   const { mutateAsync: updateBot, isPending: isUpdating } = useUpdateBot()
@@ -141,10 +141,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: theme.background }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View
           style={[styles.header, { borderBottomColor: theme.border, paddingTop: insets.top + 14 }]}
         >
@@ -163,107 +160,117 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 16 }]}
-          keyboardShouldPersistTaps="handled"
-        >
-          <TouchableOpacity
-            style={styles.avatarRow}
-            onPress={handleAvatarPress}
-            disabled={uploadingAvatar}
-            activeOpacity={0.75}
+        <KeyboardAvoidingView style={styles.bodyKeyboard} behavior="padding">
+          <ScrollView
+            style={styles.bodyScroll}
+            contentContainerStyle={[styles.body, { paddingBottom: bottomInset }]}
+            keyboardShouldPersistTaps="handled"
           >
-            <View style={[styles.avatarCircle, { backgroundColor: theme.primary }]}>
-              {uploadingAvatar ? (
-                <ActivityIndicator size="small" color={theme.onPrimary} />
-              ) : avatarUrl ? (
-                <Image
-                  source={{ uri: avatarUrl, headers: authHeaders }}
-                  style={styles.avatarImage}
-                  contentFit="cover"
-                />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Camera size={22} color={theme.onPrimary} />
-                  <Text style={[styles.avatarPlaceholderText, { color: theme.onPrimary }]}>
-                    {name.charAt(0).toUpperCase() || '?'}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <Text style={[styles.avatarHint, { color: theme.textSecondary }]}>
-              {avatarUrl ? '点击更换头像' : '点击上传头像'}
-            </Text>
-          </TouchableOpacity>
-
-          <View
-            style={[
-              styles.section,
-              { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
-            ]}
-          >
-            <View style={[styles.field, { borderBottomColor: theme.border }]}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>名字</Text>
-              <TextInput
-                style={[styles.input, { color: theme.text }]}
-                value={name}
-                onChangeText={setName}
-                placeholder="给 Bot 起个名字..."
-                placeholderTextColor={theme.textSecondary}
-                maxLength={50}
-              />
-            </View>
-
-            <View style={[styles.field, { borderBottomColor: theme.border }]}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>标签</Text>
-              <TextInput
-                style={[styles.input, { color: theme.text }]}
-                value={tagsInput}
-                onChangeText={setTagsInput}
-                placeholder="犀利 幽默 温柔（空格分隔）"
-                placeholderTextColor={theme.textSecondary}
-              />
-            </View>
-
-            <View style={styles.fieldRow}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>自动回复</Text>
-              <SwitchBtn value={autoReply} onValueChange={setAutoReply} />
-            </View>
-          </View>
-
-          <View
-            style={[
-              styles.section,
-              { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
-            ]}
-          >
-            <Text style={[styles.label, styles.descLabel, { color: theme.textSecondary }]}>
-              人格描述
-            </Text>
-            <TextInput
-              style={[styles.descInput, { color: theme.text, borderColor: theme.border }]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder={
-                '你是一个说话犀利但内心关心朋友的损友...\n\n用自然语言描述 Bot 的性格、说话风格和行为特征。'
-              }
-              placeholderTextColor={theme.textSecondary}
-              multiline
-              textAlignVertical="top"
-            />
-          </View>
-
-          {bot && (
             <TouchableOpacity
-              style={[styles.deleteBtn, { borderColor: theme.error }]}
-              onPress={handleDelete}
-              disabled={isDeleting}
+              style={styles.avatarRow}
+              onPress={handleAvatarPress}
+              disabled={uploadingAvatar}
+              activeOpacity={0.75}
             >
-              <Text style={[styles.deleteBtnText, { color: theme.error }]}>删除 Bot</Text>
+              <View style={[styles.avatarCircle, { backgroundColor: theme.primary }]}>
+                {uploadingAvatar ? (
+                  <ActivityIndicator size="small" color={theme.onPrimary} />
+                ) : avatarUrl ? (
+                  <Image
+                    source={{ uri: avatarUrl, headers: authHeaders }}
+                    style={styles.avatarImage}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Camera size={22} color={theme.onPrimary} />
+                    <Text style={[styles.avatarPlaceholderText, { color: theme.onPrimary }]}>
+                      {name.charAt(0).toUpperCase() || '?'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.avatarHint, { color: theme.textSecondary }]}>
+                {avatarUrl ? '点击更换头像' : '点击上传头像'}
+              </Text>
             </TouchableOpacity>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+            <View
+              style={[
+                styles.section,
+                { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
+              ]}
+            >
+              <View style={[styles.field, { borderBottomColor: theme.border }]}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>名字</Text>
+                <TextInput
+                  style={[styles.input, { color: theme.text }]}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="给 Bot 起个名字..."
+                  placeholderTextColor={theme.textSecondary}
+                  maxLength={50}
+                />
+              </View>
+
+              <View style={[styles.field, { borderBottomColor: theme.border }]}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>标签</Text>
+                <TextInput
+                  style={[styles.input, { color: theme.text }]}
+                  value={tagsInput}
+                  onChangeText={setTagsInput}
+                  placeholder="犀利 幽默 温柔（空格分隔）"
+                  placeholderTextColor={theme.textSecondary}
+                />
+              </View>
+
+              <View style={styles.fieldRow}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>自动回复</Text>
+                <SwitchBtn value={autoReply} onValueChange={setAutoReply} />
+              </View>
+            </View>
+
+            <View
+              style={[
+                styles.section,
+                { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
+              ]}
+            >
+              <Text style={[styles.label, styles.descLabel, { color: theme.textSecondary }]}>
+                人格描述
+              </Text>
+              <TextInput
+                style={[styles.descInput, { color: theme.text, borderColor: theme.border }]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder={
+                  '你是一个说话犀利但内心关心朋友的损友...\n\n用自然语言描述 Bot 的性格、说话风格和行为特征。'
+                }
+                placeholderTextColor={theme.textSecondary}
+                multiline
+                textAlignVertical="top"
+              />
+            </View>
+
+            {bot && (
+              <View
+                style={[
+                  styles.section,
+                  { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
+                ]}
+              >
+                <TouchableOpacity
+                  style={[styles.deleteBtn, { borderColor: theme.error }]}
+                  onPress={handleDelete}
+                  disabled={isDeleting}
+                >
+                  <Text style={[styles.deleteBtnText, { color: theme.error }]}>删除 Bot</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   )
 }
@@ -291,6 +298,12 @@ const styles = StyleSheet.create({
   body: {
     padding: 16,
     gap: 12,
+  },
+  bodyKeyboard: {
+    flex: 1,
+  },
+  bodyScroll: {
+    flex: 1,
   },
   avatarRow: {
     alignItems: 'center',

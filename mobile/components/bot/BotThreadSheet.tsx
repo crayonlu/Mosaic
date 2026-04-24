@@ -12,11 +12,9 @@ import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type BotReply } from '@mosaic/api'
 import { Image } from 'expo-image'
 import { ChevronDown, ChevronUp, ImagePlus, Lightbulb, Send, X } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,7 +22,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { KeyboardStickyView } from 'react-native-keyboard-controller'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 interface PendingMessage {
@@ -73,6 +71,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
   const { config: aiConfig } = useAIConfig()
   const { data: thread, isLoading } = useBotThread(reply?.latestReplyId ?? reply?.id)
   const { mutateAsync: replyToBot, isPending } = useReplyToBot()
+  const scrollViewRef = useRef<ScrollView>(null)
   const [text, setText] = useState('')
   const [mediaItems, setMediaItems] = useState<MediaGridItem[]>([])
   const [uploadCandidates, setUploadCandidates] = useState<Record<string, SelectedMediaItem>>({})
@@ -81,6 +80,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
     { id: string; progress: number }[]
   >([])
   const [pendingMessage, setPendingMessage] = useState<PendingMessage | null>(null)
+  const [replyBarHeight, setReplyBarHeight] = useState(0)
 
   useEffect(() => {
     if (!visible) {
@@ -106,6 +106,18 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
     () => Object.fromEntries(uploadProgressItems.map(item => [item.id, item.progress])),
     [uploadProgressItems]
   )
+  const messagesBottomInset = replyBarHeight + 12
+
+  const scrollToLatest = useCallback((animated = true) => {
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollToEnd({ animated })
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!visible) return
+    scrollToLatest(false)
+  }, [messages.length, scrollToLatest, visible])
 
   const handlePickImages = useCallback(async () => {
     const { launchImageLibraryAsync } = await import('expo-image-picker')
@@ -208,125 +220,143 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: theme.background }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View
-          style={[styles.header, { borderBottomColor: theme.border, paddingTop: insets.top + 12 }]}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: theme.text }]}>{bot?.name ?? 'Bot'}</Text>
-            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-              围绕这条 Memo 继续聊
-            </Text>
-          </View>
-          <TouchableOpacity onPress={onClose} hitSlop={12}>
-            <X size={22} color={theme.textSecondary} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          style={styles.body}
-          contentContainerStyle={styles.messages}
-          keyboardShouldPersistTaps="handled"
-        >
-          {isLoading ? (
-            <View style={styles.skeletonContainer}>
-              <View style={[styles.messageRow, styles.userMessageRow]}>
-                <View style={[styles.skeletonBubble, styles.skeletonShort, { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium }]} />
-              </View>
-              <View style={styles.messageRow}>
-                <View style={[styles.skeletonBubble, styles.skeletonTall, { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium }]} />
-              </View>
-              <View style={[styles.messageRow, styles.userMessageRow]}>
-                <View style={[styles.skeletonBubble, styles.skeletonMedium, { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium }]} />
-              </View>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <KeyboardAvoidingView style={styles.content} behavior="padding">
+          <View
+            style={[
+              styles.header,
+              { borderBottomColor: theme.border, paddingTop: insets.top + 12 },
+            ]}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.title, { color: theme.text }]}>{bot?.name ?? 'Bot'}</Text>
+              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+                围绕这条 Memo 继续聊
+              </Text>
             </View>
-          ) : (
-            <>
-              {messages.map((message, index) => {
-                const isUser = message.role === 'user'
-                return (
+            <TouchableOpacity onPress={onClose} hitSlop={12}>
+              <X size={22} color={theme.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.body}
+            contentContainerStyle={[styles.messages, { paddingBottom: messagesBottomInset }]}
+            keyboardShouldPersistTaps="handled"
+          >
+            {isLoading ? (
+              <View style={styles.skeletonContainer}>
+                <View style={[styles.messageRow, styles.userMessageRow]}>
                   <View
-                    key={`${message.id}-${message.role}-${index}`}
-                    style={[styles.messageRow, isUser && styles.userMessageRow]}
-                  >
+                    style={[
+                      styles.skeletonBubble,
+                      styles.skeletonShort,
+                      { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium },
+                    ]}
+                  />
+                </View>
+                <View style={styles.messageRow}>
+                  <View
+                    style={[
+                      styles.skeletonBubble,
+                      styles.skeletonTall,
+                      { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium },
+                    ]}
+                  />
+                </View>
+                <View style={[styles.messageRow, styles.userMessageRow]}>
+                  <View
+                    style={[
+                      styles.skeletonBubble,
+                      styles.skeletonMedium,
+                      { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium },
+                    ]}
+                  />
+                </View>
+              </View>
+            ) : (
+              <>
+                {messages.map((message, index) => {
+                  const isUser = message.role === 'user'
+                  return (
                     <View
-                      style={[
-                        styles.messageBubble,
-                        {
-                          backgroundColor: isUser ? theme.primary : theme.surface,
-                          borderRadius: theme.radius.medium,
-                        },
-                      ]}
+                      key={`${message.id}-${message.role}-${index}`}
+                      style={[styles.messageRow, isUser && styles.userMessageRow]}
                     >
-                      <Text
+                      <View
                         style={[
-                          styles.messageText,
-                          { color: isUser ? theme.onPrimary : theme.text },
+                          styles.messageBubble,
+                          {
+                            backgroundColor: isUser ? theme.primary : theme.surface,
+                            borderRadius: theme.radius.medium,
+                          },
                         ]}
                       >
-                        {message.content}
-                      </Text>
-                      {!isUser && 'thinkingContent' in message && message.thinkingContent && (
-                        <ThinkingContentBlock content={message.thinkingContent} theme={theme} />
-                      )}
-                      {'resourceIds' in message && message.resourceIds.length > 0 && (
-                        <View style={styles.messageImages}>
-                          {message.resourceIds.map(resourceId => (
-                            <Image
-                              key={resourceId}
-                              source={{
-                                uri: resourcesApi.getDownloadUrl(resourceId, 'thumb'),
-                                headers: authHeaders,
-                              }}
-                              style={styles.messageImage}
-                              contentFit="cover"
-                            />
-                          ))}
-                        </View>
-                      )}
-                      {'previewUris' in message &&
-                        message.previewUris &&
-                        message.previewUris.length > 0 && (
+                        <Text
+                          style={[
+                            styles.messageText,
+                            { color: isUser ? theme.onPrimary : theme.text },
+                          ]}
+                        >
+                          {message.content}
+                        </Text>
+                        {!isUser && 'thinkingContent' in message && message.thinkingContent && (
+                          <ThinkingContentBlock content={message.thinkingContent} theme={theme} />
+                        )}
+                        {'resourceIds' in message && message.resourceIds.length > 0 && (
                           <View style={styles.messageImages}>
-                            {message.previewUris.map(uri => (
+                            {message.resourceIds.map(resourceId => (
                               <Image
-                                key={uri}
-                                source={{ uri }}
+                                key={resourceId}
+                                source={{
+                                  uri: resourcesApi.getDownloadUrl(resourceId, 'thumb'),
+                                  headers: authHeaders,
+                                }}
                                 style={styles.messageImage}
                                 contentFit="cover"
                               />
                             ))}
                           </View>
                         )}
+                        {'previewUris' in message &&
+                          message.previewUris &&
+                          message.previewUris.length > 0 && (
+                            <View style={styles.messageImages}>
+                              {message.previewUris.map(uri => (
+                                <Image
+                                  key={uri}
+                                  source={{ uri }}
+                                  style={styles.messageImage}
+                                  contentFit="cover"
+                                />
+                              ))}
+                            </View>
+                          )}
+                      </View>
+                    </View>
+                  )
+                })}
+                {isPending && (
+                  <View style={styles.messageRow}>
+                    <View
+                      style={[
+                        styles.messageBubble,
+                        {
+                          backgroundColor: theme.surface,
+                          borderRadius: theme.radius.medium,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.messageText, { color: theme.textSecondary }]}>
+                        正在回复...
+                      </Text>
                     </View>
                   </View>
-                )
-              })}
-              {isPending && (
-                <View style={styles.messageRow}>
-                  <View
-                    style={[
-                      styles.messageBubble,
-                      {
-                        backgroundColor: theme.surface,
-                        borderRadius: theme.radius.medium,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.messageText, { color: theme.textSecondary }]}>
-                      正在回复...
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </>
-          )}
-        </ScrollView>
-
-        <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+                )}
+              </>
+            )}
+          </ScrollView>
           <View
             style={[
               styles.replyBar,
@@ -336,6 +366,9 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                 paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
               },
             ]}
+            onLayout={event => {
+              setReplyBarHeight(event.nativeEvent.layout.height)
+            }}
           >
             <View style={styles.inputArea}>
               {mediaItems.length > 0 && (
@@ -415,14 +448,17 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
               </View>
             </View>
           </View>
-        </KeyboardStickyView>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  content: {
     flex: 1,
   },
   header: {
