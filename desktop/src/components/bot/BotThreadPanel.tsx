@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/sheet'
 import { uploadFiles } from '@/hooks/useFileUpload'
 import { toast } from '@/hooks/useToast'
-import type { AIConfig } from '@/types/settings'
 import { loadAIConfig } from '@/utils/settingsHelpers'
 import { resourcesApi, useBotThread, useReplyToBot, type BotReply } from '@mosaic/api'
 import { ImagePlus, Lightbulb, Loader2, Send, X } from 'lucide-react'
@@ -46,7 +45,7 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
   const { mutateAsync: replyToBot, isPending } = useReplyToBot()
   const [text, setText] = useState('')
   const [files, setFiles] = useState<File[]>([])
-  const [aiConfig, setAiConfig] = useState<AIConfig | null>(null)
+
   const [pendingMessage, setPendingMessage] = useState<PendingMessage | null>(null)
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(new Set())
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -58,9 +57,7 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
     : (thread?.messages ?? [])
 
   useEffect(() => {
-    if (open) {
-      void loadAIConfig().then(setAiConfig)
-    } else {
+    if (!open) {
       setText('')
       setFiles([])
       setPendingMessage(null)
