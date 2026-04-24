@@ -139,35 +139,34 @@ export function AISettings() {
     return <LoadingSkeleton lines={3} />
   }
 
-  const capabilityHint =
-    detecting ? (
-      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        检测中...
-      </span>
-    ) : capabilities && (capabilities.supportsVision || capabilities.supportsThinking) ? (
-      <span className="inline-flex items-center gap-3 text-xs text-muted-foreground">
-        {capabilities.supportsVision && (
-          <span className="inline-flex items-center gap-1">
-            <Eye className="h-3 w-3" />
-            支持图片输入
-          </span>
-        )}
-        {capabilities.supportsThinking && (
-          <span className="inline-flex items-center gap-1">
-            <Lightbulb className="h-3 w-3" />
-            支持心路历程
-          </span>
-        )}
-      </span>
-    ) : capabilities &&
-      !capabilities.supportsVision &&
-      !capabilities.supportsThinking &&
-      config.model ? (
-      <span className="text-xs text-muted-foreground">
-        无法识别模型能力，图片和心路历程功能可能不可用
-      </span>
-    ) : null
+  const capabilityHint = detecting ? (
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Loader2 className="h-3 w-3 animate-spin" />
+      检测中...
+    </span>
+  ) : capabilities && (capabilities.supportsVision || capabilities.supportsThinking) ? (
+    <span className="inline-flex items-center gap-3 text-xs text-muted-foreground">
+      {capabilities.supportsVision && (
+        <span className="inline-flex items-center gap-1">
+          <Eye className="h-3 w-3" />
+          支持图片输入
+        </span>
+      )}
+      {capabilities.supportsThinking && (
+        <span className="inline-flex items-center gap-1">
+          <Lightbulb className="h-3 w-3" />
+          支持心路历程
+        </span>
+      )}
+    </span>
+  ) : capabilities &&
+    !capabilities.supportsVision &&
+    !capabilities.supportsThinking &&
+    config.model ? (
+    <span className="text-xs text-muted-foreground">
+      无法识别模型能力，图片和心路历程功能可能不可用
+    </span>
+  ) : null
 
   return (
     <Card>
@@ -232,11 +231,7 @@ export function AISettings() {
             baseUrl={config.baseUrl}
             placeholder="例如: gpt-4o, claude-sonnet-4-20250514"
           />
-          {capabilityHint && (
-            <div>
-              {capabilityHint}
-            </div>
-          )}
+          {capabilityHint && <div>{capabilityHint}</div>}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
