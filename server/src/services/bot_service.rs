@@ -542,7 +542,7 @@ impl BotService {
         .ok_or(AppError::NotFound("Bot reply not found".into()))?;
 
         let replies = sqlx::query_as::<_, ThreadReplyRow>(
-            "SELECT br.id, br.content, br.user_question,
+            "SELECT br.id, br.content, br.thinking_content, br.user_question,
                     COALESCE(
                         ARRAY_AGG(brr.resource_id ORDER BY brr.sort_order)
                             FILTER (WHERE brr.resource_id IS NOT NULL),
@@ -552,7 +552,7 @@ impl BotService {
              FROM bot_replies br
              LEFT JOIN bot_reply_resources brr ON brr.reply_id = br.id
              WHERE br.memo_id = $1 AND br.bot_id = $2
-             GROUP BY br.id, br.content, br.user_question, br.created_at
+             GROUP BY br.id, br.content, br.thinking_content, br.user_question, br.created_at
              ORDER BY br.created_at ASC",
         )
         .bind(seed.memo_id)
