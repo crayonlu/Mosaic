@@ -45,12 +45,8 @@
 
 <script setup lang="ts">
 import {
-  BarChartOutline,
   GridOutline,
-  HardwareChipOutline,
   PersonCircleOutline,
-  PersonOutline,
-  PulseOutline,
 } from '@vicons/ionicons5';
 import { NIcon } from 'naive-ui';
 import { computed, h, ref } from 'vue';
@@ -65,29 +61,9 @@ const collapsed = ref(false);
 
 const menuOptions = [
   {
-    label: '总览',
+    label: '控制台',
     key: '/dashboard',
     icon: () => h(NIcon, null, { default: () => h(GridOutline) }),
-  },
-  {
-    label: '数据统计',
-    key: '/stats',
-    icon: () => h(NIcon, null, { default: () => h(BarChartOutline) }),
-  },
-  {
-    label: '活动日志',
-    key: '/activity',
-    icon: () => h(NIcon, null, { default: () => h(PulseOutline) }),
-  },
-  {
-    label: '个人资料',
-    key: '/profile',
-    icon: () => h(NIcon, null, { default: () => h(PersonOutline) }),
-  },
-  {
-    label: 'Bot 管理',
-    key: '/bots',
-    icon: () => h(NIcon, null, { default: () => h(HardwareChipOutline) }),
   },
 ];
 
