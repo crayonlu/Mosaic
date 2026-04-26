@@ -12,7 +12,9 @@ use anyhow::anyhow;
 use config::Config;
 use database::{create_pool, run_migrations};
 use middleware::{configure_cors, configure_logging, AuthMiddleware};
-use services::{AuthService, BotService, DiaryService, MemoService, ResourceService, StatsService};
+use services::{
+    AuthService, BotService, DiaryService, MemoService, ResourceService, StatsService, SyncService,
+};
 use storage::create_storage;
 
 #[actix_web::main]
@@ -73,6 +75,7 @@ async fn main() -> anyhow::Result<()> {
     let diary_service = DiaryService::new(pool.clone());
     let stats_service = StatsService::new(pool.clone());
     let bot_service = BotService::new(pool.clone(), storage.clone());
+    let sync_service = SyncService::new(pool.clone());
     log::info!("[OK] Business services initialized");
 
     match auth_service
@@ -103,6 +106,7 @@ async fn main() -> anyhow::Result<()> {
             .app_data(web::Data::new(diary_service.clone()))
             .app_data(web::Data::new(stats_service.clone()))
             .app_data(web::Data::new(bot_service.clone()))
+            .app_data(web::Data::new(sync_service.clone()))
             .route("/health", web::get().to(health_check))
             .service(
                 web::scope("/api/auth")
@@ -138,7 +142,8 @@ async fn main() -> anyhow::Result<()> {
                     .configure(routes::configure_diary_routes)
                     .configure(routes::configure_resource_routes)
                     .configure(routes::configure_stats_routes)
-                    .configure(routes::configure_bot_routes),
+                    .configure(routes::configure_bot_routes)
+                    .configure(routes::configure_sync_routes),
             )
     })
     .bind(&bind_address)?

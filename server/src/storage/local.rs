@@ -17,12 +17,6 @@ impl LocalStorage {
         })
     }
 
-    pub fn new_sync(base_path: &str) -> Self {
-        Self {
-            base_path: base_path.to_string(),
-        }
-    }
-
     fn get_full_path(&self, path: &str) -> String {
         format!("{}/{}", self.base_path.trim_end_matches('/'), path)
     }

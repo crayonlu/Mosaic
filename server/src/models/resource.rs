@@ -54,7 +54,9 @@ pub struct Resource {
     pub storage_type: String,
     pub storage_path: String,
     pub metadata: Value,
+    pub is_deleted: bool,
     pub created_at: i64,
+    pub updated_at: i64,
 }
 
 impl FromRow<'_, sqlx::postgres::PgRow> for Resource {
@@ -69,7 +71,9 @@ impl FromRow<'_, sqlx::postgres::PgRow> for Resource {
             storage_type: row.try_get("storage_type")?,
             storage_path: row.try_get("storage_path")?,
             metadata: row.try_get("metadata")?,
+            is_deleted: row.try_get("is_deleted")?,
             created_at: row.try_get("created_at")?,
+            updated_at: row.try_get("updated_at")?,
         })
     }
 }

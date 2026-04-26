@@ -1,6 +1,11 @@
-name: Build and Release
+name: Build Desktop
 
 on:
+  pull_request:
+    paths:
+      - 'desktop/**'
+      - 'packages/**'
+      - '.github/workflows/build-desktop.yml'
   push:
     tags:
       - 'v*'
@@ -30,16 +35,28 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Build
+      - name: Check (PR only)
+        if: github.event_name == 'pull_request'
+        run: |
+          bun --filter @mosaic/api build
+          bun --filter @mosaic/utils build
+          bun --filter @mosaic/cache build
+          bun --filter @mosaic/sync build
+          cd desktop/src-tauri; cargo check
+
+      - name: Build (tag only)
+        if: github.event_name != 'pull_request'
         run: bun desktop:tauri build
 
-      - name: Upload artifacts
+      - name: Upload artifacts (tag only)
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: mosaic-windows
           path: desktop/src-tauri/target/release/bundle/**
 
-      - name: Create Release
+      - name: Create Release (tag only)
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           files: |

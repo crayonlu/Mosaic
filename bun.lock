@@ -14,7 +14,7 @@
     },
     "desktop": {
       "name": "@mosaic/desktop",
-      "version": "2.5.4",
+      "version": "2.5.7",
       "dependencies": {
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
@@ -104,10 +104,11 @@
     },
     "mobile": {
       "name": "@mosaic/mobile",
-      "version": "2.5.4",
+      "version": "2.5.7",
       "dependencies": {
         "@gorhom/bottom-sheet": "^5.2.8",
         "@mosaic/api": "workspace:*",
+        "@mosaic/sync": "workspace:*",
         "@mosaic/utils": "workspace:*",
         "@tanstack/react-query": "^5.90.20",
         "dayjs": "^1.11.19",
@@ -200,6 +201,20 @@
         "@tauri-apps/api": "^2.2.0",
         "@tauri-apps/plugin-fs": "^2.2.0",
         "react": "19.1.0",
+      },
+    },
+    "packages/sync": {
+      "name": "@mosaic/sync",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mosaic/api": "workspace:*",
+      },
+      "devDependencies": {
+        "tsup": "^8.3.0",
+        "typescript": "^5.0.0",
+      },
+      "peerDependencies": {
+        "@tanstack/react-query": "^5.0.0",
       },
     },
     "packages/utils": {
@@ -707,6 +722,8 @@
     "@mosaic/desktop": ["@mosaic/desktop@workspace:desktop"],
 
     "@mosaic/mobile": ["@mosaic/mobile@workspace:mobile"],
+
+    "@mosaic/sync": ["@mosaic/sync@workspace:packages/sync"],
 
     "@mosaic/utils": ["@mosaic/utils@workspace:packages/utils"],
 

@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'mobile/**'
+      - 'packages/**'
       - '.github/workflows/build-expo-apk.yml'
   workflow_dispatch:
     inputs:

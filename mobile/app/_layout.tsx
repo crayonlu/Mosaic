@@ -11,7 +11,7 @@ import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import BootSplash from 'react-native-bootsplash'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -56,13 +56,10 @@ export default function RootLayout() {
   const { isAuthenticated, isInitialized, isLoading, initialize: initAuth } = useAuthStore()
   const segments = useSegments()
   const router = useRouter()
-  const hasHiddenNativeSplash = useRef(false)
 
   useThemeInit()
 
   const hideNativeSplash = useCallback(() => {
-    if (hasHiddenNativeSplash.current) return
-    hasHiddenNativeSplash.current = true
     BootSplash.hide({ fade: false }).catch(() => {
       // Ignore hide races during startup.
     })
@@ -91,6 +88,9 @@ export default function RootLayout() {
             const { LocalPushService } = await import('../lib/services/local-push')
             const localPushService = LocalPushService.getInstance()
             await localPushService.registerAll()
+
+            const { getSyncEngine } = await import('@/lib/sync/engine')
+            getSyncEngine().sync()
           }
         } catch (error) {
           console.warn('Push registration failed:', error)
@@ -100,11 +100,6 @@ export default function RootLayout() {
 
     bootstrap()
   }, [])
-
-  useEffect(() => {
-    const timeoutId = setTimeout(hideNativeSplash, 80)
-    return () => clearTimeout(timeoutId)
-  }, [hideNativeSplash])
 
   useEffect(() => {
     if (!isInitialized) return
@@ -154,7 +149,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (isAppReady) {
-      hideNativeSplash()
+      const id = setTimeout(() => hideNativeSplash(), 100)
+      return () => clearTimeout(id)
     }
   }, [hideNativeSplash, isAppReady])
 
@@ -162,7 +158,8 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardProvider>
         <SafeAreaProvider>
-          <View style={{ flex: 1, backgroundColor: theme.background }} onLayout={hideNativeSplash}>
+      <View style={{ flex: 1, backgroundColor: theme.background }}>
+        {!isAppReady && <ThemeAwareSplash />}
             <SafeAreaContainer backgroundColor={isDiariesTab ? 'transparent' : theme.background}>
               {isDiariesTab && (
                 <>

@@ -524,3 +524,134 @@ function rowToResource(row: any): Resource {
     createdAt: row.created_at,
   }
 }
+
+// ─── Sync Cursors ───
+
+export async function getSyncCursors(): Promise<Record<string, number>> {
+  const db = await getDatabase()
+  const rows = await db.getAllAsync<{ entity_type: string; last_sync_at: number }>(
+    'SELECT entity_type, last_sync_at FROM sync_cursors'
+  )
+  const cursors: Record<string, number> = {}
+  for (const row of rows) {
+    cursors[row.entity_type] = row.last_sync_at
+  }
+  return cursors
+}
+
+export async function upsertSyncCursor(entityType: string, lastSyncAt: number): Promise<void> {
+  const db = await getDatabase()
+  await db.runAsync(
+    `INSERT OR REPLACE INTO sync_cursors (entity_type, last_sync_at) VALUES (?, ?)`,
+    entityType,
+    lastSyncAt
+  )
+}
+
+// ─── Apply Pulled Changes ───
+
+export async function applyPulledMemos(
+  updated: Record<string, unknown>[],
+  deletedIds: string[]
+): Promise<void> {
+  return enqueueDbWrite(async () => {
+    const db = await getDatabase()
+    for (const id of deletedIds) {
+      await db.runAsync('DELETE FROM memos WHERE id = ?', id)
+      await db.runAsync('DELETE FROM memo_tags WHERE memo_id = ?', id)
+    }
+    for (const item of updated) {
+      const id = item.id as string
+      const content = (item.content as string) ?? ''
+      const tags = (item.tags as string[]) ?? []
+      const isArchived = (item.isArchived as boolean) ? 1 : 0
+      const diaryDate = (item.diaryDate as string) ?? null
+      const createdAt = (item.createdAt as number) ?? 0
+      const updatedAt = (item.updatedAt as number) ?? 0
+
+      await db.runAsync(
+        `INSERT OR REPLACE INTO memos (id, content, is_archived, diary_date, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        id,
+        content,
+        isArchived,
+        diaryDate,
+        createdAt,
+        updatedAt
+      )
+      await db.runAsync('DELETE FROM memo_tags WHERE memo_id = ?', id)
+      for (const tag of tags) {
+        await db.runAsync('INSERT OR IGNORE INTO memo_tags (memo_id, tag) VALUES (?, ?)', id, tag)
+      }
+    }
+  })
+}
+
+export async function applyPulledDiaries(
+  updated: Record<string, unknown>[],
+  deletedIds: string[]
+): Promise<void> {
+  return enqueueDbWrite(async () => {
+    const db = await getDatabase()
+    for (const dateStr of deletedIds) {
+      await db.runAsync('DELETE FROM diaries WHERE date = ?', dateStr)
+    }
+    for (const item of updated) {
+      const date = item.date as string
+      const summary = (item.summary as string) ?? ''
+      const moodKey = (item.moodKey as string) ?? 'neutral'
+      const moodScore = (item.moodScore as number) ?? 50
+      const coverImageId = (item.coverImageId as string) ?? null
+      const createdAt = (item.createdAt as number) ?? 0
+      const updatedAt = (item.updatedAt as number) ?? 0
+
+      await db.runAsync(
+        `INSERT OR REPLACE INTO diaries (date, summary, mood_key, mood_score, cover_image_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        date,
+        summary,
+        moodKey,
+        moodScore,
+        coverImageId,
+        createdAt,
+        updatedAt
+      )
+    }
+  })
+}
+
+export async function applyPulledResources(
+  updated: Record<string, unknown>[],
+  deletedIds: string[]
+): Promise<void> {
+  return enqueueDbWrite(async () => {
+    const db = await getDatabase()
+    for (const id of deletedIds) {
+      await db.runAsync('DELETE FROM resources WHERE id = ?', id)
+    }
+    for (const item of updated) {
+      const id = item.id as string
+      const memoId = (item.memoId as string) ?? null
+      const filename = (item.filename as string) ?? ''
+      const resourceType = (item.resourceType as string) ?? 'image'
+      const mimeType = (item.mimeType as string) ?? ''
+      const fileSize = (item.fileSize as number) ?? 0
+      const storageType = (item.storageType as string) ?? 'local'
+      const createdAt = (item.createdAt as number) ?? 0
+
+      await db.runAsync(
+        `INSERT OR REPLACE INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, url, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        id,
+        memoId,
+        filename,
+        resourceType,
+        mimeType,
+        fileSize,
+        storageType,
+        `/api/resources/${id}/download`,
+        createdAt
+      )
+    }
+  })
+}
