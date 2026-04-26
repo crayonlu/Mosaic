@@ -15,6 +15,18 @@ COPY Cargo.lock .
 RUN cargo fetch
 RUN cargo build --release --package server
 
+FROM oven/bun:1 AS admin-ui-builder
+
+WORKDIR /app
+
+COPY package.json bun.lock ./
+COPY server/admin-ui/package.json server/admin-ui/tsconfig.json server/admin-ui/tsconfig.app.json server/admin-ui/tsconfig.node.json server/admin-ui/vite.config.ts server/admin-ui/index.html ./server/admin-ui/
+COPY server/admin-ui/src ./server/admin-ui/src
+COPY server/admin-ui/public ./server/admin-ui/public
+
+RUN bun install --frozen-lockfile
+RUN bun --filter admin-ui build
+
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y \
@@ -27,6 +39,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 COPY --from=backend-builder /app/target/release/server /usr/local/bin/
+COPY --from=admin-ui-builder /app/server/static/admin ./static/admin
 
 RUN mkdir -p storage/uploads storage/temp logs
 RUN chown -R appuser:appuser /app

@@ -1,0 +1,37 @@
+{
+  "name": "admin-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "format": "prettier --write \"src/**/*.{ts,vue,css,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,vue,css,json}\""
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "printWidth": 100
+  },
+  "dependencies": {
+    "@vicons/ionicons5": "^0.13.0",
+    "naive-ui": "^2.44.1",
+    "ofetch": "^1.5.1",
+    "pinia": "2",
+    "vue": "^3.5.32",
+    "vue-router": "^5.0.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.2",
+    "@vitejs/plugin-vue": "^6.0.6",
+    "@vue/tsconfig": "^0.9.1",
+    "prettier": "^3.8.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.10",
+    "vue-tsc": "^3.2.7"
+  }
+}

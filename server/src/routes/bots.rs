@@ -1,3 +1,4 @@
+use crate::admin::activity_log::ActivityLog;
 use crate::middleware::get_user_id;
 use crate::models::{CreateBotRequest, ReorderBotsRequest, ReplyToBotRequest, UpdateBotRequest};
 use crate::services::{bot_service::AiConfig, BotService};
@@ -39,6 +40,7 @@ pub async fn create_bot(
     req: HttpRequest,
     payload: web::Json<CreateBotRequest>,
     bot_service: web::Data<BotService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
@@ -46,7 +48,15 @@ pub async fn create_bot(
     };
 
     match bot_service.create_bot(&user_id, payload.into_inner()).await {
-        Ok(bot) => HttpResponse::Created().json(bot),
+        Ok(bot) => {
+            activity_log.record_info(
+                "create_bot",
+                "bot",
+                Some(bot.id.to_string()),
+                format!("创建了 Bot: {}", bot.name),
+            );
+            HttpResponse::Created().json(bot)
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }
@@ -56,17 +66,27 @@ pub async fn update_bot(
     path: web::Path<Uuid>,
     payload: web::Json<UpdateBotRequest>,
     bot_service: web::Data<BotService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(e) => return HttpResponse::from_error(e),
     };
 
+    let bot_id = path.into_inner();
     match bot_service
-        .update_bot(&user_id, path.into_inner(), payload.into_inner())
+        .update_bot(&user_id, bot_id, payload.into_inner())
         .await
     {
-        Ok(bot) => HttpResponse::Ok().json(bot),
+        Ok(bot) => {
+            activity_log.record_info(
+                "update_bot",
+                "bot",
+                Some(bot.id.to_string()),
+                format!("更新了 Bot: {}", bot.name),
+            );
+            HttpResponse::Ok().json(bot)
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }
@@ -75,14 +95,24 @@ pub async fn delete_bot(
     req: HttpRequest,
     path: web::Path<Uuid>,
     bot_service: web::Data<BotService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(e) => return HttpResponse::from_error(e),
     };
 
-    match bot_service.delete_bot(&user_id, path.into_inner()).await {
-        Ok(_) => HttpResponse::NoContent().finish(),
+    let bot_id = path.into_inner();
+    match bot_service.delete_bot(&user_id, bot_id).await {
+        Ok(_) => {
+            activity_log.record_info(
+                "delete_bot",
+                "bot",
+                Some(bot_id.to_string()),
+                "删除了 Bot".to_string(),
+            );
+            HttpResponse::NoContent().finish()
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }

@@ -1,3 +1,4 @@
+mod admin;
 mod config;
 mod database;
 mod error;
@@ -7,7 +8,9 @@ mod routes;
 mod services;
 mod storage;
 
-use actix_web::{web, App, HttpResponse, HttpServer};
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
+use actix_files as fs;
+use admin::{activity_log::ActivityLog, api::StartedAt};
 use anyhow::anyhow;
 use config::Config;
 use database::{create_pool, run_migrations};
@@ -91,6 +94,10 @@ async fn main() -> anyhow::Result<()> {
 
     let auth_middleware = AuthMiddleware::new(config.jwt_secret.clone());
     let bind_address = format!("0.0.0.0:{}", config.port);
+
+    let activity_log = web::Data::new(ActivityLog::new(200));
+    let started_at = web::Data::new(StartedAt(chrono::Utc::now().timestamp_millis()));
+    log::info!("[OK] Admin dashboard initialized");
     log::info!("Binding to: {}", bind_address);
 
     log::info!("Starting HTTP server...");
@@ -107,6 +114,8 @@ async fn main() -> anyhow::Result<()> {
             .app_data(web::Data::new(stats_service.clone()))
             .app_data(web::Data::new(bot_service.clone()))
             .app_data(web::Data::new(sync_service.clone()))
+            .app_data(web::Data::new(activity_log.clone()))
+            .app_data(web::Data::new(started_at.clone()))
             .route("/health", web::get().to(health_check))
             .service(
                 web::scope("/api/auth")
@@ -145,6 +154,17 @@ async fn main() -> anyhow::Result<()> {
                     .configure(routes::configure_bot_routes)
                     .configure(routes::configure_sync_routes),
             )
+            .service(
+                web::scope("/admin/api")
+                    .wrap(auth_middleware.clone())
+                    .route("/health", web::get().to(admin::api::health))
+                    .route("/stats", web::get().to(admin::api::stats))
+                    .route("/activity", web::get().to(admin::api::list_activity))
+                    .route("/config", web::get().to(admin::api::config_endpoint))
+                    .route("/clear-cache", web::post().to(admin::api::clear_cache)),
+            )
+            .service(fs::Files::new("/admin/static", "static/admin/assets").prefer_utf8(true))
+            .route("/admin/{tail:.*}", web::get().to(admin_spa_fallback))
     })
     .bind(&bind_address)?
     .run()
@@ -159,4 +179,13 @@ async fn health_check() -> HttpResponse {
         "status": "ok",
         "version": "0.1.0"
     }))
+}
+
+async fn admin_spa_fallback(_req: HttpRequest) -> HttpResponse {
+    match actix_files::NamedFile::open_async("static/admin/index.html").await {
+        Ok(file) => file.into_response(&_req),
+        Err(_) => HttpResponse::NotFound().json(serde_json::json!({
+            "error": "Admin UI not found. Run `bun --filter admin-ui build` first."
+        })),
+    }
 }

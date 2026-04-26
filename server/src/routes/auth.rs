@@ -1,3 +1,4 @@
+use crate::admin::activity_log::ActivityLog;
 use crate::middleware::get_user_id;
 use crate::models::{ChangePasswordRequest, LoginRequest, RefreshTokenRequest};
 use crate::services::AuthService;
@@ -20,9 +21,18 @@ pub struct UpdateAvatarRequest {
 pub async fn login(
     req: web::Json<LoginRequest>,
     auth_service: web::Data<AuthService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     match auth_service.login(req.into_inner()).await {
-        Ok(response) => HttpResponse::Ok().json(response),
+        Ok(response) => {
+            activity_log.record_info(
+                "login",
+                "user",
+                Some(response.user.id.to_string()),
+                format!("用户 {} 登录成功", response.user.username),
+            );
+            HttpResponse::Ok().json(response)
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }
@@ -31,6 +41,7 @@ pub async fn change_password(
     req: HttpRequest,
     payload: web::Json<ChangePasswordRequest>,
     auth_service: web::Data<AuthService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
@@ -41,7 +52,15 @@ pub async fn change_password(
         .change_password(&user_id, payload.into_inner())
         .await
     {
-        Ok(()) => HttpResponse::Ok().finish(),
+        Ok(()) => {
+            activity_log.record_info(
+                "change_password",
+                "user",
+                Some(user_id.clone()),
+                "用户修改了密码".to_string(),
+            );
+            HttpResponse::Ok().finish()
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }
