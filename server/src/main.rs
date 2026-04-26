@@ -114,8 +114,8 @@ async fn main() -> anyhow::Result<()> {
             .app_data(web::Data::new(stats_service.clone()))
             .app_data(web::Data::new(bot_service.clone()))
             .app_data(web::Data::new(sync_service.clone()))
-            .app_data(web::Data::new(activity_log.clone()))
-            .app_data(web::Data::new(started_at.clone()))
+            .app_data(activity_log.clone())
+            .app_data(started_at.clone())
             .route("/health", web::get().to(health_check))
             .service(
                 web::scope("/api/auth")
