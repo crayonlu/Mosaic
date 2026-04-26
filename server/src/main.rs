@@ -163,7 +163,8 @@ async fn main() -> anyhow::Result<()> {
                     .route("/config", web::get().to(admin::api::config_endpoint))
                     .route("/clear-cache", web::post().to(admin::api::clear_cache)),
             )
-            .service(fs::Files::new("/admin/static", "static/admin/assets").prefer_utf8(true))
+            .service(fs::Files::new("/admin/static", "static/admin").prefer_utf8(true))
+            .route("/admin", web::get().to(|| async { HttpResponse::Found().append_header(("Location", "/admin/")).finish() }))
             .route("/admin/{tail:.*}", web::get().to(admin_spa_fallback))
     })
     .bind(&bind_address)?
