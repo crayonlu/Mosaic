@@ -4,10 +4,9 @@ on:
   pull_request:
     branches:
       - main
-      - feat/ci
     paths:
       - 'server/**'
-      - 'server/mosaic-dashboard/**'
+      - 'packages/**'
       - '.github/workflows/**'
 
   workflow_dispatch:
@@ -18,8 +17,12 @@ on:
         default: 'latest'
       push:
         description: 'Push image to registry'
-        required: false
+        required: true
         default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 jobs:
   build:
