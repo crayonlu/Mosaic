@@ -26,7 +26,7 @@ COPY server/admin-ui/public ./server/admin-ui/public
 
 RUN node -e "const p=require('./package.json');p.workspaces=p.workspaces.filter(w=>w==='server/admin-ui');require('fs').writeFileSync('./package.json',JSON.stringify(p,null,2))"
 RUN bun install
-RUN bun --filter admin-ui build
+RUN bun --filter admin-ui exec vite build
 
 FROM debian:bookworm-slim
 
