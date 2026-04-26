@@ -23,7 +23,7 @@ ALTER TABLE diaries ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT
 -- Add is_deleted to bots for sync support
 ALTER TABLE bots ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT FALSE;
 
--- Change resources delete to soft delete: add index for sync queries
-CREATE INDEX IF NOT EXISTS idx_resources_sync ON resources(user_id, updated_at) WHERE is_deleted = FALSE;
+-- Sync queries rely on join through memos for resource ownership
+CREATE INDEX IF NOT EXISTS idx_resources_sync ON resources(updated_at) WHERE is_deleted = FALSE;
 CREATE INDEX IF NOT EXISTS idx_diaries_sync ON diaries(user_id, updated_at) WHERE is_deleted = FALSE;
 CREATE INDEX IF NOT EXISTS idx_bots_sync ON bots(user_id, updated_at) WHERE is_deleted = FALSE;
