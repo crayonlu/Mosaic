@@ -550,15 +550,36 @@ onMounted(async () => {
 }
 
 /* ─── Responsive ─── */
-@media (max-width: 900px) {
-  .kpi-row { grid-template-columns: repeat(2, 1fr); }
-  .content-grid { grid-template-columns: 1fr; }
+@media (max-width: 1024px) {
+  .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+@media (max-width: 768px) {
+  .dashboard { padding: 0; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+  .kpi-card { padding: 10px; gap: 8px; border-top-width: 2px; border-radius: 8px; }
+  .kpi-icon { width: 32px; height: 32px; border-radius: 8px; }
+  .kpi-icon :deep(svg) { width: 18px; height: 18px; }
+  .kpi-value { font-size: 18px; }
+  .kpi-label { font-size: 10px; }
+  .content-grid { grid-template-columns: 1fr; gap: 10px; }
+  .section-card { padding: 12px; border-radius: 8px; }
+  .section-header h3 { font-size: 14px; }
+  .activity-row { flex-wrap: wrap; gap: 4px; padding: 6px; }
+  .activity-time { width: auto; font-size: 10px; }
+  .activity-action { font-size: 12px; width: 100%; }
+  .activity-detail { width: 100%; font-size: 11px; padding-left: 0; }
+  .health-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 480px) {
-  .kpi-row { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .kpi-card { padding: 12px; }
-  .kpi-value { font-size: 18px; }
-  .section-card { padding: 12px; }
+  .kpi-row { gap: 6px; }
+  .kpi-card { padding: 8px; }
+  .kpi-value { font-size: 16px; }
+  .kpi-icon { width: 28px; height: 28px; }
+  .kpi-icon :deep(svg) { width: 15px; height: 15px; }
+  .section-card { padding: 10px; }
   .activity-time { display: none; }
+  .activity-tag { font-size: 9px; }
+  .health-grid { grid-template-columns: 1fr; }
+  .bot-item { flex-wrap: wrap; gap: 4px; }
 }
 </style>
