@@ -107,6 +107,8 @@ async fn main() -> anyhow::Result<()> {
         App::new()
             .wrap(configure_logging())
             .wrap(configure_cors())
+            .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(auth_service.clone()))
             .app_data(web::Data::new(memo_service.clone()))
             .app_data(web::Data::new(resource_service.clone()))

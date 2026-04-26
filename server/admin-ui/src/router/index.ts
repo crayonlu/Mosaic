@@ -20,37 +20,11 @@ const router = createRouter({
           name: 'Dashboard',
           component: () => import('../views/Dashboard.vue'),
         },
-        {
-          path: 'stats',
-          name: 'Stats',
-          component: () => import('../views/Stats.vue'),
-        },
-        {
-          path: 'activity',
-          name: 'Activity',
-          component: () => import('../views/Activity.vue'),
-        },
-        {
-          path: 'profile',
-          name: 'Profile',
-          component: () => import('../views/Profile.vue'),
-        },
-        {
-          path: 'bots',
-          name: 'Bots',
-          component: () => import('../views/Bots.vue'),
-        },
       ],
     },
     {
       path: '/:pathMatch(.*)*',
-      component: () => import('../layouts/AdminLayout.vue'),
-      children: [
-        {
-          path: '',
-          component: () => import('../views/NotFound.vue'),
-        },
-      ],
+      redirect: '/dashboard',
     },
   ],
 });

@@ -4,15 +4,15 @@
     <n-grid :cols="2" :x-gap="12">
       <n-grid-item>
         <n-card title="账号信息" size="small">
-          <n-description-list :column="1">
-            <n-description-item label="用户名">{{ auth.user?.username }}</n-description-item>
-            <n-description-item label="注册时间">{{
+          <n-descriptions :column="1">
+            <n-descriptions-item label="用户名">{{ auth.user?.username }}</n-descriptions-item>
+            <n-descriptions-item label="注册时间">{{
               formatTime(auth.user?.createdAt)
-            }}</n-description-item>
-            <n-description-item label="更新时间">{{
+            }}</n-descriptions-item>
+            <n-descriptions-item label="更新时间">{{
               formatTime(auth.user?.updatedAt)
-            }}</n-description-item>
-          </n-description-list>
+            }}</n-descriptions-item>
+          </n-descriptions>
         </n-card>
       </n-grid-item>
       <n-grid-item>
