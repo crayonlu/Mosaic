@@ -304,8 +304,8 @@ impl ResourceService {
         let now = Utc::now().timestamp_millis();
 
         let resource = sqlx::query_as::<_, Resource>(
-              "INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, created_at)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+              "INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, created_at, updated_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
              RETURNING *",
         )
         .bind(resource_id)
@@ -321,6 +321,7 @@ impl ResourceService {
         .bind(&storage_path)
         .bind(&metadata)
         .bind(now)
+        .bind(now)
         .fetch_one(&self.pool)
         .await?;
 
@@ -335,10 +336,10 @@ impl ResourceService {
         let user_uuid = Uuid::parse_str(user_id)?;
         let storage_prefix = format!("resources/{}/%", user_uuid);
         let mut resource = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
+            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
              FROM resources r
              LEFT JOIN memos m ON m.id = r.memo_id
-             WHERE r.id = $1 AND (m.user_id = $2 OR r.storage_path LIKE $3)",
+             WHERE r.id = $1 AND (m.user_id = $2 OR r.storage_path LIKE $3) AND r.is_deleted = FALSE",
         )
         .bind(resource_id)
         .bind(user_uuid)
@@ -370,10 +371,10 @@ impl ResourceService {
         let user_uuid = Uuid::parse_str(user_id)?;
         let storage_prefix = format!("resources/{}/%", user_uuid);
         let resource = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
+            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
              FROM resources r
              LEFT JOIN memos m ON m.id = r.memo_id
-             WHERE r.id = $1 AND (m.user_id = $2 OR r.storage_path LIKE $3)",
+             WHERE r.id = $1 AND (m.user_id = $2 OR r.storage_path LIKE $3) AND r.is_deleted = FALSE",
         )
         .bind(resource_id)
         .bind(user_uuid)
@@ -461,7 +462,7 @@ impl ResourceService {
     pub async fn delete_resource(&self, user_id: &str, resource_id: Uuid) -> Result<(), AppError> {
         let _user_uuid = Uuid::parse_str(user_id)?;
         let resource = sqlx::query_as::<_, Resource>(
-              "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
+              "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
              FROM resources r
              WHERE r.id = $1",
         )
@@ -485,7 +486,9 @@ impl ResourceService {
             }
         }
 
-        sqlx::query("DELETE FROM resources WHERE id = $1")
+        let now = Utc::now().timestamp_millis();
+        sqlx::query("UPDATE resources SET is_deleted = true, updated_at = $1 WHERE id = $2")
+            .bind(now)
             .bind(resource_id)
             .execute(&self.pool)
             .await?;
@@ -638,10 +641,10 @@ impl ResourceService {
         let offset = (page - 1) * page_size;
 
         let resources = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
+            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
              FROM resources r
              JOIN memos m ON r.memo_id = m.id
-             WHERE m.user_id = $1
+             WHERE m.user_id = $1 AND r.is_deleted = FALSE
              ORDER BY r.created_at DESC
              LIMIT $2 OFFSET $3",
         )
@@ -655,7 +658,7 @@ impl ResourceService {
             "SELECT COUNT(*)
              FROM resources r
              JOIN memos m ON r.memo_id = m.id
-             WHERE m.user_id = $1",
+             WHERE m.user_id = $1 AND r.is_deleted = FALSE",
         )
         .bind(user_uuid)
         .fetch_one(&self.pool)
@@ -676,10 +679,10 @@ impl ResourceService {
     ) -> Result<ResourceResponse, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let resource = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
+            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
              FROM resources r
              JOIN memos m ON r.memo_id = m.id
-             WHERE r.id = $1 AND m.user_id = $2",
+             WHERE r.id = $1 AND m.user_id = $2 AND r.is_deleted = FALSE",
         )
         .bind(req.resource_id)
         .bind(user_uuid)

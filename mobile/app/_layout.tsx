@@ -91,6 +91,9 @@ export default function RootLayout() {
             const { LocalPushService } = await import('../lib/services/local-push')
             const localPushService = LocalPushService.getInstance()
             await localPushService.registerAll()
+
+            const { getSyncEngine } = await import('@/lib/sync/engine')
+            getSyncEngine().sync()
           }
         } catch (error) {
           console.warn('Push registration failed:', error)

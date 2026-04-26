@@ -1,6 +1,7 @@
 import { mapServerConnectionError } from '@/lib/errors/serverConnection'
 import { create } from 'zustand'
 import { useAuthStore } from './authStore'
+import { getSyncEngine } from '@/lib/sync/engine'
 
 interface ConnectionState {
   isConnected: boolean
@@ -34,9 +35,13 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
   },
 
   setServerReachable: reachable => {
+    const wasOffline = !get().isServerReachable
     set({ isServerReachable: reachable, lastError: reachable ? null : get().lastError })
     if (reachable) {
       get().updateLastConnectedAt()
+      if (wasOffline) {
+        getSyncEngine().sync()
+      }
     }
   },
 
