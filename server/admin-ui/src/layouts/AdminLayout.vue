@@ -72,25 +72,3 @@ function handleUserAction(key: string) {
   .content { padding: 8px; }
 }
 </style>
-  font-size: 18px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.logo-small {
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.header {
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0 16px;
-}
-
-.content {
-  padding: 16px;
-  min-height: calc(100vh - 48px);
-}
-</style>
