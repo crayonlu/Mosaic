@@ -18,8 +18,7 @@
     "printWidth": 100
   },
   "dependencies": {
-    "@vicons/ionicons5": "^0.13.0",
-    "naive-ui": "^2.44.1",
+    "lucide-vue-next": "^0.520.0",
     "ofetch": "^1.5.1",
     "pinia": "2",
     "vue": "^3.5.32",
