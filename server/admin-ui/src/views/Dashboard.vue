@@ -18,7 +18,7 @@
       <!-- Activity Log -->
       <div class="section-card">
         <div class="section-header">
-          <h3>📋 最近活动</h3>
+          <h3><n-icon size="18"><PulseOutline /></n-icon> 最近活动</h3>
           <n-button size="tiny" quaternary @click="loadActivity">刷新</n-button>
         </div>
         <div class="activity-scroll">
@@ -38,7 +38,7 @@
       <!-- Bot Overview -->
       <div class="section-card">
         <div class="section-header">
-          <h3>🤖 Bot 概览</h3>
+          <h3><n-icon size="18"><HardwareChipOutline /></n-icon> Bot 概览</h3>
           <n-button size="tiny" secondary type="primary" @click="showBotModal = true">管理</n-button>
         </div>
         <div v-if="botLoading" class="loading-pulse" />
@@ -55,7 +55,7 @@
       <!-- Profile -->
       <div class="section-card">
         <div class="section-header">
-          <h3>👤 账号</h3>
+          <h3><n-icon size="18"><PersonOutline /></n-icon> 账号</h3>
         </div>
         <div class="profile-row">
           <span class="profile-label">用户</span>
@@ -84,7 +84,7 @@
       <!-- System Health -->
       <div class="section-card">
         <div class="section-header">
-          <h3>🔧 系统状态</h3>
+          <h3><n-icon size="18"><SettingsOutline /></n-icon> 系统状态</h3>
           <n-button size="tiny" quaternary @click="loadHealth">刷新</n-button>
         </div>
         <div v-if="!health" class="empty-state">加载中...</div>
@@ -157,7 +157,13 @@
 </template>
 
 <script setup lang="ts">
-import { useMessage } from 'naive-ui';
+import {
+  HardwareChipOutline,
+  PersonOutline,
+  PulseOutline,
+  SettingsOutline,
+} from '@vicons/ionicons5';
+import { NIcon, useMessage } from 'naive-ui';
 import { onMounted, reactive, ref } from 'vue';
 import { adminApi, api } from '../api';
 import { useAuthStore } from '../stores/auth';
