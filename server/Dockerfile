@@ -7,10 +7,10 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY src ./src
-COPY migrations ./migrations
-COPY Cargo.toml .
-COPY Cargo.lock .
+COPY server/src ./src
+COPY server/migrations ./migrations
+COPY server/Cargo.toml ./Cargo.toml
+COPY server/Cargo.lock ./Cargo.lock
 
 RUN cargo fetch
 RUN cargo build --release --package server
