@@ -60,7 +60,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./server
+          context: .
           file: ./server/Dockerfile
           push: ${{ inputs.push == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
