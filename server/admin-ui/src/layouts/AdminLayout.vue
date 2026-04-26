@@ -1,77 +1,31 @@
 <template>
-  <n-layout position="absolute" has-sider>
-    <n-layout-sider
-      bordered
-      collapse-mode="width"
-      :collapsed-width="64"
-      :width="220"
-      show-trigger="bar"
-      :collapsed="collapsed"
-      @collapse="collapsed = true"
-      @expand="collapsed = false"
-    >
-      <div class="logo">
-        <span v-if="!collapsed" class="logo-text">Mosaic</span>
-        <span v-else class="logo-small">M</span>
+  <n-layout position="absolute">
+    <n-layout-header bordered class="header">
+      <div class="header-inner">
+        <span class="brand">Mosaic</span>
+        <n-dropdown trigger="click" :options="userDropdownOptions" @select="handleUserAction">
+          <n-button quaternary size="small">
+            <template #icon>
+              <n-icon size="18"><PersonCircleOutline /></n-icon>
+            </template>
+            {{ auth.user?.username || '用户' }}
+          </n-button>
+        </n-dropdown>
       </div>
-      <n-menu
-        :collapsed="collapsed"
-        :collapsed-width="64"
-        :collapsed-icon-size="22"
-        :options="menuOptions"
-        :value="activeKey"
-        @update:value="handleMenuSelect"
-      />
-    </n-layout-sider>
-    <n-layout>
-      <n-layout-header bordered class="header">
-        <div class="header-right">
-          <n-dropdown trigger="click" :options="userDropdownOptions" @select="handleUserAction">
-            <n-button quaternary>
-              <template #icon>
-                <n-icon><PersonCircleOutline /></n-icon>
-              </template>
-              {{ auth.user?.username || '用户' }}
-            </n-button>
-          </n-dropdown>
-        </div>
-      </n-layout-header>
-      <n-layout-content class="content" :native-scrollbar="false">
-        <router-view />
-      </n-layout-content>
-    </n-layout>
+    </n-layout-header>
+    <n-layout-content class="content" :native-scrollbar="false">
+      <router-view />
+    </n-layout-content>
   </n-layout>
 </template>
 
 <script setup lang="ts">
-import {
-  GridOutline,
-  PersonCircleOutline,
-} from '@vicons/ionicons5';
-import { NIcon } from 'naive-ui';
-import { computed, h, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { PersonCircleOutline } from '@vicons/ionicons5';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
 const auth = useAuthStore();
 const router = useRouter();
-const route = useRoute();
-
-const collapsed = ref(false);
-
-const menuOptions = [
-  {
-    label: '控制台',
-    key: '/dashboard',
-    icon: () => h(NIcon, null, { default: () => h(GridOutline) }),
-  },
-];
-
-const activeKey = computed(() => route.path);
-
-function handleMenuSelect(key: string) {
-  router.push(key);
-}
 
 const userDropdownOptions = [{ label: '退出登录', key: 'logout' }];
 
@@ -84,12 +38,40 @@ function handleUserAction(key: string) {
 </script>
 
 <style scoped>
-.logo {
+.header {
   height: 48px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  padding: 0 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--body-color, #fff);
+}
+.header-inner {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand {
+  font-size: 16px;
   font-weight: 700;
+  color: #7C3AED;
+}
+.content {
+  padding: 16px;
+  min-height: calc(100vh - 48px);
+}
+@media (max-width: 768px) {
+  .content { padding: 12px; }
+}
+@media (max-width: 480px) {
+  .content { padding: 8px; }
+}
+</style>
   font-size: 18px;
   border-bottom: 1px solid var(--border-color);
 }
