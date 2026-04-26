@@ -1,11 +1,15 @@
 # Mosaic Server API 文档
 
+> 版本：v2.5
+> 更新时间：2026-04-26
+> 基于 `server/src/routes/` 及 `server/src/main.rs` 路由注册
+
 ## 1. 基础信息
 
 - Base URL（本地默认）：`http://localhost:8080`
 - 健康检查：`GET /health`
-- 业务接口前缀：`/api`
 - 认证接口前缀：`/api/auth`
+- 业务接口前缀：`/api`（借由 `configure_*_routes` 注册）
 - Content-Type：
   - JSON 接口使用 `application/json`
   - 文件上传使用 `multipart/form-data`
@@ -34,7 +38,7 @@ Authorization: Bearer <access_token>
 
 ### 3.1 命名风格
 
-- JSON 字段主要采用 `camelCase`
+- JSON 字段采用 `camelCase`（Rust 端使用 `#[serde(rename_all = "camelCase")]`）
 - 查询参数统一采用 `camelCase`（如 `startDate`、`pageSize`）
 
 ### 3.2 时间与日期
@@ -75,7 +79,7 @@ Authorization: Bearer <access_token>
 
 ### GET /health
 
-无需鉴权。
+无需鉴权，路由直接注册在根 scope。
 
 响应示例：
 
@@ -393,7 +397,8 @@ Query：
   "items": [],
   "total": 0,
   "page": 1,
-  "pageSize": 100
+  "pageSize": 100,
+  "totalPages": 1
 }
 ```
 
@@ -449,17 +454,25 @@ Query：
 
 上传头像（`multipart/form-data`）。
 
-返回：更新后的 `user`。
+表单字段：
+
+- `file`：图片文件
+
+返回：`{"avatarUrl": "/api/avatars/{id}/download"}`
 
 ### 9.6 GET /api/resources/{id}/download
 
-资源下载代理。
+资源下载代理（支持 Range 请求和 ETag 缓存）。
 
-### 9.7 GET /api/avatars/{id}/download
+### 9.7 GET /api/resources/{id}/thumbnail
 
-头像下载代理（当前返回 `image/jpeg`）。
+资源缩略图下载代理。
 
-### 9.8 DELETE /api/resources/{id}
+### 9.8 GET /api/avatars/{id}/download
+
+头像下载代理。
+
+### 9.9 DELETE /api/resources/{id}
 
 删除资源。
 
