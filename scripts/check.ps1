@@ -40,7 +40,7 @@ if (Test-Path "desktop/src-tauri/Cargo.toml") {
 # Check TypeScript packages
 Write-Host "`n[3/5] Checking TypeScript packages..." -ForegroundColor Yellow
 
-$packages = @("packages/api", "packages/cache", "packages/utils")
+$packages = @("packages/api", "packages/cache", "packages/utils", "packages/sync")
 foreach ($pkg in $packages) {
     if (Test-Path "$pkg/package.json") {
         Write-Host "  Checking $pkg..." -ForegroundColor Gray
