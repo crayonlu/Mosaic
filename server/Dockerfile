@@ -24,6 +24,7 @@ COPY server/admin-ui/package.json server/admin-ui/tsconfig.json server/admin-ui/
 COPY server/admin-ui/src ./server/admin-ui/src
 COPY server/admin-ui/public ./server/admin-ui/public
 
+RUN node -e "const p=require('./package.json');p.workspaces=p.workspaces.filter(w=>w==='server/admin-ui');require('fs').writeFileSync('./package.json',JSON.stringify(p,null,2))"
 RUN bun install --frozen-lockfile
 RUN bun --filter admin-ui build
 
