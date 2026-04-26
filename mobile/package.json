@@ -15,6 +15,7 @@
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.8",
     "@mosaic/api": "workspace:*",
+    "@mosaic/sync": "workspace:*",
     "@mosaic/utils": "workspace:*",
     "@tanstack/react-query": "^5.90.20",
     "dayjs": "^1.11.19",

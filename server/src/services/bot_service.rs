@@ -48,7 +48,7 @@ impl BotService {
 
         let bots = sqlx::query_as::<_, Bot>(
             "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at
-             FROM bots WHERE user_id = $1 ORDER BY sort_order ASC, created_at ASC",
+             FROM bots WHERE user_id = $1 AND is_deleted = FALSE ORDER BY sort_order ASC, created_at ASC",
         )
         .bind(user_uuid)
         .fetch_all(&self.pool)
@@ -162,12 +162,17 @@ impl BotService {
         let user_uuid = Uuid::parse_str(user_id)
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
 
-        let result = sqlx::query("DELETE FROM bots WHERE id = $1 AND user_id = $2")
-            .bind(bot_id)
-            .bind(user_uuid)
-            .execute(&self.pool)
-            .await
-            .map_err(AppError::Database)?;
+        let now = Utc::now().timestamp_millis();
+
+        let result = sqlx::query(
+            "UPDATE bots SET is_deleted = true, updated_at = $1 WHERE id = $2 AND user_id = $3",
+        )
+        .bind(now)
+        .bind(bot_id)
+        .bind(user_uuid)
+        .execute(&self.pool)
+        .await
+        .map_err(AppError::Database)?;
 
         if result.rows_affected() == 0 {
             return Err(AppError::NotFound("Bot not found".into()));

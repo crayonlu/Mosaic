@@ -74,6 +74,11 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
           diary_count INTEGER NOT NULL DEFAULT 0,
           mood_score  REAL
         );
+
+        CREATE TABLE IF NOT EXISTS sync_cursors (
+          entity_type  TEXT PRIMARY KEY NOT NULL,
+          last_sync_at INTEGER NOT NULL
+        );
       `)
 
       db = database
