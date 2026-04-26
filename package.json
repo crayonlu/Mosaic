@@ -6,7 +6,8 @@
   "workspaces": [
     "packages/*",
     "desktop",
-    "mobile"
+    "mobile",
+    "server/admin-ui"
   ],
   "description": "Mosaic - Desktop (Tauri) and Mobile (React Native) workspace",
   "scripts": {
@@ -28,7 +29,7 @@
     "lint:mobile": "bun --filter @mosaic/mobile lint",
     "lint:mobile:fix": "bun --filter @mosaic/mobile lint:fix",
     "lint:sync": "bun --filter @mosaic/sync lint",
-    "format": "bun --filter @mosaic/api format && bun --filter @mosaic/utils format && bun --filter @mosaic/cache format && bun --filter @mosaic/desktop format && bun --filter @mosaic/mobile format",
+    "format": "bun --filter @mosaic/api format && bun --filter @mosaic/utils format && bun --filter @mosaic/cache format && bun --filter @mosaic/desktop format && bun --filter @mosaic/mobile format && bun --filter admin-ui format",
     "format:api": "bun --filter @mosaic/api format",
     "format:utils": "bun --filter @mosaic/utils format",
     "format:cache": "bun --filter @mosaic/cache format",
@@ -36,7 +37,9 @@
     "format:desktop:check": "bun --filter @mosaic/desktop format:check",
     "format:mobile": "bun --filter @mosaic/mobile format",
     "format:mobile:check": "bun --filter @mosaic/mobile format:check",
-    "check": "bun lint && bun format:api && bun format:utils && bun format:desktop:check && bun format:mobile:check"
+    "format:admin-ui": "bun --filter admin-ui format",
+    "format:admin-ui:check": "bun --filter admin-ui format:check",
+    "check": "bun lint && bun format:api && bun format:utils && bun format:desktop:check && bun format:mobile:check && bun format:admin-ui:check"
   },
   "engines": {
     "node": ">=18.0.0"

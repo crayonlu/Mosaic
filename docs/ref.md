@@ -6,12 +6,12 @@
 
 ## 版本信息
 
-| 项目 | 版本 |
-|------|------|
-| 根 workspace | `1.2.0` |
-| Desktop (@mosaic/desktop) | `2.5.7` |
-| Mobile (@mosaic/mobile) | `2.5.7` |
-| Server | `0.1.0` |
+| 项目                      | 版本    |
+| ------------------------- | ------- |
+| 根 workspace              | `1.2.0` |
+| Desktop (@mosaic/desktop) | `2.5.8` |
+| Mobile (@mosaic/mobile)   | `2.5.8` |
+| Server                    | `0.1.0` |
 
 ## 常用命令
 

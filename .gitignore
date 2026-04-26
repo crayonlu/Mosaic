@@ -28,6 +28,9 @@ build/
 .env.production.local
 *.local
 
+# Build artifacts
+server/static/admin/
+
 # Editor directories and files
 .vscode/
 !.vscode/extensions.json

@@ -1,3 +1,4 @@
+use crate::admin::activity_log::ActivityLog;
 use crate::middleware::get_user_id;
 use crate::models::{CreateMemoRequest, MemoListQuery, UpdateMemoRequest};
 use crate::services::MemoService;
@@ -8,6 +9,7 @@ pub async fn create_memo(
     req: HttpRequest,
     payload: web::Json<CreateMemoRequest>,
     memo_service: web::Data<MemoService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
@@ -18,7 +20,15 @@ pub async fn create_memo(
         .create_memo(&user_id, payload.into_inner())
         .await
     {
-        Ok(memo) => HttpResponse::Ok().json(memo),
+        Ok(memo) => {
+            activity_log.record_info(
+                "create_memo",
+                "memo",
+                Some(memo.id.to_string()),
+                format!("创建了 Memo: {}...", &memo.content[..memo.content.len().min(30)]),
+            );
+            HttpResponse::Ok().json(memo)
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }
@@ -69,17 +79,27 @@ pub async fn update_memo(
     path: web::Path<uuid::Uuid>,
     payload: web::Json<UpdateMemoRequest>,
     memo_service: web::Data<MemoService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(e) => return HttpResponse::from_error(e),
     };
 
+    let memo_id = path.into_inner();
     match memo_service
-        .update_memo(&user_id, path.into_inner(), payload.into_inner())
+        .update_memo(&user_id, memo_id, payload.into_inner())
         .await
     {
-        Ok(memo) => HttpResponse::Ok().json(memo),
+        Ok(memo) => {
+            activity_log.record_info(
+                "update_memo",
+                "memo",
+                Some(memo.id.to_string()),
+                "更新了 Memo".to_string(),
+            );
+            HttpResponse::Ok().json(memo)
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }
@@ -88,14 +108,24 @@ pub async fn delete_memo(
     req: HttpRequest,
     path: web::Path<uuid::Uuid>,
     memo_service: web::Data<MemoService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(e) => return HttpResponse::from_error(e),
     };
 
-    match memo_service.delete_memo(&user_id, path.into_inner()).await {
-        Ok(()) => HttpResponse::Ok().finish(),
+    let memo_id = path.into_inner();
+    match memo_service.delete_memo(&user_id, memo_id).await {
+        Ok(()) => {
+            activity_log.record_info(
+                "delete_memo",
+                "memo",
+                Some(memo_id.to_string()),
+                "删除了 Memo".to_string(),
+            );
+            HttpResponse::Ok().finish()
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }

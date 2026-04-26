@@ -1,3 +1,4 @@
+use crate::admin::activity_log::ActivityLog;
 use crate::middleware::get_user_id;
 use crate::models::{CreateDiaryRequest, DiaryListQuery, UpdateDiaryRequest};
 use crate::services::DiaryService;
@@ -61,6 +62,7 @@ pub async fn create_or_update_diary(
     path: web::Path<String>,
     payload: web::Json<CreateDiaryRequest>,
     diary_service: web::Data<DiaryService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
@@ -81,7 +83,15 @@ pub async fn create_or_update_diary(
     req.date = date;
 
     match diary_service.create_diary(&user_id, req).await {
-        Ok(diary) => HttpResponse::Ok().json(diary),
+        Ok(diary) => {
+            activity_log.record_info(
+                "create_diary",
+                "diary",
+                Some(date_str.clone()),
+                format!("创建了日记 {}", date_str),
+            );
+            HttpResponse::Ok().json(diary)
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }
@@ -91,6 +101,7 @@ pub async fn update_diary(
     path: web::Path<String>,
     payload: web::Json<UpdateDiaryRequest>,
     diary_service: web::Data<DiaryService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
@@ -111,7 +122,15 @@ pub async fn update_diary(
         .update_diary(&user_id, date, payload.into_inner())
         .await
     {
-        Ok(diary) => HttpResponse::Ok().json(diary),
+        Ok(diary) => {
+            activity_log.record_info(
+                "update_diary",
+                "diary",
+                Some(date_str),
+                "更新了日记".to_string(),
+            );
+            HttpResponse::Ok().json(diary)
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }
