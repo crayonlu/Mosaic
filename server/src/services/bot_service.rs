@@ -588,10 +588,10 @@ impl BotService {
         limit: i64,
     ) -> Result<Vec<AiImageInput>, AppError> {
         let resources = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
+            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
              FROM resources r
              JOIN memos m ON m.id = r.memo_id
-             WHERE r.memo_id = $1 AND m.user_id = $2 AND r.resource_type = 'image'
+             WHERE r.memo_id = $1 AND m.user_id = $2 AND r.resource_type = 'image' AND r.is_deleted = FALSE
              ORDER BY r.created_at ASC
              LIMIT $3",
         )
@@ -643,10 +643,10 @@ impl BotService {
         let limited_ids: Vec<Uuid> = resource_ids.iter().copied().take(limit).collect();
         let storage_prefix = format!("resources/{}/%", user_uuid);
         let resources = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.created_at
+            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
              FROM resources r
              LEFT JOIN memos m ON m.id = r.memo_id
-             WHERE r.id = ANY($1) AND r.resource_type = 'image'
+             WHERE r.id = ANY($1) AND r.resource_type = 'image' AND r.is_deleted = FALSE
                AND (m.user_id = $2 OR r.storage_path LIKE $3)",
         )
         .bind(&limited_ids)

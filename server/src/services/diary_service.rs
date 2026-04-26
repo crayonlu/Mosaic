@@ -222,8 +222,8 @@ impl DiaryService {
 
     async fn get_memo_resources(&self, memo_id: Uuid) -> Result<Vec<ResourceResponse>, AppError> {
         let resources = sqlx::query_as::<_, Resource>(
-            "SELECT id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, created_at
-             FROM resources WHERE memo_id = $1 ORDER BY created_at ASC",
+            "SELECT id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, is_deleted, created_at, updated_at
+             FROM resources WHERE memo_id = $1 AND is_deleted = FALSE ORDER BY created_at ASC",
         )
         .bind(memo_id)
         .fetch_all(&self.pool)
