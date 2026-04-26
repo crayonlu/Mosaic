@@ -608,8 +608,8 @@ impl ResourceService {
         let now = Utc::now().timestamp_millis();
 
         sqlx::query(
-              "INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, created_at)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+              "INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, created_at, updated_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
         )
         .bind(resource_id)
         .bind(memo_id)
@@ -620,6 +620,7 @@ impl ResourceService {
         .bind("r2")
         .bind(&storage_path)
         .bind(req.metadata.unwrap_or_else(empty_metadata))
+        .bind(now)
         .bind(now)
         .execute(&self.pool)
         .await?;

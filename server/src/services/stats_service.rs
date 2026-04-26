@@ -326,6 +326,7 @@ impl StatsService {
             SELECT COUNT(*) FROM resources r
             JOIN memos m ON r.memo_id = m.id
             WHERE m.user_id = $1
+                AND r.is_deleted = FALSE
                 AND EXTRACT(YEAR FROM to_timestamp(r.created_at / 1000)) = $2
                 AND EXTRACT(MONTH FROM to_timestamp(r.created_at / 1000)) = $3
             "#,
