@@ -5,6 +5,14 @@ use crate::services::MemoService;
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde::Deserialize;
 
+/// Safely truncate a string to at most `max_chars` characters, respecting UTF-8 char boundaries.
+fn truncate_str(s: &str, max_chars: usize) -> &str {
+    match s.char_indices().nth(max_chars) {
+        Some((idx, _)) => &s[..idx],
+        None => s,
+    }
+}
+
 pub async fn create_memo(
     req: HttpRequest,
     payload: web::Json<CreateMemoRequest>,
@@ -25,7 +33,7 @@ pub async fn create_memo(
                 "create_memo",
                 "memo",
                 Some(memo.id.to_string()),
-                format!("创建了 Memo: {}...", &memo.content[..memo.content.len().min(30)]),
+                format!("创建了 Memo: {}...", truncate_str(&memo.content, 30)),
             );
             HttpResponse::Ok().json(memo)
         }

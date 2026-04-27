@@ -140,13 +140,44 @@
     </Modal>
 
     <!-- Bot Edit Modal -->
-    <Modal :show="showBotEdit" :title="editingBot ? '编辑 Bot' : '新建 Bot'" max-width="420px" @close="closeBotForm">
-      <form class="modal-form" @submit.prevent="saveBot">
+    <Modal :show="showBotEdit" :title="editingBot ? '编辑 Bot' : '新建 Bot'" max-width="460px" @close="closeBotForm">
+      <div class="bot-edit">
+
+        <!-- Avatar -->
+        <div class="avatar-section">
+          <div class="avatar-upload" @click="triggerAvatarInput" :class="{ uploading: avatarUploading }">
+            <solid-media
+              v-if="botForm.avatarUrl"
+              :key="botForm.avatarUrl"
+              :src="botForm.avatarUrl"
+              type="image"
+              class="avatar-img"
+              data-fill="true"
+            />
+            <div v-else class="avatar-placeholder">
+              <Bot :size="28" />
+            </div>
+            <div class="avatar-overlay">
+              <Loader v-if="avatarUploading" :size="16" class="spin" />
+              <Camera v-else :size="16" />
+            </div>
+          </div>
+          <p class="avatar-hint">点击更换头像</p>
+          <input
+            ref="avatarInputRef"
+            type="file"
+            accept="image/*"
+            class="avatar-input-hidden"
+            @change="uploadAvatar"
+          />
+        </div>
+
+        <!-- Fields -->
         <label class="field-label">名称</label>
-        <input v-model="botForm.name" class="input" placeholder="Bot 名称" />
+        <input v-model="botForm.name" class="input" placeholder="Bot 名称" maxlength="30" />
 
         <label class="field-label">描述</label>
-        <textarea v-model="botForm.description" class="input input-area" rows="2" placeholder="Bot 描述" />
+        <textarea v-model="botForm.description" class="input input-area" rows="3" placeholder="描述 Bot 的性格和用途…" maxlength="200" />
 
         <label class="field-label">自动回复</label>
         <div class="toggle-row">
@@ -171,10 +202,10 @@
             @keydown.backspace="onTagBackspace"
           />
         </div>
-      </form>
+      </div>
       <template #footer>
         <button class="btn-secondary" @click="closeBotForm">取消</button>
-        <button class="btn-primary" :disabled="botSaving" @click="saveBot">
+        <button class="btn-primary" :disabled="botSaving || avatarUploading" @click="saveBot">
           <Loader v-if="botSaving" :size="14" class="spin" />
           <span v-else>保存</span>
         </button>
@@ -185,8 +216,8 @@
 
 <script setup lang="ts">
 import {
-  Activity, Bot, FileText, Image, Loader, MessageSquare,
-  Plus, Server, User as UserIcon,
+    Activity, Bot, Camera, FileText, Image, Loader, MessageSquare,
+    Plus, Server, User as UserIcon,
 } from 'lucide-vue-next';
 import { onMounted, reactive, ref } from 'vue';
 import { adminApi, api } from '../api';
@@ -266,7 +297,9 @@ const showBotModal = ref(false);
 const showBotEdit = ref(false);
 const editingBot = ref<any>(null);
 const botSaving = ref(false);
-const botForm = reactive({ name: '', description: '', autoReply: true, tags: [] as string[] });
+const avatarUploading = ref(false);
+const avatarInputRef = ref<HTMLInputElement | null>(null);
+const botForm = reactive({ name: '', description: '', autoReply: true, tags: [] as string[], avatarUrl: '' });
 const tagInput = ref('');
 
 async function loadBots() {
@@ -282,6 +315,7 @@ function openBotForm(b?: any) {
   botForm.description = b?.description || '';
   botForm.autoReply = b?.autoReply ?? true;
   botForm.tags = b?.tags ? [...b.tags] : [];
+  botForm.avatarUrl = b?.avatarUrl || '';
   tagInput.value = '';
   showBotEdit.value = true;
 }
@@ -291,6 +325,36 @@ function closeBotForm() {
   editingBot.value = null;
 }
 
+function triggerAvatarInput() {
+  avatarInputRef.value?.click();
+}
+
+async function uploadAvatar(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+
+  avatarUploading.value = true;
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res: any = await api('/resources', {
+      method: 'POST',
+      body: formData,
+      headers: {}, // let browser set Content-Type for multipart
+    } as any);
+
+    botForm.avatarUrl = res.url || res.thumbnailUrl || '';
+    toast.success('头像已上传');
+  } catch {
+    toast.error('上传失败');
+  } finally {
+    avatarUploading.value = false;
+    // reset input so same file can be re-selected
+    if (avatarInputRef.value) avatarInputRef.value.value = '';
+  }
+}
+
 async function saveBot() {
   if (!botForm.name.trim()) {
     toast.error('请输入名称');
@@ -298,11 +362,18 @@ async function saveBot() {
   }
   botSaving.value = true;
   try {
+    const body = {
+      name: botForm.name,
+      description: botForm.description,
+      autoReply: botForm.autoReply,
+      tags: botForm.tags,
+      avatarUrl: botForm.avatarUrl || undefined,
+    };
     if (editingBot.value) {
-      await api(`/bots/${editingBot.value.id}`, { method: 'PUT', body: botForm });
+      await api(`/bots/${editingBot.value.id}`, { method: 'PUT', body });
       toast.success('已更新');
     } else {
-      await api('/bots', { method: 'POST', body: botForm });
+      await api('/bots', { method: 'POST', body });
       toast.success('已创建');
     }
     closeBotForm();
@@ -718,6 +789,88 @@ onMounted(async () => {
 .modal-form {
   display: flex;
   flex-direction: column;
+}
+
+/* ═══ Bot Edit - Avatar ═══ */
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.avatar-upload {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--bg-page);
+  border: 2px dashed var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.avatar-upload:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+.avatar-upload.uploading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.avatar-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* solid-media inner img fill */
+.avatar-img::part(img) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+}
+
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+.avatar-upload:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.avatar-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.avatar-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
 }
 
 /* ═══ Responsive ═══ */
