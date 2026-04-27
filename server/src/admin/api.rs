@@ -89,7 +89,7 @@ pub async fn health(
     _started_at: web::Data<StartedAt>,
 ) -> HttpResponse {
     let storage_used: i64 = sqlx::query_scalar(
-        "SELECT COALESCE(SUM(file_size), 0) FROM resources WHERE is_deleted = FALSE",
+        "SELECT COALESCE(SUM(file_size), 0)::BIGINT FROM resources WHERE is_deleted = FALSE",
     )
     .fetch_one(pool.get_ref())
     .await
@@ -98,13 +98,14 @@ pub async fn health(
         0
     });
 
-    let db_size: i64 = sqlx::query_scalar("SELECT COALESCE(pg_database_size(current_database()), 0)")
-        .fetch_one(pool.get_ref())
-        .await
-        .unwrap_or_else(|e| {
-            log::error!("[Admin] Failed to query db_size: {}", e);
-            0
-        });
+    let db_size: i64 =
+        sqlx::query_scalar("SELECT COALESCE(pg_database_size(current_database()), 0)")
+            .fetch_one(pool.get_ref())
+            .await
+            .unwrap_or_else(|e| {
+                log::error!("[Admin] Failed to query db_size: {}", e);
+                0
+            });
 
     let elapsed = chrono::Utc::now().timestamp_millis() - _started_at.0;
     let days = elapsed / 86400000;
@@ -122,13 +123,14 @@ pub async fn health(
     })
 }
 
-pub async fn stats(
-    pool: web::Data<PgPool>,
-    _req: HttpRequest,
-) -> HttpResponse {
+pub async fn stats(pool: web::Data<PgPool>, _req: HttpRequest) -> HttpResponse {
     let now = chrono::Utc::now();
     let month_start = chrono::NaiveDate::from_ymd_opt(now.year(), now.month(), 1).unwrap();
-    let month_start_ts = month_start.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp_millis();
+    let month_start_ts = month_start
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_utc()
+        .timestamp_millis();
 
     // Single combined query for all stats (global, not user-scoped)
     #[derive(sqlx::FromRow)]
@@ -154,7 +156,7 @@ pub async fn stats(
           (SELECT COUNT(*) FROM diaries WHERE is_deleted = FALSE) AS diaries_total,
           (SELECT COUNT(*) FROM diaries WHERE is_deleted = FALSE AND created_at >= $1) AS diaries_month,
           (SELECT COUNT(*) FROM resources WHERE is_deleted = FALSE) AS resources_total,
-          (SELECT COALESCE(SUM(file_size), 0) FROM resources WHERE is_deleted = FALSE) AS resources_size,
+          (SELECT COALESCE(SUM(file_size), 0)::BIGINT FROM resources WHERE is_deleted = FALSE) AS resources_size,
           (SELECT COUNT(*) FROM bots WHERE is_deleted = FALSE) AS bots_total,
           (SELECT COUNT(*) FROM bots WHERE is_deleted = FALSE AND auto_reply = TRUE) AS bots_auto,
           (SELECT COUNT(*) FROM bot_replies) AS replies_total,
@@ -177,14 +179,24 @@ pub async fn stats(
     };
 
     HttpResponse::Ok().json(StatsResponse {
-        memos: CountWithMonth { total: row.memos_total, this_month: row.memos_month },
-        diaries: CountWithMonth { total: row.diaries_total, this_month: row.diaries_month },
+        memos: CountWithMonth {
+            total: row.memos_total,
+            this_month: row.memos_month,
+        },
+        diaries: CountWithMonth {
+            total: row.diaries_total,
+            this_month: row.diaries_month,
+        },
         resources: ResourceStats {
             total: row.resources_total,
             total_size: row.resources_size,
             total_size_formatted: format_size(row.resources_size),
         },
-        bots: BotStats { total: row.bots_total, auto_reply: row.bots_auto, total_replies: row.replies_total },
+        bots: BotStats {
+            total: row.bots_total,
+            auto_reply: row.bots_auto,
+            total_replies: row.replies_total,
+        },
         active_days: row.active_days,
         longest_streak: 0,
     })
@@ -237,5 +249,3 @@ fn format_size(bytes: i64) -> String {
         format!("{} B", bytes)
     }
 }
-
-

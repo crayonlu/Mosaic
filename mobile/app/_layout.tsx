@@ -158,8 +158,8 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardProvider>
         <SafeAreaProvider>
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
-        {!isAppReady && <ThemeAwareSplash />}
+          <View style={{ flex: 1, backgroundColor: theme.background }}>
+            {!isAppReady && <ThemeAwareSplash />}
             <SafeAreaContainer backgroundColor={isDiariesTab ? 'transparent' : theme.background}>
               {isDiariesTab && (
                 <>
