@@ -241,7 +241,6 @@
         "lucide-vue-next": "^0.520.0",
         "ofetch": "^1.5.1",
         "pinia": "2",
-        "solid-media": "^1.0.1",
         "vue": "^3.5.32",
         "vue-router": "^5.0.6",
       },

@@ -120,7 +120,7 @@
     </div>
 
     <!-- Bot Management Modal -->
-    <Modal :show="showBotModal" title="Bot 管理" max-width="480px" @close="showBotModal = false">
+    <Modal :show="showBotModal" title="Bot 管理" width="640px" @close="showBotModal = false">
       <div class="modal-section">
         <button class="btn-primary btn-block" @click="openBotForm()">
           <Plus :size="14" /> 新建 Bot
@@ -140,67 +140,81 @@
     </Modal>
 
     <!-- Bot Edit Modal -->
-    <Modal :show="showBotEdit" :title="editingBot ? '编辑 Bot' : '新建 Bot'" max-width="460px" @close="closeBotForm">
-      <div class="bot-edit">
+    <Modal :show="showBotEdit" :title="editingBot ? '编辑 Bot' : '新建 Bot'" width="640px" @close="closeBotForm">
+      <div class="bot-editor">
 
-        <!-- Avatar -->
-        <div class="avatar-section">
-          <div class="avatar-upload" @click="triggerAvatarInput" :class="{ uploading: avatarUploading }">
-            <solid-media
-              v-if="botForm.avatarUrl"
-              :key="botForm.avatarUrl"
-              :src="botForm.avatarUrl"
-              type="image"
-              class="avatar-img"
-              data-fill="true"
-            />
-            <div v-else class="avatar-placeholder">
-              <Bot :size="28" />
+        <!-- Profile Card -->
+        <div class="be-card be-profile">
+          <div class="be-avatar-col">
+            <div class="avatar-upload" @click="triggerAvatarInput" :class="{ uploading: avatarUploading }">
+              <AdminImage
+                v-if="botForm.avatarUrl"
+                :src="botForm.avatarUrl"
+                class-name="avatar-img"
+                alt="Bot avatar"
+              />
+              <div v-else class="avatar-placeholder">
+                <Bot :size="32" />
+              </div>
+              <div class="avatar-overlay">
+                <Loader v-if="avatarUploading" :size="18" class="spin" />
+                <Camera v-else :size="18" />
+              </div>
             </div>
-            <div class="avatar-overlay">
-              <Loader v-if="avatarUploading" :size="16" class="spin" />
-              <Camera v-else :size="16" />
+            <p class="avatar-hint">点击更换</p>
+            <input ref="avatarInputRef" type="file" accept="image/*" class="avatar-input-hidden" @change="uploadAvatar" />
+          </div>
+
+          <div class="be-fields-col">
+            <div class="be-field">
+              <label class="be-label">名称</label>
+              <input v-model="botForm.name" class="input" placeholder="为 Bot 取一个名字" maxlength="30" />
+            </div>
+            <div class="be-field">
+              <label class="be-label">描述</label>
+              <textarea
+                ref="descTextareaRef"
+                v-model="botForm.description"
+                class="input input-area bot-desc"
+                rows="1"
+                placeholder="简短描述 Bot 的性格、语气和用途…"
+                @input="autoResizeDesc"
+              />
             </div>
           </div>
-          <p class="avatar-hint">点击更换头像</p>
-          <input
-            ref="avatarInputRef"
-            type="file"
-            accept="image/*"
-            class="avatar-input-hidden"
-            @change="uploadAvatar"
-          />
         </div>
 
-        <!-- Fields -->
-        <label class="field-label">名称</label>
-        <input v-model="botForm.name" class="input" placeholder="Bot 名称" maxlength="30" />
+        <!-- Config Card -->
+        <div class="be-card be-config">
+          <h4 class="be-section-title">配置</h4>
 
-        <label class="field-label">描述</label>
-        <textarea v-model="botForm.description" class="input input-area" rows="3" placeholder="描述 Bot 的性格和用途…" maxlength="200" />
+          <div class="be-field-row">
+            <div class="be-field-label-col">
+              <span class="be-label">自动回复</span>
+              <span class="be-hint">开启后 Bot 会对新 Memo 自动生成回复</span>
+            </div>
+            <label class="toggle">
+              <input v-model="botForm.autoReply" type="checkbox" />
+              <span class="toggle-track"></span>
+            </label>
+          </div>
 
-        <label class="field-label">自动回复</label>
-        <div class="toggle-row">
-          <label class="toggle">
-            <input v-model="botForm.autoReply" type="checkbox" />
-            <span class="toggle-track"></span>
-          </label>
-          <span class="toggle-hint">{{ botForm.autoReply ? '已启用' : '已关闭' }}</span>
-        </div>
-
-        <label class="field-label">标签</label>
-        <div class="tags-area">
-          <span v-for="(t, i) in botForm.tags" :key="i" class="tag-chip">
-            {{ t }}
-            <button type="button" class="tag-remove" @click="botForm.tags.splice(i, 1)">&times;</button>
-          </span>
-          <input
-            v-model="tagInput"
-            class="tag-input"
-            placeholder="输入后回车"
-            @keydown.enter.prevent="addTag"
-            @keydown.backspace="onTagBackspace"
-          />
+          <div class="be-field">
+            <label class="be-label">标签</label>
+            <div class="tags-area">
+              <span v-for="(t, i) in botForm.tags" :key="i" class="tag-chip">
+                {{ t }}
+                <button type="button" class="tag-remove" @click="botForm.tags.splice(i, 1)">&times;</button>
+              </span>
+              <input
+                v-model="tagInput"
+                class="tag-input"
+                placeholder="添加标签…"
+                @keydown.enter.prevent="addTag"
+                @keydown.backspace="onTagBackspace"
+              />
+            </div>
+          </div>
         </div>
       </div>
       <template #footer>
@@ -216,11 +230,12 @@
 
 <script setup lang="ts">
 import {
-    Activity, Bot, Camera, FileText, Image, Loader, MessageSquare,
-    Plus, Server, User as UserIcon,
+  Activity, Bot, Camera, FileText, Image, Loader, MessageSquare,
+  Plus, Server, User as UserIcon,
 } from 'lucide-vue-next';
 import { onMounted, reactive, ref } from 'vue';
 import { adminApi, api } from '../api';
+import AdminImage from '../components/AdminImage.vue';
 import Modal from '../components/Modal.vue';
 import { useToast } from '../composables/useToast';
 import { useAuthStore } from '../stores/auth';
@@ -299,6 +314,7 @@ const editingBot = ref<any>(null);
 const botSaving = ref(false);
 const avatarUploading = ref(false);
 const avatarInputRef = ref<HTMLInputElement | null>(null);
+const descTextareaRef = ref<HTMLTextAreaElement | null>(null);
 const botForm = reactive({ name: '', description: '', autoReply: true, tags: [] as string[], avatarUrl: '' });
 const tagInput = ref('');
 
@@ -318,6 +334,8 @@ function openBotForm(b?: any) {
   botForm.avatarUrl = b?.avatarUrl || '';
   tagInput.value = '';
   showBotEdit.value = true;
+  // Auto-resize description textarea after DOM renders
+  setTimeout(autoResizeDesc, 0);
 }
 
 function closeBotForm() {
@@ -327,6 +345,13 @@ function closeBotForm() {
 
 function triggerAvatarInput() {
   avatarInputRef.value?.click();
+}
+
+function autoResizeDesc() {
+  const el = descTextareaRef.value;
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
 }
 
 async function uploadAvatar(e: Event) {
@@ -791,23 +816,102 @@ onMounted(async () => {
   flex-direction: column;
 }
 
-/* ═══ Bot Edit - Avatar ═══ */
-.avatar-section {
+/* ═══ Bot Editor ═══ */
+.bot-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.be-card {
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+/* ─── Profile card: avatar left, fields right ─── */
+.be-profile {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.be-avatar-col {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
+.be-fields-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.be-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.be-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ─── Config card ─── */
+.be-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+
+.be-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.be-field-label-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.be-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.bot-desc {
+  min-height: 48px;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.6;
+}
+
+.be-field + .be-field {
+  margin-top: 4px;
+}
+
+/* ─── Avatar (in bot editor) ─── */
 .avatar-upload {
   position: relative;
-  width: 88px;
-  height: 88px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   overflow: hidden;
   cursor: pointer;
-  background: var(--bg-page);
+  background: var(--bg-surface);
   border: 2px dashed var(--border-strong);
   display: flex;
   align-items: center;
@@ -816,7 +920,7 @@ onMounted(async () => {
 }
 .avatar-upload:hover {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 .avatar-upload.uploading {
   pointer-events: none;
@@ -828,13 +932,7 @@ onMounted(async () => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-/* solid-media inner img fill */
-.avatar-img::part(img) {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  border-radius: 50%;
 }
 
 .avatar-placeholder {
@@ -847,13 +945,14 @@ onMounted(async () => {
 .avatar-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   opacity: 0;
   transition: opacity var(--transition-fast);
+  border-radius: 50%;
 }
 .avatar-upload:hover .avatar-overlay {
   opacity: 1;
