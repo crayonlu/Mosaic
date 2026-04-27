@@ -1,32 +1,59 @@
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div v-if="show" class="modal-overlay" @click.self="onOverlayClick">
-        <div class="modal-panel" :style="{ maxWidth: maxWidth }">
-          <div class="modal-header">
-            <h3 class="modal-title">{{ title }}</h3>
-            <button class="modal-close" @click="emit('close')" aria-label="关闭">
+  <Dialog :open="show" @close="onClose" class="modal-root">
+    <!-- backdrop -->
+    <TransitionChild
+      enter="transition-backdrop"
+      enter-from="opacity-0"
+      enter-to="opacity-100"
+      leave="transition-backdrop-leave"
+      leave-from="opacity-100"
+      leave-to="opacity-0"
+    >
+      <DialogOverlay class="modal-overlay" />
+    </TransitionChild>
+
+    <!-- panel -->
+    <div class="modal-wrapper">
+      <TransitionChild
+        enter="transition-panel"
+        enter-from="panel-enter"
+        enter-to="panel-done"
+        leave="transition-panel-leave"
+        leave-from="panel-done"
+        leave-to="panel-enter"
+      >
+        <DialogPanel class="modal-panel" :style="{ maxWidth: maxWidth }">
+          <DialogTitle v-if="title" class="modal-header">
+            <span>{{ title }}</span>
+            <button class="modal-close" @click="onClose" aria-label="关闭">
               <X :size="18" />
             </button>
-          </div>
+          </DialogTitle>
           <div class="modal-body">
             <slot />
           </div>
           <div v-if="$slots.footer" class="modal-footer">
             <slot name="footer" />
           </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
+        </DialogPanel>
+      </TransitionChild>
+    </div>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
+import {
+    Dialog,
+    DialogOverlay,
+    DialogPanel,
+    DialogTitle,
+    TransitionChild,
+} from '@headlessui/vue';
 import { X } from 'lucide-vue-next';
 
-defineProps<{
+const props = defineProps<{
   show: boolean;
-  title: string;
+  title?: string;
   maxWidth?: string;
   closeOnOverlay?: boolean;
 }>();
@@ -35,24 +62,37 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-function onOverlayClick() {
+function onClose() {
   emit('close');
 }
 </script>
 
 <style scoped>
+/* ─── Root ─── */
+.modal-root {
+  position: relative;
+  z-index: 1000;
+}
+
+/* ─── Overlay (backdrop) ─── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
   background: var(--bg-overlay);
+  backdrop-filter: blur(4px);
+}
+
+/* ─── Wrapper (centers the panel) ─── */
+.modal-wrapper {
+  position: fixed;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  backdrop-filter: blur(4px);
 }
 
+/* ─── Panel ─── */
 .modal-panel {
   background: var(--bg-surface);
   border-radius: var(--radius-lg);
@@ -70,8 +110,6 @@ function onOverlayClick() {
   justify-content: space-between;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
-}
-.modal-title {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
@@ -108,16 +146,37 @@ function onOverlayClick() {
   justify-content: flex-end;
 }
 
-/* ─── Transition ─── */
-.modal-enter-active { transition: all 200ms ease-out; }
-.modal-leave-active { transition: all 150ms ease-in; }
-.modal-enter-from { opacity: 0; }
-.modal-enter-from .modal-panel { transform: scale(0.96); }
-.modal-leave-to { opacity: 0; }
-.modal-leave-to .modal-panel { transform: scale(0.96); }
+/* ─── Transitions ─── */
+.transition-backdrop {
+  transition: opacity 200ms ease-out;
+}
+.transition-backdrop-leave {
+  transition: opacity 150ms ease-in;
+}
+.opacity-0 { opacity: 0; }
+.opacity-100 { opacity: 1; }
 
+.transition-panel {
+  transition: opacity 200ms ease-out, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.transition-panel-leave {
+  transition: opacity 120ms ease-in, transform 120ms ease-in;
+}
+.panel-enter {
+  opacity: 0;
+  transform: translateY(16px) scale(0.97);
+}
+.panel-done {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* ─── Mobile ─── */
 @media (max-width: 480px) {
-  .modal-overlay { padding: 8px; align-items: flex-end; }
+  .modal-wrapper {
+    padding: 8px;
+    align-items: flex-end;
+  }
   .modal-panel {
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     max-height: 90vh;
@@ -127,3 +186,4 @@ function onOverlayClick() {
   .modal-footer { padding: 10px 16px; }
 }
 </style>
+

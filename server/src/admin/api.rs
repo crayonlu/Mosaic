@@ -93,12 +93,18 @@ pub async fn health(
     )
     .fetch_one(pool.get_ref())
     .await
-    .unwrap_or(0);
+    .unwrap_or_else(|e| {
+        log::error!("[Admin] Failed to query storage_used: {}", e);
+        0
+    });
 
     let db_size: i64 = sqlx::query_scalar("SELECT COALESCE(pg_database_size(current_database()), 0)")
         .fetch_one(pool.get_ref())
         .await
-        .unwrap_or(0);
+        .unwrap_or_else(|e| {
+            log::error!("[Admin] Failed to query db_size: {}", e);
+            0
+        });
 
     let elapsed = chrono::Utc::now().timestamp_millis() - _started_at.0;
     let days = elapsed / 86400000;
@@ -118,23 +124,13 @@ pub async fn health(
 
 pub async fn stats(
     pool: web::Data<PgPool>,
-    req: HttpRequest,
+    _req: HttpRequest,
 ) -> HttpResponse {
-    let user_id = match crate::middleware::get_user_id(&req) {
-        Ok(id) => id,
-        Err(e) => return HttpResponse::from_error(e),
-    };
-
-    let uuid = match uuid::Uuid::parse_str(&user_id) {
-        Ok(u) => u,
-        Err(_) => return HttpResponse::BadRequest().body("Invalid user"),
-    };
-
     let now = chrono::Utc::now();
     let month_start = chrono::NaiveDate::from_ymd_opt(now.year(), now.month(), 1).unwrap();
     let month_start_ts = month_start.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp_millis();
 
-    // Single combined query for all stats
+    // Single combined query for all stats (global, not user-scoped)
     #[derive(sqlx::FromRow)]
     struct StatsRow {
         memos_total: i64,
@@ -149,31 +145,36 @@ pub async fn stats(
         active_days: i64,
     }
 
-    // Fallback row if the query fails
-    let row: StatsRow = sqlx::query_as(
+    // Fallback row if the query fails — log the error for diagnostics
+    let row: StatsRow = match sqlx::query_as(
         r#"
         SELECT
-          (SELECT COUNT(*) FROM memos WHERE user_id = $1 AND is_deleted = FALSE) AS memos_total,
-          (SELECT COUNT(*) FROM memos WHERE user_id = $1 AND is_deleted = FALSE AND created_at >= $2) AS memos_month,
-          (SELECT COUNT(*) FROM diaries WHERE user_id = $1 AND is_deleted = FALSE) AS diaries_total,
-          (SELECT COUNT(*) FROM diaries WHERE user_id = $1 AND is_deleted = FALSE AND created_at >= $2) AS diaries_month,
-          (SELECT COUNT(*) FROM resources r JOIN memos m ON r.memo_id = m.id WHERE m.user_id = $1 AND r.is_deleted = FALSE) AS resources_total,
-          (SELECT COALESCE(SUM(r.file_size), 0) FROM resources r JOIN memos m ON r.memo_id = m.id WHERE m.user_id = $1 AND r.is_deleted = FALSE) AS resources_size,
-          (SELECT COUNT(*) FROM bots WHERE user_id = $1 AND is_deleted = FALSE) AS bots_total,
-          (SELECT COUNT(*) FROM bots WHERE user_id = $1 AND is_deleted = FALSE AND auto_reply = TRUE) AS bots_auto,
-          (SELECT COUNT(*) FROM bot_replies br JOIN bots b ON br.bot_id = b.id WHERE b.user_id = $1) AS replies_total,
-          (SELECT COUNT(DISTINCT to_timestamp(m.created_at / 1000)::date) FROM memos m WHERE m.user_id = $1 AND m.is_deleted = FALSE AND m.created_at >= $2) AS active_days
+          (SELECT COUNT(*) FROM memos WHERE is_deleted = FALSE) AS memos_total,
+          (SELECT COUNT(*) FROM memos WHERE is_deleted = FALSE AND created_at >= $1) AS memos_month,
+          (SELECT COUNT(*) FROM diaries WHERE is_deleted = FALSE) AS diaries_total,
+          (SELECT COUNT(*) FROM diaries WHERE is_deleted = FALSE AND created_at >= $1) AS diaries_month,
+          (SELECT COUNT(*) FROM resources WHERE is_deleted = FALSE) AS resources_total,
+          (SELECT COALESCE(SUM(file_size), 0) FROM resources WHERE is_deleted = FALSE) AS resources_size,
+          (SELECT COUNT(*) FROM bots WHERE is_deleted = FALSE) AS bots_total,
+          (SELECT COUNT(*) FROM bots WHERE is_deleted = FALSE AND auto_reply = TRUE) AS bots_auto,
+          (SELECT COUNT(*) FROM bot_replies) AS replies_total,
+          (SELECT COUNT(DISTINCT to_timestamp(created_at / 1000)::date) FROM memos WHERE is_deleted = FALSE AND created_at >= $1) AS active_days
         "#,
     )
-    .bind(uuid)
     .bind(month_start_ts)
     .fetch_one(pool.get_ref())
     .await
-    .unwrap_or(StatsRow {
-        memos_total: 0, memos_month: 0, diaries_total: 0, diaries_month: 0,
-        resources_total: 0, resources_size: 0, bots_total: 0, bots_auto: 0,
-        replies_total: 0, active_days: 0,
-    });
+    {
+        Ok(row) => row,
+        Err(e) => {
+            log::error!("[Admin] Failed to query stats: {}", e);
+            StatsRow {
+                memos_total: 0, memos_month: 0, diaries_total: 0, diaries_month: 0,
+                resources_total: 0, resources_size: 0, bots_total: 0, bots_auto: 0,
+                replies_total: 0, active_days: 0,
+            }
+        }
+    };
 
     HttpResponse::Ok().json(StatsResponse {
         memos: CountWithMonth { total: row.memos_total, this_month: row.memos_month },
