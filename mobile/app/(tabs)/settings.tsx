@@ -127,22 +127,12 @@ export default function SettingsScreen() {
             await loadStorageInfo()
 
             if (requiresRestart) {
-              toast.show({
-                type: 'success',
-                title: '清除成功',
-                message: '应用将在 1 秒后重启',
-                duration: 1000,
-              })
               setTimeout(async () => {
                 const { reloadAppAsync } = await import('expo')
                 await reloadAppAsync()
               }, 1000)
             } else {
-              toast.show({
-                type: 'success',
-                title: '清除成功',
-                message: `「${item.label}」已清除`,
-              })
+              await loadStorageInfo()
             }
           } catch (error) {
             console.error('Failed to clear storage:', error)
@@ -201,11 +191,6 @@ export default function SettingsScreen() {
       if (!nextEnabled) {
         await localPush.setPushEnabled(false)
         setPushEnabled(false)
-        toast.show({
-          type: 'success',
-          title: '推送已关闭',
-          message: '你可以随时在这里重新开启',
-        })
         return
       }
 
@@ -225,11 +210,6 @@ export default function SettingsScreen() {
       await localPush.setPushEnabled(true)
       await localPush.registerAll()
       setPushEnabled(true)
-      toast.show({
-        type: 'success',
-        title: '推送已开启',
-        message: '提醒会按你的配置自动注册',
-      })
     } catch (error) {
       console.error('Toggle push error:', error)
       toast.show({
@@ -247,11 +227,6 @@ export default function SettingsScreen() {
     try {
       await setAIConfig(aiConfig)
       setShowAISettings(false)
-      toast.show({
-        type: 'success',
-        title: '保存成功',
-        message: 'AI 配置已保存',
-      })
     } catch (error) {
       console.error('Save AI config error:', error)
       toast.show({
@@ -284,11 +259,6 @@ export default function SettingsScreen() {
 
       setTestResult('success')
       setTestMessage(`连接成功！推荐标签: ${tags.join(', ')}`)
-      toast.show({
-        type: 'success',
-        title: 'AI 连接测试成功',
-        message: `使用了 ${response.usage.totalTokens} tokens`,
-      })
     } catch (error) {
       console.error('AI test error:', error)
       const errorMessage = error instanceof Error ? error.message : '未知错误'
@@ -315,11 +285,6 @@ export default function SettingsScreen() {
         })
         // Update local user state with new avatar URL
         await refreshUser()
-        toast.show({
-          type: 'success',
-          title: '上传成功',
-          message: '头像已更新',
-        })
       }
     } catch (error) {
       console.error('Upload avatar error:', error)

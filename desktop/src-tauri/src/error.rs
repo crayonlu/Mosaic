@@ -39,6 +39,7 @@ pub enum AppError {
     UploadError(String),
 }
 
+#[allow(dead_code)]
 pub type AppResult<T> = Result<T, AppError>;
 
 impl From<AppError> for String {

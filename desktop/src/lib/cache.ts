@@ -1,27 +1,27 @@
 import { apiClient } from '@mosaic/api'
 import {
-  DEFAULT_CACHE_CONFIG,
-  ResourceLoader,
-  setPlatformAdapter,
-  type CacheConfig,
-  type CacheEntry,
-  type CacheEventHandler,
-  type CacheEventType,
-  type CacheFilter,
-  type CacheUsage,
-  type CacheWriteOptions,
-  type ICacheManager,
-  type PlatformAdapter,
+    DEFAULT_CACHE_CONFIG,
+    ResourceLoader,
+    setPlatformAdapter,
+    type CacheConfig,
+    type CacheEntry,
+    type CacheEventHandler,
+    type CacheEventType,
+    type CacheFilter,
+    type CacheUsage,
+    type CacheWriteOptions,
+    type ICacheManager,
+    type PlatformAdapter,
 } from '@mosaic/cache'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { appCacheDir, join } from '@tauri-apps/api/path'
 import {
-  exists,
-  mkdir,
-  readTextFile,
-  remove,
-  writeFile,
-  writeTextFile,
+    exists,
+    mkdir,
+    readTextFile,
+    remove,
+    writeFile,
+    writeTextFile,
 } from '@tauri-apps/plugin-fs'
 
 let resourceLoader: ResourceLoader | null = null
@@ -96,7 +96,7 @@ class TauriCacheManager implements ICacheManager {
   private indexPath = ''
   private index: Map<string, CacheEntry> = new Map()
   private config: CacheConfig = DEFAULT_CACHE_CONFIG.desktop
-  private listeners: Map<CacheEventType, Set<(event: any) => void>> = new Map()
+  private listeners: Map<CacheEventType, Set<(event: unknown) => void>> = new Map()
 
   async initialize(config: CacheConfig): Promise<void> {
     this.config = config
@@ -343,7 +343,7 @@ class TauriCacheManager implements ICacheManager {
     }
   }
 
-  private emit(type: CacheEventType, event: any): void {
+  private emit(type: CacheEventType, event: unknown): void {
     this.listeners.get(type)?.forEach(handler => handler(event))
   }
 }

@@ -91,7 +91,6 @@ export function SystemSettings() {
         proxyMode: value,
       })
       setProxyMode(value)
-      toast.success('网络模式已保存')
       toast.info('部分网络链路可能需要重启应用后生效')
     } catch (error) {
       console.error('Failed to update proxy mode:', error)
@@ -146,7 +145,6 @@ export function SystemSettings() {
       setDataDirectory(pendingDirectoryChange.path)
       setPendingDirectoryChange(null)
 
-      toast.success('数据迁移完成！应用将在下次启动时使用新位置。')
       toast.warning('请重启应用以应用更改。')
     } catch (error) {
       console.error('Failed to migrate data:', error)

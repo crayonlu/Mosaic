@@ -80,7 +80,6 @@ export default function SetupWizard() {
     try {
       await configCommands.testServerConnection(normalizedConfig)
       setConnectionStatus('success')
-      toast.success('服务器连接测试通过')
     } catch (error: unknown) {
       const presentation = mapServerConnectionError(error, 'connect')
       setConnectionStatus('error')
@@ -114,8 +113,6 @@ export default function SetupWizard() {
       await configCommands.login(normalizedConfig.username, normalizedConfig.password)
 
       initSharedApiClient(normalizedConfig.url)
-
-      toast.success('服务器配置已保存')
 
       await checkConfig()
       notifyServerConfigUpdated()

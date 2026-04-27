@@ -90,7 +90,6 @@ export function ArchiveDialog({
         queryClient.invalidateQueries({ queryKey: ['diary', targetDate] }),
       ])
 
-      toast.success('归档成功')
       sheetRef.current?.dismiss()
       onSuccess()
     } catch (error) {

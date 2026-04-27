@@ -59,7 +59,6 @@ export default function DiaryDetailPage() {
         data: { summary: summary.trim() },
       })
       setEditingSummary(false)
-      toast.success('日记摘要已保存')
     } catch (error) {
       console.error('保存摘要失败:', error)
       toast.error('保存摘要失败')
@@ -78,7 +77,6 @@ export default function DiaryDetailPage() {
         },
       })
       setEditingMood(false)
-      toast.success('心情已保存')
     } catch (error) {
       console.error('保存心情失败:', error)
       toast.error('保存心情失败')

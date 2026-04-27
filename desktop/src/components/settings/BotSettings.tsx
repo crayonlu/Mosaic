@@ -37,10 +37,8 @@ export function BotSettings() {
     try {
       if (editingBot) {
         await updateBot({ id: editingBot.id, data })
-        toast.success('Bot 更新成功')
       } else {
         await createBot(data)
-        toast.success('Bot 创建成功')
       }
       setIsSheetOpen(false)
       setEditingBot(undefined)
@@ -54,7 +52,6 @@ export function BotSettings() {
     if (!deletingBot) return
     try {
       await deleteBot(deletingBot.id)
-      toast.success('Bot 删除成功')
       setDeletingBot(null)
     } catch (err) {
       console.error(err)

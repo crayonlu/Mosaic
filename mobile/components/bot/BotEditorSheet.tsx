@@ -97,7 +97,6 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
             avatarUrl,
           },
         })
-        toast.success('已更新')
       } else {
         await createBot({
           name: name.trim(),
@@ -106,7 +105,6 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
           autoReply,
           avatarUrl,
         })
-        toast.success('已创建')
       }
       onClose()
     } catch {
@@ -125,7 +123,6 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
       onAction: async () => {
         try {
           await deleteBot(bot.id)
-          toast.success('已删除')
           onClose()
         } catch {
           toast.error('删除失败')
