@@ -71,7 +71,6 @@ export default function ArchiveScreen() {
         queryClient.invalidateQueries({ queryKey: ['diaries'] }),
         queryClient.invalidateQueries({ queryKey: ['diary', today] }),
       ])
-      toast.success('添加成功')
       setIsArchiveMode(false)
       setSelectedMemoIds([])
     } catch (error) {

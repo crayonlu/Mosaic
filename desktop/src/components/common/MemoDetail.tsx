@@ -229,7 +229,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       setHasResourceChanges(false)
       setIsEditing(false)
       onUpdate?.()
-      toast.success('Memo保存成功')
 
       // 触发 Bot 自动回复
       try {
@@ -330,7 +329,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       await deleteMemo.mutateAsync(memo.id)
       onDelete?.()
       onClose()
-      toast.success('Memo删除成功')
     } catch (error) {
       console.error('删除失败:', error)
       toast.error('Memo删除失败')
@@ -362,7 +360,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
       })
       setHasResourceChanges(true)
       onUpdate?.()
-      toast.success('资源删除成功')
     } catch (error) {
       console.error('删除资源失败:', error)
       toast.error('资源删除失败')
@@ -421,7 +418,6 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
         setHasResourceChanges(true)
         onUpdate?.()
-        toast.success(`成功添加 ${uploadedResources.length} 个资源`)
       }
     } catch (error) {
       console.error('上传资源失败:', error)

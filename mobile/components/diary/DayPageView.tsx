@@ -1,4 +1,4 @@
-﻿import { CoverImagePicker } from '@/components/archive/CoverImagePicker'
+import { CoverImagePicker } from '@/components/archive/CoverImagePicker'
 import { MemoCard } from '@/components/memo/MemoCard'
 import { Loading } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
@@ -70,7 +70,6 @@ export const DayPageView = forwardRef<DayPageViewRef, DayPageViewProps>(function
           coverImageId: coverImageIdDraft ?? null,
         },
       })
-      toast.success('保存成功')
     } catch (error) {
       console.error('更新日记失败:', error)
       toast.error('保存失败')

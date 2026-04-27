@@ -49,18 +49,22 @@ impl ApiClient {
         self
     }
 
+    #[allow(dead_code)]
     pub fn base_url(&self) -> &str {
         &self.base_url
     }
 
+    #[allow(dead_code)]
     pub async fn token(&self) -> Option<String> {
         self.token.read().await.clone()
     }
 
+    #[allow(dead_code)]
     pub async fn set_token(&self, token: Option<String>) {
         *self.token.write().await = token;
     }
 
+    #[allow(dead_code)]
     pub fn inner(&self) -> &Client {
         &self.client
     }

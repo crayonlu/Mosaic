@@ -6,10 +6,10 @@ import { useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
 } from 'react-native-reanimated'
 
 import { withAlpha } from './mediaPreviewUtils'
@@ -80,6 +80,7 @@ export function ImagePreviewContent({
     setScaleLabel(100)
     setIsZoomedJS(false)
     onZoomActiveChange?.(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canLoadOriginal, lowQualityUri, shouldStartWithOriginal, uri])
 
   useEffect(() => {
@@ -97,17 +98,9 @@ export function ImagePreviewContent({
     setScaleLabel(100)
     setIsZoomedJS(false)
     onZoomActiveChange?.(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isActive,
-    onZoomActiveChange,
-    rotation,
-    rotationTarget,
-    savedScale,
-    savedTranslateX,
-    savedTranslateY,
-    scale,
-    translateX,
-    translateY,
   ])
 
   // JS-side callbacks — called sparingly, never on every pinch frame

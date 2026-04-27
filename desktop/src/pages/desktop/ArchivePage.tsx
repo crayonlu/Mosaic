@@ -122,7 +122,6 @@ export default function ArchivePage() {
       }
       setSelectedMemos(new Set())
       setMode('view')
-      toast.success(`成功删除 ${selectedMemos.size} 条记录`)
     } catch (error) {
       console.error('批量删除失败:', error)
       toast.error('批量删除失败')
@@ -171,7 +170,6 @@ export default function ArchivePage() {
       setSelectedMemos(new Set())
       setMode('view')
       setIsArchiveDialogOpen(false)
-      toast.success(`成功归档 ${selectedMemos.size} 条记录`)
     } catch (error) {
       console.error('归档失败:', error)
       toast.error('归档失败')

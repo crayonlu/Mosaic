@@ -66,22 +66,11 @@ export default function CustomPushScreen() {
 
     await saveCustomPush(pushData)
 
-    toast.show({
-      type: 'success',
-      title: '保存成功',
-      message: '自定义提醒已保存',
-    })
-
     resetForm()
   }
 
   const handleDelete = async (name: string) => {
     await deleteCustomPush(name)
-    toast.show({
-      type: 'success',
-      title: '已删除',
-      message: '自定义提醒已删除',
-    })
   }
 
   const handleEdit = (push: CustomPushData) => {
