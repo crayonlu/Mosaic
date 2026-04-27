@@ -23,7 +23,7 @@
         leave-from="panel-done"
         leave-to="panel-enter"
       >
-        <DialogPanel class="modal-panel" :style="{ maxWidth: maxWidth }">
+        <DialogPanel class="modal-panel" :style="{ width: width || undefined, maxWidth: maxWidth || undefined }">
           <DialogTitle v-if="title" class="modal-header">
             <span>{{ title }}</span>
             <button class="modal-close" @click="onClose" aria-label="关闭">
@@ -58,6 +58,7 @@ const props = defineProps<{
   show: boolean;
   title?: string;
   maxWidth?: string;
+  width?: string;
   closeOnOverlay?: boolean;
 }>();
 
