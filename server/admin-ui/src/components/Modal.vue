@@ -1,5 +1,6 @@
 <template>
-  <Dialog :open="show" @close="onClose" class="modal-root">
+  <TransitionRoot :show="show" as="template">
+    <Dialog :open="show" @close="onClose" class="modal-root" static>
     <!-- backdrop -->
     <TransitionChild
       enter="transition-backdrop"
@@ -39,15 +40,17 @@
       </TransitionChild>
     </div>
   </Dialog>
+  </TransitionRoot>
 </template>
 
 <script setup lang="ts">
 import {
-    Dialog,
-    DialogOverlay,
-    DialogPanel,
-    DialogTitle,
-    TransitionChild,
+  Dialog,
+  DialogOverlay,
+  DialogPanel,
+  DialogTitle,
+  TransitionChild,
+  TransitionRoot,
 } from '@headlessui/vue';
 import { X } from 'lucide-vue-next';
 

@@ -8,8 +8,8 @@ mod routes;
 mod services;
 mod storage;
 
-use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
 use actix_files as fs;
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
 use admin::{activity_log::ActivityLog, api::StartedAt};
 use anyhow::anyhow;
 use config::Config;
@@ -166,7 +166,14 @@ async fn main() -> anyhow::Result<()> {
                     .route("/clear-cache", web::post().to(admin::api::clear_cache)),
             )
             .service(fs::Files::new("/admin/static", "static/admin").prefer_utf8(true))
-            .route("/admin", web::get().to(|| async { HttpResponse::Found().append_header(("Location", "/admin/")).finish() }))
+            .route(
+                "/admin",
+                web::get().to(|| async {
+                    HttpResponse::Found()
+                        .append_header(("Location", "/admin/"))
+                        .finish()
+                }),
+            )
             .route("/admin/{tail:.*}", web::get().to(admin_spa_fallback))
     })
     .bind(&bind_address)?
