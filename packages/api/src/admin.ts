@@ -11,6 +11,7 @@ export interface ServerAiConfig {
   timeoutSeconds?: number
   supportsVision: boolean
   supportsThinking: boolean
+  embeddingDim?: number
   updatedAt: number
 }
 
@@ -22,6 +23,7 @@ export interface ServerAiConfigPayload {
   temperature?: number
   maxTokens?: number
   timeoutSeconds?: number
+  embeddingDim?: number
 }
 
 export interface AdminAiConfigResponse {

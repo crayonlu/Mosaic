@@ -530,6 +530,19 @@ export default function SettingsScreen() {
                       {embConfig.model || '—'}
                     </Text>
                   </View>
+                  {embConfig.embeddingDim ? (
+                    <View style={styles.configRow}>
+                      <Text style={[styles.configLabel, { color: theme.textSecondary }]}>维度</Text>
+                      <Text
+                        style={[
+                          styles.configValue,
+                          { color: theme.text, fontFamily: 'monospace', fontSize: 12 },
+                        ]}
+                      >
+                        {embConfig.embeddingDim}
+                      </Text>
+                    </View>
+                  ) : null}
                   <View style={styles.configRow}>
                     <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
                       API Key

@@ -7,7 +7,6 @@ use serde_json::json;
 use sqlx::PgPool;
 use std::time::Duration;
 
-const EXPECTED_DIM: usize = 1536;
 const EMBEDDING_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Clone)]
@@ -89,8 +88,9 @@ impl MemoryEmbeddingService {
         text: &str,
         config: Option<&crate::models::ServerAiConfig>,
     ) -> Result<Vec<f32>, AppError> {
+        let default_dim: usize = 1536;
         let Some(config) = config else {
-            return Ok(vec![0.0_f32; EXPECTED_DIM]);
+            return Ok(vec![0.0_f32; default_dim]);
         };
 
         let base_url = config.base_url.as_str();
@@ -98,7 +98,11 @@ impl MemoryEmbeddingService {
         let model = config.model.as_str();
 
         if api_key.trim().is_empty() || model.trim().is_empty() || base_url.trim().is_empty() {
-            return Ok(vec![0.0_f32; EXPECTED_DIM]);
+            let dim = config
+                .embedding_dim
+                .map(|d| d as usize)
+                .unwrap_or(default_dim);
+            return Ok(vec![0.0_f32; dim]);
         }
 
         let url = format!("{}/embeddings", base_url.trim_end_matches('/'));
@@ -133,18 +137,32 @@ impl MemoryEmbeddingService {
             .as_array()
             .ok_or_else(|| AppError::Internal("Embedding payload missing vector".to_string()))?;
 
-        let mut embedding: Vec<f32> = values
+        let embedding: Vec<f32> = values
             .iter()
             .map(|value| value.as_f64().unwrap_or_default() as f32)
             .collect();
 
-        if embedding.len() != EXPECTED_DIM {
-            log::warn!(
-                "[MemoryEmbeddingService] Dimension mismatch: got {}, expected {}. Padding/truncating.",
-                embedding.len(),
-                EXPECTED_DIM
-            );
-            embedding.resize(EXPECTED_DIM, 0.0);
+        let actual_dim = embedding.len();
+        let stored_dim = config.embedding_dim.map(|d| d as usize);
+
+        match stored_dim {
+            Some(expected) if expected != actual_dim => {
+                return Err(AppError::Internal(format!(
+                    "Embedding dimension mismatch: model returned {}, but stored config expects {}. Change the model back or update embedding_dim in Dashboard.",
+                    actual_dim, expected
+                )));
+            }
+            None => {
+                log::info!(
+                    "[MemoryEmbeddingService] Auto-detected embedding dim {} for model {}. Persisting.",
+                    actual_dim,
+                    model
+                );
+                self.server_ai_config_service
+                    .update_embedding_dim("embedding", actual_dim as i32)
+                    .await?;
+            }
+            _ => {}
         }
 
         Ok(embedding)

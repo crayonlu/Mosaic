@@ -70,6 +70,12 @@ export function ServerAIConfigSettings() {
                 <span className="text-muted-foreground">模型</span>
                 <p className="font-medium font-mono text-xs">{config.model || '—'}</p>
               </div>
+              {key === 'embedding' && config.embeddingDim && (
+                <div>
+                  <span className="text-muted-foreground">向量维度</span>
+                  <p className="font-medium font-mono text-xs">{config.embeddingDim}</p>
+                </div>
+              )}
               <div className="col-span-2">
                 <span className="text-muted-foreground">Base URL</span>
                 <p className="font-medium text-xs break-all">{config.baseUrl || '—'}</p>

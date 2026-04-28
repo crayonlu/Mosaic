@@ -14,6 +14,7 @@ pub struct ServerAiConfig {
     pub timeout_seconds: Option<i32>,
     pub supports_vision: bool,
     pub supports_thinking: bool,
+    pub embedding_dim: Option<i32>,
     pub updated_at: i64,
 }
 
@@ -27,6 +28,7 @@ pub struct ServerAiConfigPayload {
     pub temperature: Option<f64>,
     pub max_tokens: Option<i32>,
     pub timeout_seconds: Option<i32>,
+    pub embedding_dim: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -42,6 +44,7 @@ pub struct ServerAiConfigResponse {
     pub timeout_seconds: Option<i32>,
     pub supports_vision: bool,
     pub supports_thinking: bool,
+    pub embedding_dim: Option<i32>,
     pub updated_at: i64,
 }
 
@@ -58,6 +61,7 @@ impl ServerAiConfigResponse {
             timeout_seconds: config.timeout_seconds,
             supports_vision: config.supports_vision,
             supports_thinking: config.supports_thinking,
+            embedding_dim: config.embedding_dim,
             updated_at: config.updated_at,
         }
     }

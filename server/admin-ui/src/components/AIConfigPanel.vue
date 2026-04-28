@@ -79,6 +79,17 @@
             </div>
           </div>
 
+          <div v-if="key === 'embedding'" class="field">
+            <label class="field-label">向量维度</label>
+            <input
+              v-model.number="form[key].embeddingDim"
+              type="number"
+              class="input dim-input"
+              placeholder="1536"
+            />
+            <p class="dim-hint">首次使用会自动检测，也可手动指定。换模型时需更新并重新生成向量。</p>
+          </div>
+
           <div v-if="saved[key].supportsVision || saved[key].supportsThinking" class="caps">
             <span v-if="saved[key].supportsVision" class="cap cap-vision">✓ 图片输入</span>
             <span v-if="saved[key].supportsThinking" class="cap cap-thinking">✓ 心路历程</span>
@@ -120,8 +131,8 @@ const modelErrors = reactive({ bot: '', embedding: '' });
 const modelLists = reactive({ bot: [] as string[], embedding: [] as string[] });
 
 const form = reactive({
-  bot: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '' },
-  embedding: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '' },
+  bot: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '', embeddingDim: undefined as number | undefined },
+  embedding: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '', embeddingDim: undefined as number | undefined },
 });
 const saved = reactive({
   bot: { supportsVision: false, supportsThinking: false },
@@ -149,6 +160,7 @@ async function loadConfig() {
       form[k].baseUrl = data[k].baseUrl || '';
       form[k].apiKey = data[k].apiKey || '';
       form[k].model = data[k].model || '';
+      form[k].embeddingDim = data[k].embeddingDim ?? undefined;
       saved[k].supportsVision = data[k].supportsVision || false;
       saved[k].supportsThinking = data[k].supportsThinking || false;
     }
@@ -184,7 +196,7 @@ async function save(key: ConfigKey) {
     const f = form[key];
     const result: any = await adminApi(`/ai-config/${key}`, {
       method: 'PUT',
-      body: { provider: f.provider, baseUrl: f.baseUrl, apiKey: f.apiKey, model: f.model },
+      body: { provider: f.provider, baseUrl: f.baseUrl, apiKey: f.apiKey, model: f.model, embeddingDim: f.embeddingDim },
     });
     saved[key].supportsVision = result.supportsVision || false;
     saved[key].supportsThinking = result.supportsThinking || false;
@@ -343,6 +355,9 @@ onMounted(loadConfig);
 }
 .save-btn:hover:not(:disabled) { background: var(--accent-hover); }
 .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.dim-input { max-width: 120px; }
+.dim-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
 
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

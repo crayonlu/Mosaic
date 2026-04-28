@@ -79,7 +79,7 @@ impl ServerAiConfigService {
 
     pub async fn get(&self, key: &str) -> Result<ServerAiConfig, AppError> {
         sqlx::query_as::<_, ServerAiConfig>(
-            "SELECT key, provider, base_url, api_key, model, temperature, max_tokens, timeout_seconds, supports_vision, supports_thinking, updated_at
+            "SELECT key, provider, base_url, api_key, model, temperature, max_tokens, timeout_seconds, supports_vision, supports_thinking, embedding_dim, updated_at
              FROM server_ai_configs
              WHERE key = $1",
         )
@@ -88,6 +88,16 @@ impl ServerAiConfigService {
         .await
         .map_err(AppError::Database)?
         .ok_or_else(|| AppError::NotFound(format!("Server AI config not found: {}", key)))
+    }
+
+    pub async fn update_embedding_dim(&self, key: &str, dim: i32) -> Result<(), AppError> {
+        sqlx::query("UPDATE server_ai_configs SET embedding_dim = $1 WHERE key = $2")
+            .bind(dim)
+            .bind(key)
+            .execute(&self.pool)
+            .await
+            .map_err(AppError::Database)?;
+        Ok(())
     }
 
     pub async fn upsert(
@@ -99,8 +109,8 @@ impl ServerAiConfigService {
         let now = chrono::Utc::now().timestamp_millis();
         sqlx::query_as::<_, ServerAiConfig>(
             "INSERT INTO server_ai_configs
-             (key, provider, base_url, api_key, model, temperature, max_tokens, timeout_seconds, supports_vision, supports_thinking, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+             (key, provider, base_url, api_key, model, temperature, max_tokens, timeout_seconds, supports_vision, supports_thinking, embedding_dim, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
              ON CONFLICT (key)
              DO UPDATE SET provider = EXCLUDED.provider,
                            base_url = EXCLUDED.base_url,
@@ -111,8 +121,9 @@ impl ServerAiConfigService {
                            timeout_seconds = EXCLUDED.timeout_seconds,
                            supports_vision = EXCLUDED.supports_vision,
                            supports_thinking = EXCLUDED.supports_thinking,
+                           embedding_dim = EXCLUDED.embedding_dim,
                            updated_at = EXCLUDED.updated_at
-             RETURNING key, provider, base_url, api_key, model, temperature, max_tokens, timeout_seconds, supports_vision, supports_thinking, updated_at",
+             RETURNING key, provider, base_url, api_key, model, temperature, max_tokens, timeout_seconds, supports_vision, supports_thinking, embedding_dim, updated_at",
         )
         .bind(key)
         .bind(payload.provider)
@@ -124,6 +135,7 @@ impl ServerAiConfigService {
         .bind(payload.timeout_seconds)
         .bind(caps.supports_vision)
         .bind(caps.supports_thinking)
+        .bind(payload.embedding_dim)
         .bind(now)
         .fetch_one(&self.pool)
         .await
