@@ -75,7 +75,6 @@ export default function DeskTopHome() {
       appInputRef.current?.clearTags()
       await memoListRef.current?.refetch()
       invalidateHeatmap()
-      toast.success('Memo创建成功')
     } catch (error) {
       console.error('创建memo失败:', error)
       toast.error('Memo创建失败')

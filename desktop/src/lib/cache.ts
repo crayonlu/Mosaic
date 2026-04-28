@@ -96,7 +96,7 @@ class TauriCacheManager implements ICacheManager {
   private indexPath = ''
   private index: Map<string, CacheEntry> = new Map()
   private config: CacheConfig = DEFAULT_CACHE_CONFIG.desktop
-  private listeners: Map<CacheEventType, Set<(event: any) => void>> = new Map()
+  private listeners: Map<CacheEventType, Set<(...args: any[]) => void>> = new Map()
 
   async initialize(config: CacheConfig): Promise<void> {
     this.config = config
@@ -337,13 +337,13 @@ class TauriCacheManager implements ICacheManager {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, new Set())
     }
-    this.listeners.get(type)!.add(handler)
+    this.listeners.get(type)!.add(handler as (...args: any[]) => void)
     return () => {
-      this.listeners.get(type)?.delete(handler)
+      this.listeners.get(type)?.delete(handler as (...args: any[]) => void)
     }
   }
 
-  private emit(type: CacheEventType, event: any): void {
+  private emit(type: CacheEventType, event: unknown): void {
     this.listeners.get(type)?.forEach(handler => handler(event))
   }
 }

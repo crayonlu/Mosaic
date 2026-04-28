@@ -80,6 +80,7 @@ export function ImagePreviewContent({
     setScaleLabel(100)
     setIsZoomedJS(false)
     onZoomActiveChange?.(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canLoadOriginal, lowQualityUri, shouldStartWithOriginal, uri])
 
   useEffect(() => {
@@ -97,18 +98,8 @@ export function ImagePreviewContent({
     setScaleLabel(100)
     setIsZoomedJS(false)
     onZoomActiveChange?.(false)
-  }, [
-    isActive,
-    onZoomActiveChange,
-    rotation,
-    rotationTarget,
-    savedScale,
-    savedTranslateX,
-    savedTranslateY,
-    scale,
-    translateX,
-    translateY,
-  ])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive])
 
   // JS-side callbacks — called sparingly, never on every pinch frame
   const syncZoomState = (nextScale: number) => {

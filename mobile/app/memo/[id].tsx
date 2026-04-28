@@ -85,7 +85,6 @@ export default function MemoDetailScreen() {
         }
 
         setIsEditorVisible(false)
-        toast.success('成功', '已更新')
       } catch (error) {
         handleError(error)
         toast.error('错误', '更新失败')
@@ -105,7 +104,6 @@ export default function MemoDetailScreen() {
       onAction: async () => {
         try {
           await deleteMemo(memo.id)
-          toast.success('成功', 'Memo已删除')
           router.back()
         } catch (error) {
           handleError(error)

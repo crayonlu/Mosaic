@@ -6,6 +6,8 @@ export interface Bot {
   tags: string[]
   autoReply: boolean
   sortOrder: number
+  model?: string
+  aiConfig?: any
   createdAt: number
   updatedAt: number
 }
@@ -52,6 +54,8 @@ export interface CreateBotRequest {
   description: string
   tags: string[]
   autoReply: boolean
+  model?: string
+  aiConfig?: any
 }
 
 export interface UpdateBotRequest {
@@ -61,6 +65,8 @@ export interface UpdateBotRequest {
   tags?: string[]
   autoReply?: boolean
   sortOrder?: number
+  model?: string | null
+  aiConfig?: any | null
 }
 
 export interface ReorderBotsRequest {
@@ -70,12 +76,4 @@ export interface ReorderBotsRequest {
 export interface ReplyToBotRequest {
   question: string
   resourceIds?: string[]
-}
-
-export interface AiHeaders {
-  'x-ai-provider': string
-  'x-ai-base-url': string
-  'x-ai-api-key': string
-  'x-ai-model': string
-  [key: string]: string
 }

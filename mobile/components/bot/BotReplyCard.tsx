@@ -13,8 +13,8 @@ interface BotReplyCardProps {
 }
 
 function ThinkingPanel({ content, theme }: { content?: string; theme: any }) {
-  if (!content) return null
   const [expanded, setExpanded] = useState(false)
+  if (!content) return null
   return (
     <View style={[styles.thinkingContainer, { backgroundColor: theme.surfaceMuted }]}>
       <TouchableOpacity

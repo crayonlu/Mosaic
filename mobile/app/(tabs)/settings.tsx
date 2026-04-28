@@ -1,12 +1,10 @@
 import { BotEditorSheet } from '@/components/bot/BotEditorSheet'
-import { Button, Input, SwitchBtn } from '@/components/ui'
+import { Button, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
-import { ModelCombobox } from '@/components/ui/ModelCombobox'
 import { SlidingSegmentedControl } from '@/components/ui/SlidingSegmentedControl'
 import { toast } from '@/components/ui/Toast'
-import { getAIConfig, setAIConfig, type AIConfig, type ModelCapabilities } from '@/lib/ai'
 import { useBots, useUpdateBot } from '@/lib/query'
-import { detectModelCapabilities } from '@mosaic/utils'
+import { useAdminAIConfig } from '@/lib/query/hooks/useAdminAIConfig'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { formatBytes, getStorageSummary, type StorageItem } from '@/lib/storage/storageManager'
@@ -53,7 +51,6 @@ export default function SettingsScreen() {
   const { theme, themeMode, themeName, setThemeMode, setThemeName } = useThemeStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
   // const { data: customPushCount = 0 } = useCustomPushCount()
-  const [aiConfig, setLocalAIConfig] = useState<AIConfig | null>(null)
   const [showBotSettings, setShowBotSettings] = useState(false)
   const [showAppearanceSettings, setShowAppearanceSettings] = useState(false)
   const [showAISettings, setShowAISettings] = useState(false)
@@ -62,10 +59,6 @@ export default function SettingsScreen() {
   const { data: bots = [] } = useBots()
   const { mutateAsync: updateBot } = useUpdateBot()
   const [showPermissionSettings, setShowPermissionSettings] = useState(false)
-  const [savingAI, setSavingAI] = useState(false)
-  const [testingAI, setTestingAI] = useState(false)
-  const [testResult, setTestResult] = useState<'success' | 'error' | null>(null)
-  const [testMessage, setTestMessage] = useState('')
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushPermissionGranted, setPushPermissionGranted] = useState(false)
   const [showStorageSettings, setShowStorageSettings] = useState(false)
@@ -73,11 +66,9 @@ export default function SettingsScreen() {
   const [totalStorageSize, setTotalStorageSize] = useState(0)
   const [isLoadingStorage, setIsLoadingStorage] = useState(false)
   const [clearingId, setClearingId] = useState<string | null>(null)
-  const [aiCapabilities, setAiCapabilities] = useState<ModelCapabilities | null>(null)
-  const [aiDetecting, setAiDetecting] = useState(false)
+  const { data: adminAiConfig } = useAdminAIConfig()
 
   useEffect(() => {
-    loadAIConfig()
     loadPushStatus()
     loadStorageInfo()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,91 +87,59 @@ export default function SettingsScreen() {
     }
   }, [])
 
-  const handleClearStorage = useCallback(
-    (item: StorageItem) => {
-      if (!item.clearable) return
+  const handleClearStorage = useCallback((item: StorageItem) => {
+    if (!item.clearable) return
 
-      const messages: Record<
-        string,
-        { title: string; message: string; requiresRestart?: boolean }
-      > = {
+    const messages: Record<string, { title: string; message: string; requiresRestart?: boolean }> =
+      {
         sqlite: {
           title: '确认清除本地数据',
           message: '清除后需要重启应用才能正常使用，确定吗？',
           requiresRestart: true,
         },
       }
-      const { title, message, requiresRestart } = messages[item.id] ?? {
-        title: '确认清除',
-        message: `确定要清除「${item.label}」吗？`,
-      }
+    const { title, message, requiresRestart } = messages[item.id] ?? {
+      title: '确认清除',
+      message: `确定要清除「${item.label}」吗？`,
+    }
 
-      toast.show({
-        type: 'warning',
-        title,
-        message,
-        actionLabel: '确定',
-        onAction: async () => {
-          setClearingId(item.id)
-          try {
-            await item.clear()
+    toast.show({
+      type: 'warning',
+      title,
+      message,
+      actionLabel: '确定',
+      onAction: async () => {
+        setClearingId(item.id)
+        try {
+          await item.clear()
+          await loadStorageInfo()
+
+          if (requiresRestart) {
+            setTimeout(async () => {
+              const { reloadAppAsync } = await import('expo')
+              await reloadAppAsync()
+            }, 1000)
+          } else {
             await loadStorageInfo()
-
-            if (requiresRestart) {
-              toast.show({
-                type: 'success',
-                title: '清除成功',
-                message: '应用将在 1 秒后重启',
-                duration: 1000,
-              })
-              setTimeout(async () => {
-                const { reloadAppAsync } = await import('expo')
-                await reloadAppAsync()
-              }, 1000)
-            } else {
-              toast.show({
-                type: 'success',
-                title: '清除成功',
-                message: `「${item.label}」已清除`,
-              })
-            }
-          } catch (error) {
-            console.error('Failed to clear storage:', error)
-            toast.show({
-              type: 'error',
-              title: '清除失败',
-              message: String((error as Error).message),
-            })
-          } finally {
-            setClearingId(null)
           }
-        },
-        duration: 10000,
-      })
-    },
-    [loadStorageInfo]
-  )
+        } catch (error) {
+          console.error('Failed to clear storage:', error)
+          toast.show({
+            type: 'error',
+            title: '清除失败',
+            message: String((error as Error).message),
+          })
+        } finally {
+          setClearingId(null)
+        }
+      },
+      duration: 10000,
+    })
+  }, [loadStorageInfo])
 
   const toggleSectionWithAnimation = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
     setter(prev => !prev)
   }
-
-  const loadAIConfig = async () => {
-    const config = await getAIConfig()
-    setLocalAIConfig(config)
-    detectCapabilities(config.model, config.baseUrl, config.apiKey)
-  }
-
-  const detectCapabilities = useCallback(async (model: string, baseUrl: string, apiKey: string) => {
-    if (!model || !baseUrl || !apiKey) {
-      setAiCapabilities(null)
-      return
-    }
-    setAiDetecting(true)
-    const result = await detectModelCapabilities(baseUrl, apiKey, model)
-    setAiCapabilities(result)
-    setAiDetecting(false)
-  }, [])
 
   const loadPushStatus = async () => {
     const { LocalPushService } = await import('@/lib/services/local-push')
@@ -201,11 +160,6 @@ export default function SettingsScreen() {
       if (!nextEnabled) {
         await localPush.setPushEnabled(false)
         setPushEnabled(false)
-        toast.show({
-          type: 'success',
-          title: '推送已关闭',
-          message: '你可以随时在这里重新开启',
-        })
         return
       }
 
@@ -225,11 +179,6 @@ export default function SettingsScreen() {
       await localPush.setPushEnabled(true)
       await localPush.registerAll()
       setPushEnabled(true)
-      toast.show({
-        type: 'success',
-        title: '推送已开启',
-        message: '提醒会按你的配置自动注册',
-      })
     } catch (error) {
       console.error('Toggle push error:', error)
       toast.show({
@@ -238,69 +187,6 @@ export default function SettingsScreen() {
         message: '推送开关更新失败，请稍后重试',
       })
       await loadPushStatus()
-    }
-  }
-
-  const handleSaveAIConfig = async () => {
-    if (!aiConfig) return
-    setSavingAI(true)
-    try {
-      await setAIConfig(aiConfig)
-      setShowAISettings(false)
-      toast.show({
-        type: 'success',
-        title: '保存成功',
-        message: 'AI 配置已保存',
-      })
-    } catch (error) {
-      console.error('Save AI config error:', error)
-      toast.show({
-        type: 'error',
-        title: '保存失败',
-        message: '保存 AI 配置时出错，请检查网络连接',
-      })
-    } finally {
-      setSavingAI(false)
-    }
-  }
-
-  const handleTestAI = async () => {
-    if (!aiConfig?.apiKey?.trim()) {
-      setTestResult('error')
-      setTestMessage('请先输入 API Key')
-      return
-    }
-
-    setTestingAI(true)
-    setTestResult(null)
-    setTestMessage('测试中...')
-
-    try {
-      const { createAIAgent } = await import('@/lib/ai/client')
-      const agent = createAIAgent(aiConfig)
-
-      const response = await agent.suggestTags('test')
-      const tags = response.data.map(t => t.name)
-
-      setTestResult('success')
-      setTestMessage(`连接成功！推荐标签: ${tags.join(', ')}`)
-      toast.show({
-        type: 'success',
-        title: 'AI 连接测试成功',
-        message: `使用了 ${response.usage.totalTokens} tokens`,
-      })
-    } catch (error) {
-      console.error('AI test error:', error)
-      const errorMessage = error instanceof Error ? error.message : '未知错误'
-      setTestResult('error')
-      setTestMessage(`连接失败: ${errorMessage}`)
-      toast.show({
-        type: 'error',
-        title: 'AI 连接测试失败',
-        message: errorMessage,
-      })
-    } finally {
-      setTestingAI(false)
     }
   }
 
@@ -315,11 +201,6 @@ export default function SettingsScreen() {
         })
         // Update local user state with new avatar URL
         await refreshUser()
-        toast.show({
-          type: 'success',
-          title: '上传成功',
-          message: '头像已更新',
-        })
       }
     } catch (error) {
       console.error('Upload avatar error:', error)
@@ -534,195 +415,143 @@ export default function SettingsScreen() {
     </View>
   )
 
-  const renderAISettings = () => (
-    <View style={[styles.section]}>
-      <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <TouchableOpacity
-          style={[styles.menuItem, showAISettings && { borderBottomColor: theme.border }]}
-          onPress={() => toggleSectionWithAnimation(setShowAISettings)}
-        >
-          <Sparkles size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>AI 配置</Text>
-          <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              {showAISettings ? '隐藏设置' : '显示设置'}
-            </Text>
-          </View>
-        </TouchableOpacity>
-        {showAISettings && aiConfig && (
-          <View style={[styles.aiSettings, { borderTopColor: theme.border }]}>
-            <View style={styles.settingRow}>
-              <View style={styles.providerButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.providerButton,
-                    { backgroundColor: theme.surfaceMuted },
-                    aiConfig.provider === 'openai' && { backgroundColor: theme.primary },
-                  ]}
-                  onPress={() => setLocalAIConfig({ ...aiConfig, provider: 'openai' })}
-                >
-                  <Text
-                    style={[
-                      styles.providerButtonText,
-                      aiConfig.provider === 'openai' && { color: theme.onPrimary },
-                    ]}
-                  >
-                    OpenAI
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.providerButton,
-                    { backgroundColor: theme.surfaceMuted },
-                    aiConfig.provider === 'anthropic' && { backgroundColor: theme.primary },
-                  ]}
-                  onPress={() => setLocalAIConfig({ ...aiConfig, provider: 'anthropic' })}
-                >
-                  <Text
-                    style={[
-                      styles.providerButtonText,
-                      { color: theme.text },
-                      aiConfig.provider === 'anthropic' && { color: theme.onPrimary },
-                    ]}
-                  >
-                    Anthropic
-                  </Text>
-                </TouchableOpacity>
-              </View>
+  const maskKey = (key: string) => {
+    if (!key) return '未配置'
+    if (key.length <= 8) return '••••••••'
+    return `${key.slice(0, 4)}••••${key.slice(-4)}`
+  }
+
+  const renderAISettings = () => {
+    const botConfig = adminAiConfig?.bot
+    const embConfig = adminAiConfig?.embedding
+    const botConfigured = botConfig && botConfig.model && botConfig.apiKey
+
+    return (
+      <View style={[styles.section]}>
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
+          <TouchableOpacity
+            style={[styles.menuItem, showAISettings && { borderBottomColor: theme.border }]}
+            onPress={() => toggleSectionWithAnimation(setShowAISettings)}
+          >
+            <Sparkles size={18} color={theme.text} />
+            <Text style={[styles.menuItemText, { color: theme.text }]}>AI 配置</Text>
+            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+              <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
+                {showAISettings ? '收起' : botConfigured ? '已配置' : '未配置'}
+              </Text>
             </View>
-            <View style={styles.settingRow}>
-              <Input
-                label="API URL"
-                value={aiConfig.baseUrl}
-                onChangeText={text => setLocalAIConfig({ ...aiConfig, baseUrl: text })}
-                placeholder="https://api.openai.com/v1"
-                style={styles.aiInputCompact}
-              />
-            </View>
-            <View style={styles.settingRow}>
-              <Input
-                label="API Key"
-                value={aiConfig.apiKey}
-                onChangeText={text => setLocalAIConfig({ ...aiConfig, apiKey: text })}
-                placeholder="sk-..."
-                secureTextEntry
-                style={styles.aiInputCompact}
-              />
-            </View>
-            <View style={styles.settingRow}>
-              <ModelCombobox
-                label="模型"
-                value={aiConfig.model}
-                onChange={model => {
-                  setLocalAIConfig(prev => (prev ? { ...prev, model } : prev))
-                  setTimeout(() => {
-                    detectCapabilities(model, aiConfig.baseUrl, aiConfig.apiKey)
-                  }, 500)
-                }}
-                baseUrl={aiConfig.baseUrl}
-                placeholder={aiConfig.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'}
-              />
-            </View>
-            {(aiDetecting ||
-              (aiCapabilities &&
-                (aiCapabilities.supportsVision ||
-                  aiCapabilities.supportsThinking ||
-                  (!!aiConfig.model &&
-                    !aiCapabilities.supportsVision &&
-                    !aiCapabilities.supportsThinking)))) && (
-              <View style={styles.capabilityHints}>
-                {aiDetecting && (
-                  <Text style={[styles.capabilityHint, { color: theme.textSecondary }]}>
-                    检测中...
-                  </Text>
-                )}
-                {!aiDetecting &&
-                  aiCapabilities &&
-                  (aiCapabilities.supportsVision || aiCapabilities.supportsThinking) && (
-                    <View style={styles.capabilityRow}>
-                      {aiCapabilities.supportsVision && (
-                        <Text style={[styles.capabilityHint, { color: theme.textSecondary }]}>
-                          ✓ 支持图片输入
+          </TouchableOpacity>
+          {showAISettings && (
+            <View style={[styles.aiSettings, { borderTopColor: theme.border }]}>
+              <Text style={{ fontWeight: '600', fontSize: 14, color: theme.text, marginBottom: 6 }}>
+                Bot 模型
+              </Text>
+              {botConfig ? (
+                <View style={{ gap: 4 }}>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>规范</Text>
+                    <Text style={[styles.configValue, { color: theme.text }]}>
+                      {botConfig.provider || '—'}
+                    </Text>
+                  </View>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>模型</Text>
+                    <Text
+                      style={[
+                        styles.configValue,
+                        { color: theme.text, fontFamily: 'monospace', fontSize: 12 },
+                      ]}
+                    >
+                      {botConfig.model || '—'}
+                    </Text>
+                  </View>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
+                      API Key
+                    </Text>
+                    <Text
+                      style={[
+                        styles.configValue,
+                        { color: theme.text, fontFamily: 'monospace', fontSize: 12 },
+                      ]}
+                    >
+                      {maskKey(botConfig.apiKey)}
+                    </Text>
+                  </View>
+                  {(botConfig.supportsVision || botConfig.supportsThinking) && (
+                    <View style={[styles.capabilityRow, { marginTop: 4 }]}>
+                      {botConfig.supportsVision && (
+                        <Text style={[styles.capabilityHint, { color: theme.primary }]}>
+                          ✓ 图片输入
                         </Text>
                       )}
-                      {aiCapabilities.supportsThinking && (
-                        <Text style={[styles.capabilityHint, { color: theme.textSecondary }]}>
-                          ✓ 支持心路历程
+                      {botConfig.supportsThinking && (
+                        <Text style={[styles.capabilityHint, { color: theme.primary }]}>
+                          ✓ 心路历程
                         </Text>
                       )}
                     </View>
                   )}
-                {!aiDetecting &&
-                  aiCapabilities &&
-                  !aiCapabilities.supportsVision &&
-                  !aiCapabilities.supportsThinking &&
-                  aiConfig.model && (
-                    <Text style={[styles.capabilityHint, { color: theme.textSecondary }]}>
-                      无法识别模型能力，图片和心路历程功能可能不可用
-                    </Text>
-                  )}
-              </View>
-            )}
-            <View style={styles.settingRow}>
-              <Button
-                title="测试连接"
-                variant="secondary"
-                onPress={handleTestAI}
-                loading={testingAI}
-                disabled={!aiConfig.apiKey?.trim()}
-                style={{ flex: 1 }}
-              />
-              <Button
-                title="保存"
-                variant="primary"
-                onPress={handleSaveAIConfig}
-                loading={savingAI}
-                disabled={testingAI || !aiConfig.apiKey?.trim()}
-                style={{ flex: 1 }}
-              />
-            </View>
-            {testMessage && (
+                </View>
+              ) : (
+                <Text style={{ fontSize: 13, color: theme.textSecondary }}>未配置</Text>
+              )}
+
               <View
                 style={[
-                  styles.testResult,
-                  {
-                    backgroundColor:
-                      testResult === 'success'
-                        ? theme.semantic.successSoft
-                        : testResult === 'error'
-                          ? theme.semantic.errorSoft
-                          : theme.semantic.infoSoft,
-                    borderColor:
-                      testResult === 'success'
-                        ? theme.border
-                        : testResult === 'error'
-                          ? theme.border
-                          : theme.border,
-                  },
+                  { borderTopWidth: StyleSheet.hairlineWidth, marginVertical: 12 },
+                  { borderTopColor: theme.border },
                 ]}
-              >
-                <Text
-                  style={[
-                    styles.testResultText,
-                    {
-                      color:
-                        testResult === 'success'
-                          ? theme.success
-                          : testResult === 'error'
-                            ? theme.error
-                            : theme.info,
-                    },
-                  ]}
-                >
-                  {testMessage}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
+              />
+              <Text style={{ fontWeight: '600', fontSize: 14, color: theme.text, marginBottom: 6 }}>
+                Embedding 模型
+              </Text>
+              {embConfig ? (
+                <View style={{ gap: 4 }}>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>规范</Text>
+                    <Text style={[styles.configValue, { color: theme.text }]}>
+                      {embConfig.provider || '—'}
+                    </Text>
+                  </View>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>模型</Text>
+                    <Text
+                      style={[
+                        styles.configValue,
+                        { color: theme.text, fontFamily: 'monospace', fontSize: 12 },
+                      ]}
+                    >
+                      {embConfig.model || '—'}
+                    </Text>
+                  </View>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
+                      API Key
+                    </Text>
+                    <Text
+                      style={[
+                        styles.configValue,
+                        { color: theme.text, fontFamily: 'monospace', fontSize: 12 },
+                      ]}
+                    >
+                      {maskKey(embConfig.apiKey)}
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <Text style={{ fontSize: 13, color: theme.textSecondary }}>未配置</Text>
+              )}
+
+              <Text style={{ fontSize: 11, color: theme.textSecondary, marginTop: 12 }}>
+                在 Dashboard 管理面板中修改此配置
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
-    </View>
-  )
+    )
+  }
 
   const renderPermissionSection = () => (
     <View style={[styles.section]}>
@@ -1127,5 +956,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     flexWrap: 'wrap',
+  },
+  configRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 2,
+  },
+  configLabel: {
+    fontSize: 12,
+    width: 50,
+  },
+  configValue: {
+    fontSize: 13,
+    fontWeight: '500',
+    flex: 1,
+    textAlign: 'right',
   },
 })

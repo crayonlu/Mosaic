@@ -28,7 +28,9 @@ pub struct DiaryWithMemosResponse {
 pub mod bot;
 pub mod diary;
 pub mod memo;
+pub mod memory;
 pub mod resource;
+pub mod server_ai_config;
 pub mod stats;
 pub mod user;
 
@@ -41,11 +43,16 @@ pub use memo::{
     CreateMemoRequest, Memo, MemoListQuery, MemoWithResources,
     ResourceResponse as MemoResourceResponse, TagResponse, UpdateMemoRequest,
 };
+pub use memory::{
+    AnchorMemoContext, BotMemoryContext, BotMemoryDebugContext, DiaryMemoryContext, EpisodeContext,
+    MemoEpisode, MemoEpisodeLink, RelatedMemoContext, UserMemoryProfile,
+};
 pub use resource::{
     build_download_route, build_thumbnail_route, thumbnail_mime_type, thumbnail_storage_path,
     with_thumbnail_metadata, ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse,
     Resource, ResourceResponse,
 };
+pub use server_ai_config::{ServerAiConfig, ServerAiConfigPayload, ServerAiConfigResponse};
 pub use stats::{
     HeatMapData, MoodData, SummaryData, TagData, TimelineData, TimelineEntry, TrendsData,
 };

@@ -1,9 +1,11 @@
 use crate::error::AppError;
 use crate::models::Resource;
 use crate::models::{
-    Bot, BotReplyResponse, BotResponse, BotSummary, BotThreadMessage, BotThreadResponse,
-    CreateBotRequest, ReorderBotsRequest, ReplyToBotRequest, UpdateBotRequest,
+    Bot, BotMemoryContext, BotReplyResponse, BotResponse, BotSummary, BotThreadMessage,
+    BotThreadResponse, CreateBotRequest, Memo, ReorderBotsRequest, ReplyToBotRequest,
+    UpdateBotRequest,
 };
+use crate::services::{BotMemoryContextService, ServerAiConfigService};
 use crate::storage::traits::Storage;
 use base64::{engine::general_purpose, Engine as _};
 use chrono::Utc;
@@ -35,11 +37,34 @@ struct AiImageInput {
 pub struct BotService {
     pool: PgPool,
     storage: Arc<dyn Storage>,
+    memory_context_service: Option<BotMemoryContextService>,
+    server_ai_config_service: Option<ServerAiConfigService>,
 }
 
 impl BotService {
     pub fn new(pool: PgPool, storage: Arc<dyn Storage>) -> Self {
-        Self { pool, storage }
+        Self {
+            pool,
+            storage,
+            memory_context_service: None,
+            server_ai_config_service: None,
+        }
+    }
+
+    pub fn with_memory_context_service(
+        mut self,
+        memory_context_service: BotMemoryContextService,
+    ) -> Self {
+        self.memory_context_service = Some(memory_context_service);
+        self
+    }
+
+    pub fn with_server_ai_config_service(
+        mut self,
+        server_ai_config_service: ServerAiConfigService,
+    ) -> Self {
+        self.server_ai_config_service = Some(server_ai_config_service);
+        self
     }
 
     pub async fn list_bots(&self, user_id: &str) -> Result<Vec<BotResponse>, AppError> {
@@ -47,7 +72,7 @@ impl BotService {
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
 
         let bots = sqlx::query_as::<_, Bot>(
-            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at
+            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, model, ai_config, created_at, updated_at
              FROM bots WHERE user_id = $1 AND is_deleted = FALSE ORDER BY sort_order ASC, created_at ASC",
         )
         .bind(user_uuid)
@@ -79,9 +104,9 @@ impl BotService {
         let sort_order = max_order.unwrap_or(-1) + 1;
 
         let bot = sqlx::query_as::<_, Bot>(
-            "INSERT INTO bots (id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-             RETURNING id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at",
+            "INSERT INTO bots (id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, model, ai_config, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+             RETURNING id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, model, ai_config, created_at, updated_at",
         )
         .bind(Uuid::new_v4())
         .bind(user_uuid)
@@ -91,6 +116,8 @@ impl BotService {
         .bind(tags_json)
         .bind(req.auto_reply)
         .bind(sort_order)
+        .bind(&req.model)
+        .bind(&req.ai_config)
         .bind(now)
         .bind(now)
         .fetch_one(&self.pool)
@@ -110,7 +137,7 @@ impl BotService {
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
 
         let existing = sqlx::query_as::<_, Bot>(
-            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at
+            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, model, ai_config, created_at, updated_at
              FROM bots WHERE id = $1 AND user_id = $2",
         )
         .bind(bot_id)
@@ -136,11 +163,21 @@ impl BotService {
             None => existing.tags,
         };
 
+        let model = match req.model {
+            Some(v) => v,
+            None => existing.model,
+        };
+
+        let ai_config = match req.ai_config {
+            Some(v) => v,
+            None => existing.ai_config,
+        };
+
         let bot = sqlx::query_as::<_, Bot>(
             "UPDATE bots SET name = $1, avatar_url = $2, description = $3, tags = $4,
-             auto_reply = $5, sort_order = $6, updated_at = $7
-             WHERE id = $8 AND user_id = $9
-             RETURNING id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at",
+             auto_reply = $5, sort_order = $6, model = $7, ai_config = $8, updated_at = $9
+             WHERE id = $10 AND user_id = $11
+             RETURNING id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, model, ai_config, created_at, updated_at",
         )
         .bind(&name)
         .bind(&avatar_url)
@@ -148,6 +185,8 @@ impl BotService {
         .bind(tags_json)
         .bind(auto_reply)
         .bind(sort_order)
+        .bind(&model)
+        .bind(&ai_config)
         .bind(now)
         .bind(bot_id)
         .bind(user_uuid)
@@ -296,13 +335,15 @@ impl BotService {
         &self,
         user_id: &str,
         memo_id: Uuid,
-        ai_config: AiConfig,
+        _ai_config: AiConfig,
     ) -> Result<(), AppError> {
+        let ai_config = self.load_server_ai_config("bot").await?;
         let user_uuid = Uuid::parse_str(user_id)
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
 
-        let memo_content: Option<String> = sqlx::query_scalar(
-            "SELECT content FROM memos WHERE id = $1 AND user_id = $2 AND is_deleted = FALSE",
+        let memo: Option<Memo> = sqlx::query_as::<_, Memo>(
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
+             FROM memos WHERE id = $1 AND user_id = $2 AND is_deleted = FALSE",
         )
         .bind(memo_id)
         .bind(user_uuid)
@@ -310,7 +351,8 @@ impl BotService {
         .await
         .map_err(AppError::Database)?;
 
-        let memo_content = memo_content.ok_or(AppError::MemoNotFound)?;
+        let memo = memo.ok_or(AppError::MemoNotFound)?;
+        let memo_content = memo.content.clone();
 
         #[derive(sqlx::FromRow)]
         struct MoodRow {
@@ -333,8 +375,8 @@ impl BotService {
         let mood_info = mood_row.map(|r| (r.mood_key, r.mood_score));
 
         let bots = sqlx::query_as::<_, Bot>(
-            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, created_at, updated_at
-             FROM bots WHERE user_id = $1 AND auto_reply = TRUE",
+            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, model, ai_config, created_at, updated_at
+             FROM bots WHERE user_id = $1 AND auto_reply = TRUE AND is_deleted = FALSE",
         )
         .bind(user_uuid)
         .fetch_all(&self.pool)
@@ -350,6 +392,8 @@ impl BotService {
         let pool = self.pool.clone();
         let memo_content = memo_content.clone();
         let ai_config = std::sync::Arc::new(ai_config);
+        let memory_context_service = self.memory_context_service.clone();
+        let memo_for_context = memo.clone();
 
         tokio::spawn(async move {
             let mut handles = vec![];
@@ -359,17 +403,30 @@ impl BotService {
                 let mood_info = mood_info.clone();
                 let ai_config = ai_config.clone();
                 let memo_images = memo_images.clone();
+                let memory_context_service = memory_context_service.clone();
+                let memo_for_context = memo_for_context.clone();
 
                 handles.push(tokio::spawn(async move {
+                    let memory_context = if let Some(service) = memory_context_service {
+                        service
+                            .build_for_memo(&memo_for_context, vec![], Some(bot.id))
+                            .await
+                            .ok()
+                    } else {
+                        None
+                    };
+
                     if let Ok(reply) = call_ai_for_reply(
                         &ai_config,
                         &bot.name,
                         &bot.description,
                         &memo_content,
+                        memory_context.as_ref(),
                         mood_info.as_ref(),
                         None,
                         None,
                         &memo_images,
+                        bot.model.as_deref(),
                     )
                     .await
                     {
@@ -403,8 +460,9 @@ impl BotService {
         user_id: &str,
         parent_reply_id: Uuid,
         req: ReplyToBotRequest,
-        ai_config: AiConfig,
+        _ai_config: AiConfig,
     ) -> Result<BotReplyResponse, AppError> {
+        let ai_config = self.load_server_ai_config("bot").await?;
         let user_uuid = Uuid::parse_str(user_id)
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
 
@@ -416,12 +474,14 @@ impl BotService {
             bot_name: String,
             bot_avatar_url: Option<String>,
             bot_description: String,
+            bot_model: Option<String>,
         }
 
         let parent = sqlx::query_as::<_, ParentRow>(
             "SELECT br.memo_id, br.bot_id,
                     m.content as memo_content,
-                    b.name as bot_name, b.avatar_url as bot_avatar_url, b.description as bot_description
+                    b.name as bot_name, b.avatar_url as bot_avatar_url, b.description as bot_description,
+                    b.model as bot_model
              FROM bot_replies br
              JOIN bots b ON b.id = br.bot_id
              JOIN memos m ON m.id = br.memo_id
@@ -457,14 +517,42 @@ impl BotService {
             .load_images_from_resources(question_resources.clone())
             .await?;
 
+        let memory_context = if let Some(service) = &self.memory_context_service {
+            let memo = Memo {
+                id: parent.memo_id,
+                user_id: user_uuid,
+                content: parent.memo_content.clone(),
+                tags: serde_json::json!([]),
+                is_archived: false,
+                is_deleted: false,
+                diary_date: None,
+                ai_summary: None,
+                created_at: thread
+                    .replies
+                    .first()
+                    .map(|reply| reply.created_at)
+                    .unwrap_or_else(|| chrono::Utc::now().timestamp_millis()),
+                updated_at: chrono::Utc::now().timestamp_millis(),
+            };
+
+            service
+                .build_for_memo(&memo, history.clone(), Some(parent.bot_id))
+                .await
+                .ok()
+        } else {
+            None
+        };
+
         let reply = call_ai_for_thread_reply(
             &ai_config,
             &parent.bot_name,
             &parent.bot_description,
             &parent.memo_content,
+            memory_context.as_ref(),
             &history,
             &req.question,
             &question_images,
+            parent.bot_model.as_deref(),
         )
         .await
         .map_err(|e| AppError::Internal(e.to_string()))?;
@@ -521,6 +609,25 @@ impl BotService {
             children: vec![],
             thread_count: thread.replies.len() as i64 + 1,
             latest_reply_id: new_id,
+        })
+    }
+
+    async fn load_server_ai_config(&self, key: &str) -> Result<AiConfig, AppError> {
+        let service = self.server_ai_config_service.as_ref().ok_or_else(|| {
+            AppError::Internal("Server AI config service unavailable".to_string())
+        })?;
+        let config = service.get(key).await?;
+        if config.api_key.trim().is_empty() || config.model.trim().is_empty() {
+            return Err(AppError::InvalidInput(format!(
+                "Server AI config '{}' is incomplete",
+                key
+            )));
+        }
+        Ok(AiConfig {
+            provider: config.provider,
+            base_url: config.base_url,
+            api_key: config.api_key,
+            model: config.model,
         })
     }
 
@@ -829,9 +936,11 @@ async fn call_ai_for_thread_reply(
     bot_name: &str,
     bot_description: &str,
     memo_content: &str,
+    memory_context: Option<&BotMemoryContext>,
     history: &[serde_json::Value],
     user_question: &str,
     images: &[AiImageInput],
+    bot_model: Option<&str>,
 ) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
     let system_prompt = format!(
         "你是 {}。{}\n\n你正在围绕同一条 Memo 和用户连续对话。请始终以这条 Memo 为上下文锚点，不要把它当成普通闲聊。请用中文回复，语言风格符合你的人格设定。",
@@ -840,7 +949,7 @@ async fn call_ai_for_thread_reply(
 
     let mut messages = vec![json!({
         "role": "user",
-        "content": format!("原始 Memo：\n{}", memo_content),
+        "content": format!("{}\n\n原始 Memo：\n{}", build_memory_prefix(memory_context), memo_content),
     })];
     messages.extend(history.iter().cloned());
     messages.push(build_user_message(
@@ -849,7 +958,7 @@ async fn call_ai_for_thread_reply(
         config.provider.as_str(),
     ));
 
-    send_ai_messages(config, system_prompt, messages).await
+    send_ai_messages(config, system_prompt, messages, bot_model).await
 }
 
 async fn call_ai_for_reply(
@@ -857,10 +966,12 @@ async fn call_ai_for_reply(
     bot_name: &str,
     bot_description: &str,
     memo_content: &str,
+    memory_context: Option<&BotMemoryContext>,
     mood_info: Option<&(String, i32)>,
     previous_reply: Option<&str>,
     user_question: Option<&str>,
     images: &[AiImageInput],
+    bot_model: Option<&str>,
 ) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
     let mood_context = mood_info.map(|(key, score)| {
         format!(
@@ -888,7 +999,11 @@ async fn call_ai_for_reply(
         empty_images
     };
     let mut messages = vec![build_user_message(
-        memo_content,
+        &format!(
+            "{}\n\n{}",
+            build_memory_prefix(memory_context),
+            memo_content
+        ),
         memo_images,
         config.provider.as_str(),
     )];
@@ -905,22 +1020,84 @@ async fn call_ai_for_reply(
         ));
     }
 
-    send_ai_messages(config, system_prompt, messages).await
+    send_ai_messages(config, system_prompt, messages, bot_model).await
+}
+
+const MAX_MEMORY_PREFIX_CHARS: usize = 3000;
+
+fn build_memory_prefix(memory_context: Option<&BotMemoryContext>) -> String {
+    let Some(context) = memory_context else {
+        return String::new();
+    };
+
+    let mut sections = Vec::new();
+    let mut remaining = MAX_MEMORY_PREFIX_CHARS;
+
+    if let Some(profile_summary) = &context.profile_summary {
+        let truncated: String = profile_summary.chars().take(400).collect();
+        let section = format!("[长期画像]\n{}", truncated);
+        if section.len() <= remaining {
+            remaining -= section.len();
+            sections.push(section);
+        }
+    }
+
+    if let Some(episode) = &context.selected_episode {
+        let truncated: String = episode.summary.chars().take(500).collect();
+        let section = format!("[当前事件线]\n{}", truncated);
+        if section.len() <= remaining {
+            remaining -= section.len();
+            sections.push(section);
+        }
+    }
+
+    if let Some(timeline_summary) = &context.timeline_summary {
+        let truncated: String = timeline_summary.chars().take(600).collect();
+        let section = format!("[相关时间线]\n{}", truncated);
+        if section.len() <= remaining {
+            remaining -= section.len();
+            sections.push(section);
+        }
+    }
+
+    if !context.related_memos.is_empty() {
+        let mut items = Vec::new();
+        for memo in context.related_memos.iter().take(5) {
+            let item = format!(
+                "- {}",
+                memo.summary_excerpt.chars().take(100).collect::<String>()
+            );
+            if items.iter().map(|s: &String| s.len()).sum::<usize>() + item.len()
+                > remaining.saturating_sub(20)
+            {
+                break;
+            }
+            items.push(item);
+        }
+        if !items.is_empty() {
+            sections.push(format!("[相关历史 Memo]\n{}", items.join("\n")));
+        }
+    }
+
+    sections.join("\n\n")
 }
 
 async fn send_ai_messages(
     config: &AiConfig,
     system_prompt: String,
     messages: Vec<serde_json::Value>,
+    bot_model: Option<&str>,
 ) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
     let client = reqwest::Client::new();
     let base_url = config.base_url.trim_end_matches('/');
+
+    let target_model = bot_model.unwrap_or(&config.model);
 
     let (url, body) = match config.provider.as_str() {
         "anthropic" => {
             let url = format!("{}/messages", base_url);
             let body = json!({
-                "model": config.model,
+                "model": target_model,
                 "max_tokens": 512,
                 "system": system_prompt,
                 "messages": messages,
@@ -933,7 +1110,7 @@ async fn send_ai_messages(
                 vec![json!({ "role": "system", "content": system_prompt })];
             full_messages.extend(messages);
             let body = json!({
-                "model": config.model,
+                "model": target_model,
                 "messages": full_messages,
                 "max_tokens": 512,
                 "temperature": 0.8,

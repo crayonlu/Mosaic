@@ -1,4 +1,10 @@
 // API exports
+export {
+  adminApi,
+  type AdminAiConfigResponse,
+  type ServerAiConfig,
+  type ServerAiConfigPayload,
+} from './admin'
 export { authApi } from './auth'
 export { botsApi } from './bots'
 export { ApiClient, apiClient, type TokenStorage } from './client'

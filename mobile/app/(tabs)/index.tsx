@@ -35,7 +35,6 @@ export default function HomeScreen() {
     confirm('确定要删除这条 Memo 吗？', async () => {
       try {
         await deleteMemo(id)
-        toast.success('成功', '已删除')
       } catch (error) {
         handleError(error)
         toast.error('错误', '删除失败')
@@ -61,7 +60,6 @@ export default function HomeScreen() {
         resourceIds: resources,
         aiSummary,
       })
-      toast.success('成功', '已创建')
       triggerReplies(newMemo.id).catch(() => {})
     } catch (error) {
       handleError(error)

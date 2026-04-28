@@ -1,6 +1,5 @@
 import { toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
-import { useAIConfig } from '@/hooks/useAIConfig'
 import {
   createSelectedMediaItems,
   uploadSelectedMedia,
@@ -68,7 +67,6 @@ interface BotThreadSheetProps {
 export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps) {
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
-  const { config: aiConfig } = useAIConfig()
   const { data: thread, isLoading } = useBotThread(reply?.latestReplyId ?? reply?.id)
   const { mutateAsync: replyToBot, isPending } = useReplyToBot()
   const scrollViewRef = useRef<ScrollView>(null)
@@ -147,11 +145,6 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
     const question = text.trim()
     if (!latestReplyId || (!question && mediaItems.length === 0) || isPending) return
 
-    if (!aiConfig?.apiKey?.trim()) {
-      toast.error('请先配置 AI')
-      return
-    }
-
     const sentText = question || '请根据图片内容继续回复。'
     const sentMediaItems = mediaItems
     const sentUploadCandidates = uploadCandidates
@@ -202,7 +195,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       setPendingMessage(null)
       toast.error(error instanceof Error ? error.message : '发送失败')
     }
-  }, [aiConfig?.apiKey, isPending, latestReplyId, mediaItems, replyToBot, text, uploadCandidates])
+  }, [isPending, latestReplyId, mediaItems, replyToBot, text, uploadCandidates])
 
   const removeMediaItem = useCallback((key: string) => {
     setMediaItems(prev => prev.filter(item => item.key !== key))
