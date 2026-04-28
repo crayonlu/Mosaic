@@ -30,7 +30,18 @@
 
           <div class="field">
             <label class="field-label">API Key</label>
-            <input v-model="form[key].apiKey" type="password" class="input" placeholder="sk-..." />
+            <div class="key-wrap">
+              <input
+                v-model="form[key].apiKey"
+                :type="showKeys[key] ? 'text' : 'password'"
+                class="input key-input"
+                placeholder="sk-..."
+              />
+              <button class="key-toggle" @click="showKeys[key] = !showKeys[key]">
+                <Eye v-if="!showKeys[key]" :size="14" />
+                <EyeOff v-else :size="14" />
+              </button>
+            </div>
           </div>
 
           <div class="field">
@@ -53,6 +64,7 @@
                 <span v-else>获取</span>
               </button>
             </div>
+            <p v-if="modelErrors[key]" class="model-error">{{ modelErrors[key] }}</p>
             <div v-if="modelLists[key].length" class="model-list">
               <button
                 v-for="m in filteredModels(key)"
@@ -87,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { Check, Loader, Sparkles } from 'lucide-vue-next';
+import { Check, Eye, EyeOff, Loader, Sparkles } from 'lucide-vue-next';
 import { onMounted, reactive, ref } from 'vue';
 import { adminApi } from '../api';
 import { useToast } from '../composables/useToast';
@@ -101,8 +113,10 @@ const providerUrls: Record<string, string> = {
 
 const toast = useToast();
 const loading = ref(false);
+const showKeys = reactive({ bot: false, embedding: false });
 const saving = reactive({ bot: false, embedding: false });
 const modelsLoading = reactive({ bot: false, embedding: false });
+const modelErrors = reactive({ bot: '', embedding: '' });
 const modelLists = reactive({ bot: [] as string[], embedding: [] as string[] });
 
 const form = reactive({
@@ -156,7 +170,11 @@ async function fetchModels(key: ConfigKey) {
     modelLists[key] = Array.isArray(body.data)
       ? body.data.map((m: any) => m.id as string).sort()
       : [];
-  } catch { modelLists[key] = []; }
+    modelErrors[key] = '';
+  } catch (e) {
+    modelLists[key] = [];
+    modelErrors[key] = `获取失败: ${e instanceof Error ? e.message : '未知错误'}`;
+  }
   finally { modelsLoading[key] = false; }
 }
 
@@ -254,6 +272,11 @@ onMounted(loadConfig);
   background: var(--bg-surface);
   margin-top: 2px;
 }
+.model-error {
+  color: var(--danger);
+  font-size: 11px;
+  margin-top: 2px;
+}
 .model-item {
   display: flex;
   align-items: center;
@@ -282,6 +305,23 @@ onMounted(loadConfig);
 }
 .cap-vision { background: var(--info-soft); color: var(--info); }
 .cap-thinking { background: var(--success-soft); color: var(--success); }
+
+.key-wrap { display: flex; gap: 6px; align-items: center; }
+.key-input { flex: 1; min-width: 0; }
+.key-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+  flex-shrink: 0;
+}
+.key-toggle:hover { color: var(--text-primary); }
 
 .save-btn {
   display: flex;

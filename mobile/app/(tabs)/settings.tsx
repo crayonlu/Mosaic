@@ -547,10 +547,6 @@ export default function SettingsScreen() {
               ) : (
                 <Text style={{ fontSize: 13, color: theme.textSecondary }}>未配置</Text>
               )}
-
-              <Text style={{ fontSize: 11, color: theme.textSecondary, marginTop: 12 }}>
-                在 Dashboard 管理面板中修改此配置
-              </Text>
             </View>
           )}
         </View>
@@ -956,6 +952,7 @@ const styles = StyleSheet.create({
   capabilityHint: {
     fontSize: 12,
     lineHeight: 17,
+    fontWeight: '500',
   },
   capabilityRow: {
     flexDirection: 'row',
@@ -970,7 +967,8 @@ const styles = StyleSheet.create({
   },
   configLabel: {
     fontSize: 12,
-    width: 50,
+    minWidth: 52,
+    flexShrink: 0,
   },
   configValue: {
     fontSize: 13,

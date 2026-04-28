@@ -72,7 +72,7 @@ export function ServerAIConfigSettings() {
               </div>
               <div className="col-span-2">
                 <span className="text-muted-foreground">Base URL</span>
-                <p className="font-medium text-xs truncate">{config.baseUrl || '—'}</p>
+                <p className="font-medium text-xs break-all">{config.baseUrl || '—'}</p>
               </div>
               <div className="col-span-2">
                 <div className="flex items-center gap-1">
@@ -106,8 +106,6 @@ export function ServerAIConfigSettings() {
                 )}
               </div>
             )}
-
-            <p className="text-xs text-muted-foreground pt-1">在 Dashboard 管理面板中修改此配置</p>
           </CardContent>
         )}
       </Card>
