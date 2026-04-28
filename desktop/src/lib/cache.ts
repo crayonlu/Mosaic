@@ -96,7 +96,7 @@ class TauriCacheManager implements ICacheManager {
   private indexPath = ''
   private index: Map<string, CacheEntry> = new Map()
   private config: CacheConfig = DEFAULT_CACHE_CONFIG.desktop
-  private listeners: Map<CacheEventType, Set<(...args: any[]) => void>> = new Map()
+  private listeners: Map<CacheEventType, Set<(event: unknown) => void>> = new Map()
 
   async initialize(config: CacheConfig): Promise<void> {
     this.config = config
