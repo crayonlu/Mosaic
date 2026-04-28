@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { botsApi } from '../bots'
 import type {
-  AiHeaders,
   CreateBotRequest,
   ReorderBotsRequest,
   ReplyToBotRequest,
@@ -78,23 +77,15 @@ export function useReorderBots() {
 
 export function useTriggerReplies() {
   return useMutation({
-    mutationFn: ({ memoId, aiHeaders }: { memoId: string; aiHeaders: AiHeaders }) =>
-      botsApi.triggerReplies(memoId, aiHeaders),
+    mutationFn: (memoId: string) => botsApi.triggerReplies(memoId),
   })
 }
 
 export function useReplyToBot() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      replyId,
-      data,
-      aiHeaders,
-    }: {
-      replyId: string
-      data: ReplyToBotRequest
-      aiHeaders: AiHeaders
-    }) => botsApi.replyToBot(replyId, data, aiHeaders),
+    mutationFn: ({ replyId, data }: { replyId: string; data: ReplyToBotRequest }) =>
+      botsApi.replyToBot(replyId, data),
     onSuccess: newReply => {
       queryClient.invalidateQueries({ queryKey: ['bot-replies', newReply.memoId] })
       queryClient.invalidateQueries({ queryKey: ['bot-thread'] })

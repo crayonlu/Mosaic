@@ -1,6 +1,5 @@
 import { apiClient } from './client'
 import type {
-  AiHeaders,
   Bot,
   BotReply,
   BotThread,
@@ -39,15 +38,11 @@ export const botsApi = {
     return apiClient.get<BotThread>(`/api/bot-replies/${replyId}/thread`)
   },
 
-  triggerReplies(memoId: string, aiHeaders: AiHeaders): Promise<void> {
-    return apiClient.postWithHeaders<void>(
-      `/api/memos/${memoId}/trigger-replies`,
-      undefined,
-      aiHeaders
-    )
+  triggerReplies(memoId: string): Promise<void> {
+    return apiClient.post<void>(`/api/memos/${memoId}/trigger-replies`)
   },
 
-  replyToBot(replyId: string, data: ReplyToBotRequest, aiHeaders: AiHeaders): Promise<BotReply> {
-    return apiClient.postWithHeaders<BotReply>(`/api/bot-replies/${replyId}/reply`, data, aiHeaders)
+  replyToBot(replyId: string, data: ReplyToBotRequest): Promise<BotReply> {
+    return apiClient.post<BotReply>(`/api/bot-replies/${replyId}/reply`, data)
   },
 }

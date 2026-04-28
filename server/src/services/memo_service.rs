@@ -1,8 +1,9 @@
 use crate::error::AppError;
 use crate::models::{
-    build_thumbnail_route, CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse,
-    MemoWithResources, PaginatedResponse, Resource, TagResponse, UpdateMemoRequest,
+    CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse, MemoWithResources,
+    PaginatedResponse, Resource, TagResponse, UpdateMemoRequest,
 };
+use crate::services::{EpisodeService, MemoryEmbeddingService, ProfileMemoryService};
 use chrono::Utc;
 use serde_json::json;
 use sqlx::PgPool;
@@ -11,11 +12,31 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct MemoService {
     pool: PgPool,
+    memory_embedding_service: Option<MemoryEmbeddingService>,
+    episode_service: Option<EpisodeService>,
+    profile_memory_service: Option<ProfileMemoryService>,
 }
 
 impl MemoService {
     pub fn new(pool: PgPool) -> Self {
-        Self { pool }
+        Self {
+            pool,
+            memory_embedding_service: None,
+            episode_service: None,
+            profile_memory_service: None,
+        }
+    }
+
+    pub fn with_memory_services(
+        mut self,
+        memory_embedding_service: MemoryEmbeddingService,
+        episode_service: EpisodeService,
+        profile_memory_service: ProfileMemoryService,
+    ) -> Self {
+        self.memory_embedding_service = Some(memory_embedding_service);
+        self.episode_service = Some(episode_service);
+        self.profile_memory_service = Some(profile_memory_service);
+        self
     }
 
     pub async fn create_memo(
@@ -130,6 +151,8 @@ impl MemoService {
             resources.len()
         );
 
+        self.spawn_memory_refresh(memo.clone());
+
         Ok(MemoWithResources::from_memo(memo, resources))
     }
 
@@ -185,7 +208,7 @@ impl MemoService {
                     storage_path: Some(r.storage_path),
                     url,
                     thumbnail_url: if is_video {
-                        Some(build_thumbnail_route(r.id))
+                        Some(crate::models::build_thumbnail_route(r.id))
                     } else {
                         None
                     },
@@ -194,6 +217,54 @@ impl MemoService {
                 }
             })
             .collect())
+    }
+
+    fn spawn_memory_refresh(&self, memo: Memo) {
+        let Some(memory_embedding_service) = self.memory_embedding_service.clone() else {
+            return;
+        };
+        let Some(episode_service) = self.episode_service.clone() else {
+            return;
+        };
+        let Some(profile_memory_service) = self.profile_memory_service.clone() else {
+            return;
+        };
+
+        let memo_id = memo.id;
+        let user_id = memo.user_id;
+
+        tokio::spawn(async move {
+            let result = tokio::time::timeout(std::time::Duration::from_secs(60), async {
+                if let Err(error) = memory_embedding_service.refresh_for_memo(&memo).await {
+                    log::error!(
+                        "[MemoryRefresh] embedding failed for memo {}: {}",
+                        memo_id,
+                        error
+                    );
+                }
+
+                if let Err(error) = episode_service.assign_memo_to_episode(&memo).await {
+                    log::error!(
+                        "[MemoryRefresh] episode assignment failed for memo {}: {}",
+                        memo_id,
+                        error
+                    );
+                }
+
+                if let Err(error) = profile_memory_service.refresh_for_user(user_id).await {
+                    log::error!(
+                        "[MemoryRefresh] profile refresh failed for user {}: {}",
+                        user_id,
+                        error
+                    );
+                }
+            })
+            .await;
+
+            if result.is_err() {
+                log::error!("[MemoryRefresh] timed out for memo {}", memo_id);
+            }
+        });
     }
 
     pub async fn get_memo(

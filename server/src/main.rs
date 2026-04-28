@@ -16,7 +16,9 @@ use config::Config;
 use database::{create_pool, run_migrations};
 use middleware::{configure_cors, configure_logging, AuthMiddleware};
 use services::{
-    AuthService, BotService, DiaryService, MemoService, ResourceService, StatsService, SyncService,
+    AuthService, BotMemoryContextService, BotService, DiaryService, EpisodeService, MemoService,
+    MemoryEmbeddingService, MemoryRetrievalService, ProfileMemoryService, ResourceService,
+    ServerAiConfigService, StatsService, SyncService, TimelineMemoryService,
 };
 use storage::create_storage;
 
@@ -73,11 +75,32 @@ async fn main() -> anyhow::Result<()> {
     let auth_service = AuthService::new(pool.clone(), config.jwt_secret.clone());
     log::info!("[OK] Auth service initialized");
 
-    let memo_service = MemoService::new(pool.clone());
+    let server_ai_config_service = ServerAiConfigService::new(pool.clone());
+
+    let memory_embedding_service =
+        MemoryEmbeddingService::new(pool.clone(), server_ai_config_service.clone());
+    let episode_service = EpisodeService::new(pool.clone());
+    let profile_memory_service = ProfileMemoryService::new(pool.clone());
+    let memory_retrieval_service = MemoryRetrievalService::new(pool.clone());
+    let timeline_memory_service = TimelineMemoryService::new();
+    let bot_memory_context_service = BotMemoryContextService::new(
+        pool.clone(),
+        episode_service.clone(),
+        memory_retrieval_service.clone(),
+        timeline_memory_service.clone(),
+    );
+
+    let memo_service = MemoService::new(pool.clone()).with_memory_services(
+        memory_embedding_service,
+        episode_service.clone(),
+        profile_memory_service,
+    );
     let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone());
     let diary_service = DiaryService::new(pool.clone());
     let stats_service = StatsService::new(pool.clone());
-    let bot_service = BotService::new(pool.clone(), storage.clone());
+    let bot_service = BotService::new(pool.clone(), storage.clone())
+        .with_memory_context_service(bot_memory_context_service)
+        .with_server_ai_config_service(server_ai_config_service.clone());
     let sync_service = SyncService::new(pool.clone());
     log::info!("[OK] Business services initialized");
 
@@ -116,6 +139,7 @@ async fn main() -> anyhow::Result<()> {
             .app_data(web::Data::new(stats_service.clone()))
             .app_data(web::Data::new(bot_service.clone()))
             .app_data(web::Data::new(sync_service.clone()))
+            .app_data(web::Data::new(server_ai_config_service.clone()))
             .app_data(activity_log.clone())
             .app_data(started_at.clone())
             .route("/health", web::get().to(health_check))
@@ -163,7 +187,16 @@ async fn main() -> anyhow::Result<()> {
                     .route("/stats", web::get().to(admin::api::stats))
                     .route("/activity", web::get().to(admin::api::list_activity))
                     .route("/config", web::get().to(admin::api::config_endpoint))
-                    .route("/clear-cache", web::post().to(admin::api::clear_cache)),
+                    .route("/ai-config", web::get().to(admin::api::get_ai_config))
+                    .route(
+                        "/ai-config/{key}",
+                        web::put().to(admin::api::update_ai_config),
+                    )
+                    .route("/clear-cache", web::post().to(admin::api::clear_cache))
+                    .route(
+                        "/backfill-memory",
+                        web::post().to(admin::api::backfill_memory),
+                    ),
             )
             .service(fs::Files::new("/admin/static", "static/admin").prefer_utf8(true))
             .route(

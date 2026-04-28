@@ -35,25 +35,8 @@
         </div>
       </section>
 
-      <!-- Bots -->
-      <section class="panel">
-        <div class="panel-header">
-          <h3><Bot :size="16" /> Bot 概览</h3>
-          <button class="btn-ghost" @click="showBotModal = true">管理</button>
-        </div>
-        <div class="panel-body">
-          <div v-if="botLoading" class="skeleton skeleton-line" style="height: 80px" />
-          <div v-else-if="!bots.length" class="empty">暂无 Bot</div>
-          <div v-else class="bot-list">
-            <div v-for="b in bots" :key="b.id" class="bot-row">
-              <span class="bot-name">{{ b.name }}</span>
-              <span class="badge" :class="b.autoReply ? 'badge-success' : 'badge-warning'">
-                {{ b.autoReply ? '自动' : '手动' }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
+      <!-- Bots (extracted component) -->
+      <BotManager />
 
       <!-- Profile -->
       <section class="panel">
@@ -68,18 +51,8 @@
           <hr class="divider" />
           <form class="pwd-form" @submit.prevent="changePwd">
             <div class="input-group">
-              <input
-                v-model="pwdForm.oldPassword"
-                type="password"
-                class="input-sm"
-                placeholder="当前密码"
-              />
-              <input
-                v-model="pwdForm.newPassword"
-                type="password"
-                class="input-sm"
-                placeholder="新密码"
-              />
+              <input v-model="pwdForm.oldPassword" type="password" class="input-sm" placeholder="当前密码" />
+              <input v-model="pwdForm.newPassword" type="password" class="input-sm" placeholder="新密码" />
             </div>
             <button type="submit" class="btn-sm" :disabled="pwdSaving">
               <Loader v-if="pwdSaving" :size="13" class="spin" />
@@ -119,124 +92,19 @@
       </section>
     </div>
 
-    <!-- Bot Management Modal -->
-    <Modal :show="showBotModal" title="Bot 管理" width="640px" @close="showBotModal = false">
-      <div class="modal-section">
-        <button class="btn-primary btn-block" @click="openBotForm()">
-          <Plus :size="14" /> 新建 Bot
-        </button>
-        <div v-if="!bots.length" class="empty" style="padding: 12px">暂无 Bot</div>
-        <div v-for="b in bots" :key="b.id" class="modal-row">
-          <span class="bot-name">{{ b.name }}</span>
-          <div class="row-actions">
-            <button class="btn-ghost" @click="openBotForm(b)">编辑</button>
-            <button class="btn-ghost btn-danger" @click="handleDeleteBot(b)">删除</button>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <button class="btn-secondary" @click="showBotModal = false">关闭</button>
-      </template>
-    </Modal>
-
-    <!-- Bot Edit Modal -->
-    <Modal :show="showBotEdit" :title="editingBot ? '编辑 Bot' : '新建 Bot'" width="640px" @close="closeBotForm">
-      <div class="bot-editor">
-
-        <!-- Profile Card -->
-        <div class="be-card be-profile">
-          <div class="be-avatar-col">
-            <div class="avatar-upload" @click="triggerAvatarInput" :class="{ uploading: avatarUploading }">
-              <AdminImage
-                v-if="botForm.avatarUrl"
-                :src="botForm.avatarUrl"
-                class-name="avatar-img"
-                alt="Bot avatar"
-              />
-              <div v-else class="avatar-placeholder">
-                <Bot :size="32" />
-              </div>
-              <div class="avatar-overlay">
-                <Loader v-if="avatarUploading" :size="18" class="spin" />
-                <Camera v-else :size="18" />
-              </div>
-            </div>
-            <p class="avatar-hint">点击更换</p>
-            <input ref="avatarInputRef" type="file" accept="image/*" class="avatar-input-hidden" @change="uploadAvatar" />
-          </div>
-
-          <div class="be-fields-col">
-            <div class="be-field">
-              <label class="be-label">名称</label>
-              <input v-model="botForm.name" class="input" placeholder="为 Bot 取一个名字" maxlength="30" />
-            </div>
-            <div class="be-field">
-              <label class="be-label">描述</label>
-              <textarea
-                ref="descTextareaRef"
-                v-model="botForm.description"
-                class="input input-area bot-desc"
-                rows="1"
-                placeholder="简短描述 Bot 的性格、语气和用途…"
-                @input="autoResizeDesc"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Config Card -->
-        <div class="be-card be-config">
-          <h4 class="be-section-title">配置</h4>
-
-          <div class="be-field-row">
-            <div class="be-field-label-col">
-              <span class="be-label">自动回复</span>
-              <span class="be-hint">开启后 Bot 会对新 Memo 自动生成回复</span>
-            </div>
-            <label class="toggle">
-              <input v-model="botForm.autoReply" type="checkbox" />
-              <span class="toggle-track"></span>
-            </label>
-          </div>
-
-          <div class="be-field">
-            <label class="be-label">标签</label>
-            <div class="tags-area">
-              <span v-for="(t, i) in botForm.tags" :key="i" class="tag-chip">
-                {{ t }}
-                <button type="button" class="tag-remove" @click="botForm.tags.splice(i, 1)">&times;</button>
-              </span>
-              <input
-                v-model="tagInput"
-                class="tag-input"
-                placeholder="添加标签…"
-                @keydown.enter.prevent="addTag"
-                @keydown.backspace="onTagBackspace"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <button class="btn-secondary" @click="closeBotForm">取消</button>
-        <button class="btn-primary" :disabled="botSaving || avatarUploading" @click="saveBot">
-          <Loader v-if="botSaving" :size="14" class="spin" />
-          <span v-else>保存</span>
-        </button>
-      </template>
-    </Modal>
+    <!-- AI Config (extracted component) -->
+    <div class="section-gap">
+      <AIConfigPanel />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  Activity, Bot, Camera, FileText, Image, Loader, MessageSquare,
-  Plus, Server, User as UserIcon,
-} from 'lucide-vue-next';
+import { Activity, Bot, FileText, Image, Loader, MessageSquare, Server, User as UserIcon } from 'lucide-vue-next';
 import { onMounted, reactive, ref } from 'vue';
 import { adminApi, api } from '../api';
-import AdminImage from '../components/AdminImage.vue';
-import Modal from '../components/Modal.vue';
+import AIConfigPanel from '../components/AIConfigPanel.vue';
+import BotManager from '../components/BotManager.vue';
 import { useToast } from '../composables/useToast';
 import { useAuthStore } from '../stores/auth';
 
@@ -265,9 +133,7 @@ function animateValue(target: number, key: string) {
   }
   requestAnimationFrame(step);
 }
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
-}
+function easeOutCubic(t: number) { return 1 - Math.pow(1 - t, 3); }
 
 async function loadStats() {
   try {
@@ -276,7 +142,7 @@ async function loadStats() {
     kpiCards.value[1].value = data.diaries.total;
     kpiCards.value[2].value = data.resources.total;
     kpiCards.value[3].value = data.bots.total;
-    kpiCards.value.forEach((c) => animateValue(c.value, c.label));
+    kpiCards.value.forEach(c => animateValue(c.value, c.label));
   } catch { /* ignore */ }
 }
 
@@ -305,134 +171,12 @@ function fmtTime(ts: number) {
   return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/* ─── Bots ─── */
-const bots = ref<any[]>([]);
-const botLoading = ref(false);
-const showBotModal = ref(false);
-const showBotEdit = ref(false);
-const editingBot = ref<any>(null);
-const botSaving = ref(false);
-const avatarUploading = ref(false);
-const avatarInputRef = ref<HTMLInputElement | null>(null);
-const descTextareaRef = ref<HTMLTextAreaElement | null>(null);
-const botForm = reactive({ name: '', description: '', autoReply: true, tags: [] as string[], avatarUrl: '' });
-const tagInput = ref('');
-
-async function loadBots() {
-  botLoading.value = true;
-  try { bots.value = await api('/bots') as any[]; }
-  catch { bots.value = []; }
-  finally { botLoading.value = false; }
-}
-
-function openBotForm(b?: any) {
-  editingBot.value = b || null;
-  botForm.name = b?.name || '';
-  botForm.description = b?.description || '';
-  botForm.autoReply = b?.autoReply ?? true;
-  botForm.tags = b?.tags ? [...b.tags] : [];
-  botForm.avatarUrl = b?.avatarUrl || '';
-  tagInput.value = '';
-  showBotEdit.value = true;
-  // Auto-resize description textarea after DOM renders
-  setTimeout(autoResizeDesc, 0);
-}
-
-function closeBotForm() {
-  showBotEdit.value = false;
-  editingBot.value = null;
-}
-
-function triggerAvatarInput() {
-  avatarInputRef.value?.click();
-}
-
-function autoResizeDesc() {
-  const el = descTextareaRef.value;
-  if (!el) return;
-  el.style.height = 'auto';
-  el.style.height = el.scrollHeight + 'px';
-}
-
-async function uploadAvatar(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-
-  avatarUploading.value = true;
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const res: any = await api('/resources', {
-      method: 'POST',
-      body: formData,
-      headers: {}, // let browser set Content-Type for multipart
-    } as any);
-
-    botForm.avatarUrl = res.url || res.thumbnailUrl || '';
-    toast.success('头像已上传');
-  } catch {
-    toast.error('上传失败');
-  } finally {
-    avatarUploading.value = false;
-    // reset input so same file can be re-selected
-    if (avatarInputRef.value) avatarInputRef.value.value = '';
-  }
-}
-
-async function saveBot() {
-  if (!botForm.name.trim()) {
-    toast.error('请输入名称');
-    return;
-  }
-  botSaving.value = true;
-  try {
-    const body = {
-      name: botForm.name,
-      description: botForm.description,
-      autoReply: botForm.autoReply,
-      tags: botForm.tags,
-      avatarUrl: botForm.avatarUrl || undefined,
-    };
-    if (editingBot.value) {
-      await api(`/bots/${editingBot.value.id}`, { method: 'PUT', body });
-      toast.success('已更新');
-    } else {
-      await api('/bots', { method: 'POST', body });
-      toast.success('已创建');
-    }
-    closeBotForm();
-    await loadBots();
-  } catch { toast.error('操作失败'); }
-  finally { botSaving.value = false; }
-}
-
-async function handleDeleteBot(b: any) {
-  try {
-    await api(`/bots/${b.id}`, { method: 'DELETE' });
-    toast.success('已删除');
-    await loadBots();
-  } catch { toast.error('删除失败'); }
-}
-
-function addTag() {
-  const v = tagInput.value.trim();
-  if (v && !botForm.tags.includes(v)) botForm.tags.push(v);
-  tagInput.value = '';
-}
-function onTagBackspace() {
-  if (!tagInput.value && botForm.tags.length) botForm.tags.pop();
-}
-
 /* ─── Password ─── */
 const pwdForm = reactive({ oldPassword: '', newPassword: '' });
 const pwdSaving = ref(false);
 
 async function changePwd() {
-  if (!pwdForm.oldPassword || !pwdForm.newPassword) {
-    toast.error('请填写完整');
-    return;
-  }
+  if (!pwdForm.oldPassword || !pwdForm.newPassword) { toast.error('请填写完整'); return; }
   pwdSaving.value = true;
   try {
     await api('/auth/change-password', { method: 'POST', body: pwdForm });
@@ -446,20 +190,15 @@ async function changePwd() {
 /* ─── Health ─── */
 const health = ref<any>(null);
 async function loadHealth() {
-  try { health.value = await adminApi('/health'); }
-  catch { /* ignore */ }
+  try { health.value = await adminApi('/health'); } catch { /* ignore */ }
 }
 
-onMounted(async () => {
-  await Promise.all([loadStats(), loadActivity(), loadBots(), loadHealth()]);
-});
+onMounted(() => Promise.all([loadStats(), loadActivity(), loadHealth()]));
 </script>
 
 <style scoped>
-.dashboard {
-  max-width: 1200px;
-  margin: 0 auto;
-}
+.dashboard { max-width: 1200px; margin: 0 auto; }
+.section-gap { margin-top: 12px; }
 
 /* ═══ KPI Grid ═══ */
 .kpi-grid {
@@ -478,136 +217,67 @@ onMounted(async () => {
   box-shadow: var(--shadow-sm);
   transition: box-shadow var(--transition-fast), transform var(--transition-fast);
 }
-.kpi-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
+.kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .kpi-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 42px; height: 42px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
   background: color-mix(in srgb, var(--kpi-color) 12%, transparent);
-  color: var(--kpi-color);
-  flex-shrink: 0;
+  color: var(--kpi-color); flex-shrink: 0;
 }
 .kpi-body { display: flex; flex-direction: column; min-width: 0; }
 .kpi-value {
-  font-size: 24px;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  color: var(--text-primary);
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
+  font-size: 24px; font-weight: 700; font-family: var(--font-mono);
+  color: var(--text-primary); line-height: 1.1; font-variant-numeric: tabular-nums;
 }
 .kpi-label {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 500;
+  font-size: 11px; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;
 }
 
 /* ═══ Main Grid ═══ */
-.main-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
+.main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-/* ═══ Panel (borderless card) ═══ */
+/* ═══ Panel ═══ */
 .panel {
-  background: var(--bg-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  background: var(--bg-surface); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm); overflow: hidden;
+  display: flex; flex-direction: column;
 }
 .panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
   padding: 14px 16px 0;
 }
 .panel-header h3 {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  display: flex; align-items: center; gap: 8px;
 }
 .panel-body { padding: 12px 16px 16px; }
-.panel-body--scroll {
-  max-height: 340px;
-  overflow-y: auto;
-}
+.panel-body--scroll { max-height: 340px; overflow-y: auto; }
 
 /* ═══ Activity ═══ */
 .activity-list { display: flex; flex-direction: column; gap: 1px; }
 .activity-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  transition: background var(--transition-fast);
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: var(--radius-sm);
+  font-size: 12px; transition: background var(--transition-fast);
 }
 .activity-row:hover { background: var(--bg-hover); }
 .act-time {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-tertiary);
-  flex-shrink: 0;
-  width: 58px;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-tertiary); flex-shrink: 0; width: 58px;
 }
 .act-tag {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 3px;
-  text-transform: uppercase;
-  flex-shrink: 0;
+  font-size: 10px; font-weight: 600; padding: 1px 5px;
+  border-radius: 3px; text-transform: uppercase; flex-shrink: 0;
 }
 .tag-info  { background: var(--info-soft); color: var(--info); }
 .tag-warn  { background: var(--warning-soft); color: var(--warning); }
 .tag-error { background: var(--error-soft); color: var(--error); }
 .act-action { font-weight: 500; flex-shrink: 0; color: var(--text-primary); }
 .act-detail {
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--text-secondary); overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; min-width: 0;
 }
-
-/* ═══ Bots ═══ */
-.bot-list { display: flex; flex-direction: column; gap: 4px; }
-.bot-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  transition: background var(--transition-fast);
-}
-.bot-row:hover { background: var(--bg-hover); }
-.bot-name { font-weight: 500; }
-
-/* ═══ Badge ═══ */
-.badge {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  text-transform: uppercase;
-}
-.badge-success { background: var(--success-soft); color: var(--success); }
-.badge-warning { background: var(--warning-soft); color: var(--warning); }
 
 /* ═══ Profile ═══ */
 .profile-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; padding: 2px 0; }
@@ -620,363 +290,49 @@ onMounted(async () => {
 .health-item { display: flex; flex-direction: column; gap: 2px; }
 .label { font-size: 11px; color: var(--text-tertiary); }
 .value { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-.value-mono {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
+.value-mono { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-primary); }
 
-/* ═══ Shared UI primitives ═══ */
+/* ═══ Shared primitives ═══ */
 .btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-family: var(--font-sans);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border: none; background: transparent;
+  color: var(--text-secondary); font-size: 12px; font-family: var(--font-sans);
+  cursor: pointer; border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
 }
 .btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
-.btn-danger:hover { background: var(--error-soft); color: var(--error); }
 
-.btn-primary, .btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 18px;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--font-sans);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-.btn-primary { background: var(--accent); color: var(--on-accent); }
-.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-secondary {
-  background: var(--bg-surface-alt);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-}
-.btn-secondary:hover { background: var(--bg-hover); }
-.btn-block { width: 100%; }
 .btn-sm {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: var(--accent);
-  color: var(--on-accent);
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font-sans);
-  cursor: pointer;
-  transition: all var(--transition-fast);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 6px 14px; border: none; border-radius: var(--radius-sm);
+  background: var(--accent); color: var(--on-accent);
+  font-size: 12px; font-weight: 600; font-family: var(--font-sans);
+  cursor: pointer; transition: all var(--transition-fast);
 }
 .btn-sm:hover:not(:disabled) { background: var(--accent-hover); }
 .btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.input, .input-sm {
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-page);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  outline: none;
+.input-sm {
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-page); color: var(--text-primary);
+  font-family: var(--font-sans); outline: none;
+  padding: 6px 10px; font-size: 12px; flex: 1;
   transition: all var(--transition-fast);
 }
-.input:focus, .input-sm:focus { border-color: var(--accent); background: var(--bg-surface); }
-.input::placeholder, .input-sm::placeholder { color: var(--text-tertiary); }
-
-.input { padding: 9px 12px; font-size: 13px; width: 100%; }
-.input-area { resize: vertical; }
-.input-sm { padding: 6px 10px; font-size: 12px; flex: 1; }
-
-.field-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-  margin-top: 12px;
-}
-.field-label:first-child { margin-top: 0; }
+.input-sm:focus { border-color: var(--accent); background: var(--bg-surface); }
+.input-sm::placeholder { color: var(--text-tertiary); }
 
 .empty { text-align: center; padding: 20px; color: var(--text-tertiary); font-size: 13px; }
-
 .skeleton, .skeleton-line { animation: skeleton-pulse 1.5s ease-in-out infinite; border-radius: var(--radius-sm); }
 .skeleton { background: var(--bg-surface-alt); }
 .skeleton-line { background: var(--bg-hover); }
-
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* ═══ Toggle ═══ */
-.toggle-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
-.toggle { position: relative; display: inline-block; cursor: pointer; }
-.toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
-.toggle-track {
-  display: block;
-  width: 36px;
-  height: 20px;
-  border-radius: var(--radius-pill);
-  background: var(--border-strong);
-  transition: all var(--transition-fast);
-  position: relative;
-}
-.toggle-track::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: white;
-  transition: all var(--transition-fast);
-  box-shadow: 0 1px 2px rgba(0,0,0,.15);
-}
-.toggle input:checked + .toggle-track { background: var(--accent); }
-.toggle input:checked + .toggle-track::after { transform: translateX(16px); }
-.toggle-hint { font-size: 12px; color: var(--text-tertiary); }
-
-/* ═══ Tags ═══ */
-.tags-area {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-page);
-  min-height: 40px;
-  transition: border-color var(--transition-fast);
-}
-.tags-area:focus-within { border-color: var(--accent); }
-.tag-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 8px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: var(--radius-pill);
-}
-.tag-remove {
-  border: none;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  padding: 0;
-  opacity: .7;
-}
-.tag-remove:hover { opacity: 1; }
-.tag-input {
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 12px;
-  min-width: 80px;
-  flex: 1;
-}
-.tag-input::placeholder { color: var(--text-tertiary); }
-
-/* ═══ Modal content ═══ */
-.modal-section { display: flex; flex-direction: column; gap: 6px; }
-.modal-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px;
-  border-radius: var(--radius-sm);
-  transition: background var(--transition-fast);
-}
-.modal-row:hover { background: var(--bg-hover); }
-.row-actions { display: flex; gap: 4px; }
-.modal-form {
-  display: flex;
-  flex-direction: column;
-}
-
-/* ═══ Bot Editor ═══ */
-.bot-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.be-card {
-  background: var(--bg-page);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 20px;
-}
-
-/* ─── Profile card: avatar left, fields right ─── */
-.be-profile {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
-}
-
-.be-avatar-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.be-fields-col {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.be-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.be-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-/* ─── Config card ─── */
-.be-section-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 14px;
-}
-
-.be-field-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 8px 0;
-}
-
-.be-field-label-col {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.be-hint {
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-
-.bot-desc {
-  min-height: 48px;
-  resize: none;
-  overflow: hidden;
-  line-height: 1.6;
-}
-
-.be-field + .be-field {
-  margin-top: 4px;
-}
-
-/* ─── Avatar (in bot editor) ─── */
-.avatar-upload {
-  position: relative;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  overflow: hidden;
-  cursor: pointer;
-  background: var(--bg-surface);
-  border: 2px dashed var(--border-strong);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-.avatar-upload:hover {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent);
-}
-.avatar-upload.uploading {
-  pointer-events: none;
-  opacity: 0.6;
-}
-
-.avatar-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.avatar-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-tertiary);
-}
-
-.avatar-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-  border-radius: 50%;
-}
-.avatar-upload:hover .avatar-overlay {
-  opacity: 1;
-}
-
-.avatar-hint {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  margin: 0;
-}
-
-.avatar-input-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-}
 
 /* ═══ Responsive ═══ */
 @media (max-width: 1024px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }
-
 @media (max-width: 768px) {
   .kpi-grid { gap: 8px; margin-bottom: 14px; }
   .kpi-card { padding: 14px 12px; gap: 10px; }
@@ -990,7 +346,6 @@ onMounted(async () => {
   .act-action { font-size: 11px; width: 100%; }
   .act-detail { width: 100%; font-size: 11px; }
 }
-
 @media (max-width: 480px) {
   .kpi-grid { gap: 6px; }
   .kpi-card { padding: 10px; gap: 8px; }

@@ -12,6 +12,8 @@ pub struct Bot {
     pub tags: serde_json::Value,
     pub auto_reply: bool,
     pub sort_order: i32,
+    pub model: Option<String>,
+    pub ai_config: Option<serde_json::Value>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -26,6 +28,8 @@ pub struct BotResponse {
     pub tags: Vec<String>,
     pub auto_reply: bool,
     pub sort_order: i32,
+    pub model: Option<String>,
+    pub ai_config: Option<serde_json::Value>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -41,6 +45,8 @@ impl BotResponse {
             tags,
             auto_reply: bot.auto_reply,
             sort_order: bot.sort_order,
+            model: bot.model,
+            ai_config: bot.ai_config,
             created_at: bot.created_at,
             updated_at: bot.updated_at,
         }
@@ -114,6 +120,8 @@ pub struct CreateBotRequest {
     pub tags: Vec<String>,
     #[serde(default = "default_true")]
     pub auto_reply: bool,
+    pub model: Option<String>,
+    pub ai_config: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -125,6 +133,8 @@ pub struct UpdateBotRequest {
     pub tags: Option<Vec<String>>,
     pub auto_reply: Option<bool>,
     pub sort_order: Option<i32>,
+    pub model: Option<Option<String>>,
+    pub ai_config: Option<Option<serde_json::Value>>,
 }
 
 #[derive(Debug, Deserialize)]

@@ -1,4 +1,8 @@
 use crate::config::Config;
+use crate::models::{Memo, ServerAiConfigPayload, ServerAiConfigResponse};
+use crate::services::{
+    EpisodeService, MemoryEmbeddingService, ProfileMemoryService, ServerAiConfigService,
+};
 use actix_web::{web, HttpRequest, HttpResponse};
 use chrono::Datelike;
 use serde::Serialize;
@@ -58,6 +62,13 @@ struct BotStats {
 struct ConfigResponse {
     port: u16,
     storage_type: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AdminAiConfigResponse {
+    bot: ServerAiConfigResponse,
+    embedding: ServerAiConfigResponse,
 }
 
 #[derive(Serialize)]
@@ -228,6 +239,42 @@ pub async fn config_endpoint(config: web::Data<Config>) -> HttpResponse {
     })
 }
 
+pub async fn get_ai_config(
+    server_ai_config_service: web::Data<ServerAiConfigService>,
+) -> HttpResponse {
+    let bot = match server_ai_config_service.get("bot").await {
+        Ok(config) => ServerAiConfigResponse::from_config(config),
+        Err(e) => return HttpResponse::from_error(e),
+    };
+    let embedding = match server_ai_config_service.get("embedding").await {
+        Ok(config) => ServerAiConfigResponse::from_config(config),
+        Err(e) => return HttpResponse::from_error(e),
+    };
+    HttpResponse::Ok().json(AdminAiConfigResponse { bot, embedding })
+}
+
+pub async fn update_ai_config(
+    path: web::Path<String>,
+    payload: web::Json<ServerAiConfigPayload>,
+    server_ai_config_service: web::Data<ServerAiConfigService>,
+) -> HttpResponse {
+    let key = path.into_inner();
+    if key != "bot" && key != "embedding" {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "Bad Request",
+            "message": "Unsupported AI config key"
+        }));
+    }
+
+    match server_ai_config_service
+        .upsert(&key, payload.into_inner())
+        .await
+    {
+        Ok(config) => HttpResponse::Ok().json(ServerAiConfigResponse::from_config(config)),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
 pub async fn clear_cache() -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({ "message": "Cache cleared" }))
 }
@@ -248,4 +295,96 @@ fn format_size(bytes: i64) -> String {
     } else {
         format!("{} B", bytes)
     }
+}
+
+pub async fn backfill_memory(
+    pool: web::Data<PgPool>,
+    embedding_service: web::Data<MemoryEmbeddingService>,
+    episode_service: web::Data<EpisodeService>,
+    profile_service: web::Data<ProfileMemoryService>,
+) -> HttpResponse {
+    let pool_ref = pool.get_ref().clone();
+    let embedding = embedding_service.get_ref().clone();
+    let episode = episode_service.get_ref().clone();
+    let profile = profile_service.get_ref().clone();
+
+    tokio::spawn(async move {
+        log::info!("[Backfill] Starting memory backfill");
+
+        const BATCH_SIZE: i64 = 200;
+        let mut offset: i64 = 0;
+        let mut success = 0u64;
+        let mut failed = 0u64;
+        let mut user_ids = std::collections::HashSet::new();
+
+        loop {
+            let batch = match sqlx::query_as::<_, Memo>(
+                "SELECT m.id, m.user_id, m.content, m.tags, m.is_archived, m.is_deleted,
+                        m.diary_date, m.ai_summary, m.created_at, m.updated_at
+                 FROM memos m
+                 LEFT JOIN memo_embeddings me ON me.memo_id = m.id
+                 WHERE m.is_deleted = false AND me.memo_id IS NULL
+                 ORDER BY m.created_at ASC
+                 LIMIT $1 OFFSET $2",
+            )
+            .bind(BATCH_SIZE)
+            .bind(offset)
+            .fetch_all(&pool_ref)
+            .await
+            {
+                Ok(b) => b,
+                Err(e) => {
+                    log::error!(
+                        "[Backfill] Failed to fetch batch at offset {}: {}",
+                        offset,
+                        e
+                    );
+                    break;
+                }
+            };
+
+            if batch.is_empty() {
+                break;
+            }
+
+            let batch_len = batch.len();
+            for memo in &batch {
+                user_ids.insert(memo.user_id);
+                if let Err(e) = embedding.refresh_for_memo(memo).await {
+                    log::error!("[Backfill] Embedding failed for {}: {}", memo.id, e);
+                    failed += 1;
+                    continue;
+                }
+                if let Err(e) = episode.assign_memo_to_episode(memo).await {
+                    log::error!("[Backfill] Episode failed for {}: {}", memo.id, e);
+                }
+                success += 1;
+            }
+
+            log::info!(
+                "[Backfill] Batch done: offset={}, batch_size={}, total_success={}",
+                offset,
+                batch_len,
+                success
+            );
+            offset += BATCH_SIZE;
+        }
+
+        for uid in &user_ids {
+            if let Err(e) = profile.refresh_for_user(*uid).await {
+                log::error!("[Backfill] Profile failed for user {}: {}", uid, e);
+            }
+        }
+
+        log::info!(
+            "[Backfill] Complete: {} success, {} failed, {} users refreshed",
+            success,
+            failed,
+            user_ids.len()
+        );
+    });
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "message": "Backfill started in background. Check server logs for progress."
+    }))
 }

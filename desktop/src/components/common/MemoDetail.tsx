@@ -25,7 +25,6 @@ import { toast } from '@/hooks/useToast'
 import { resolveApiUrl } from '@/lib/sharedApi'
 import { cn } from '@/lib/utils'
 import { normalizeContent } from '@/utils/content'
-import { loadAIConfig } from '@/utils/settingsHelpers'
 import type { BotReply, MemoWithResources, Resource } from '@mosaic/api'
 import {
   resourcesApi,
@@ -232,19 +231,8 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
       // 触发 Bot 自动回复
       try {
-        const config = await loadAIConfig()
-        if (config && config.model) {
-          await triggerReplies({
-            memoId: memo.id,
-            aiHeaders: {
-              'x-ai-provider': config.provider,
-              'x-ai-base-url': config.baseUrl,
-              'x-ai-api-key': config.apiKey,
-              'x-ai-model': config.model,
-            },
-          })
-          refetchReplies()
-        }
+        await triggerReplies(memo.id)
+        refetchReplies()
       } catch (err) {
         console.error('触发 Bot 回复失败:', err)
       }

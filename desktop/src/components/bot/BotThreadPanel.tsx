@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/sheet'
 import { uploadFiles } from '@/hooks/useFileUpload'
 import { toast } from '@/hooks/useToast'
-import { loadAIConfig } from '@/utils/settingsHelpers'
 import { resourcesApi, useBotThread, useReplyToBot, type BotReply } from '@mosaic/api'
 import { ImagePlus, Lightbulb, Loader2, Send, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -91,12 +90,6 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
     const question = text.trim()
     if (!latestReplyId || (!question && files.length === 0) || isPending) return
 
-    const config = await loadAIConfig()
-    if (!config?.apiKey || !config.model) {
-      toast.error('AI 功能未配置')
-      return
-    }
-
     const sentText = question || '请根据图片内容继续回复。'
     const sentFiles = files
 
@@ -116,12 +109,6 @@ export function BotThreadPanel({ reply, open, onClose }: BotThreadPanelProps) {
         data: {
           question: sentText,
           resourceIds: uploaded.map(resource => resource.id),
-        },
-        aiHeaders: {
-          'x-ai-provider': config.provider,
-          'x-ai-base-url': config.baseUrl,
-          'x-ai-api-key': config.apiKey,
-          'x-ai-model': config.model ?? '',
         },
       })
       setPendingMessage(null)
