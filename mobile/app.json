@@ -3,7 +3,7 @@
     "name": "Mosaic",
     "slug": "Mosaic",
     "platforms": ["android", "ios", "web"],
-    "version": "2.6.0",
+    "version": "2.6.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mosaic",
