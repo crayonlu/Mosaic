@@ -87,55 +87,60 @@ export default function SettingsScreen() {
     }
   }, [])
 
-  const handleClearStorage = useCallback((item: StorageItem) => {
-    if (!item.clearable) return
+  const handleClearStorage = useCallback(
+    (item: StorageItem) => {
+      if (!item.clearable) return
 
-    const messages: Record<string, { title: string; message: string; requiresRestart?: boolean }> =
-      {
+      const messages: Record<
+        string,
+        { title: string; message: string; requiresRestart?: boolean }
+      > = {
         sqlite: {
           title: '确认清除本地数据',
           message: '清除后需要重启应用才能正常使用，确定吗？',
           requiresRestart: true,
         },
       }
-    const { title, message, requiresRestart } = messages[item.id] ?? {
-      title: '确认清除',
-      message: `确定要清除「${item.label}」吗？`,
-    }
+      const { title, message, requiresRestart } = messages[item.id] ?? {
+        title: '确认清除',
+        message: `确定要清除「${item.label}」吗？`,
+      }
 
-    toast.show({
-      type: 'warning',
-      title,
-      message,
-      actionLabel: '确定',
-      onAction: async () => {
-        setClearingId(item.id)
-        try {
-          await item.clear()
-          await loadStorageInfo()
-
-          if (requiresRestart) {
-            setTimeout(async () => {
-              const { reloadAppAsync } = await import('expo')
-              await reloadAppAsync()
-            }, 1000)
-          } else {
+      toast.show({
+        type: 'warning',
+        title,
+        message,
+        actionLabel: '确定',
+        onAction: async () => {
+          setClearingId(item.id)
+          try {
+            await item.clear()
             await loadStorageInfo()
+
+            if (requiresRestart) {
+              setTimeout(async () => {
+                const { reloadAppAsync } = await import('expo')
+                await reloadAppAsync()
+              }, 1000)
+            } else {
+              await loadStorageInfo()
+            }
+          } catch (error) {
+            console.error('Failed to clear storage:', error)
+            toast.show({
+              type: 'error',
+              title: '清除失败',
+              message: String((error as Error).message),
+            })
+          } finally {
+            setClearingId(null)
           }
-        } catch (error) {
-          console.error('Failed to clear storage:', error)
-          toast.show({
-            type: 'error',
-            title: '清除失败',
-            message: String((error as Error).message),
-          })
-        } finally {
-          setClearingId(null)
-        }
-      },
-      duration: 10000,
-    })
-  }, [loadStorageInfo])
+        },
+        duration: 10000,
+      })
+    },
+    [loadStorageInfo]
+  )
 
   const toggleSectionWithAnimation = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
     setter(prev => !prev)
