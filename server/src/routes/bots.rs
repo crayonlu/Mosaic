@@ -5,23 +5,13 @@ use crate::services::{bot_service::AiConfig, BotService};
 use actix_web::{web, HttpRequest, HttpResponse};
 use uuid::Uuid;
 
-fn extract_ai_config(req: &HttpRequest) -> Option<AiConfig> {
-    let headers = req.headers();
-    let provider = headers.get("x-ai-provider")?.to_str().ok()?.to_string();
-    let base_url = headers.get("x-ai-base-url")?.to_str().ok()?.to_string();
-    let api_key = headers.get("x-ai-api-key")?.to_str().ok()?.to_string();
-    let model = headers.get("x-ai-model")?.to_str().ok()?.to_string();
-
-    if api_key.is_empty() || base_url.is_empty() || model.is_empty() {
-        return None;
+fn placeholder_ai_config() -> AiConfig {
+    AiConfig {
+        provider: String::new(),
+        base_url: String::new(),
+        api_key: String::new(),
+        model: String::new(),
     }
-
-    Some(AiConfig {
-        provider,
-        base_url,
-        api_key,
-        model,
-    })
 }
 
 pub async fn list_bots(req: HttpRequest, bot_service: web::Data<BotService>) -> HttpResponse {
@@ -184,16 +174,8 @@ pub async fn trigger_replies(
         Err(e) => return HttpResponse::from_error(e),
     };
 
-    let ai_config = match extract_ai_config(&req) {
-        Some(c) => c,
-        None => return HttpResponse::BadRequest().json(serde_json::json!({
-            "error": "Bad Request",
-            "message": "Missing required AI config headers (x-ai-provider, x-ai-base-url, x-ai-api-key, x-ai-model)"
-        })),
-    };
-
     match bot_service
-        .trigger_replies(&user_id, path.into_inner(), ai_config)
+        .trigger_replies(&user_id, path.into_inner(), placeholder_ai_config())
         .await
     {
         Ok(_) => HttpResponse::Accepted().finish(),
@@ -212,18 +194,13 @@ pub async fn reply_to_bot(
         Err(e) => return HttpResponse::from_error(e),
     };
 
-    let ai_config = match extract_ai_config(&req) {
-        Some(c) => c,
-        None => {
-            return HttpResponse::BadRequest().json(serde_json::json!({
-                "error": "Bad Request",
-                "message": "Missing required AI config headers"
-            }))
-        }
-    };
-
     match bot_service
-        .reply_to_bot(&user_id, path.into_inner(), payload.into_inner(), ai_config)
+        .reply_to_bot(
+            &user_id,
+            path.into_inner(),
+            payload.into_inner(),
+            placeholder_ai_config(),
+        )
         .await
     {
         Ok(reply) => HttpResponse::Created().json(reply),

@@ -1,6 +1,6 @@
-import { AISettings } from '@/components/settings/AISettings'
 import { AppSettings } from '@/components/settings/AppSettings'
 import { BotSettings } from '@/components/settings/BotSettings'
+import { ServerAIConfigSettings } from '@/components/settings/ServerAIConfigSettings'
 import { StorageSettings } from '@/components/settings/StorageSettings'
 import { SyncStatusDisplay } from '@/components/settings/SyncStatus'
 import { SystemSettings } from '@/components/settings/SystemSettings'
@@ -14,7 +14,7 @@ export default function SettingsPage() {
       <AppSettings />
       <StorageSettings />
       <SystemSettings />
-      <AISettings />
+      <ServerAIConfigSettings />
       <BotSettings />
     </div>
   )

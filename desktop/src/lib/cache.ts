@@ -1,27 +1,27 @@
 import { apiClient } from '@mosaic/api'
 import {
-    DEFAULT_CACHE_CONFIG,
-    ResourceLoader,
-    setPlatformAdapter,
-    type CacheConfig,
-    type CacheEntry,
-    type CacheEventHandler,
-    type CacheEventType,
-    type CacheFilter,
-    type CacheUsage,
-    type CacheWriteOptions,
-    type ICacheManager,
-    type PlatformAdapter,
+  DEFAULT_CACHE_CONFIG,
+  ResourceLoader,
+  setPlatformAdapter,
+  type CacheConfig,
+  type CacheEntry,
+  type CacheEventHandler,
+  type CacheEventType,
+  type CacheFilter,
+  type CacheUsage,
+  type CacheWriteOptions,
+  type ICacheManager,
+  type PlatformAdapter,
 } from '@mosaic/cache'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { appCacheDir, join } from '@tauri-apps/api/path'
 import {
-    exists,
-    mkdir,
-    readTextFile,
-    remove,
-    writeFile,
-    writeTextFile,
+  exists,
+  mkdir,
+  readTextFile,
+  remove,
+  writeFile,
+  writeTextFile,
 } from '@tauri-apps/plugin-fs'
 
 let resourceLoader: ResourceLoader | null = null
@@ -337,9 +337,9 @@ class TauriCacheManager implements ICacheManager {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, new Set())
     }
-    this.listeners.get(type)!.add(handler)
+    this.listeners.get(type)!.add(handler as (...args: any[]) => void)
     return () => {
-      this.listeners.get(type)?.delete(handler)
+      this.listeners.get(type)?.delete(handler as (...args: any[]) => void)
     }
   }
 

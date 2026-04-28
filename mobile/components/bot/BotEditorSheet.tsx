@@ -34,6 +34,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
   const [description, setDescription] = useState('')
   const [tagsInput, setTagsInput] = useState('')
   const [autoReply, setAutoReply] = useState(true)
+  const [model, setModel] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
@@ -51,6 +52,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
       setDescription(bot?.description ?? '')
       setTagsInput(bot?.tags.join(' ') ?? '')
       setAutoReply(bot?.autoReply ?? true)
+      setModel(bot?.model ?? '')
       setAvatarUrl(bot?.avatarUrl)
       getBearerAuthHeaders().then(setAuthHeaders)
     }
@@ -95,6 +97,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
             tags: parsedTags,
             autoReply,
             avatarUrl,
+            model: model.trim() || undefined,
           },
         })
       } else {
@@ -104,6 +107,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
           tags: parsedTags,
           autoReply,
           avatarUrl,
+          model: model.trim() || undefined,
         })
       }
       onClose()
@@ -224,6 +228,18 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
               <View style={styles.fieldRow}>
                 <Text style={[styles.label, { color: theme.textSecondary }]}>自动回复</Text>
                 <SwitchBtn value={autoReply} onValueChange={setAutoReply} />
+              </View>
+
+              <View style={[styles.field, { borderBottomColor: theme.border }]}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>模型配置</Text>
+                <TextInput
+                  style={[styles.input, { color: theme.text }]}
+                  value={model}
+                  onChangeText={setModel}
+                  placeholder="输入要覆盖的默认模型（留空使用系统默认）"
+                  placeholderTextColor={theme.textSecondary}
+                  maxLength={50}
+                />
               </View>
             </View>
 
