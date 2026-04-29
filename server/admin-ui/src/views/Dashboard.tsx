@@ -198,14 +198,14 @@ export default function Dashboard() {
               <div className="flex flex-col gap-1.5 sm:flex-row">
                 <input
                   type="password"
-                  className="h-7 rounded-md border border-border bg-muted px-2 text-xs text-foreground font-sans outline-none transition-colors focus:border-ring flex-1"
+                  className="h-7 rounded-md border border-border py-1 bg-muted px-2 text-xs text-foreground font-sans outline-none transition-colors focus:border-ring flex-1"
                   placeholder="当前密码"
                   value={pwdForm.oldPassword}
                   onChange={(e) => setPwdForm({ ...pwdForm, oldPassword: e.target.value })}
                 />
                 <input
                   type="password"
-                  className="h-7 rounded-md border border-border bg-muted px-2 text-xs text-foreground font-sans outline-none transition-colors focus:border-ring flex-1"
+                  className="h-7 rounded-md border border-border py-1 bg-muted px-2 text-xs text-foreground font-sans outline-none transition-colors focus:border-ring flex-1"
                   placeholder="新密码"
                   value={pwdForm.newPassword}
                   onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })}

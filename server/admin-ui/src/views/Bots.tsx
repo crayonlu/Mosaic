@@ -190,7 +190,6 @@ export default function Bots() {
                 <ArrowLeft size={14} />
                 返回
               </Link>
-              <span className="text-xs text-muted-foreground">Bot 管理</span>
             </div>
             <div>
               <h2 className="text-[15px] font-semibold text-foreground sm:text-[17px]">Bot 管理</h2>
@@ -242,7 +241,7 @@ export default function Bots() {
                       key={bot.id}
                       className={`rounded-xl border px-3 py-3 transition-colors ${isEditing ? 'border-ring/70 bg-muted/70' : 'border-border/70 bg-background/40 hover:border-border hover:bg-muted/40'}`}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-center gap-3">
                         <button className="flex min-w-0 flex-1 items-center gap-3 border-none bg-transparent p-0 text-left cursor-pointer" onClick={() => openEditor(bot)} type="button">
                           <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/70 bg-secondary/70">
                             {bot.avatarUrl ? (

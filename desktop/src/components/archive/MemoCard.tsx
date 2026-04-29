@@ -145,7 +145,7 @@ export const MemoCard = memo<MemoCardProps>(
         )}
 
         <div className="p-4">
-          <div className="flex items-start gap-3">
+          <div className="flex items-center gap-3">
             {mode === 'select' && <div className="w-5 shrink-0" />}
 
             <div className="flex-1 min-w-0">
