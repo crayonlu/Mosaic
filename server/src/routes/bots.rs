@@ -26,6 +26,22 @@ pub async fn list_bots(req: HttpRequest, bot_service: web::Data<BotService>) -> 
     }
 }
 
+pub async fn get_bot(
+    req: HttpRequest,
+    path: web::Path<Uuid>,
+    bot_service: web::Data<BotService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match bot_service.get_bot(&user_id, path.into_inner()).await {
+        Ok(bot) => HttpResponse::Ok().json(bot),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
 pub async fn create_bot(
     req: HttpRequest,
     payload: web::Json<CreateBotRequest>,
@@ -217,6 +233,7 @@ pub fn configure_bot_routes(cfg: &mut web::ServiceConfig) {
     .service(web::resource("/bots/reorder").route(web::put().to(reorder_bots)))
     .service(
         web::resource("/bots/{id}")
+            .route(web::get().to(get_bot))
             .route(web::put().to(update_bot))
             .route(web::delete().to(delete_bot)),
     )

@@ -83,18 +83,14 @@ export default function Bots() {
       }
 
       if (editing) {
-        await api(`/bots/${editing.id}`, { method: 'PUT', body })
+        const updated = (await api(`/bots/${editing.id}`, { method: 'PUT', body })) as BotData
         toast.success('已更新')
+        await loadBots()
+        openEditor(updated)
       } else {
         await api('/bots', { method: 'POST', body })
         toast.success('已创建')
-      }
-
-      await loadBots()
-      if (editing) {
-        const updated = (await api(`/bots/${editing.id}`)) as BotData
-        openEditor(updated)
-      } else {
+        await loadBots()
         clearEditor()
       }
     } catch {
