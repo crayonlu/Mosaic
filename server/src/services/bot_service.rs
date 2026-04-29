@@ -83,6 +83,24 @@ impl BotService {
         Ok(bots.into_iter().map(BotResponse::from_bot).collect())
     }
 
+    pub async fn get_bot(&self, user_id: &str, bot_id: Uuid) -> Result<BotResponse, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)
+            .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
+
+        let bot = sqlx::query_as::<_, Bot>(
+            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, model, ai_config, created_at, updated_at
+             FROM bots WHERE id = $1 AND user_id = $2 AND is_deleted = FALSE",
+        )
+        .bind(bot_id)
+        .bind(user_uuid)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(AppError::Database)?
+        .ok_or(AppError::NotFound("Bot not found".into()))?;
+
+        Ok(BotResponse::from_bot(bot))
+    }
+
     pub async fn create_bot(
         &self,
         user_id: &str,
