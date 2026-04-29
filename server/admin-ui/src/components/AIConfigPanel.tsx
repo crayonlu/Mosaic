@@ -215,7 +215,7 @@ export default function AIConfigPanel() {
 
         <div className="flex flex-col gap-1">
           <label className="text-[11px] font-medium text-muted-foreground">API Key</label>
-          <div className="flex gap-1">
+          <div className="flex gap-1 items-center">
             <input
               className="min-w-0 flex-1 rounded-md border border-border bg-card px-3 py-2 text-[13px] text-foreground font-sans outline-none transition-colors focus:border-ring"
               type={showKeys[key] ? 'text' : 'password'}
