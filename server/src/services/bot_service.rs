@@ -1114,7 +1114,12 @@ fn build_memory_prefix(memory_context: Option<&BotMemoryContext>) -> String {
     }
 
     if let Some(episode) = &context.selected_episode {
-        let truncated: String = episode.summary.chars().take(500).collect();
+        let chars: Vec<char> = episode.summary.chars().collect();
+        let truncated: String = if chars.len() > 500 {
+            chars[chars.len() - 500..].iter().collect()
+        } else {
+            episode.summary.clone()
+        };
         let section = format!("[当前事件线]\n{}", truncated);
         if section.len() <= remaining {
             remaining -= section.len();

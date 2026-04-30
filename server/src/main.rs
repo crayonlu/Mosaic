@@ -79,7 +79,8 @@ async fn main() -> anyhow::Result<()> {
 
     let memory_embedding_service =
         MemoryEmbeddingService::new(pool.clone(), server_ai_config_service.clone());
-    let episode_service = EpisodeService::new(pool.clone());
+    let episode_service = EpisodeService::new(pool.clone())
+        .with_server_ai_config_service(server_ai_config_service.clone());
     let profile_memory_service = ProfileMemoryService::new(pool.clone());
     let memory_retrieval_service = MemoryRetrievalService::new(pool.clone());
     let timeline_memory_service = TimelineMemoryService::new();
