@@ -479,10 +479,16 @@ impl BotService {
 
                 handles.push(tokio::spawn(async move {
                     let memory_context = if let Some(service) = memory_context_service {
-                        service
+                        match service
                             .build_for_memo(&memo_for_context, vec![], Some(bot.id))
                             .await
-                            .ok()
+                        {
+                            Ok(ctx) => Some(ctx),
+                            Err(e) => {
+                                log::error!("[BotService] build_for_memo failed for memo {} bot {}: {:?}", memo_for_context.id, bot.id, e);
+                                None
+                            }
+                        }
                     } else {
                         None
                     };

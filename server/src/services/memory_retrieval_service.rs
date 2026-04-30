@@ -42,7 +42,7 @@ impl MemoryRetrievalService {
             "WITH anchor_episode AS (
                 SELECT episode_id FROM memo_episode_links WHERE memo_id = $2 LIMIT 1
              )
-             SELECT DISTINCT m.id, m.tags, m.ai_summary, m.content, m.created_at,
+             SELECT m.id, m.tags, m.ai_summary, m.content, m.created_at,
                     CASE
                       WHEN me.embedding IS NOT NULL AND anchor.embedding IS NOT NULL
                            THEN 1.0 - (me.embedding <=> anchor.embedding)
