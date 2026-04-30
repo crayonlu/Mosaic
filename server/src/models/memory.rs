@@ -16,31 +16,6 @@ pub struct MemoEmbedding {
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
-pub struct MemoEpisode {
-    pub id: Uuid,
-    pub user_id: Uuid,
-    pub title: String,
-    pub status: String,
-    pub summary: String,
-    pub keywords: serde_json::Value,
-    pub last_memo_id: Option<Uuid>,
-    pub start_at: i64,
-    pub end_at: Option<i64>,
-    pub updated_at: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-#[serde(rename_all = "camelCase")]
-pub struct MemoEpisodeLink {
-    pub episode_id: Uuid,
-    pub memo_id: Uuid,
-    pub event_at: i64,
-    pub relevance_score: f64,
-    pub created_at: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-#[serde(rename_all = "camelCase")]
 #[allow(dead_code)]
 pub struct BotMemoryDebugLog {
     pub id: Uuid,
@@ -49,7 +24,6 @@ pub struct BotMemoryDebugLog {
     pub bot_id: Uuid,
     pub mode: String,
     pub retrieved_memo_ids: serde_json::Value,
-    pub selected_episode_ids: serde_json::Value,
     pub score_payload: serde_json::Value,
     pub prompt_size: i32,
     pub created_at: i64,
@@ -79,8 +53,6 @@ pub struct BotMemoryDebugContext {
 pub struct MemoryStatsResponse {
     pub total_memos: i64,
     pub indexed_memos: i64,
-    pub ongoing_episodes: i64,
-    pub resolved_episodes: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

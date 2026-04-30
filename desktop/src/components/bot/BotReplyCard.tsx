@@ -29,15 +29,14 @@ function MemoryContextPanel({
     memoryApi
       .getContext(memoId, botId)
       .then(setContext)
-      .catch(() => setContext({ retrievedMemos: [], episode: null, profileSummary: null }))
+      .catch(() => setContext({ retrievedMemos: [] }))
   }, [memoId, botId])
 
   if (!context) return null
 
-  const ongoingEpisode = context.episode?.status === 'ongoing' ? context.episode : null
   const hasMemos = context.retrievedMemos.length > 0
 
-  if (!hasMemos && !ongoingEpisode) return null
+  if (!hasMemos) return null
 
   return (
     <div className="border-t pt-2">
@@ -47,15 +46,6 @@ function MemoryContextPanel({
         className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors text-left"
       >
         {hasMemos && <span>参考了你 {context.retrievedMemos.length} 条以前的记录</span>}
-        {ongoingEpisode && (
-          <>
-            {hasMemos && <span className="opacity-30">·</span>}
-            <span className="inline-flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-              当时正在经历：{ongoingEpisode.title}
-            </span>
-          </>
-        )}
       </button>
 
       {open && hasMemos && (

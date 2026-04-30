@@ -1,4 +1,4 @@
-import { Brain, GitBranch, Loader, RefreshCw, Tag, Zap } from 'lucide-react'
+import { Brain, Loader, RefreshCw, Zap } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { adminApi, api } from '../api'
 import { useToast } from '../hooks/useToast'
@@ -6,8 +6,6 @@ import { useToast } from '../hooks/useToast'
 interface MemoryStats {
   totalMemos: number
   indexedMemos: number
-  ongoingEpisodes: number
-  resolvedEpisodes: number
 }
 
 export default function MemoryPanel() {
@@ -15,8 +13,6 @@ export default function MemoryPanel() {
   const [stats, setStats] = useState<MemoryStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [backfilling, setBackfilling] = useState(false)
-  const [regenerating, setRegenerating] = useState(false)
-  const [retitling, setRetitling] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -33,19 +29,6 @@ export default function MemoryPanel() {
     void load()
   }, [load])
 
-  const handleRegenerateEpisodes = async () => {
-    setRegenerating(true)
-    try {
-      await adminApi('/backfill-episodes', { method: 'POST' })
-      toast.success('事件线摘要重新生成已启动，后台处理中')
-      setTimeout(() => void load(), 5000)
-    } catch {
-      toast.error('启动失败，请重试')
-    } finally {
-      setRegenerating(false)
-    }
-  }
-
   const handleBackfill = async () => {
     setBackfilling(true)
     try {
@@ -59,26 +42,12 @@ export default function MemoryPanel() {
     }
   }
 
-  const handleRetitleEpisodes = async () => {
-    setRetitling(true)
-    try {
-      await adminApi('/backfill-episode-titles', { method: 'POST' })
-      toast.success('事件线标题生成已启动，后台处理中')
-      setTimeout(() => void load(), 5000)
-    } catch {
-      toast.error('启动失败，请重试')
-    } finally {
-      setRetitling(false)
-    }
-  }
-
   const indexPercent =
     stats && stats.totalMemos > 0
       ? Math.round((stats.indexedMemos / stats.totalMemos) * 100)
       : 0
   const isFullyIndexed = stats && stats.indexedMemos >= stats.totalMemos && stats.totalMemos > 0
   const hasUnindexed = stats && stats.totalMemos > 0 && stats.indexedMemos < stats.totalMemos
-  const totalEpisodes = (stats?.ongoingEpisodes ?? 0) + (stats?.resolvedEpisodes ?? 0)
 
   return (
     <div className="rounded-lg border border-border bg-card">
@@ -149,66 +118,6 @@ export default function MemoryPanel() {
                   {stats!.totalMemos - stats!.indexedMemos} 条历史 Memo 未索引，可手动触发回填
                 </p>
               )}
-            </div>
-
-            {/* Episodes */}
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-4 text-[12px]">
-                <span className="flex items-center gap-1 font-medium text-foreground">
-                  <GitBranch size={12} />
-                  事件线
-                </span>
-                <div className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-muted-foreground">
-                    进行中{' '}
-                    <span className="font-semibold text-foreground">
-                      {stats?.ongoingEpisodes ?? 0}
-                    </span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
-                  <span className="text-muted-foreground">
-                    已结束{' '}
-                    <span className="font-semibold text-foreground">
-                      {stats?.resolvedEpisodes ?? 0}
-                    </span>
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  className="inline-flex items-center gap-1 rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/70 disabled:opacity-50"
-                  onClick={handleRegenerateEpisodes}
-                  disabled={regenerating}
-                >
-                  {regenerating ? (
-                    <Loader size={10} className="spin" />
-                  ) : (
-                    <RefreshCw size={10} />
-                  )}
-                  {regenerating ? '生成中...' : '重新生成摘要'}
-                </button>
-                <button
-                  className="inline-flex items-center gap-1 rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/70 disabled:opacity-50"
-                  onClick={handleRetitleEpisodes}
-                  disabled={retitling || totalEpisodes === 0}
-                  title={totalEpisodes === 0 ? '暂无事件线' : undefined}
-                >
-                  {retitling ? (
-                    <Loader size={10} className="spin" />
-                  ) : (
-                    <Tag size={10} />
-                  )}
-                  {retitling ? '生成中...' : '重新生成标题'}
-                </button>
-                {(regenerating || retitling) && (
-                  <span className="text-[11px] text-muted-foreground">
-                    后台处理中，完成后自动刷新
-                  </span>
-                )}
-              </div>
             </div>
 
           </>

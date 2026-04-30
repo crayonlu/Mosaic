@@ -44,7 +44,7 @@ pub use memo::{
     ResourceResponse as MemoResourceResponse, TagResponse, UpdateMemoRequest,
 };
 pub use memory::{
-    BotMemoryContext, BotMemoryDebugContext, MemoEpisode, MemoEpisodeLink, MemoryStatsResponse,
+    BotMemoryContext, BotMemoryDebugContext, MemoryStatsResponse,
     RelatedMemoContext,
 };
 pub use resource::{

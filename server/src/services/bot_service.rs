@@ -421,26 +421,6 @@ impl BotService {
         let memo = memo.ok_or(AppError::MemoNotFound)?;
         let memo_content = memo.content.clone();
 
-        #[derive(sqlx::FromRow)]
-        struct MoodRow {
-            mood_key: String,
-            mood_score: i32,
-        }
-
-        let mood_row: Option<MoodRow> = sqlx::query_as(
-            "SELECT mood_key, mood_score FROM diaries
-             WHERE user_id = $1 AND date = (
-                 SELECT DATE(to_timestamp(created_at / 1000.0)) FROM memos WHERE id = $2
-             )",
-        )
-        .bind(user_uuid)
-        .bind(memo_id)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(AppError::Database)?;
-
-        let mood_info = mood_row.map(|r| (r.mood_key, r.mood_score));
-
         let bots = sqlx::query_as::<_, Bot>(
             "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, model, ai_config, created_at, updated_at
              FROM bots WHERE user_id = $1 AND auto_reply = TRUE AND is_deleted = FALSE",
@@ -467,7 +447,6 @@ impl BotService {
             for bot in bots {
                 let pool = pool.clone();
                 let memo_content = memo_content.clone();
-                let mood_info = mood_info.clone();
                 let ai_config = ai_config.clone();
                 let memo_images = memo_images.clone();
                 let memory_context_service = memory_context_service.clone();
@@ -495,7 +474,6 @@ impl BotService {
                         &bot.description,
                         &memo_content,
                         memory_context.as_ref(),
-                        mood_info.as_ref(),
                         None,
                         None,
                         &memo_images,
@@ -1050,26 +1028,16 @@ async fn call_ai_for_reply(
     bot_description: &str,
     memo_content: &str,
     memory_context: Option<&BotMemoryContext>,
-    mood_info: Option<&(String, i32)>,
     previous_reply: Option<&str>,
     user_question: Option<&str>,
     images: &[AiImageInput],
     bot_model: Option<&str>,
 ) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
-    let mood_line = mood_info
-        .map(|(key, score)| {
-            format!(
-                "\nUser mood: {}  intensity {}/100  sense it naturally",
-                key, score
-            )
-        })
-        .unwrap_or_default();
-
     let current_time = Utc::now().format("%Y-%m-%d %H:%M").to_string();
 
     let system_prompt = format!(
-        "---IDENTITY START---\nYou are {}\n{}\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: {}{}\n---CONTEXT END---\n\n---THINKING GUIDE START---\nThink fully as yourself\nWhat do I feel reading this memo\nDoes anything from those memories genuinely surface  write only if yes  skip if nothing\nWhat do I want to say  how would I naturally say it\n---THINKING GUIDE END---\n\n---REPLY RULES START---\nBring up recalled memories only if they genuinely surfaced  say nothing about them otherwise\nUse CHINESE to reply\nConcise and genuine  100-200 characters\n---REPLY RULES END---",
-        bot_name, bot_description, current_time, mood_line
+        "---IDENTITY START---\nYou are {}\n{}\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: {}\n---CONTEXT END---\n\n---THINKING GUIDE START---\nThink fully as yourself\nWhat do I feel reading this memo\nDoes anything from those memories genuinely surface  write only if yes  skip if nothing\nWhat do I want to say  how would I naturally say it\n---THINKING GUIDE END---\n\n---REPLY RULES START---\nBring up recalled memories only if they genuinely surfaced  say nothing about them otherwise\nUse CHINESE to reply\nConcise and genuine  100-200 characters\n---REPLY RULES END---",
+        bot_name, bot_description, current_time
     );
 
     let empty_images: &[AiImageInput] = &[];
