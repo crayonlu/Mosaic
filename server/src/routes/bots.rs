@@ -184,17 +184,27 @@ pub async fn trigger_replies(
     req: HttpRequest,
     path: web::Path<Uuid>,
     bot_service: web::Data<BotService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(e) => return HttpResponse::from_error(e),
     };
 
+    let memo_id = path.into_inner();
     match bot_service
-        .trigger_replies(&user_id, path.into_inner(), placeholder_ai_config())
+        .trigger_replies(&user_id, memo_id, placeholder_ai_config())
         .await
     {
-        Ok(_) => HttpResponse::Accepted().finish(),
+        Ok(_) => {
+            activity_log.record_info(
+                "trigger_replies",
+                "memo",
+                Some(memo_id.to_string()),
+                "触发了 Bot 自动回复".to_string(),
+            );
+            HttpResponse::Accepted().finish()
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }
@@ -204,6 +214,7 @@ pub async fn reply_to_bot(
     path: web::Path<Uuid>,
     payload: web::Json<ReplyToBotRequest>,
     bot_service: web::Data<BotService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
@@ -219,7 +230,15 @@ pub async fn reply_to_bot(
         )
         .await
     {
-        Ok(reply) => HttpResponse::Created().json(reply),
+        Ok(reply) => {
+            activity_log.record_info(
+                "reply_to_bot",
+                "bot_reply",
+                Some(reply.id.to_string()),
+                format!("用户回复了 Bot: {}", reply.bot.name),
+            );
+            HttpResponse::Created().json(reply)
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }

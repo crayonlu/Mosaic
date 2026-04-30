@@ -2,6 +2,13 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BotMemoryStats {
+    pub total_contexts_built: i64,
+    pub last_context_at: Option<i64>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Bot {
     pub id: Uuid,
@@ -32,6 +39,7 @@ pub struct BotResponse {
     pub ai_config: Option<serde_json::Value>,
     pub created_at: i64,
     pub updated_at: i64,
+    pub memory_stats: Option<BotMemoryStats>,
 }
 
 impl BotResponse {
@@ -49,6 +57,7 @@ impl BotResponse {
             ai_config: bot.ai_config,
             created_at: bot.created_at,
             updated_at: bot.updated_at,
+            memory_stats: None,
         }
     }
 }

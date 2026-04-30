@@ -118,6 +118,18 @@ pub struct BotMemoryDebugContext {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct MemoryStatsResponse {
+    pub total_memos: i64,
+    pub indexed_memos: i64,
+    pub ongoing_episodes: i64,
+    pub resolved_episodes: i64,
+    pub profile_summary: Option<String>,
+    pub profile_topic_count: i64,
+    pub profile_updated_at: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BotMemoryContext {
     pub anchor_memo: AnchorMemoContext,
     pub diary_context: Option<DiaryMemoryContext>,

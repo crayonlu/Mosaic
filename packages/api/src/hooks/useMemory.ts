@@ -1,0 +1,18 @@
+import { useQuery } from '@tanstack/react-query'
+import { memoryApi } from '../memory'
+
+export function useMemoryStats() {
+  return useQuery({
+    queryKey: ['memory-stats'],
+    queryFn: () => memoryApi.getStats(),
+    staleTime: 30_000,
+  })
+}
+
+export function useMemoryActivity(limit = 20) {
+  return useQuery({
+    queryKey: ['memory-activity', limit],
+    queryFn: () => memoryApi.getActivity(limit),
+    staleTime: 30_000,
+  })
+}

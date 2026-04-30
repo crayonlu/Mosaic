@@ -39,4 +39,8 @@ export const adminApi = {
   updateAiConfig(key: 'bot' | 'embedding', data: ServerAiConfigPayload): Promise<ServerAiConfig> {
     return apiClient.put<ServerAiConfig>(`/admin/api/ai-config/${key}`, data)
   },
+
+  backfillMemory(): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>('/admin/api/backfill-memory')
+  },
 }

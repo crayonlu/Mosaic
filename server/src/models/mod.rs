@@ -35,8 +35,8 @@ pub mod stats;
 pub mod user;
 
 pub use bot::{
-    Bot, BotReplyResponse, BotResponse, BotSummary, BotThreadMessage, BotThreadResponse,
-    CreateBotRequest, ReorderBotsRequest, ReplyToBotRequest, UpdateBotRequest,
+    Bot, BotMemoryStats, BotReplyResponse, BotResponse, BotSummary, BotThreadMessage,
+    BotThreadResponse, CreateBotRequest, ReorderBotsRequest, ReplyToBotRequest, UpdateBotRequest,
 };
 pub use diary::{CreateDiaryRequest, Diary, DiaryListQuery, DiaryResponse, UpdateDiaryRequest};
 pub use memo::{
@@ -45,7 +45,7 @@ pub use memo::{
 };
 pub use memory::{
     AnchorMemoContext, BotMemoryContext, BotMemoryDebugContext, DiaryMemoryContext, EpisodeContext,
-    MemoEpisode, MemoEpisodeLink, RelatedMemoContext, UserMemoryProfile,
+    MemoEpisode, MemoEpisodeLink, MemoryStatsResponse, RelatedMemoContext, UserMemoryProfile,
 };
 pub use resource::{
     build_download_route, build_thumbnail_route, thumbnail_mime_type, thumbnail_storage_path,

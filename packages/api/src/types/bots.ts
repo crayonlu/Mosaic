@@ -1,3 +1,8 @@
+export interface BotMemoryStats {
+  totalContextsBuilt: number
+  lastContextAt: number | null
+}
+
 export interface Bot {
   id: string
   name: string
@@ -10,6 +15,7 @@ export interface Bot {
   aiConfig?: any
   createdAt: number
   updatedAt: number
+  memoryStats?: BotMemoryStats
 }
 
 export interface BotSummary {
