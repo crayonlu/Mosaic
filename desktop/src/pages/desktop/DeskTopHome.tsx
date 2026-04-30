@@ -7,8 +7,8 @@ import { toast } from '@/hooks/useToast'
 import { useInputStore } from '@/stores/inputStore'
 import { useHeatmapInvalidate } from '@/stores/statsStore'
 import type { MemoWithResources } from '@mosaic/api'
-import { useCreateMemo } from '@mosaic/api'
-import { useRef, useState } from 'react'
+import { memosApi, useCreateMemo } from '@mosaic/api'
+import { useCallback, useRef, useState } from 'react'
 
 export default function DeskTopHome() {
   const isInputExpanded = useInputStore(state => state.isExpanded)
@@ -111,6 +111,16 @@ export default function DeskTopHome() {
     setTimeout(() => setSelectedMemo(null), 300)
   }
 
+  const handleBotMemoNavigate = useCallback(async (memoId: string) => {
+    try {
+      const memo = await memosApi.get(memoId)
+      setSelectedMemo(memo)
+      setIsDetailOpen(true)
+    } catch {
+      /* memo may have been deleted */
+    }
+  }, [])
+
   return (
     <>
       <div className="h-[calc(100dvh-24rem)] overflow-hidden flex flex-col">
@@ -137,6 +147,7 @@ export default function DeskTopHome() {
         onClose={handleDetailClose}
         onUpdate={handleMemoUpdate}
         onDelete={handleMemoDelete}
+        onMemoNavigate={handleBotMemoNavigate}
       />
     </>
   )

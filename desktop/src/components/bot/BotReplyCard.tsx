@@ -1,17 +1,92 @@
 import { cn } from '@/lib/utils'
-import type { BotReply } from '@mosaic/api'
+import { memoryApi } from '@mosaic/api'
+import type { BotReply, MemoryContext } from '@mosaic/api'
 import dayjs from 'dayjs'
-import { MessageCircle, Lightbulb } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowRight, FileText, Lightbulb, MessageCircle } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { AuthImage } from '../common/AuthImage'
 
 interface BotReplyCardProps {
   reply: BotReply
   onReply?: (reply: BotReply) => void
+  onMemoNavigate?: (memoId: string) => void
   isThread?: boolean
 }
 
-export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardProps) {
+function MemoryContextPanel({
+  memoId,
+  botId,
+  onMemoNavigate,
+}: {
+  memoId: string
+  botId: string
+  onMemoNavigate?: (memoId: string) => void
+}) {
+  const [context, setContext] = useState<MemoryContext | null>(null)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    memoryApi
+      .getContext(memoId, botId)
+      .then(setContext)
+      .catch(() => setContext({ retrievedMemos: [], episode: null, profileSummary: null }))
+  }, [memoId, botId])
+
+  if (!context) return null
+
+  const ongoingEpisode = context.episode?.status === 'ongoing' ? context.episode : null
+  const hasMemos = context.retrievedMemos.length > 0
+
+  if (!hasMemos && !ongoingEpisode) return null
+
+  return (
+    <div className="border-t pt-2">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors text-left"
+      >
+        {hasMemos && <span>参考了你 {context.retrievedMemos.length} 条以前的记录</span>}
+        {ongoingEpisode && (
+          <>
+            {hasMemos && <span className="opacity-30">·</span>}
+            <span className="inline-flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+              当时正在经历：{ongoingEpisode.title}
+            </span>
+          </>
+        )}
+      </button>
+
+      {open && hasMemos && (
+        <div className="mt-1.5 space-y-px">
+          {context.retrievedMemos.map(memo => (
+            <button
+              key={memo.id}
+              type="button"
+              onClick={() => onMemoNavigate?.(memo.id)}
+              className="w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-muted/50 transition-colors group"
+            >
+              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="flex-1 text-xs text-foreground truncate">{memo.excerpt}</span>
+              <span className="text-[11px] text-muted-foreground shrink-0 tabular-nums">
+                {dayjs(memo.createdAt).format('M月D日')}
+              </span>
+              <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-60 transition-opacity" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function BotReplyCard({
+  reply,
+  onReply,
+  onMemoNavigate,
+  isThread = false,
+}: BotReplyCardProps) {
   const threadCount = Math.max(reply.threadCount - 1, 0)
   const [thinkingExpanded, setThinkingExpanded] = useState(false)
 
@@ -72,6 +147,13 @@ export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardP
                 </div>
               )}
             </div>
+          )}
+          {!isThread && (
+            <MemoryContextPanel
+              memoId={reply.memoId}
+              botId={reply.bot.id}
+              onMemoNavigate={onMemoNavigate}
+            />
           )}
         </div>
         {threadCount > 0 && !isThread && (

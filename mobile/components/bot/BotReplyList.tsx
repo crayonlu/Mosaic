@@ -7,9 +7,10 @@ import { BotReplyCard } from './BotReplyCard'
 interface BotReplyListProps {
   memoId: string
   onReply: (reply: BotReply) => void
+  onMemoNavigate?: (memoId: string) => void
 }
 
-export function BotReplyList({ memoId, onReply }: BotReplyListProps) {
+export function BotReplyList({ memoId, onReply, onMemoNavigate }: BotReplyListProps) {
   const { theme } = useThemeStore()
   const { data: replies = [] } = useBotReplies(memoId)
 
@@ -25,7 +26,7 @@ export function BotReplyList({ memoId, onReply }: BotReplyListProps) {
             index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border },
           ]}
         >
-          <BotReplyCard reply={reply} onReply={onReply} />
+          <BotReplyCard reply={reply} onReply={onReply} onMemoNavigate={onMemoNavigate} />
         </View>
       ))}
     </View>

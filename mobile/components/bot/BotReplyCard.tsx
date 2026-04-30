@@ -1,15 +1,96 @@
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/themeStore'
-import type { BotReply } from '@mosaic/api'
+import type { BotReply, MemoryContext } from '@mosaic/api'
+import { memoryApi } from '@mosaic/api'
+import dayjs from 'dayjs'
 import { Image } from 'expo-image'
-import { ChevronDown, ChevronUp, Lightbulb } from 'lucide-react-native'
-import { useState } from 'react'
+import { ArrowRight, ChevronDown, ChevronUp, FileText, Lightbulb } from 'lucide-react-native'
+import { useEffect, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface BotReplyCardProps {
   reply: BotReply
   onReply: (reply: BotReply) => void
+  onMemoNavigate?: (memoId: string) => void
   isThread?: boolean
+}
+
+function MemoryContextPanel({
+  memoId,
+  botId,
+  onMemoNavigate,
+  theme,
+}: {
+  memoId: string
+  botId: string
+  onMemoNavigate?: (memoId: string) => void
+  theme: any
+}) {
+  const [context, setContext] = useState<MemoryContext | null>(null)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    memoryApi
+      .getContext(memoId, botId)
+      .then(setContext)
+      .catch(() => setContext({ retrievedMemos: [], episode: null, profileSummary: null }))
+  }, [memoId, botId])
+
+  if (!context) return null
+
+  const ongoingEpisode = context.episode?.status === 'ongoing' ? context.episode : null
+  const hasMemos = context.retrievedMemos.length > 0
+
+  if (!hasMemos && !ongoingEpisode) return null
+
+  return (
+    <View style={[memStyles.container, { borderTopColor: theme.border }]}>
+      <TouchableOpacity
+        onPress={() => setOpen(v => !v)}
+        activeOpacity={0.7}
+        style={memStyles.trigger}
+      >
+        {hasMemos && (
+          <Text style={[memStyles.triggerText, { color: theme.textSecondary }]}>
+            参考了你 {context.retrievedMemos.length} 条以前的记录
+          </Text>
+        )}
+        {ongoingEpisode && (
+          <>
+            {hasMemos && <Text style={[memStyles.dot, { color: theme.textTertiary }]}> · </Text>}
+            <View style={memStyles.episodeRow}>
+              <View style={memStyles.episodeDot} />
+              <Text style={[memStyles.triggerText, { color: theme.textSecondary }]}>
+                当时正在经历：{ongoingEpisode.title}
+              </Text>
+            </View>
+          </>
+        )}
+      </TouchableOpacity>
+
+      {open && hasMemos && (
+        <View style={memStyles.memoList}>
+          {context.retrievedMemos.map(memo => (
+            <TouchableOpacity
+              key={memo.id}
+              onPress={() => onMemoNavigate?.(memo.id)}
+              activeOpacity={0.7}
+              style={[memStyles.memoRow, { borderRadius: theme.radius.small }]}
+            >
+              <FileText size={13} color={theme.textTertiary} />
+              <Text style={[memStyles.memoExcerpt, { color: theme.text }]} numberOfLines={1}>
+                {memo.excerpt}
+              </Text>
+              <Text style={[memStyles.memoDate, { color: theme.textTertiary }]}>
+                {dayjs(memo.createdAt).format('M月D日')}
+              </Text>
+              <ArrowRight size={11} color={theme.textTertiary} />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  )
 }
 
 function ThinkingPanel({ content, theme }: { content?: string; theme: any }) {
@@ -40,7 +121,12 @@ function ThinkingPanel({ content, theme }: { content?: string; theme: any }) {
   )
 }
 
-export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardProps) {
+export function BotReplyCard({
+  reply,
+  onReply,
+  onMemoNavigate,
+  isThread = false,
+}: BotReplyCardProps) {
   const { theme } = useThemeStore()
   const threadCount = Math.max(reply.threadCount - 1, 0)
 
@@ -91,6 +177,14 @@ export function BotReplyCard({ reply, onReply, isThread = false }: BotReplyCardP
             </View>
             <Text style={[styles.content, { color: theme.text }]}>{reply.content}</Text>
             <ThinkingPanel content={reply.thinkingContent} theme={theme} />
+            {!isThread && (
+              <MemoryContextPanel
+                memoId={reply.memoId}
+                botId={reply.bot.id}
+                onMemoNavigate={onMemoNavigate}
+                theme={theme}
+              />
+            )}
             {!isThread && threadCount > 0 && (
               <Text style={[styles.threadHint, { color: theme.textSecondary }]}>
                 已追问 {threadCount} 轮
@@ -194,5 +288,57 @@ const styles = StyleSheet.create({
     lineHeight: 19.5,
     paddingHorizontal: 10,
     paddingBottom: 10,
+  },
+})
+
+const memStyles = StyleSheet.create({
+  container: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 8,
+    marginTop: 4,
+  },
+  trigger: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 2,
+  },
+  triggerText: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  dot: {
+    fontSize: 12,
+  },
+  episodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  episodeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10b981',
+  },
+  memoList: {
+    marginTop: 6,
+    gap: 2,
+  },
+  memoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  memoExcerpt: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  memoDate: {
+    fontSize: 11,
+    flexShrink: 0,
   },
 })

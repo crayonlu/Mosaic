@@ -3,6 +3,7 @@ use crate::models::MemoryStatsResponse;
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -171,7 +172,202 @@ pub async fn get_memory_activity(
     HttpResponse::Ok().json(entries)
 }
 
+#[derive(Deserialize)]
+pub(crate) struct ContextQuery {
+    memo_id: Uuid,
+    bot_id: Uuid,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MemoryContextResponse {
+    retrieved_memos: Vec<RetrievedMemoItem>,
+    episode: Option<EpisodeContextItem>,
+    profile_summary: Option<String>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RetrievedMemoItem {
+    id: Uuid,
+    excerpt: String,
+    score: f64,
+    reason: String,
+    created_at: i64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct EpisodeContextItem {
+    id: Uuid,
+    title: String,
+    summary: String,
+    status: String,
+}
+
+pub async fn get_memory_context(
+    req: HttpRequest,
+    pool: web::Data<PgPool>,
+    query: web::Query<ContextQuery>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+    let user_uuid = match Uuid::parse_str(&user_id) {
+        Ok(id) => id,
+        Err(_) => return HttpResponse::BadRequest().finish(),
+    };
+
+    let empty = MemoryContextResponse {
+        retrieved_memos: vec![],
+        episode: None,
+        profile_summary: None,
+    };
+
+    #[derive(sqlx::FromRow)]
+    struct LogRow {
+        retrieved_memo_ids: serde_json::Value,
+        selected_episode_ids: serde_json::Value,
+        score_payload: serde_json::Value,
+    }
+
+    let log = match sqlx::query_as::<_, LogRow>(
+        "SELECT retrieved_memo_ids, selected_episode_ids, score_payload
+         FROM bot_memory_debug_logs
+         WHERE user_id = $1 AND memo_id = $2 AND bot_id = $3
+         ORDER BY created_at DESC LIMIT 1",
+    )
+    .bind(user_uuid)
+    .bind(query.memo_id)
+    .bind(query.bot_id)
+    .fetch_optional(pool.get_ref())
+    .await
+    {
+        Ok(Some(row)) => row,
+        Ok(None) => return HttpResponse::Ok().json(empty),
+        Err(e) => {
+            log::error!("[MemoryContext] Query failed: {}", e);
+            return HttpResponse::InternalServerError().finish();
+        }
+    };
+
+    let score_map: HashMap<Uuid, (f64, String)> = log
+        .score_payload
+        .as_array()
+        .unwrap_or(&vec![])
+        .iter()
+        .filter_map(|item| {
+            let id = item["memoId"]
+                .as_str()
+                .and_then(|s| Uuid::parse_str(s).ok())?;
+            let score = item["score"].as_f64().unwrap_or(0.0);
+            let reason = item["reason"].as_str().unwrap_or("").to_string();
+            Some((id, (score, reason)))
+        })
+        .collect();
+
+    let memo_ids: Vec<Uuid> = log
+        .retrieved_memo_ids
+        .as_array()
+        .unwrap_or(&vec![])
+        .iter()
+        .filter_map(|v| v.as_str().and_then(|s| Uuid::parse_str(s).ok()))
+        .collect();
+
+    let mut retrieved_memos: Vec<RetrievedMemoItem> = if memo_ids.is_empty() {
+        vec![]
+    } else {
+        #[derive(sqlx::FromRow)]
+        struct MemoRow {
+            id: Uuid,
+            content: String,
+            ai_summary: Option<String>,
+            created_at: i64,
+        }
+        sqlx::query_as::<_, MemoRow>(
+            "SELECT id, content, ai_summary, created_at FROM memos WHERE id = ANY($1) AND is_deleted = FALSE",
+        )
+        .bind(&memo_ids)
+        .fetch_all(pool.get_ref())
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .map(|m| {
+            let (score, reason) = score_map.get(&m.id).cloned().unwrap_or((0.0, "recent".into()));
+            let excerpt = m
+                .ai_summary
+                .filter(|s| !s.trim().is_empty())
+                .unwrap_or_else(|| m.content.chars().take(120).collect());
+            RetrievedMemoItem {
+                id: m.id,
+                excerpt,
+                score,
+                reason,
+                created_at: m.created_at,
+            }
+        })
+        .collect()
+    };
+
+    retrieved_memos.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    let episode_id = log
+        .selected_episode_ids
+        .as_array()
+        .and_then(|a| a.first())
+        .and_then(|v| v.as_str())
+        .and_then(|s| Uuid::parse_str(s).ok());
+
+    let episode = if let Some(ep_id) = episode_id {
+        #[derive(sqlx::FromRow)]
+        struct EpRow {
+            id: Uuid,
+            title: String,
+            summary: String,
+            status: String,
+        }
+        sqlx::query_as::<_, EpRow>(
+            "SELECT id, title, summary, status FROM memo_episodes WHERE id = $1",
+        )
+        .bind(ep_id)
+        .fetch_optional(pool.get_ref())
+        .await
+        .ok()
+        .flatten()
+        .map(|r| EpisodeContextItem {
+            id: r.id,
+            title: r.title,
+            summary: r.summary,
+            status: r.status,
+        })
+    } else {
+        None
+    };
+
+    let profile_summary = sqlx::query_scalar::<_, String>(
+        "SELECT profile_summary FROM user_memory_profiles WHERE user_id = $1",
+    )
+    .bind(user_uuid)
+    .fetch_optional(pool.get_ref())
+    .await
+    .ok()
+    .flatten()
+    .filter(|s| !s.trim().is_empty());
+
+    HttpResponse::Ok().json(MemoryContextResponse {
+        retrieved_memos,
+        episode,
+        profile_summary,
+    })
+}
+
 pub fn configure_memory_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/memory/stats").route(web::get().to(get_memory_stats)))
-        .service(web::resource("/memory/activity").route(web::get().to(get_memory_activity)));
+        .service(web::resource("/memory/activity").route(web::get().to(get_memory_activity)))
+        .service(web::resource("/memory/context").route(web::get().to(get_memory_context)));
 }

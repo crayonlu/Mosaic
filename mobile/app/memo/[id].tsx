@@ -241,7 +241,11 @@ export default function MemoDetailScreen() {
           )}
         </View>
 
-        <BotReplyList memoId={memo.id} onReply={handleBotReply} />
+        <BotReplyList
+          memoId={memo.id}
+          onReply={handleBotReply}
+          onMemoNavigate={memoId => router.push(`/memo/${memoId}`)}
+        />
       </ScrollView>
 
       <BotThreadSheet

@@ -16,7 +16,6 @@ import { useBots, useCreateBot, useDeleteBot, useUpdateBot } from '@mosaic/api'
 import { Bot as BotIcon, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
-
 export function BotSettings() {
   const { data: bots, isLoading } = useBots()
   const { mutateAsync: createBot, isPending: isCreating } = useCreateBot()
