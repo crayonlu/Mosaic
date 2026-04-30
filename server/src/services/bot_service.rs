@@ -6,6 +6,7 @@ use crate::models::{
     ReplyToBotRequest, UpdateBotRequest,
 };
 use crate::services::{BotMemoryContextService, ServerAiConfigService};
+use crate::services::time_formatter;
 use crate::storage::traits::Storage;
 use base64::{engine::general_purpose, Engine as _};
 use chrono::Utc;
@@ -1015,9 +1016,14 @@ async fn call_ai_for_thread_reply(
     images: &[AiImageInput],
     bot_model: Option<&str>,
 ) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
+    let current_time = memory_context.map(|c| c.current_time.as_str()).unwrap_or("");
     let system_prompt = format!(
-        "你是 {}。{}\n\n你正在围绕同一条 Memo 和用户连续对话。请始终以这条 Memo 为上下文锚点，不要把它当成普通闲聊。请用中文回复，语言风格符合你的人格设定。",
-        bot_name, bot_description
+        "你是 {}。{}
+
+当前时间：{}
+
+上面这些是用户记录的 memo，记录了用户最近的经历和状态。\n你正在围绕同一条 Memo 和用户连续对话。请始终以这条 Memo 为上下文锚点。\n请以 {} 的身份自然地回应用户，用中文回复，语言风格符合你的人格设定。",
+        bot_name, bot_description, current_time, bot_name
     );
 
     let mut messages = vec![json!({
@@ -1048,20 +1054,22 @@ async fn call_ai_for_reply(
 ) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
     let mood_context = mood_info.map(|(key, score)| {
         format!(
-            "\n\n用户当前的情绪状态：{}（强度 {}/100）。请在回复时自然地感知这个情绪，不需要直接点出情绪名称。",
+            "\n用户当前的情绪状态：{}（强度 {}/100）。请自然地感知这个情绪。",
             key, score
         )
     }).unwrap_or_default();
 
+    let current_time = memory_context.map(|c| c.current_time.as_str()).unwrap_or("");
+
     let system_prompt = if previous_reply.is_none() {
         format!(
-            "你是 {}。{}{}\n\n请用中文回复，语言风格符合你的人格设定。回复要简洁有力，100-200字为宜。",
-            bot_name, bot_description, mood_context
+            "你是 {}。{}\n\n当前时间：{}{}\n\n上面这些是用户记录的 memo，记录了用户最近的经历和状态。\n请以 {} 的身份自然地回应用户的这条 memo\n你的思考过程（thinking）应该以你自己的第一人称视角展开，思考你该如何回应、你注意到了什么。\n\n请用中文回复，简洁有力，100-200字为宜。",
+            bot_name, bot_description, current_time, mood_context, bot_name
         )
     } else {
         format!(
-            "你是 {}。{}\n\n请用中文回复，语言风格符合你的人格设定。",
-            bot_name, bot_description
+            "你是 {}。{}\n\n当前时间：{}\n\n上面这些是用户记录的 memo，记录了用户最近的经历和状态。\n请以 {} 的身份自然地回应用户，用中文回复，语言风格符合你的人格设定。",
+            bot_name, bot_description, current_time, bot_name
         )
     };
 
@@ -1104,60 +1112,77 @@ fn build_memory_prefix(memory_context: Option<&BotMemoryContext>) -> String {
     };
 
     let mut sections = Vec::new();
-    let mut remaining = MAX_MEMORY_PREFIX_CHARS;
 
-    if let Some(profile_summary) = &context.profile_summary {
-        let truncated: String = profile_summary.chars().take(400).collect();
-        let section = format!("[长期画像]\n{}", truncated);
-        if section.len() <= remaining {
-            remaining -= section.len();
-            sections.push(section);
+    sections.push(format!("当前时间：{}", context.current_time));
+
+    sections.push(format!(
+        "用户刚刚记录了：\n\"{}\"",
+        context.anchor_memo.content.chars().take(300).collect::<String>()
+    ));
+
+    if !context.recent_memos.is_empty() {
+        let mut items = Vec::new();
+        let mut budget = 800usize;
+        for memo in &context.recent_memos {
+            let label = time_formatter::relative_time(memo.created_at);
+            let excerpt: String = memo.summary_excerpt.chars().take(100).collect();
+            let line = format!("- {}：{}", label, excerpt);
+            if line.len() > budget {
+                break;
+            }
+            budget = budget.saturating_sub(line.len());
+            items.push(line);
+        }
+        if !items.is_empty() {
+            sections.push(format!("用户近期的 memo：\n{}", items.join("\n")));
         }
     }
 
     if let Some(episode) = &context.selected_episode {
-        let chars: Vec<char> = episode.summary.chars().collect();
-        let truncated: String = if chars.len() > 500 {
-            chars[chars.len() - 500..].iter().collect()
-        } else {
-            episode.summary.clone()
+        let start_label = time_formatter::absolute_date(episode.start_at);
+        let status_label = match episode.status.as_str() {
+            "ongoing" => "进行中",
+            "resolved" => "已结束",
+            _ => &episode.status,
         };
-        let section = format!("[当前事件线]\n{}", truncated);
-        if section.len() <= remaining {
-            remaining -= section.len();
-            sections.push(section);
-        }
+        let summary: String = episode.summary.chars().take(500).collect();
+        sections.push(format!(
+            "用户正在经历的事件线：「{}」（从{}开始，{}）\n{}",
+            episode.title, start_label, status_label, summary
+        ));
     }
 
-    if let Some(timeline_summary) = &context.timeline_summary {
-        let truncated: String = timeline_summary.chars().take(600).collect();
-        let section = format!("[相关时间线]\n{}", truncated);
-        if section.len() <= remaining {
-            remaining -= section.len();
-            sections.push(section);
-        }
-    }
-
-    if !context.related_memos.is_empty() {
+    if !context.weekly_memos.is_empty() {
         let mut items = Vec::new();
-        for memo in context.related_memos.iter().take(5) {
-            let item = format!(
-                "- {}",
-                memo.summary_excerpt.chars().take(100).collect::<String>()
-            );
-            if items.iter().map(|s: &String| s.len()).sum::<usize>() + item.len()
-                > remaining.saturating_sub(20)
-            {
+        let mut budget = 600usize;
+        for memo in &context.weekly_memos {
+            let label = time_formatter::date_label(memo.created_at);
+            let excerpt: String = memo.summary_excerpt.chars().take(100).collect();
+            let line = format!("- {}：{}", label, excerpt);
+            if line.len() > budget {
                 break;
             }
-            items.push(item);
+            budget = budget.saturating_sub(line.len());
+            items.push(line);
         }
         if !items.is_empty() {
-            sections.push(format!("[相关历史 Memo]\n{}", items.join("\n")));
+            sections.push(format!("用户更早的 memo：\n{}", items.join("\n")));
         }
     }
 
-    sections.join("\n\n")
+    if let Some(profile_summary) = &context.profile_summary {
+        let truncated: String = profile_summary.chars().take(400).collect();
+        if !truncated.is_empty() {
+            sections.push(format!("关于用户：\n{}", truncated));
+        }
+    }
+
+    let joined = sections.join("\n\n");
+    if joined.len() > MAX_MEMORY_PREFIX_CHARS {
+        joined.chars().take(MAX_MEMORY_PREFIX_CHARS).collect()
+    } else {
+        joined
+    }
 }
 
 async fn send_ai_messages(

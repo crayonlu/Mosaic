@@ -4,7 +4,9 @@ use crate::models::{
     Memo, MemoEpisode, UserMemoryProfile,
 };
 use crate::services::{EpisodeService, MemoryRetrievalService, TimelineMemoryService};
+use crate::services::time_formatter;
 use sqlx::PgPool;
+use std::collections::HashSet;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -45,26 +47,62 @@ impl BotMemoryContextService {
         };
 
         let diary_context = self.load_diary_context(memo).await?;
-        let related_memos = self
+
+        let recent_memos = self
             .retrieval_service
-            .retrieve_related_memos(memo.user_id, memo, 6)
+            .retrieve_recent_memos(memo.user_id, memo, 24, 10)
             .await?;
+
+        let related_raw = self
+            .retrieval_service
+            .retrieve_related_memos(memo.user_id, memo, 12)
+            .await?;
+
+        let now_ms = chrono::Utc::now().timestamp_millis();
+        let cutoff_30d = now_ms - 30 * 86_400_000;
+
+        let recent_ids: HashSet<Uuid> = recent_memos.iter().map(|m| m.memo_id).collect();
+
+        let weekly_memos: Vec<_> = related_raw
+            .into_iter()
+            .filter(|m| !recent_ids.contains(&m.memo_id) && m.created_at >= cutoff_30d)
+            .collect();
+
+        let mut weekly_memos = weekly_memos;
+        weekly_memos.sort_by_key(|m| m.created_at);
+
+        let all_memos_for_timeline: Vec<_> = recent_memos
+            .iter()
+            .chain(weekly_memos.iter())
+            .cloned()
+            .collect();
+
+        let all_memos_for_debug: Vec<_> = recent_memos
+            .iter()
+            .chain(weekly_memos.iter())
+            .cloned()
+            .collect();
+
         let selected_episode = self.load_selected_episode(memo.id).await?;
-        let timeline_summary = self.timeline_service.build_summary(&related_memos);
+        let timeline_summary = self.timeline_service.build_summary(&all_memos_for_timeline);
         let profile_summary = self.load_profile_summary(memo.user_id).await?;
         let selected_episode_id = selected_episode.as_ref().map(|episode| episode.episode_id);
 
         let estimated_chars = profile_summary.as_ref().map_or(0, |s| s.len())
             + selected_episode.as_ref().map_or(0, |e| e.summary.len())
             + timeline_summary.as_ref().map_or(0, |s| s.len())
-            + related_memos
+            + recent_memos
+                .iter()
+                .map(|m| m.summary_excerpt.len() + 4)
+                .sum::<usize>()
+            + weekly_memos
                 .iter()
                 .map(|m| m.summary_excerpt.len() + 4)
                 .sum::<usize>();
 
         let debug = BotMemoryDebugContext {
-            candidate_count: related_memos.len(),
-            retrieved_memo_ids: related_memos.iter().map(|memo| memo.memo_id).collect(),
+            candidate_count: all_memos_for_debug.len(),
+            retrieved_memo_ids: all_memos_for_debug.iter().map(|memo| memo.memo_id).collect(),
             selected_episode_id,
             prompt_chars: estimated_chars,
         };
@@ -74,19 +112,24 @@ impl BotMemoryContextService {
             memo.id,
             bot_id,
             selected_episode_id,
-            &related_memos,
+            &all_memos_for_debug,
             &debug,
         )
         .await?;
+
+        let current_time = time_formatter::now_formatted();
 
         Ok(BotMemoryContext {
             anchor_memo,
             diary_context,
             thread_context,
-            related_memos: related_memos.clone(),
+            related_memos: vec![],
+            recent_memos,
+            weekly_memos,
             selected_episode,
             timeline_summary,
             profile_summary,
+            current_time,
             debug,
         })
     }
