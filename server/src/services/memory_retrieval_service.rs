@@ -5,6 +5,9 @@ use uuid::Uuid;
 
 const RECENT_DAYS: i64 = 30;
 const MAX_CANDIDATES: i64 = 30;
+// Gate: candidate must have semantic >= this OR strong episode link
+const MIN_SEMANTIC: f64 = 0.50;
+const MIN_EPISODE_GATE: f64 = 0.70;
 
 #[derive(Clone)]
 pub struct MemoryRetrievalService {
@@ -35,7 +38,7 @@ impl MemoryRetrievalService {
             content: String,
             created_at: i64,
             similarity: Option<f64>,
-            same_episode: bool,
+            episode_relevance: f64,
         }
 
         let candidates = sqlx::query_as::<_, CandidateRow>(
@@ -48,10 +51,13 @@ impl MemoryRetrievalService {
                            THEN 1.0 - (me.embedding <=> anchor.embedding)
                       ELSE NULL
                     END AS similarity,
-                    EXISTS(
-                      SELECT 1 FROM memo_episode_links el, anchor_episode ae
-                      WHERE el.memo_id = m.id AND el.episode_id = ae.episode_id
-                    ) AS same_episode
+                    COALESCE((
+                      SELECT el.relevance_score
+                      FROM memo_episode_links el
+                      JOIN anchor_episode ae ON el.episode_id = ae.episode_id
+                      WHERE el.memo_id = m.id
+                      LIMIT 1
+                    ), 0.0) AS episode_relevance
              FROM memos m
              LEFT JOIN memo_embeddings me ON me.memo_id = m.id
              LEFT JOIN memo_embeddings anchor ON anchor.memo_id = $2
@@ -60,7 +66,7 @@ impl MemoryRetrievalService {
                  (me.embedding IS NOT NULL AND anchor.embedding IS NOT NULL)
                  OR m.created_at >= $3
                  OR EXISTS(
-                   SELECT 1 FROM memo_episode_links el, (SELECT episode_id FROM memo_episode_links WHERE memo_id = $2 LIMIT 1) ae
+                   SELECT 1 FROM memo_episode_links el, anchor_episode ae
                    WHERE el.memo_id = m.id AND el.episode_id = ae.episode_id
                  )
                )
@@ -77,6 +83,11 @@ impl MemoryRetrievalService {
 
         let mut scored: Vec<RelatedMemoContext> = candidates
             .into_iter()
+            .filter(|c| {
+                let semantic = c.similarity.unwrap_or(0.0);
+                // Require minimum semantic relevance, unless strongly episode-linked
+                semantic >= MIN_SEMANTIC || c.episode_relevance >= MIN_EPISODE_GATE
+            })
             .map(|c| {
                 let candidate_tags: Vec<String> =
                     serde_json::from_value(c.tags.clone()).unwrap_or_default();
@@ -84,7 +95,8 @@ impl MemoryRetrievalService {
                 let semantic = c.similarity.unwrap_or(0.0).max(0.0);
                 let age_ms = (now_ms - c.created_at).max(0) as f64;
                 let recency = (-age_ms / (30.0 * 86_400_000.0)).exp();
-                let episode_boost = if c.same_episode { 1.0 } else { 0.0 };
+                // Use actual episode join quality (0–1), not binary flag
+                let episode_boost = c.episode_relevance;
                 let tag_overlap = if anchor_tags.is_empty() || candidate_tags.is_empty() {
                     0.0
                 } else {
@@ -96,7 +108,7 @@ impl MemoryRetrievalService {
                 };
 
                 let final_score =
-                    0.40 * semantic + 0.25 * recency + 0.15 * episode_boost + 0.20 * tag_overlap;
+                    0.45 * semantic + 0.20 * recency + 0.15 * episode_boost + 0.20 * tag_overlap;
 
                 let mut reasons = Vec::new();
                 if semantic > 0.3 {
@@ -105,7 +117,7 @@ impl MemoryRetrievalService {
                 if recency > 0.5 {
                     reasons.push("recent");
                 }
-                if c.same_episode {
+                if episode_boost > 0.3 {
                     reasons.push("episode");
                 }
                 if tag_overlap > 0.0 {

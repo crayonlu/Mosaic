@@ -39,7 +39,7 @@ impl MemoryEmbeddingService {
         };
 
         format!(
-            "summary: {}\ncontent: {}\ntags: {}",
+            "这是一条个人日记记录，用于检索相关历史背景事件。\nsummary: {}\ncontent: {}\ntags: {}",
             summary, content_excerpt, tags_text
         )
     }
