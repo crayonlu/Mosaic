@@ -6,7 +6,6 @@ use crate::models::{
     ReplyToBotRequest, UpdateBotRequest,
 };
 use crate::services::{BotMemoryContextService, ServerAiConfigService};
-use crate::services::time_formatter;
 use crate::storage::traits::Storage;
 use base64::{engine::general_purpose, Engine as _};
 use chrono::Utc;
@@ -477,7 +476,7 @@ impl BotService {
                 handles.push(tokio::spawn(async move {
                     let memory_context = if let Some(service) = memory_context_service {
                         match service
-                            .build_for_memo(&memo_for_context, vec![], Some(bot.id))
+                            .build_for_memo(&memo_for_context, Some(bot.id))
                             .await
                         {
                             Ok(ctx) => Some(ctx),
@@ -609,7 +608,7 @@ impl BotService {
             };
 
             service
-                .build_for_memo(&memo, history.clone(), Some(parent.bot_id))
+                .build_for_memo(&memo, Some(parent.bot_id))
                 .await
                 .ok()
         } else {
@@ -1016,19 +1015,24 @@ async fn call_ai_for_thread_reply(
     images: &[AiImageInput],
     bot_model: Option<&str>,
 ) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
-    let current_time = memory_context.map(|c| c.current_time.as_str()).unwrap_or("");
+    let current_time = Utc::now().format("%Y-%m-%d %H:%M").to_string();
     let system_prompt = format!(
-        "你是 {}。{}
-
-当前时间：{}
-
-上面这些是用户记录的 memo，记录了用户最近的经历和状态。\n你正在围绕同一条 Memo 和用户连续对话。请始终以这条 Memo 为上下文锚点。\n请以 {} 的身份自然地回应用户，用中文回复，语言风格符合你的人格设定。",
+        "---IDENTITY START---\nYou are {}\n{}\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: {}\nOngoing conversation anchored to the memo below\nStay in that context\n---CONTEXT END---\n\n---REPLY RULES START---\nRespond naturally as {}\nUse CHINESE to reply\n---REPLY RULES END---",
         bot_name, bot_description, current_time, bot_name
     );
 
+    let memory_prefix = build_memory_prefix(memory_context);
+    let first_msg = if memory_prefix.is_empty() {
+        format!("---MEMO START---\n{}\n---MEMO END---", memo_content)
+    } else {
+        format!(
+            "{}\n\n---MEMO START---\n{}\n---MEMO END---",
+            memory_prefix, memo_content
+        )
+    };
     let mut messages = vec![json!({
         "role": "user",
-        "content": format!("{}\n\n原始 Memo：\n{}", build_memory_prefix(memory_context), memo_content),
+        "content": first_msg,
     })];
     messages.extend(history.iter().cloned());
     messages.push(build_user_message(
@@ -1052,26 +1056,21 @@ async fn call_ai_for_reply(
     images: &[AiImageInput],
     bot_model: Option<&str>,
 ) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
-    let mood_context = mood_info.map(|(key, score)| {
-        format!(
-            "\n用户当前的情绪状态：{}（强度 {}/100）。请自然地感知这个情绪。",
-            key, score
-        )
-    }).unwrap_or_default();
+    let mood_line = mood_info
+        .map(|(key, score)| {
+            format!(
+                "\nUser mood: {}  intensity {}/100  sense it naturally",
+                key, score
+            )
+        })
+        .unwrap_or_default();
 
-    let current_time = memory_context.map(|c| c.current_time.as_str()).unwrap_or("");
+    let current_time = Utc::now().format("%Y-%m-%d %H:%M").to_string();
 
-    let system_prompt = if previous_reply.is_none() {
-        format!(
-            "你是 {}。{}\n\n当前时间：{}{}\n\n上面这些是用户记录的 memo，记录了用户最近的经历和状态。\n请以 {} 的身份自然地回应用户的这条 memo\n你的思考过程（thinking）应该以你自己的第一人称视角展开，思考你该如何回应、你注意到了什么。\n\n请用中文回复，简洁有力，100-200字为宜。",
-            bot_name, bot_description, current_time, mood_context, bot_name
-        )
-    } else {
-        format!(
-            "你是 {}。{}\n\n当前时间：{}\n\n上面这些是用户记录的 memo，记录了用户最近的经历和状态。\n请以 {} 的身份自然地回应用户，用中文回复，语言风格符合你的人格设定。",
-            bot_name, bot_description, current_time, bot_name
-        )
-    };
+    let system_prompt = format!(
+        "---IDENTITY START---\nYou are {}\n{}\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: {}{}\n---CONTEXT END---\n\n---THINKING GUIDE START---\nThink fully as yourself\nWhat do I feel reading this memo\nDoes anything from those memories genuinely surface  write only if yes  skip if nothing\nWhat do I want to say  how would I naturally say it\n---THINKING GUIDE END---\n\n---REPLY RULES START---\nBring up recalled memories only if they genuinely surfaced  say nothing about them otherwise\nUse CHINESE to reply\nConcise and genuine  100-200 characters\n---REPLY RULES END---",
+        bot_name, bot_description, current_time, mood_line
+    );
 
     let empty_images: &[AiImageInput] = &[];
     let memo_images = if previous_reply.is_none() {
@@ -1079,12 +1078,17 @@ async fn call_ai_for_reply(
     } else {
         empty_images
     };
+    let memory_prefix = build_memory_prefix(memory_context);
+    let user_content = if memory_prefix.is_empty() {
+        format!("---MEMO START---\n{}\n---MEMO END---", memo_content)
+    } else {
+        format!(
+            "{}\n\n---MEMO START---\n{}\n---MEMO END---",
+            memory_prefix, memo_content
+        )
+    };
     let mut messages = vec![build_user_message(
-        &format!(
-            "{}\n\n{}",
-            build_memory_prefix(memory_context),
-            memo_content
-        ),
+        &user_content,
         memo_images,
         config.provider.as_str(),
     )];
@@ -1104,85 +1108,38 @@ async fn call_ai_for_reply(
     send_ai_messages(config, system_prompt, messages, bot_model).await
 }
 
-const MAX_MEMORY_PREFIX_CHARS: usize = 3000;
-
 fn build_memory_prefix(memory_context: Option<&BotMemoryContext>) -> String {
     let Some(context) = memory_context else {
         return String::new();
     };
 
-    let mut sections = Vec::new();
-
-    sections.push(format!("当前时间：{}", context.current_time));
-
-    sections.push(format!(
-        "用户刚刚记录了：\n\"{}\"",
-        context.anchor_memo.content.chars().take(300).collect::<String>()
-    ));
-
-    if !context.recent_memos.is_empty() {
-        let mut items = Vec::new();
-        let mut budget = 800usize;
-        for memo in &context.recent_memos {
-            let label = time_formatter::relative_time(memo.created_at);
-            let excerpt: String = memo.summary_excerpt.chars().take(100).collect();
-            let line = format!("- {}：{}", label, excerpt);
-            if line.len() > budget {
-                break;
-            }
-            budget = budget.saturating_sub(line.len());
-            items.push(line);
-        }
-        if !items.is_empty() {
-            sections.push(format!("用户近期的 memo：\n{}", items.join("\n")));
-        }
+    let memos: Vec<_> = context.similar_memos.iter().take(6).collect();
+    if memos.is_empty() {
+        return String::new();
     }
 
-    if let Some(episode) = &context.selected_episode {
-        let start_label = time_formatter::absolute_date(episode.start_at);
-        let status_label = match episode.status.as_str() {
-            "ongoing" => "进行中",
-            "resolved" => "已结束",
-            _ => &episode.status,
-        };
-        let summary: String = episode.summary.chars().take(500).collect();
-        sections.push(format!(
-            "用户正在经历的事件线：「{}」（从{}开始，{}）\n{}",
-            episode.title, start_label, status_label, summary
-        ));
-    }
+    let now_ms = Utc::now().timestamp_millis();
+    let items: Vec<String> = memos
+        .iter()
+        .map(|m| {
+            let diff_days = (now_ms - m.created_at) / (1000 * 60 * 60 * 24);
+            let label = match diff_days {
+                0 => "today".to_string(),
+                1 => "yesterday".to_string(),
+                2..=6 => format!("{} days ago", diff_days),
+                7..=13 => "last week".to_string(),
+                14..=27 => "2 weeks ago".to_string(),
+                28..=45 => "a month ago".to_string(),
+                _ => format!("{} months ago", diff_days / 30),
+            };
+            format!("- {}  {}", label, m.summary_excerpt)
+        })
+        .collect();
 
-    if !context.weekly_memos.is_empty() {
-        let mut items = Vec::new();
-        let mut budget = 600usize;
-        for memo in &context.weekly_memos {
-            let label = time_formatter::date_label(memo.created_at);
-            let excerpt: String = memo.summary_excerpt.chars().take(100).collect();
-            let line = format!("- {}：{}", label, excerpt);
-            if line.len() > budget {
-                break;
-            }
-            budget = budget.saturating_sub(line.len());
-            items.push(line);
-        }
-        if !items.is_empty() {
-            sections.push(format!("用户更早的 memo：\n{}", items.join("\n")));
-        }
-    }
-
-    if let Some(profile_summary) = &context.profile_summary {
-        let truncated: String = profile_summary.chars().take(400).collect();
-        if !truncated.is_empty() {
-            sections.push(format!("关于用户：\n{}", truncated));
-        }
-    }
-
-    let joined = sections.join("\n\n");
-    if joined.len() > MAX_MEMORY_PREFIX_CHARS {
-        joined.chars().take(MAX_MEMORY_PREFIX_CHARS).collect()
-    } else {
-        joined
-    }
+    format!(
+        "---MEMORY START---\nThings that may naturally surface  no need to force or reference them\n{}\n---MEMORY END---",
+        items.join("\n")
+    )
 }
 
 async fn send_ai_messages(

@@ -1,8 +1,6 @@
 use crate::config::Config;
 use crate::models::{Memo, ServerAiConfigPayload, ServerAiConfigResponse};
-use crate::services::{
-    EpisodeService, MemoryEmbeddingService, ProfileMemoryService, ServerAiConfigService,
-};
+use crate::services::{EpisodeService, MemoryEmbeddingService, ServerAiConfigService};
 use actix_web::{web, HttpRequest, HttpResponse};
 use chrono::Datelike;
 use serde::Serialize;
@@ -301,13 +299,11 @@ pub async fn backfill_memory(
     pool: web::Data<PgPool>,
     embedding_service: web::Data<MemoryEmbeddingService>,
     episode_service: web::Data<EpisodeService>,
-    profile_service: web::Data<ProfileMemoryService>,
     activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let pool_ref = pool.get_ref().clone();
     let embedding = embedding_service.get_ref().clone();
     let episode = episode_service.get_ref().clone();
-    let profile = profile_service.get_ref().clone();
     let log_clone = activity_log.clone();
 
     activity_log.record_info(
@@ -379,12 +375,6 @@ pub async fn backfill_memory(
             offset += BATCH_SIZE;
         }
 
-        for uid in &user_ids {
-            if let Err(e) = profile.refresh_for_user(*uid).await {
-                log::error!("[Backfill] Profile failed for user {}: {}", uid, e);
-            }
-        }
-
         log::info!(
             "[Backfill] Complete: {} success, {} failed, {} users refreshed",
             success,
@@ -429,13 +419,17 @@ pub async fn backfill_episodes(
             Ok((ok, failed)) => {
                 log::info!(
                     "[Backfill] Episode summaries done: {} ok, {} failed",
-                    ok, failed
+                    ok,
+                    failed
                 );
                 log_clone.record_info(
                     "backfill_episodes_completed",
                     "system",
                     None,
-                    format!("Episode summary regen complete: {} ok, {} failed", ok, failed),
+                    format!(
+                        "Episode summary regen complete: {} ok, {} failed",
+                        ok, failed
+                    ),
                 );
             }
             Err(e) => {
@@ -446,5 +440,49 @@ pub async fn backfill_episodes(
 
     HttpResponse::Ok().json(serde_json::json!({
         "message": "Episode summary regeneration started in background. Check server logs for progress."
+    }))
+}
+
+pub async fn backfill_episode_titles(
+    episode_service: web::Data<EpisodeService>,
+    activity_log: web::Data<ActivityLog>,
+) -> HttpResponse {
+    let episode = episode_service.get_ref().clone();
+    let log_clone = activity_log.clone();
+
+    activity_log.record_info(
+        "backfill_episode_titles_started",
+        "system",
+        None,
+        "Episode title regeneration started".to_string(),
+    );
+
+    tokio::spawn(async move {
+        log::info!("[Backfill] Starting episode title regeneration");
+        match episode.regenerate_all_episode_titles().await {
+            Ok((ok, skipped)) => {
+                log::info!(
+                    "[Backfill] Episode titles done: {} ok, {} skipped",
+                    ok,
+                    skipped
+                );
+                log_clone.record_info(
+                    "backfill_episode_titles_completed",
+                    "system",
+                    None,
+                    format!(
+                        "Episode title regen complete: {} ok, {} skipped",
+                        ok, skipped
+                    ),
+                );
+            }
+            Err(e) => {
+                log::error!("[Backfill] Episode title regeneration error: {}", e);
+            }
+        }
+    });
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "message": "Episode title regeneration started in background. Check server logs for progress."
     }))
 }

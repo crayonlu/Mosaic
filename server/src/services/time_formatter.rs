@@ -1,6 +1,14 @@
 use chrono::{Datelike, FixedOffset, Local, NaiveDate, NaiveDateTime, Weekday};
 
-const WEEKDATE_FULL: [&str; 7] = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"];
+const WEEKDATE_FULL: [&str; 7] = [
+    "星期一",
+    "星期二",
+    "星期三",
+    "星期四",
+    "星期五",
+    "星期六",
+    "星期日",
+];
 
 pub fn now_formatted() -> String {
     let now = Local::now();
@@ -52,7 +60,12 @@ pub fn relative_time(ts_ms: i64) -> String {
         return format!("{}月{}日", memo_date.month(), memo_date.day());
     }
 
-    format!("{}年{}月{}日", memo_date.year(), memo_date.month(), memo_date.day())
+    format!(
+        "{}年{}月{}日",
+        memo_date.year(),
+        memo_date.month(),
+        memo_date.day()
+    )
 }
 
 pub fn absolute_date(ts_ms: i64) -> String {
@@ -60,14 +73,7 @@ pub fn absolute_date(ts_ms: i64) -> String {
     let ts_secs = ts_ms / 1000;
     NaiveDateTime::from_timestamp_opt(ts_secs, ((ts_ms % 1000) * 1_000_000) as u32)
         .and_then(|dt| dt.and_local_timezone(tz).earliest())
-        .map(|dt| {
-            format!(
-                "{}月{}日 {}",
-                dt.month(),
-                dt.day(),
-                dt.format("%H:%M")
-            )
-        })
+        .map(|dt| format!("{}月{}日 {}", dt.month(), dt.day(), dt.format("%H:%M")))
         .unwrap_or_default()
 }
 

@@ -1,4 +1,4 @@
-import { Brain, GitBranch, Loader, RefreshCw, Zap } from 'lucide-react'
+import { Brain, GitBranch, Loader, RefreshCw, Tag, Zap } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { adminApi, api } from '../api'
 import { useToast } from '../hooks/useToast'
@@ -8,9 +8,6 @@ interface MemoryStats {
   indexedMemos: number
   ongoingEpisodes: number
   resolvedEpisodes: number
-  profileSummary: string | null
-  profileTopicCount: number
-  profileUpdatedAt: number | null
 }
 
 export default function MemoryPanel() {
@@ -19,6 +16,7 @@ export default function MemoryPanel() {
   const [loading, setLoading] = useState(true)
   const [backfilling, setBackfilling] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
+  const [retitling, setRetitling] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -61,12 +59,26 @@ export default function MemoryPanel() {
     }
   }
 
+  const handleRetitleEpisodes = async () => {
+    setRetitling(true)
+    try {
+      await adminApi('/backfill-episode-titles', { method: 'POST' })
+      toast.success('事件线标题生成已启动，后台处理中')
+      setTimeout(() => void load(), 5000)
+    } catch {
+      toast.error('启动失败，请重试')
+    } finally {
+      setRetitling(false)
+    }
+  }
+
   const indexPercent =
     stats && stats.totalMemos > 0
       ? Math.round((stats.indexedMemos / stats.totalMemos) * 100)
       : 0
   const isFullyIndexed = stats && stats.indexedMemos >= stats.totalMemos && stats.totalMemos > 0
   const hasUnindexed = stats && stats.totalMemos > 0 && stats.indexedMemos < stats.totalMemos
+  const totalEpisodes = (stats?.ongoingEpisodes ?? 0) + (stats?.resolvedEpisodes ?? 0)
 
   return (
     <div className="rounded-lg border border-border bg-card">
@@ -164,14 +176,8 @@ export default function MemoryPanel() {
                     </span>
                   </span>
                 </div>
-                {stats?.profileTopicCount ? (
-                  <span className="text-muted-foreground ml-auto">
-                    话题信号{' '}
-                    <span className="font-semibold text-foreground">{stats.profileTopicCount}</span>
-                  </span>
-                ) : null}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   className="inline-flex items-center gap-1 rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/70 disabled:opacity-50"
                   onClick={handleRegenerateEpisodes}
@@ -184,7 +190,20 @@ export default function MemoryPanel() {
                   )}
                   {regenerating ? '生成中...' : '重新生成摘要'}
                 </button>
-                {regenerating && (
+                <button
+                  className="inline-flex items-center gap-1 rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/70 disabled:opacity-50"
+                  onClick={handleRetitleEpisodes}
+                  disabled={retitling || totalEpisodes === 0}
+                  title={totalEpisodes === 0 ? '暂无事件线' : undefined}
+                >
+                  {retitling ? (
+                    <Loader size={10} className="spin" />
+                  ) : (
+                    <Tag size={10} />
+                  )}
+                  {retitling ? '生成中...' : '重新生成标题'}
+                </button>
+                {(regenerating || retitling) && (
                   <span className="text-[11px] text-muted-foreground">
                     后台处理中，完成后自动刷新
                   </span>
@@ -192,12 +211,6 @@ export default function MemoryPanel() {
               </div>
             </div>
 
-            {/* Profile preview */}
-            {stats?.profileSummary && (
-              <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2 rounded-md bg-muted/50 px-2.5 py-1.5">
-                {stats.profileSummary}
-              </p>
-            )}
           </>
         )}
       </div>
