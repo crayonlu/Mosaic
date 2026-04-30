@@ -1,11 +1,6 @@
 export interface MemoryStats {
   totalMemos: number
   indexedMemos: number
-  ongoingEpisodes: number
-  resolvedEpisodes: number
-  profileSummary: string | null
-  profileTopicCount: number
-  profileUpdatedAt: number | null
 }
 
 export interface MemoryActivityEntry {
@@ -15,7 +10,6 @@ export interface MemoryActivityEntry {
   memoId: string
   retrievedCount: number
   promptSize: number
-  hasEpisode: boolean
   createdAt: number
 }
 
@@ -27,15 +21,6 @@ export interface RetrievedMemoItem {
   createdAt: number
 }
 
-export interface EpisodeContextItem {
-  id: string
-  title: string
-  summary: string
-  status: string
-}
-
 export interface MemoryContext {
   retrievedMemos: RetrievedMemoItem[]
-  episode: EpisodeContextItem | null
-  profileSummary: string | null
 }

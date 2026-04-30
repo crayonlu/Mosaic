@@ -58,8 +58,8 @@ impl BotMemoryContextService {
     ) -> Result<(), AppError> {
         sqlx::query(
             "INSERT INTO bot_memory_debug_logs
-             (id, user_id, memo_id, bot_id, mode, retrieved_memo_ids, selected_episode_ids, score_payload, prompt_size, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+             (id, user_id, memo_id, bot_id, mode, retrieved_memo_ids, score_payload, prompt_size, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
         )
         .bind(Uuid::new_v4())
         .bind(user_id)
@@ -67,7 +67,6 @@ impl BotMemoryContextService {
         .bind(bot_id.unwrap_or(Uuid::nil()))
         .bind("context_build")
         .bind(serde_json::json!(debug.retrieved_memo_ids))
-        .bind(serde_json::json!(Vec::<Uuid>::new()))
         .bind(serde_json::json!(related_memos
             .iter()
             .map(|memo| {

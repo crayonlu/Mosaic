@@ -3,7 +3,7 @@ use crate::models::{
     CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse, MemoWithResources,
     PaginatedResponse, Resource, TagResponse, UpdateMemoRequest,
 };
-use crate::services::{BotService, EpisodeService, MemoryEmbeddingService, ServerAiConfigService};
+use crate::services::{BotService, MemoryEmbeddingService, ServerAiConfigService};
 use chrono::Utc;
 use serde_json::json;
 use sqlx::PgPool;
@@ -13,7 +13,6 @@ use uuid::Uuid;
 pub struct MemoService {
     pool: PgPool,
     memory_embedding_service: Option<MemoryEmbeddingService>,
-    episode_service: Option<EpisodeService>,
     bot_service: Option<BotService>,
     server_ai_config_service: Option<ServerAiConfigService>,
 }
@@ -23,7 +22,6 @@ impl MemoService {
         Self {
             pool,
             memory_embedding_service: None,
-            episode_service: None,
             bot_service: None,
             server_ai_config_service: None,
         }
@@ -32,10 +30,8 @@ impl MemoService {
     pub fn with_memory_services(
         mut self,
         memory_embedding_service: MemoryEmbeddingService,
-        episode_service: EpisodeService,
     ) -> Self {
         self.memory_embedding_service = Some(memory_embedding_service);
-        self.episode_service = Some(episode_service);
         self
     }
 
@@ -236,9 +232,6 @@ impl MemoService {
         let Some(memory_embedding_service) = self.memory_embedding_service.clone() else {
             return;
         };
-        let Some(episode_service) = self.episode_service.clone() else {
-            return;
-        };
         let memo_id = memo.id;
         let user_id = memo.user_id;
         let user_id_str = user_id.to_string();
@@ -251,14 +244,6 @@ impl MemoService {
                 if let Err(error) = memory_embedding_service.refresh_for_memo(&memo).await {
                     log::error!(
                         "[MemoryRefresh] embedding failed for memo {}: {}",
-                        memo_id,
-                        error
-                    );
-                }
-
-                if let Err(error) = episode_service.assign_memo_to_episode(&memo).await {
-                    log::error!(
-                        "[MemoryRefresh] episode assignment failed for memo {}: {}",
                         memo_id,
                         error
                     );

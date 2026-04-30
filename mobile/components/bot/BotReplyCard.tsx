@@ -33,15 +33,14 @@ function MemoryContextPanel({
     memoryApi
       .getContext(memoId, botId)
       .then(setContext)
-      .catch(() => setContext({ retrievedMemos: [], episode: null, profileSummary: null }))
+      .catch(() => setContext({ retrievedMemos: [] }))
   }, [memoId, botId])
 
   if (!context) return null
 
-  const ongoingEpisode = context.episode?.status === 'ongoing' ? context.episode : null
   const hasMemos = context.retrievedMemos.length > 0
 
-  if (!hasMemos && !ongoingEpisode) return null
+  if (!hasMemos) return null
 
   return (
     <View style={[memStyles.container, { borderTopColor: theme.border }]}>
@@ -54,17 +53,6 @@ function MemoryContextPanel({
           <Text style={[memStyles.triggerText, { color: theme.textSecondary }]}>
             参考了你 {context.retrievedMemos.length} 条以前的记录
           </Text>
-        )}
-        {ongoingEpisode && (
-          <>
-            {hasMemos && <Text style={[memStyles.dot, { color: theme.textTertiary }]}> · </Text>}
-            <View style={memStyles.episodeRow}>
-              <View style={memStyles.episodeDot} />
-              <Text style={[memStyles.triggerText, { color: theme.textSecondary }]}>
-                当时正在经历：{ongoingEpisode.title}
-              </Text>
-            </View>
-          </>
         )}
       </TouchableOpacity>
 
@@ -306,20 +294,6 @@ const memStyles = StyleSheet.create({
   triggerText: {
     fontSize: 12,
     lineHeight: 18,
-  },
-  dot: {
-    fontSize: 12,
-  },
-  episodeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  episodeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10b981',
   },
   memoList: {
     marginTop: 6,

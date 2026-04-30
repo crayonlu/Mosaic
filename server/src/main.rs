@@ -16,7 +16,7 @@ use config::Config;
 use database::{create_pool, run_migrations};
 use middleware::{configure_cors, configure_logging, AuthMiddleware};
 use services::{
-    AuthService, BotMemoryContextService, BotService, DiaryService, EpisodeService, MemoService,
+    AuthService, BotMemoryContextService, BotService, DiaryService, MemoService,
     MemoryEmbeddingService, MemoryRetrievalService, ResourceService, ServerAiConfigService,
     StatsService, SyncService, TimelineMemoryService,
 };
@@ -79,8 +79,6 @@ async fn main() -> anyhow::Result<()> {
 
     let memory_embedding_service =
         MemoryEmbeddingService::new(pool.clone(), server_ai_config_service.clone());
-    let episode_service = EpisodeService::new(pool.clone())
-        .with_server_ai_config_service(server_ai_config_service.clone());
     let memory_retrieval_service = MemoryRetrievalService::new(pool.clone());
     let timeline_memory_service = TimelineMemoryService::new();
     let bot_memory_context_service =
@@ -90,7 +88,7 @@ async fn main() -> anyhow::Result<()> {
         .with_memory_context_service(bot_memory_context_service)
         .with_server_ai_config_service(server_ai_config_service.clone());
     let memo_service = MemoService::new(pool.clone())
-        .with_memory_services(memory_embedding_service.clone(), episode_service.clone())
+        .with_memory_services(memory_embedding_service.clone())
         .with_bot_service(bot_service.clone())
         .with_server_ai_config_service(server_ai_config_service.clone());
     let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone());
@@ -136,7 +134,6 @@ async fn main() -> anyhow::Result<()> {
             .app_data(web::Data::new(sync_service.clone()))
             .app_data(web::Data::new(server_ai_config_service.clone()))
             .app_data(web::Data::new(memory_embedding_service.clone()))
-            .app_data(web::Data::new(episode_service.clone()))
             .app_data(activity_log.clone())
             .app_data(started_at.clone())
             .route("/health", web::get().to(health_check))
@@ -194,14 +191,6 @@ async fn main() -> anyhow::Result<()> {
                     .route(
                         "/backfill-memory",
                         web::post().to(admin::api::backfill_memory),
-                    )
-                    .route(
-                        "/backfill-episodes",
-                        web::post().to(admin::api::backfill_episodes),
-                    )
-                    .route(
-                        "/backfill-episode-titles",
-                        web::post().to(admin::api::backfill_episode_titles),
                     ),
             )
             .service(fs::Files::new("/admin/static", "static/admin").prefer_utf8(true))
