@@ -203,6 +203,10 @@ async fn main() -> anyhow::Result<()> {
                     .route(
                         "/backfill-memory",
                         web::post().to(admin::api::backfill_memory),
+                    )
+                    .route(
+                        "/backfill-episodes",
+                        web::post().to(admin::api::backfill_episodes),
                     ),
             )
             .service(fs::Files::new("/admin/static", "static/admin").prefer_utf8(true))

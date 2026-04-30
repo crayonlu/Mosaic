@@ -408,3 +408,43 @@ pub async fn backfill_memory(
         "message": "Backfill started in background. Check server logs for progress."
     }))
 }
+
+pub async fn backfill_episodes(
+    episode_service: web::Data<EpisodeService>,
+    activity_log: web::Data<ActivityLog>,
+) -> HttpResponse {
+    let episode = episode_service.get_ref().clone();
+    let log_clone = activity_log.clone();
+
+    activity_log.record_info(
+        "backfill_episodes_started",
+        "system",
+        None,
+        "Episode summary regeneration started".to_string(),
+    );
+
+    tokio::spawn(async move {
+        log::info!("[Backfill] Starting episode summary regeneration");
+        match episode.regenerate_all_episode_summaries().await {
+            Ok((ok, failed)) => {
+                log::info!(
+                    "[Backfill] Episode summaries done: {} ok, {} failed",
+                    ok, failed
+                );
+                log_clone.record_info(
+                    "backfill_episodes_completed",
+                    "system",
+                    None,
+                    format!("Episode summary regen complete: {} ok, {} failed", ok, failed),
+                );
+            }
+            Err(e) => {
+                log::error!("[Backfill] Episode summary regeneration error: {}", e);
+            }
+        }
+    });
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "message": "Episode summary regeneration started in background. Check server logs for progress."
+    }))
+}

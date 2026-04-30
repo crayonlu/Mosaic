@@ -35,6 +35,7 @@ const actionLabels: Record<string, string> = {
   create_bot: '创建 Bot', update_bot: '更新 Bot', delete_bot: '删除 Bot',
   trigger_replies: 'Bot 自动回复', reply_to_bot: '用户回复 Bot',
   backfill_memory_started: '记忆回填启动', backfill_memory_completed: '记忆回填完成',
+  backfill_episodes_started: '事件线摘要重建启动', backfill_episodes_completed: '事件线摘要重建完成',
   login: '登录', change_password: '修改密码',
 }
 

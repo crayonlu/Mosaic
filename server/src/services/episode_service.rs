@@ -325,6 +325,96 @@ impl EpisodeService {
             .unwrap_or_else(|| memo.content.chars().take(40).collect())
     }
 
+    /// Re-generate LLM summaries for all non-resolved episodes by replaying their memo history.
+    pub async fn regenerate_all_episode_summaries(&self) -> Result<(u32, u32), AppError> {
+        #[derive(sqlx::FromRow)]
+        struct EpisodeRow {
+            id: Uuid,
+        }
+
+        let episodes = sqlx::query_as::<_, EpisodeRow>(
+            "SELECT id FROM memo_episodes WHERE status <> 'resolved' ORDER BY updated_at DESC",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(AppError::Database)?;
+
+        let mut ok = 0u32;
+        let mut failed = 0u32;
+
+        for ep in &episodes {
+            match self.regenerate_episode_summary(ep.id).await {
+                Ok(_) => ok += 1,
+                Err(e) => {
+                    log::error!("[EpisodeService] Summary regen failed for {}: {}", ep.id, e);
+                    failed += 1;
+                }
+            }
+        }
+
+        Ok((ok, failed))
+    }
+
+    async fn regenerate_episode_summary(&self, episode_id: Uuid) -> Result<(), AppError> {
+        #[derive(sqlx::FromRow)]
+        struct MemoSummaryRow {
+            ai_summary: Option<String>,
+            content: String,
+        }
+
+        let memos = sqlx::query_as::<_, MemoSummaryRow>(
+            "SELECT m.ai_summary, m.content
+             FROM memo_episode_links el
+             JOIN memos m ON m.id = el.memo_id
+             WHERE el.episode_id = $1 AND m.is_deleted = false
+             ORDER BY el.event_at ASC",
+        )
+        .bind(episode_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(AppError::Database)?;
+
+        if memos.is_empty() {
+            return Ok(());
+        }
+
+        // Replay in pairs: summarize incrementally
+        let mut running_summary = String::new();
+        for memo in &memos {
+            let new_content = memo
+                .ai_summary
+                .clone()
+                .filter(|s| !s.trim().is_empty())
+                .unwrap_or_else(|| memo.content.chars().take(140).collect());
+
+            if running_summary.is_empty() {
+                running_summary = new_content;
+                continue;
+            }
+
+            if let Some(llm) = self.summarize_with_llm(&running_summary, &new_content).await {
+                running_summary = llm;
+            } else {
+                running_summary = self.build_summary_fallback(&running_summary, &new_content);
+            }
+        }
+
+        sqlx::query("UPDATE memo_episodes SET summary = $1 WHERE id = $2")
+            .bind(&running_summary)
+            .bind(episode_id)
+            .execute(&self.pool)
+            .await
+            .map_err(AppError::Database)?;
+
+        log::info!(
+            "[EpisodeService] Regenerated summary for episode {}: {} chars",
+            episode_id,
+            running_summary.len()
+        );
+
+        Ok(())
+    }
+
     pub async fn get_episode_links(&self, memo_id: Uuid) -> Result<Vec<MemoEpisodeLink>, AppError> {
         sqlx::query_as::<_, MemoEpisodeLink>(
             "SELECT episode_id, memo_id, event_at, relevance_score, created_at
