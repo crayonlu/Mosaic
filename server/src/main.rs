@@ -91,9 +91,9 @@ async fn main() -> anyhow::Result<()> {
     );
 
     let memo_service = MemoService::new(pool.clone()).with_memory_services(
-        memory_embedding_service,
+        memory_embedding_service.clone(),
         episode_service.clone(),
-        profile_memory_service,
+        profile_memory_service.clone(),
     );
     let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone());
     let diary_service = DiaryService::new(pool.clone());
@@ -140,6 +140,9 @@ async fn main() -> anyhow::Result<()> {
             .app_data(web::Data::new(bot_service.clone()))
             .app_data(web::Data::new(sync_service.clone()))
             .app_data(web::Data::new(server_ai_config_service.clone()))
+            .app_data(web::Data::new(memory_embedding_service.clone()))
+            .app_data(web::Data::new(episode_service.clone()))
+            .app_data(web::Data::new(profile_memory_service.clone()))
             .app_data(activity_log.clone())
             .app_data(started_at.clone())
             .route("/health", web::get().to(health_check))

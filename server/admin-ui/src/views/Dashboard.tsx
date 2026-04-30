@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { adminApi, api, type ActivityEntry, type ActivityResponse, type StatsSummary } from '../api'
 import AIConfigPanel from '../components/AIConfigPanel'
 import BotManager from '../components/BotManager'
+import MemoryPanel from '../components/MemoryPanel'
 import { useToast } from '../hooks/useToast'
 import { useAuthStore } from '../stores/authStore'
 
@@ -32,6 +33,8 @@ const actionLabels: Record<string, string> = {
   create_memo: '创建 Memo', update_memo: '更新 Memo', delete_memo: '删除 Memo',
   create_diary: '创建日记', update_diary: '更新日记', delete_diary: '删除日记',
   create_bot: '创建 Bot', update_bot: '更新 Bot', delete_bot: '删除 Bot',
+  trigger_replies: 'Bot 自动回复', reply_to_bot: '用户回复 Bot',
+  backfill_memory_started: '记忆回填启动', backfill_memory_completed: '记忆回填完成',
   login: '登录', change_password: '修改密码',
 }
 
@@ -239,7 +242,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3 space-y-3">
+        <MemoryPanel />
         <AIConfigPanel />
       </div>
     </div>
