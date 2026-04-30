@@ -1,9 +1,9 @@
 use crate::config::Config;
 use crate::models::{Memo, ServerAiConfigPayload, ServerAiConfigResponse};
-use crate::services::{MemoryEmbeddingService, ServerAiConfigService};
+use crate::services::{AppSettingsService, MemoryEmbeddingService, ServerAiConfigService};
 use actix_web::{web, HttpRequest, HttpResponse};
 use chrono::Datelike;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 use super::activity_log::ActivityLog;
@@ -392,4 +392,57 @@ pub async fn backfill_memory(
     HttpResponse::Ok().json(serde_json::json!({
         "message": "Backfill started in background. Check server logs for progress."
     }))
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppSettingsPayload {
+    pub auto_tag_enabled: bool,
+    pub auto_summary_enabled: bool,
+}
+
+pub async fn get_settings(app_settings_service: web::Data<AppSettingsService>) -> HttpResponse {
+    let auto_tag = app_settings_service
+        .get_bool("auto_tag_enabled", true)
+        .await;
+    let auto_summary = app_settings_service
+        .get_bool("auto_summary_enabled", false)
+        .await;
+    HttpResponse::Ok().json(AppSettingsPayload {
+        auto_tag_enabled: auto_tag,
+        auto_summary_enabled: auto_summary,
+    })
+}
+
+pub async fn update_settings(
+    payload: web::Json<AppSettingsPayload>,
+    app_settings_service: web::Data<AppSettingsService>,
+) -> HttpResponse {
+    let auto_tag_val = if payload.auto_tag_enabled {
+        "true"
+    } else {
+        "false"
+    };
+    let auto_summary_val = if payload.auto_summary_enabled {
+        "true"
+    } else {
+        "false"
+    };
+
+    if let Err(e) = app_settings_service
+        .set("auto_tag_enabled", auto_tag_val)
+        .await
+    {
+        return HttpResponse::InternalServerError()
+            .json(serde_json::json!({ "error": e.to_string() }));
+    }
+    if let Err(e) = app_settings_service
+        .set("auto_summary_enabled", auto_summary_val)
+        .await
+    {
+        return HttpResponse::InternalServerError()
+            .json(serde_json::json!({ "error": e.to_string() }));
+    }
+
+    HttpResponse::Ok().json(payload.into_inner())
 }

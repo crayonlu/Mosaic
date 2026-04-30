@@ -7,8 +7,12 @@ export interface Memo {
   isArchived: boolean
   diaryDate?: string
   aiSummary?: string
+  resources?: Resource[]
   createdAt: number
   updatedAt: number
+  semanticScore?: number
+  keywordScore?: number
+  matchType?: 'keyword' | 'semantic' | 'hybrid'
 }
 
 export interface MemoWithResources extends Memo {
@@ -57,4 +61,12 @@ export interface SearchMemosQuery {
   page?: number
   pageSize?: number
   [key: string]: unknown
+}
+
+export interface SearchMemosResponse {
+  memos: Memo[]
+  total: number
+  page: number
+  pageSize: number
+  semanticEnabled: boolean
 }

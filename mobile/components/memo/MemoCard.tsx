@@ -5,20 +5,21 @@ import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { normalizeContent } from '@/lib/utils/content'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
-import type { MemoWithResources } from '@mosaic/api'
+import type { Memo } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
 import { Trash2 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 interface MemoCardProps {
-  memo: MemoWithResources
+  memo: Memo
   onPress?: () => void
   onDelete?: (id: string) => void
   showActions?: boolean
   showTimestamp?: boolean
   isSelected?: boolean
   showPressFeedback?: boolean
+  showSemanticBadge?: boolean
 }
 
 export function MemoCard({
@@ -29,6 +30,7 @@ export function MemoCard({
   showTimestamp = true,
   isSelected = false,
   showPressFeedback = true,
+  showSemanticBadge = false,
 }: MemoCardProps) {
   const { theme } = useThemeStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
@@ -43,7 +45,7 @@ export function MemoCard({
 
   const displayContent = normalizeContent(memo.content || '')
   const formattedTime = stringUtils.formatRelativeTime(memo.createdAt)
-  const mediaItems: MediaGridItem[] = memo.resources.map(resource => ({
+  const mediaItems: MediaGridItem[] = (memo.resources ?? []).map(resource => ({
     key: resource.id,
     uri: resourcesApi.getDownloadUrl(resource.id),
     type: resource.resourceType,
@@ -71,6 +73,16 @@ export function MemoCard({
         },
       ]}
     >
+      {showSemanticBadge && (
+        <View
+          style={[
+            styles.semanticBadge,
+            { backgroundColor: theme.semantic.infoSoft, borderColor: theme.info },
+          ]}
+        >
+          <Text style={[styles.semanticBadgeText, { color: theme.info }]}>语义</Text>
+        </View>
+      )}
       <View style={styles.contentContainer}>
         {displayContent && (
           <View style={styles.textContent}>
@@ -174,6 +186,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  semanticBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+    borderWidth: 1,
+    zIndex: 1,
+  },
+  semanticBadgeText: {
+    fontSize: 10,
+    fontWeight: '500',
   },
   actionButton: {
     padding: 6,

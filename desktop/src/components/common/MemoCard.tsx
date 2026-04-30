@@ -1,17 +1,24 @@
 import { MarkdownPreview } from '@/components/common/MarkdownPreview'
 import { ResourceThumbnails } from '@/components/common/ResourceThumbnails'
 import { cn } from '@/lib/utils'
-import type { MemoWithResources } from '@mosaic/api'
+import type { Memo } from '@mosaic/api'
 import { useEffect, useRef } from 'react'
 
 interface MemoCardProps {
-  memo: MemoWithResources
+  memo: Memo
   onClick?: () => void
   searchWords?: string[]
   className?: string
+  showSemanticBadge?: boolean
 }
 
-export function MemoCard({ memo, onClick, searchWords = [], className }: MemoCardProps) {
+export function MemoCard({
+  memo,
+  onClick,
+  searchWords = [],
+  className,
+  showSemanticBadge = false,
+}: MemoCardProps) {
   const editorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -175,13 +182,22 @@ export function MemoCard({ memo, onClick, searchWords = [], className }: MemoCar
         </div>
       )}
 
-      {(memo.resources.length > 0 || (memo.tags && memo.tags.length > 0)) && (
+      {((memo.resources && memo.resources.length > 0) ||
+        (memo.tags && memo.tags.length > 0) ||
+        showSemanticBadge) && (
         <div className="space-y-3 px-3 pb-3">
-          {memo.resources.length > 0 && <ResourceThumbnails resources={memo.resources} />}
+          {memo.resources && memo.resources.length > 0 && (
+            <ResourceThumbnails resources={memo.resources} />
+          )}
 
-          {memo.tags && memo.tags.length > 0 && (
+          {((memo.tags && memo.tags.length > 0) || showSemanticBadge) && (
             <div className="flex flex-wrap gap-1.5">
-              {memo.tags.slice(0, 3).map((tag, index) => (
+              {showSemanticBadge && (
+                <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200">
+                  语义
+                </span>
+              )}
+              {memo.tags?.slice(0, 3).map((tag, index) => (
                 <span
                   key={index}
                   className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
@@ -189,9 +205,9 @@ export function MemoCard({ memo, onClick, searchWords = [], className }: MemoCar
                   {tag}
                 </span>
               ))}
-              {memo.tags.length > 3 && (
+              {(memo.tags?.length ?? 0) > 3 && (
                 <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                  +{memo.tags.length - 3}
+                  +{(memo.tags?.length ?? 0) - 3}
                 </span>
               )}
             </div>

@@ -83,7 +83,7 @@ impl MemoryEmbeddingService {
         Ok(())
     }
 
-    async fn generate_embedding(
+    pub async fn generate_embedding(
         &self,
         text: &str,
         config: Option<&crate::models::ServerAiConfig>,

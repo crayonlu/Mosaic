@@ -5,7 +5,7 @@ import { SearchInput } from '@/components/common/SearchInput'
 import { SearchResults } from '@/components/common/SearchResults'
 import { TagCloud } from '@/components/common/TagCloud'
 import { LoadingSpinner } from '@/components/ui/loading/loading-spinner'
-import type { MemoWithResources } from '@mosaic/api'
+import type { Memo } from '@mosaic/api'
 import { useMemoTags, useSearchMemos } from '@mosaic/api'
 import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -18,7 +18,7 @@ export default function SearchPage() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = useState<Date | undefined>(undefined)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [selectedMemo, setSelectedMemo] = useState<MemoWithResources | null>(null)
+  const [selectedMemo, setSelectedMemo] = useState<Memo | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const queryClient = useQueryClient()
 
@@ -40,7 +40,7 @@ export default function SearchPage() {
   const { data: response, isLoading: isPending } = useSearchMemos(searchRequest)
   const { data: allTags = [], isLoading: isTagsLoading } = useMemoTags()
 
-  const results: MemoWithResources[] = response?.items ?? []
+  const results: Memo[] = response?.memos ?? []
   const total = response?.total ?? 0
 
   const handleTagToggle = (tag: string) => {
@@ -49,7 +49,7 @@ export default function SearchPage() {
     )
   }
 
-  const handleMemoClick = (memo: MemoWithResources) => {
+  const handleMemoClick = (memo: Memo) => {
     setSelectedMemo(memo)
     setIsDetailOpen(true)
   }
@@ -119,7 +119,12 @@ export default function SearchPage() {
           />
         ) : (
           <div className="py-4">
-            <SearchResults results={results} query={deferredQuery} onMemoClick={handleMemoClick} />
+            <SearchResults
+              results={results}
+              query={deferredQuery}
+              onMemoClick={handleMemoClick}
+              semanticEnabled={response?.semanticEnabled ?? false}
+            />
           </div>
         )}
       </div>

@@ -1,21 +1,22 @@
 import { MemoCard } from '@/components/memo/MemoCard'
 import { Loading } from '@/components/ui'
 import { useThemeStore } from '@/stores/themeStore'
-import type { MemoWithResources } from '@mosaic/api'
+import type { Memo } from '@mosaic/api'
 import { FileX, Search } from 'lucide-react-native'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 
 interface SearchResultsProps {
-  results: MemoWithResources[]
+  results: Memo[]
   loading: boolean
   hasMore: boolean
   onLoadMore: () => void
   onRefresh: () => void
   refreshing: boolean
-  onMemoPress: (memo: MemoWithResources) => void
+  onMemoPress: (memo: Memo) => void
   onMemoArchive?: (id: string) => void
   onMemoDelete?: (id: string) => void
   emptyQuery?: boolean
+  semanticEnabled?: boolean
 }
 
 export function SearchResults({
@@ -29,6 +30,7 @@ export function SearchResults({
   onMemoArchive,
   onMemoDelete,
   emptyQuery = false,
+  semanticEnabled = false,
 }: SearchResultsProps) {
   const { theme } = useThemeStore()
 
@@ -94,7 +96,14 @@ export function SearchResults({
     <FlatList
       data={results}
       renderItem={({ item }) => (
-        <MemoCard memo={item} onPress={() => onMemoPress(item)} onDelete={onMemoDelete} />
+        <MemoCard
+          memo={item}
+          onPress={() => onMemoPress(item)}
+          onDelete={onMemoDelete}
+          showSemanticBadge={
+            semanticEnabled && (item.matchType === 'semantic' || item.matchType === 'hybrid')
+          }
+        />
       )}
       keyExtractor={item => item.id}
       contentContainerStyle={styles.listContent}

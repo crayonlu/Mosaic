@@ -264,9 +264,7 @@ pub async fn get_memory_context(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    HttpResponse::Ok().json(MemoryContextResponse {
-        retrieved_memos,
-    })
+    HttpResponse::Ok().json(MemoryContextResponse { retrieved_memos })
 }
 
 pub fn configure_memory_routes(cfg: &mut web::ServiceConfig) {

@@ -87,8 +87,7 @@ impl MemoryRetrievalService {
                     overlap as f64 / anchor_tags.len().max(candidate_tags.len()) as f64
                 };
 
-                let final_score =
-                    0.55 * semantic + 0.25 * recency + 0.20 * tag_overlap;
+                let final_score = 0.55 * semantic + 0.25 * recency + 0.20 * tag_overlap;
 
                 let mut reasons = Vec::new();
                 if semantic > 0.3 {
