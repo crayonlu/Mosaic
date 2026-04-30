@@ -90,17 +90,19 @@ async fn main() -> anyhow::Result<()> {
         timeline_memory_service.clone(),
     );
 
-    let memo_service = MemoService::new(pool.clone()).with_memory_services(
-        memory_embedding_service.clone(),
-        episode_service.clone(),
-        profile_memory_service.clone(),
-    );
-    let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone());
-    let diary_service = DiaryService::new(pool.clone());
-    let stats_service = StatsService::new(pool.clone());
     let bot_service = BotService::new(pool.clone(), storage.clone())
         .with_memory_context_service(bot_memory_context_service)
         .with_server_ai_config_service(server_ai_config_service.clone());
+    let memo_service = MemoService::new(pool.clone())
+        .with_memory_services(
+            memory_embedding_service.clone(),
+            episode_service.clone(),
+            profile_memory_service.clone(),
+        )
+        .with_bot_service(bot_service.clone());
+    let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone());
+    let diary_service = DiaryService::new(pool.clone());
+    let stats_service = StatsService::new(pool.clone());
     let sync_service = SyncService::new(pool.clone());
     log::info!("[OK] Business services initialized");
 
