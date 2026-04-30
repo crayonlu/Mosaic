@@ -18,6 +18,7 @@ export default function MemoryPanel() {
   const [stats, setStats] = useState<MemoryStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [backfilling, setBackfilling] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -33,6 +34,19 @@ export default function MemoryPanel() {
   useEffect(() => {
     void load()
   }, [load])
+
+  const handleRegenerateEpisodes = async () => {
+    setRegenerating(true)
+    try {
+      await adminApi('/backfill-episodes', { method: 'POST' })
+      toast.success('事件线摘要重新生成已启动，后台处理中')
+      setTimeout(() => void load(), 5000)
+    } catch {
+      toast.error('启动失败，请重试')
+    } finally {
+      setRegenerating(false)
+    }
+  }
 
   const handleBackfill = async () => {
     setBackfilling(true)
@@ -126,35 +140,56 @@ export default function MemoryPanel() {
             </div>
 
             {/* Episodes */}
-            <div className="flex items-center gap-4 text-[12px]">
-              <span className="flex items-center gap-1 font-medium text-foreground">
-                <GitBranch size={12} />
-                事件线
-              </span>
-              <div className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                <span className="text-muted-foreground">
-                  进行中{' '}
-                  <span className="font-semibold text-foreground">
-                    {stats?.ongoingEpisodes ?? 0}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-4 text-[12px]">
+                <span className="flex items-center gap-1 font-medium text-foreground">
+                  <GitBranch size={12} />
+                  事件线
+                </span>
+                <div className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-muted-foreground">
+                    进行中{' '}
+                    <span className="font-semibold text-foreground">
+                      {stats?.ongoingEpisodes ?? 0}
+                    </span>
                   </span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
-                <span className="text-muted-foreground">
-                  已结束{' '}
-                  <span className="font-semibold text-foreground">
-                    {stats?.resolvedEpisodes ?? 0}
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+                  <span className="text-muted-foreground">
+                    已结束{' '}
+                    <span className="font-semibold text-foreground">
+                      {stats?.resolvedEpisodes ?? 0}
+                    </span>
                   </span>
-                </span>
+                </div>
+                {stats?.profileTopicCount ? (
+                  <span className="text-muted-foreground ml-auto">
+                    话题信号{' '}
+                    <span className="font-semibold text-foreground">{stats.profileTopicCount}</span>
+                  </span>
+                ) : null}
               </div>
-              {stats?.profileTopicCount ? (
-                <span className="text-muted-foreground ml-auto">
-                  话题信号{' '}
-                  <span className="font-semibold text-foreground">{stats.profileTopicCount}</span>
-                </span>
-              ) : null}
+              <div className="flex items-center gap-2">
+                <button
+                  className="inline-flex items-center gap-1 rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/70 disabled:opacity-50"
+                  onClick={handleRegenerateEpisodes}
+                  disabled={regenerating}
+                >
+                  {regenerating ? (
+                    <Loader size={10} className="spin" />
+                  ) : (
+                    <RefreshCw size={10} />
+                  )}
+                  {regenerating ? '生成中...' : '重新生成摘要'}
+                </button>
+                {regenerating && (
+                  <span className="text-[11px] text-muted-foreground">
+                    后台处理中，完成后自动刷新
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Profile preview */}
