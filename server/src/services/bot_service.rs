@@ -5,9 +5,9 @@ use crate::models::{
     BotThreadMessage, BotThreadResponse, CreateBotRequest, Memo, ReorderBotsRequest,
     ReplyToBotRequest, UpdateBotRequest,
 };
+use crate::services::ai_client::{AiClient, AiConfig, AiImageInput, AiReply};
 use crate::services::{BotMemoryContextService, ServerAiConfigService};
 use crate::storage::traits::Storage;
-use base64::{engine::general_purpose, Engine as _};
 use chrono::Utc;
 use serde_json::json;
 use sqlx::PgPool;
@@ -31,32 +31,13 @@ struct BotWithStatsRow {
     last_context_at: Option<i64>,
 }
 
-pub struct AiConfig {
-    pub provider: String,
-    pub base_url: String,
-    pub api_key: String,
-    pub model: String,
-    pub max_tokens: Option<i32>,
-}
-
-#[derive(Debug, Clone)]
-struct AiReply {
-    pub content: String,
-    pub thinking_content: Option<String>,
-}
-
-#[derive(Clone)]
-struct AiImageInput {
-    mime_type: String,
-    data: Vec<u8>,
-}
-
 #[derive(Clone)]
 pub struct BotService {
     pool: PgPool,
     storage: Arc<dyn Storage>,
     memory_context_service: Option<BotMemoryContextService>,
     server_ai_config_service: Option<ServerAiConfigService>,
+    ai_client: AiClient,
 }
 
 impl BotService {
@@ -66,6 +47,7 @@ impl BotService {
             storage,
             memory_context_service: None,
             server_ai_config_service: None,
+            ai_client: AiClient::new(),
         }
     }
 
@@ -436,11 +418,27 @@ impl BotService {
 
         let memo_images = self.load_memo_images(user_uuid, memo_id, 4).await?;
 
+        let memory_context: Option<Arc<BotMemoryContext>> =
+            if let Some(service) = &self.memory_context_service {
+                match service.build_for_memo(&memo, None).await {
+                    Ok(ctx) => Some(Arc::new(ctx)),
+                    Err(e) => {
+                        log::error!(
+                            "[BotService] build_for_memo failed for memo {}: {:?}",
+                            memo.id,
+                            e
+                        );
+                        None
+                    }
+                }
+            } else {
+                None
+            };
+
         let pool = self.pool.clone();
         let memo_content = memo_content.clone();
         let ai_config = std::sync::Arc::new(ai_config);
-        let memory_context_service = self.memory_context_service.clone();
-        let memo_for_context = memo.clone();
+        let ai_client = self.ai_client.clone();
 
         tokio::spawn(async move {
             let mut handles = vec![];
@@ -449,35 +447,21 @@ impl BotService {
                 let memo_content = memo_content.clone();
                 let ai_config = ai_config.clone();
                 let memo_images = memo_images.clone();
-                let memory_context_service = memory_context_service.clone();
-                let memo_for_context = memo_for_context.clone();
+                let memory_context = memory_context.clone();
+                let ai_client = ai_client.clone();
 
                 handles.push(tokio::spawn(async move {
-                    let memory_context = if let Some(service) = memory_context_service {
-                        match service
-                            .build_for_memo(&memo_for_context, Some(bot.id))
-                            .await
-                        {
-                            Ok(ctx) => Some(ctx),
-                            Err(e) => {
-                                log::error!("[BotService] build_for_memo failed for memo {} bot {}: {:?}", memo_for_context.id, bot.id, e);
-                                None
-                            }
-                        }
-                    } else {
-                        None
-                    };
-
                     if let Ok(reply) = call_ai_for_reply(
                         &ai_config,
                         &bot.name,
                         &bot.description,
                         &memo_content,
-                        memory_context.as_ref(),
+                        memory_context.as_deref(),
                         None,
                         None,
                         &memo_images,
                         bot.model.as_deref(),
+                        &ai_client,
                     )
                     .await
                     {
@@ -603,6 +587,7 @@ impl BotService {
             &req.question,
             &question_images,
             parent.bot_model.as_deref(),
+            &self.ai_client,
         )
         .await
         .map_err(|e| AppError::Internal(e.to_string()))?;
@@ -862,7 +847,7 @@ impl BotService {
                     vec![]
                 };
 
-                messages.push(build_user_message(question, &images, provider));
+                messages.push(AiClient::build_user_message(question, &images, provider));
             }
             messages.push(json!({ "role": "assistant", "content": reply.content }));
         }
@@ -992,6 +977,7 @@ async fn call_ai_for_thread_reply(
     user_question: &str,
     images: &[AiImageInput],
     bot_model: Option<&str>,
+    ai_client: &AiClient,
 ) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
     let current_time = Utc::now().format("%Y-%m-%d %H:%M").to_string();
     let system_prompt = format!(
@@ -1013,13 +999,15 @@ async fn call_ai_for_thread_reply(
         "content": first_msg,
     })];
     messages.extend(history.iter().cloned());
-    messages.push(build_user_message(
+    messages.push(AiClient::build_user_message(
         user_question,
         images,
         config.provider.as_str(),
     ));
 
-    send_ai_messages(config, system_prompt, messages, bot_model).await
+    ai_client
+        .send_ai_messages(config, system_prompt, messages, bot_model)
+        .await
 }
 
 async fn call_ai_for_reply(
@@ -1032,6 +1020,7 @@ async fn call_ai_for_reply(
     user_question: Option<&str>,
     images: &[AiImageInput],
     bot_model: Option<&str>,
+    ai_client: &AiClient,
 ) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
     let current_time = Utc::now().format("%Y-%m-%d %H:%M").to_string();
 
@@ -1055,7 +1044,7 @@ async fn call_ai_for_reply(
             memory_prefix, memo_content
         )
     };
-    let mut messages = vec![build_user_message(
+    let mut messages = vec![AiClient::build_user_message(
         &user_content,
         memo_images,
         config.provider.as_str(),
@@ -1066,14 +1055,16 @@ async fn call_ai_for_reply(
     }
 
     if let Some(question) = user_question {
-        messages.push(build_user_message(
+        messages.push(AiClient::build_user_message(
             question,
             images,
             config.provider.as_str(),
         ));
     }
 
-    send_ai_messages(config, system_prompt, messages, bot_model).await
+    ai_client
+        .send_ai_messages(config, system_prompt, messages, bot_model)
+        .await
 }
 
 fn build_memory_prefix(memory_context: Option<&BotMemoryContext>) -> String {
@@ -1108,136 +1099,4 @@ fn build_memory_prefix(memory_context: Option<&BotMemoryContext>) -> String {
         "---MEMORY START---\nThings that may naturally surface  no need to force or reference them\n{}\n---MEMORY END---",
         items.join("\n")
     )
-}
-
-async fn send_ai_messages(
-    config: &AiConfig,
-    system_prompt: String,
-    messages: Vec<serde_json::Value>,
-    bot_model: Option<&str>,
-) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
-    let client = reqwest::Client::new();
-    let base_url = config.base_url.trim_end_matches('/');
-
-    let target_model = bot_model.unwrap_or(&config.model);
-
-    let (url, body) = match config.provider.as_str() {
-        "anthropic" => {
-            let url = format!("{}/messages", base_url);
-            let body = json!({
-                "model": target_model,
-                "max_tokens": config.max_tokens.unwrap_or(512),
-                "system": system_prompt,
-                "messages": messages,
-            });
-            (url, body)
-        }
-        _ => {
-            let url = format!("{}/chat/completions", base_url);
-            let mut full_messages: Vec<serde_json::Value> =
-                vec![json!({ "role": "system", "content": system_prompt })];
-            full_messages.extend(messages);
-            let body = json!({
-                "model": target_model,
-                "messages": full_messages,
-                "max_tokens": config.max_tokens.unwrap_or(512),
-                "temperature": 0.8,
-            });
-            (url, body)
-        }
-    };
-
-    let mut request = client.post(&url).json(&body);
-
-    request = match config.provider.as_str() {
-        "anthropic" => request
-            .header("x-api-key", &config.api_key)
-            .header("anthropic-version", "2023-06-01")
-            .header("content-type", "application/json"),
-        _ => request
-            .header("Authorization", format!("Bearer {}", config.api_key))
-            .header("content-type", "application/json"),
-    };
-
-    let response = request.send().await?;
-    let json: serde_json::Value = response.json().await?;
-
-    let (content, thinking_content) = match config.provider.as_str() {
-        "anthropic" => {
-            let mut thinking_parts: Vec<String> = Vec::new();
-            let mut text_content = String::new();
-            if let Some(contents) = json["content"].as_array() {
-                for item in contents {
-                    match item["type"].as_str() {
-                        Some("thinking") => {
-                            if let Some(t) = item["thinking"].as_str() {
-                                thinking_parts.push(t.to_string());
-                            }
-                        }
-                        Some("text") => {
-                            if let Some(t) = item["text"].as_str() {
-                                text_content.push_str(t);
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            (
-                text_content,
-                if thinking_parts.is_empty() {
-                    None
-                } else {
-                    Some(thinking_parts.join("\n"))
-                },
-            )
-        }
-        _ => {
-            let message = &json["choices"][0]["message"];
-            let content = message["content"].as_str().unwrap_or_default().to_string();
-            let thinking = message["reasoning_content"].as_str().map(|s| s.to_string());
-            (content, thinking)
-        }
-    };
-
-    Ok(AiReply {
-        content,
-        thinking_content,
-    })
-}
-
-fn build_user_message(text: &str, images: &[AiImageInput], provider: &str) -> serde_json::Value {
-    if images.is_empty() {
-        return json!({ "role": "user", "content": text });
-    }
-
-    match provider {
-        "anthropic" => {
-            let mut content = vec![json!({ "type": "text", "text": text })];
-            content.extend(images.iter().map(|image| {
-                json!({
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": image.mime_type,
-                        "data": general_purpose::STANDARD.encode(&image.data),
-                    }
-                })
-            }));
-            json!({ "role": "user", "content": content })
-        }
-        _ => {
-            let mut content = vec![json!({ "type": "text", "text": text })];
-            content.extend(images.iter().map(|image| {
-                let encoded = general_purpose::STANDARD.encode(&image.data);
-                json!({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": format!("data:{};base64,{}", image.mime_type, encoded),
-                    }
-                })
-            }));
-            json!({ "role": "user", "content": content })
-        }
-    }
 }

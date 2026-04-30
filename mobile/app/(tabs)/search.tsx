@@ -3,7 +3,7 @@ import { SearchInput } from '@/components/search/SearchInput'
 import { SearchResults } from '@/components/search/SearchResults'
 import { useMemoTags, useSearchMemos } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
-import type { MemoWithResources } from '@mosaic/api'
+import type { Memo } from '@mosaic/api'
 import { router } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
@@ -49,7 +49,7 @@ export default function SearchScreen() {
   const { data: tagsData } = useMemoTags()
 
   const results = useMemo(() => {
-    return paginatedData?.pages.flatMap(page => page.items) || []
+    return paginatedData?.pages.flatMap(page => page.memos) || []
   }, [paginatedData])
 
   const allTags = useMemo(() => {
@@ -66,7 +66,7 @@ export default function SearchScreen() {
     }
   }, [isLoading, hasNextPage])
 
-  const handleMemoPress = useCallback((memo: MemoWithResources) => {
+  const handleMemoPress = useCallback((memo: Memo) => {
     router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
   }, [])
 
@@ -99,6 +99,7 @@ export default function SearchScreen() {
           refreshing={isFetchingNextPage}
           onMemoPress={handleMemoPress}
           emptyQuery={!hasSearchCriteria}
+          semanticEnabled={paginatedData?.pages?.[0]?.semanticEnabled ?? false}
         />
       </View>
     </View>

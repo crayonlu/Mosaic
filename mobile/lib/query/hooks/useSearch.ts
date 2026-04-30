@@ -22,7 +22,8 @@ export function useSearchMemos(query: SearchMemosQuery) {
     },
     initialPageParam: 1,
     getNextPageParam: lastPage => {
-      if (lastPage.page < lastPage.totalPages) {
+      const totalPages = Math.ceil(lastPage.total / lastPage.pageSize)
+      if (lastPage.page < totalPages) {
         return lastPage.page + 1
       }
       return undefined

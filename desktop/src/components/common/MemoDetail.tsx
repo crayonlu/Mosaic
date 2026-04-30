@@ -25,7 +25,7 @@ import { toast } from '@/hooks/useToast'
 import { resolveApiUrl } from '@/lib/sharedApi'
 import { cn } from '@/lib/utils'
 import { normalizeContent } from '@/utils/content'
-import type { BotReply, MemoWithResources, Resource } from '@mosaic/api'
+import type { BotReply, Memo, Resource } from '@mosaic/api'
 import {
   resourcesApi,
   useBotReplies,
@@ -53,7 +53,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 dayjs.extend(utc)
 
 interface MemoDetailProps {
-  memo: MemoWithResources | null
+  memo: Memo | null
   open: boolean
   onClose: () => void
   onUpdate?: () => void
@@ -116,7 +116,7 @@ export function MemoDetail({
     if (!isEditing) {
       setEditedContent(memo.content)
       setEditedAISummary(memo.aiSummary || '')
-      setEditingResources(memo.resources)
+      setEditingResources(memo.resources ?? [])
       setHasResourceChanges(false)
     }
 
@@ -163,7 +163,7 @@ export function MemoDetail({
       setEditedTags([...memo.tags])
       setEditedAISummary(memo.aiSummary || '')
       setTagInput('')
-      setEditingResources(memo.resources)
+      setEditingResources(memo.resources ?? [])
       setHasResourceChanges(false)
       setIsEditing(true)
     }

@@ -5,6 +5,7 @@ import type {
   MemoWithResourcesResponse,
   PaginatedResponse,
   SearchMemosQuery,
+  SearchMemosResponse,
   TagResponse,
   UpdateMemoRequest,
 } from './types'
@@ -42,8 +43,8 @@ export const memosApi = {
     return apiClient.put<void>(`/api/memos/${id}/unarchive`)
   },
 
-  search(query: SearchMemosQuery): Promise<PaginatedResponse<MemoWithResourcesResponse>> {
-    return apiClient.get<PaginatedResponse<MemoWithResourcesResponse>>('/api/memos/search', query)
+  search(query: SearchMemosQuery): Promise<SearchMemosResponse> {
+    return apiClient.get<SearchMemosResponse>('/api/memos/search', query)
   },
 
   getAllTags(): Promise<TagResponse[]> {

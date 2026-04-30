@@ -57,176 +57,89 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-[data-theme="quiet-paper"] {
-  --link: #3d6fa6;
-  --semantic-success: #22c55e;
-  --semantic-warning: #f59e0b;
-  --semantic-error: #c94f4f;
-  --semantic-info: #3b82f6;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-  --radius: 0.75rem;
-  --transition-fast: 150ms ease-in-out;
-  --transition-normal: 250ms ease-out;
-}
-
-[data-theme="quiet-paper"]:not(.dark) {
-  --background: #f8f5ef;
-  --foreground: #1f2430;
-  --card: #f2ece2;
-  --card-foreground: #1f2430;
-  --popover: #f2ece2;
-  --popover-foreground: #1f2430;
-  --primary: #9a6b3f;
-  --primary-foreground: #f8f5ef;
-  --secondary: #e8e0d0;
-  --secondary-foreground: #1f2430;
-  --muted: #ede6d8;
-  --muted-foreground: #667085;
-  --accent: rgba(154, 107, 63, 0.12);
-  --accent-foreground: #9a6b3f;
-  --destructive: #c94f4f;
-  --border: #d9d2c6;
-  --input: #d9d2c6;
-  --ring: #9a6b3f;
-  --chart-1: #9a6b3f;
-  --chart-2: #3d6fa6;
-  --chart-3: #667085;
-  --chart-4: #d9a441;
-  --chart-5: #a49d90;
-  --sidebar: #f2ece2;
-  --sidebar-foreground: #1f2430;
-  --sidebar-primary: #9a6b3f;
-  --sidebar-primary-foreground: #f8f5ef;
-  --sidebar-accent: rgba(154, 107, 63, 0.12);
-  --sidebar-accent-foreground: #9a6b3f;
-  --sidebar-border: #d9d2c6;
-  --sidebar-ring: #9a6b3f;
-}
-
-[data-theme="quiet-paper"].dark {
-  --background: #171719;
-  --foreground: #f4efe7;
-  --card: #1f1f22;
-  --card-foreground: #f4efe7;
-  --popover: #1f1f22;
-  --popover-foreground: #f4efe7;
-  --primary: #c08a58;
-  --primary-foreground: #1f1f22;
-  --secondary: #2e2e31;
-  --secondary-foreground: #f4efe7;
-  --muted: #27272a;
-  --muted-foreground: #b8b0a3;
-  --accent: rgba(192, 138, 88, 0.15);
-  --accent-foreground: #c08a58;
-  --destructive: #c94f4f;
-  --border: #3a352d;
-  --input: #3a352d;
-  --ring: #c08a58;
-  --chart-1: #c08a58;
-  --chart-2: #7fa9d8;
-  --chart-3: #b8b0a3;
-  --chart-4: #d9a441;
-  --chart-5: #5a5248;
-  --sidebar: #1f1f22;
-  --sidebar-foreground: #f4efe7;
-  --sidebar-primary: #c08a58;
-  --sidebar-primary-foreground: #1f1f22;
-  --sidebar-accent: rgba(192, 138, 88, 0.15);
-  --sidebar-accent-foreground: #c08a58;
-  --sidebar-border: #3a352d;
-  --sidebar-ring: #c08a58;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.25);
-  --link: #7fa9d8;
-}
-
-[data-theme="clean-slate"] {
+:root {
   --link: #2563eb;
   --semantic-success: #22c55e;
   --semantic-warning: #f59e0b;
   --semantic-error: #ef4444;
   --semantic-info: #3b82f6;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
   --radius: 0.5rem;
   --transition-fast: 150ms ease-in-out;
   --transition-normal: 250ms ease-out;
-}
 
-[data-theme="clean-slate"]:not(.dark) {
-  --background: #f2f2f2;
-  --foreground: #0a0a0a;
+  --background: #f8fafc;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #16a34a;
+  --popover-foreground: #0f172a;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
-  --secondary: #f0f0f0;
-  --secondary-foreground: #0a0a0a;
-  --muted: #f7f7f7;
-  --muted-foreground: #525252;
-  --accent: rgba(22, 163, 74, 0.1);
-  --accent-foreground: #16a34a;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: rgba(37, 99, 235, 0.08);
+  --accent-foreground: #2563eb;
   --destructive: #ef4444;
-  --border: #e5e5e5;
-  --input: #e5e5e5;
-  --ring: #16a34a;
-  --chart-1: #16a34a;
-  --chart-2: #2563eb;
-  --chart-3: #525252;
-  --chart-4: #16a34a;
-  --chart-5: #a3a3a3;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+  --chart-1: #2563eb;
+  --chart-2: #16a34a;
+  --chart-3: #64748b;
+  --chart-4: #f59e0b;
+  --chart-5: #94a3b8;
   --sidebar: #ffffff;
-  --sidebar-foreground: #0a0a0a;
-  --sidebar-primary: #16a34a;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #2563eb;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(22, 163, 74, 0.1);
-  --sidebar-accent-foreground: #16a34a;
-  --sidebar-border: #e5e5e5;
-  --sidebar-ring: #16a34a;
+  --sidebar-accent: rgba(37, 99, 235, 0.08);
+  --sidebar-accent-foreground: #2563eb;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #2563eb;
 }
 
-[data-theme="clean-slate"].dark {
-  --background: #0a0a0a;
-  --foreground: #f5f5f5;
-  --card: #141414;
-  --card-foreground: #f5f5f5;
-  --popover: #141414;
-  --popover-foreground: #f5f5f5;
-  --primary: #a8f099;
-  --primary-foreground: #0a0a0a;
-  --secondary: #1f1f1f;
-  --secondary-foreground: #f5f5f5;
-  --muted: #1a1a1a;
-  --muted-foreground: #a3a3a3;
-  --accent: rgba(168, 240, 153, 0.1);
-  --accent-foreground: #a8f099;
-  --destructive: #fca5a5;
-  --border: #262626;
-  --input: #262626;
-  --ring: #a8f099;
-  --chart-1: #a8f099;
-  --chart-2: #60a5fa;
-  --chart-3: #a3a3a3;
-  --chart-4: #a8f099;
-  --chart-5: #525252;
-  --sidebar: #141414;
-  --sidebar-foreground: #f5f5f5;
-  --sidebar-primary: #a8f099;
-  --sidebar-primary-foreground: #0a0a0a;
-  --sidebar-accent: rgba(168, 240, 153, 0.1);
-  --sidebar-accent-foreground: #a8f099;
-  --sidebar-border: #262626;
-  --sidebar-ring: #a8f099;
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
-  --link: #60a5fa;
+.dark {
+  --link: #93c5fd;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --popover: #1e293b;
+  --popover-foreground: #f8fafc;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #334155;
+  --secondary-foreground: #f8fafc;
+  --muted: #334155;
+  --muted-foreground: #94a3b8;
+  --accent: rgba(59, 130, 246, 0.15);
+  --accent-foreground: #93c5fd;
+  --destructive: #f87171;
+  --border: #334155;
+  --input: #334155;
+  --ring: #3b82f6;
+  --chart-1: #60a5fa;
+  --chart-2: #4ade80;
+  --chart-3: #94a3b8;
+  --chart-4: #fbbf24;
+  --chart-5: #64748b;
+  --sidebar: #1e293b;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(59, 130, 246, 0.15);
+  --sidebar-accent-foreground: #93c5fd;
+  --sidebar-border: #334155;
+  --sidebar-ring: #3b82f6;
 }
 
 @layer base {
@@ -284,15 +197,9 @@
 }
 
 @keyframes skeleton-pulse {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
-  100% {
-    opacity: 1;
-  }
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
 }
 
 .skeleton {
@@ -302,12 +209,8 @@
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .spin {
@@ -315,30 +218,16 @@
 }
 
 @keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translateX(40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
+  from { opacity: 1; }
+  to { opacity: 0; }
 }

@@ -1,4 +1,10 @@
-import type { Diary, MemoWithResources, PaginatedResponse, Resource } from '@mosaic/api'
+import type {
+  Diary,
+  MemoWithResources,
+  PaginatedResponse,
+  Resource,
+  SearchMemosResponse,
+} from '@mosaic/api'
 import {
   upsertDiaries,
   upsertMemos,
@@ -46,12 +52,14 @@ export function withOfflineFallback<T>(
 
 // ─── Write-through helpers ───
 
-export async function syncMemosPage(response: PaginatedResponse<MemoWithResources>) {
+export async function syncMemosPage(
+  response: PaginatedResponse<MemoWithResources> | SearchMemosResponse
+) {
   try {
-    const memos = response.items
+    const memos = 'items' in response ? response.items : response.memos
     await upsertMemos(memos)
 
-    const resources = memos.flatMap(m => m.resources)
+    const resources = memos.flatMap(m => m.resources ?? [])
     if (resources.length > 0) {
       await upsertResources(resources)
     }
@@ -64,7 +72,7 @@ export async function syncMemosList(memos: MemoWithResources[]) {
   try {
     await upsertMemos(memos)
 
-    const resources = memos.flatMap(m => m.resources)
+    const resources = memos.flatMap(m => m.resources ?? [])
     if (resources.length > 0) {
       await upsertResources(resources)
     }
@@ -154,7 +162,7 @@ export async function fallbackSingleDiary(date: string): Promise<any | undefined
 
 export async function fallbackSearchMemos(
   query: LocalMemoSearchQuery
-): Promise<PaginatedResponse<MemoWithResources> | undefined> {
+): Promise<SearchMemosResponse | undefined> {
   const memos = await localSearchMemos(query)
   if (memos.length === 0) return undefined
 
@@ -166,10 +174,10 @@ export async function fallbackSearchMemos(
   )
 
   return {
-    items: memosWithResources,
+    memos: memosWithResources,
     total: memosWithResources.length,
     page: query.page ?? 1,
     pageSize: query.pageSize ?? 20,
-    totalPages: 1,
+    semanticEnabled: false,
   }
 }

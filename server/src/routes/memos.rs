@@ -1,9 +1,9 @@
 use crate::admin::activity_log::ActivityLog;
 use crate::middleware::get_user_id;
 use crate::models::{CreateMemoRequest, MemoListQuery, UpdateMemoRequest};
-use crate::services::MemoService;
+use crate::services::{HybridSearchService, MemoService, MemoryEmbeddingService};
 use actix_web::{web, HttpRequest, HttpResponse};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Safely truncate a string to at most `max_chars` characters, respecting UTF-8 char boundaries.
 fn truncate_str(s: &str, max_chars: usize) -> &str {
@@ -211,10 +211,22 @@ pub async fn unarchive_memo(
     }
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SearchMemosResponse {
+    memos: Vec<serde_json::Value>,
+    total: i64,
+    page: u32,
+    page_size: u32,
+    semantic_enabled: bool,
+}
+
 pub async fn search_memos(
     req: HttpRequest,
     query: web::Query<crate::models::SearchMemosRequest>,
     memo_service: web::Data<MemoService>,
+    memory_embedding_service: web::Data<MemoryEmbeddingService>,
+    hybrid_search_service: web::Data<HybridSearchService>,
 ) -> HttpResponse {
     let user_id = match get_user_id(&req) {
         Ok(id) => id,
@@ -230,21 +242,103 @@ pub async fn search_memos(
         Some(search_req.tags)
     };
 
-    match memo_service
-        .search_memos(
-            &user_id,
-            &search_req.query,
-            tags,
-            search_req.start_date,
-            search_req.end_date,
-            search_req.is_archived,
-            page,
-            page_size,
-        )
-        .await
-    {
-        Ok(result) => HttpResponse::Ok().json(result),
-        Err(e) => HttpResponse::from_error(e),
+    if search_req.query.is_empty() {
+        match memo_service
+            .search_memos(
+                &user_id,
+                &search_req.query,
+                tags,
+                search_req.start_date,
+                search_req.end_date,
+                search_req.is_archived,
+                page,
+                page_size,
+            )
+            .await
+        {
+            Ok(result) => {
+                let memos = result
+                    .items
+                    .iter()
+                    .filter_map(|m| serde_json::to_value(m).ok())
+                    .collect();
+                HttpResponse::Ok().json(SearchMemosResponse {
+                    memos,
+                    total: result.total,
+                    page: result.page,
+                    page_size: result.page_size,
+                    semantic_enabled: false,
+                })
+            }
+            Err(e) => HttpResponse::from_error(e),
+        }
+    } else {
+        let user_uuid = match uuid::Uuid::parse_str(&user_id) {
+            Ok(id) => id,
+            Err(e) => return HttpResponse::from_error(crate::error::AppError::from(e)),
+        };
+
+        let embedding = memory_embedding_service
+            .generate_embedding(&search_req.query, None)
+            .await
+            .ok()
+            .filter(|emb| emb.iter().any(|&f| f != 0.0));
+
+        if let Some(emb) = embedding {
+            match hybrid_search_service
+                .search(
+                    user_uuid,
+                    &search_req.query,
+                    tags,
+                    search_req.start_date,
+                    search_req.end_date,
+                    search_req.is_archived,
+                    page as i64,
+                    page_size as i64,
+                    Some(emb),
+                )
+                .await
+            {
+                Ok((memos, total)) => HttpResponse::Ok().json(SearchMemosResponse {
+                    memos,
+                    total,
+                    page,
+                    page_size,
+                    semantic_enabled: true,
+                }),
+                Err(e) => HttpResponse::from_error(e),
+            }
+        } else {
+            match memo_service
+                .search_memos(
+                    &user_id,
+                    &search_req.query,
+                    tags,
+                    search_req.start_date,
+                    search_req.end_date,
+                    search_req.is_archived,
+                    page,
+                    page_size,
+                )
+                .await
+            {
+                Ok(result) => {
+                    let memos = result
+                        .items
+                        .iter()
+                        .filter_map(|m| serde_json::to_value(m).ok())
+                        .collect();
+                    HttpResponse::Ok().json(SearchMemosResponse {
+                        memos,
+                        total: result.total,
+                        page: result.page,
+                        page_size: result.page_size,
+                        semantic_enabled: false,
+                    })
+                }
+                Err(e) => HttpResponse::from_error(e),
+            }
+        }
     }
 }
 

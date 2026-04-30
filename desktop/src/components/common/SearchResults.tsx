@@ -1,16 +1,23 @@
 import { MemoCard } from '@/components/common/MemoCard'
 import { cn } from '@/lib/utils'
-import type { MemoWithResources } from '@mosaic/api'
+import type { Memo } from '@mosaic/api'
 import { useMemo } from 'react'
 
 interface SearchResultsProps {
-  results: MemoWithResources[]
+  results: Memo[]
   query: string
-  onMemoClick?: (memo: MemoWithResources) => void
+  onMemoClick?: (memo: Memo) => void
   className?: string
+  semanticEnabled?: boolean
 }
 
-export function SearchResults({ results, query, onMemoClick, className }: SearchResultsProps) {
+export function SearchResults({
+  results,
+  query,
+  onMemoClick,
+  className,
+  semanticEnabled = false,
+}: SearchResultsProps) {
   const searchWords = useMemo(() => {
     if (!query.trim()) return []
     return query
@@ -31,6 +38,9 @@ export function SearchResults({ results, query, onMemoClick, className }: Search
           memo={memo}
           searchWords={searchWords}
           onClick={() => onMemoClick?.(memo)}
+          showSemanticBadge={
+            semanticEnabled && (memo.matchType === 'semantic' || memo.matchType === 'hybrid')
+          }
         />
       ))}
     </div>

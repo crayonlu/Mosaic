@@ -3,7 +3,9 @@ use crate::models::{
     CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse, MemoWithResources,
     PaginatedResponse, Resource, TagResponse, UpdateMemoRequest,
 };
-use crate::services::{BotService, MemoryEmbeddingService, ServerAiConfigService};
+use crate::services::{
+    AiClient, AppSettingsService, BotService, MemoryEmbeddingService, ServerAiConfigService,
+};
 use chrono::Utc;
 use serde_json::json;
 use sqlx::PgPool;
@@ -15,6 +17,8 @@ pub struct MemoService {
     memory_embedding_service: Option<MemoryEmbeddingService>,
     bot_service: Option<BotService>,
     server_ai_config_service: Option<ServerAiConfigService>,
+    ai_client: Option<AiClient>,
+    app_settings_service: Option<AppSettingsService>,
 }
 
 impl MemoService {
@@ -24,6 +28,8 @@ impl MemoService {
             memory_embedding_service: None,
             bot_service: None,
             server_ai_config_service: None,
+            ai_client: None,
+            app_settings_service: None,
         }
     }
 
@@ -45,6 +51,16 @@ impl MemoService {
         server_ai_config_service: ServerAiConfigService,
     ) -> Self {
         self.server_ai_config_service = Some(server_ai_config_service);
+        self
+    }
+
+    pub fn with_ai_client(mut self, ai_client: AiClient) -> Self {
+        self.ai_client = Some(ai_client);
+        self
+    }
+
+    pub fn with_app_settings_service(mut self, app_settings_service: AppSettingsService) -> Self {
+        self.app_settings_service = Some(app_settings_service);
         self
     }
 
@@ -237,10 +253,12 @@ impl MemoService {
         let user_id_str = user_id.to_string();
         let bot_service = self.bot_service.clone();
         let server_ai_config_service = self.server_ai_config_service.clone();
+        let ai_client = self.ai_client.clone();
+        let app_settings_service = self.app_settings_service.clone();
         let pool = self.pool.clone();
 
         tokio::spawn(async move {
-            let result = tokio::time::timeout(std::time::Duration::from_secs(60), async {
+            let result = tokio::time::timeout(std::time::Duration::from_secs(120), async {
                 if let Err(error) = memory_embedding_service.refresh_for_memo(&memo).await {
                     log::error!(
                         "[MemoryRefresh] embedding failed for memo {}: {}",
@@ -259,17 +277,41 @@ impl MemoService {
                     }
                 }
 
+                let Some(config_svc) = server_ai_config_service else {
+                    return;
+                };
+                let Some(client) = ai_client else {
+                    return;
+                };
+
+                let auto_tag = match &app_settings_service {
+                    Some(svc) => svc.get_bool("auto_tag_enabled", true).await,
+                    None => true,
+                };
+                let auto_summary = match &app_settings_service {
+                    Some(svc) => svc.get_bool("auto_summary_enabled", false).await,
+                    None => false,
+                };
+
                 let needs_tags = memo
                     .tags
                     .as_array()
                     .map(|arr| arr.is_empty())
                     .unwrap_or(true);
 
-                if needs_tags {
-                    if let Some(config_svc) = server_ai_config_service {
-                        MemoService::auto_generate_tags(&pool, &config_svc, &user_id_str, &memo)
-                            .await;
-                    }
+                if auto_tag && needs_tags {
+                    MemoService::auto_generate_tags(
+                        &pool,
+                        &config_svc,
+                        &client,
+                        &user_id_str,
+                        &memo,
+                    )
+                    .await;
+                }
+
+                if auto_summary && memo.ai_summary.is_none() {
+                    MemoService::auto_generate_summary(&pool, &config_svc, &client, &memo).await;
                 }
             })
             .await;
@@ -283,6 +325,7 @@ impl MemoService {
     async fn auto_generate_tags(
         pool: &PgPool,
         config_svc: &ServerAiConfigService,
+        ai_client: &AiClient,
         user_id: &str,
         memo: &Memo,
     ) {
@@ -333,56 +376,31 @@ impl MemoService {
             existing_tags_hint, memo.content
         );
 
-        let base_url = config.base_url.trim_end_matches('/');
-        let url = format!("{}/chat/completions", base_url);
+        let ai_config = crate::services::ai_client::AiConfig {
+            provider: config.provider.clone(),
+            base_url: config.base_url.clone(),
+            api_key: config.api_key.clone(),
+            model: config.model.clone(),
+            max_tokens: Some(100),
+        };
 
-        let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(30))
-            .build()
-            .unwrap_or_default();
-
-        let body = serde_json::json!({
-            "model": config.model.trim(),
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 100,
-            "temperature": 0.3
-        });
-
-        let resp = match client
-            .post(&url)
-            .header("Authorization", format!("Bearer {}", config.api_key.trim()))
-            .header("Content-Type", "application/json")
-            .json(&body)
-            .send()
+        let reply = match ai_client
+            .send_ai_messages(
+                &ai_config,
+                String::new(),
+                vec![json!({ "role": "user", "content": prompt })],
+                None,
+            )
             .await
         {
             Ok(r) => r,
             Err(e) => {
-                log::warn!("[AutoTag] HTTP request failed for memo {}: {}", memo.id, e);
+                log::warn!("[AutoTag] AI call failed for memo {}: {}", memo.id, e);
                 return;
             }
         };
 
-        let json: serde_json::Value = match resp.json().await {
-            Ok(v) => v,
-            Err(e) => {
-                log::warn!(
-                    "[AutoTag] failed to parse response for memo {}: {}",
-                    memo.id,
-                    e
-                );
-                return;
-            }
-        };
-
-        let raw = match json["choices"][0]["message"]["content"].as_str() {
-            Some(s) => s.trim().to_string(),
-            None => {
-                log::warn!("[AutoTag] unexpected response shape for memo {}", memo.id);
-                return;
-            }
-        };
-
+        let raw = reply.content.trim().to_string();
         let start = raw.find('[').unwrap_or(0);
         let end = raw.rfind(']').map(|i| i + 1).unwrap_or(raw.len());
         let tags: Vec<String> = match serde_json::from_str(&raw[start..end]) {
@@ -422,6 +440,83 @@ impl MemoService {
             );
         } else {
             log::info!("[AutoTag] tagged memo {} with {:?}", memo.id, tags);
+        }
+    }
+
+    async fn auto_generate_summary(
+        pool: &PgPool,
+        config_svc: &ServerAiConfigService,
+        ai_client: &AiClient,
+        memo: &Memo,
+    ) {
+        let config = match config_svc.get("bot").await {
+            Ok(c) => c,
+            Err(e) => {
+                log::warn!("[AutoSummary] failed to get bot config: {}", e);
+                return;
+            }
+        };
+
+        if config.api_key.trim().is_empty()
+            || config.model.trim().is_empty()
+            || config.base_url.trim().is_empty()
+        {
+            return;
+        }
+
+        let prompt = format!(
+            "Summarize the following memo in 1-2 sentences. \
+             Be concise and capture the key point. \
+             Reply in the same language as the memo. \
+             Output only the summary, no extra text.\n\nMemo:\n{}",
+            memo.content
+        );
+
+        let ai_config = crate::services::ai_client::AiConfig {
+            provider: config.provider.clone(),
+            base_url: config.base_url.clone(),
+            api_key: config.api_key.clone(),
+            model: config.model.clone(),
+            max_tokens: Some(120),
+        };
+
+        let reply = match ai_client
+            .send_ai_messages(
+                &ai_config,
+                String::new(),
+                vec![json!({ "role": "user", "content": prompt })],
+                None,
+            )
+            .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                log::warn!("[AutoSummary] AI call failed for memo {}: {}", memo.id, e);
+                return;
+            }
+        };
+
+        let summary = reply.content.trim().to_string();
+        if summary.is_empty() {
+            return;
+        }
+
+        let now = chrono::Utc::now().timestamp_millis();
+        if let Err(e) =
+            sqlx::query("UPDATE memos SET ai_summary = $1, updated_at = $2 WHERE id = $3")
+                .bind(&summary)
+                .bind(now)
+                .bind(memo.id)
+                .execute(pool)
+                .await
+        {
+            log::error!(
+                "[AutoSummary] failed to update summary for memo {}: {}",
+                memo.id,
+                e
+            );
+        } else {
+            log::info!("[AutoSummary] summarized memo {}", memo.id);
         }
     }
 

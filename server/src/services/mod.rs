@@ -1,8 +1,11 @@
+pub mod ai_client;
+pub mod app_settings_service;
 pub mod auth_service;
 pub mod bot_memory_context_service;
 pub mod bot_service;
 pub mod cache_headers;
 pub mod diary_service;
+pub mod hybrid_search_service;
 pub mod image_processor;
 pub mod memo_service;
 pub mod memory_embedding_service;
@@ -15,11 +18,14 @@ pub mod time_formatter;
 pub mod timeline_memory_service;
 pub mod video_processor;
 
+pub use ai_client::AiClient;
+pub use app_settings_service::AppSettingsService;
 pub use auth_service::AuthService;
 pub use bot_memory_context_service::BotMemoryContextService;
 pub use bot_service::BotService;
 pub use cache_headers::CacheHeaders;
 pub use diary_service::DiaryService;
+pub use hybrid_search_service::HybridSearchService;
 pub use image_processor::ImageProcessor;
 pub use memo_service::MemoService;
 pub use memory_embedding_service::MemoryEmbeddingService;
