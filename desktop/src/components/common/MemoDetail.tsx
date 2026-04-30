@@ -58,9 +58,17 @@ interface MemoDetailProps {
   onClose: () => void
   onUpdate?: () => void
   onDelete?: () => void
+  onMemoNavigate?: (memoId: string) => void
 }
 
-export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDetailProps) {
+export function MemoDetail({
+  memo,
+  open,
+  onClose,
+  onUpdate,
+  onDelete,
+  onMemoNavigate,
+}: MemoDetailProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedContent, setEditedContent] = useState('')
   const [editedTags, setEditedTags] = useState<string[]>([])
@@ -746,7 +754,11 @@ export function MemoDetail({ memo, open, onClose, onUpdate, onDelete }: MemoDeta
 
           {!isEditing && memo?.id && (
             <div className="space-y-4 pt-4 border-t">
-              <BotReplyList memoId={memo.id} onReply={handleBotReplyClick} />
+              <BotReplyList
+                memoId={memo.id}
+                onReply={handleBotReplyClick}
+                onMemoNavigate={onMemoNavigate}
+              />
               <BotThreadPanel
                 reply={targetReply}
                 open={Boolean(targetReply)}

@@ -18,3 +18,24 @@ export interface MemoryActivityEntry {
   hasEpisode: boolean
   createdAt: number
 }
+
+export interface RetrievedMemoItem {
+  id: string
+  excerpt: string
+  score: number
+  reason: string
+  createdAt: number
+}
+
+export interface EpisodeContextItem {
+  id: string
+  title: string
+  summary: string
+  status: string
+}
+
+export interface MemoryContext {
+  retrievedMemos: RetrievedMemoItem[]
+  episode: EpisodeContextItem | null
+  profileSummary: string | null
+}

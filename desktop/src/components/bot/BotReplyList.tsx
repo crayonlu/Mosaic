@@ -6,9 +6,10 @@ import { BotReplyCard } from './BotReplyCard'
 interface BotReplyListProps {
   memoId: string
   onReply: (reply: BotReply) => void
+  onMemoNavigate?: (memoId: string) => void
 }
 
-export function BotReplyList({ memoId, onReply }: BotReplyListProps) {
+export function BotReplyList({ memoId, onReply, onMemoNavigate }: BotReplyListProps) {
   const { data: replies, isLoading } = useBotReplies(memoId)
 
   if (isLoading) {
@@ -32,7 +33,12 @@ export function BotReplyList({ memoId, onReply }: BotReplyListProps) {
       </div>
       <div className="space-y-4">
         {replies.map(reply => (
-          <BotReplyCard key={reply.id} reply={reply} onReply={onReply} />
+          <BotReplyCard
+            key={reply.id}
+            reply={reply}
+            onReply={onReply}
+            onMemoNavigate={onMemoNavigate}
+          />
         ))}
       </div>
     </div>
