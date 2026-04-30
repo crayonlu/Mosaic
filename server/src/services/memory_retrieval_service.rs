@@ -189,8 +189,7 @@ impl MemoryRetrievalService {
         let contexts: Vec<RelatedMemoContext> = rows
             .into_iter()
             .map(|r| {
-                let tags: Vec<String> =
-                    serde_json::from_value(r.tags.clone()).unwrap_or_default();
+                let tags: Vec<String> = serde_json::from_value(r.tags.clone()).unwrap_or_default();
                 let age_ms = (now_ms - r.created_at).max(0) as f64;
                 let recency = (-age_ms / (24.0 * 86_400_000.0)).exp();
 

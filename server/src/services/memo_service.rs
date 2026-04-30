@@ -3,7 +3,7 @@ use crate::models::{
     CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse, MemoWithResources,
     PaginatedResponse, Resource, TagResponse, UpdateMemoRequest,
 };
-use crate::services::{BotService, EpisodeService, MemoryEmbeddingService, ProfileMemoryService};
+use crate::services::{BotService, EpisodeService, MemoryEmbeddingService, ServerAiConfigService};
 use chrono::Utc;
 use serde_json::json;
 use sqlx::PgPool;
@@ -14,8 +14,8 @@ pub struct MemoService {
     pool: PgPool,
     memory_embedding_service: Option<MemoryEmbeddingService>,
     episode_service: Option<EpisodeService>,
-    profile_memory_service: Option<ProfileMemoryService>,
     bot_service: Option<BotService>,
+    server_ai_config_service: Option<ServerAiConfigService>,
 }
 
 impl MemoService {
@@ -24,8 +24,8 @@ impl MemoService {
             pool,
             memory_embedding_service: None,
             episode_service: None,
-            profile_memory_service: None,
             bot_service: None,
+            server_ai_config_service: None,
         }
     }
 
@@ -33,16 +33,22 @@ impl MemoService {
         mut self,
         memory_embedding_service: MemoryEmbeddingService,
         episode_service: EpisodeService,
-        profile_memory_service: ProfileMemoryService,
     ) -> Self {
         self.memory_embedding_service = Some(memory_embedding_service);
         self.episode_service = Some(episode_service);
-        self.profile_memory_service = Some(profile_memory_service);
         self
     }
 
     pub fn with_bot_service(mut self, bot_service: BotService) -> Self {
         self.bot_service = Some(bot_service);
+        self
+    }
+
+    pub fn with_server_ai_config_service(
+        mut self,
+        server_ai_config_service: ServerAiConfigService,
+    ) -> Self {
+        self.server_ai_config_service = Some(server_ai_config_service);
         self
     }
 
@@ -233,14 +239,12 @@ impl MemoService {
         let Some(episode_service) = self.episode_service.clone() else {
             return;
         };
-        let Some(profile_memory_service) = self.profile_memory_service.clone() else {
-            return;
-        };
-
         let memo_id = memo.id;
         let user_id = memo.user_id;
         let user_id_str = user_id.to_string();
         let bot_service = self.bot_service.clone();
+        let server_ai_config_service = self.server_ai_config_service.clone();
+        let pool = self.pool.clone();
 
         tokio::spawn(async move {
             let result = tokio::time::timeout(std::time::Duration::from_secs(60), async {
@@ -260,14 +264,6 @@ impl MemoService {
                     );
                 }
 
-                if let Err(error) = profile_memory_service.refresh_for_user(user_id).await {
-                    log::error!(
-                        "[MemoryRefresh] profile refresh failed for user {}: {}",
-                        user_id,
-                        error
-                    );
-                }
-
                 if let Some(bot_svc) = bot_service {
                     if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
                         log::error!(
@@ -277,6 +273,19 @@ impl MemoService {
                         );
                     }
                 }
+
+                let needs_tags = memo
+                    .tags
+                    .as_array()
+                    .map(|arr| arr.is_empty())
+                    .unwrap_or(true);
+
+                if needs_tags {
+                    if let Some(config_svc) = server_ai_config_service {
+                        MemoService::auto_generate_tags(&pool, &config_svc, &user_id_str, &memo)
+                            .await;
+                    }
+                }
             })
             .await;
 
@@ -284,6 +293,151 @@ impl MemoService {
                 log::error!("[MemoryRefresh] timed out for memo {}", memo_id);
             }
         });
+    }
+
+    async fn auto_generate_tags(
+        pool: &PgPool,
+        config_svc: &ServerAiConfigService,
+        user_id: &str,
+        memo: &Memo,
+    ) {
+        let config = match config_svc.get("bot").await {
+            Ok(c) => c,
+            Err(e) => {
+                log::warn!("[AutoTag] failed to get bot config: {}", e);
+                return;
+            }
+        };
+
+        if config.api_key.trim().is_empty()
+            || config.model.trim().is_empty()
+            || config.base_url.trim().is_empty()
+        {
+            return;
+        }
+
+        let user_uuid = match Uuid::parse_str(user_id) {
+            Ok(u) => u,
+            Err(_) => return,
+        };
+
+        let existing_tags: Vec<String> = sqlx::query_scalar(
+            "SELECT DISTINCT tag FROM memos, jsonb_array_elements_text(tags) AS tag
+             WHERE user_id = $1 AND is_deleted = false AND jsonb_array_length(tags) > 0
+             ORDER BY tag ASC",
+        )
+        .bind(user_uuid)
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
+
+        let existing_tags_hint = if existing_tags.is_empty() {
+            String::from("(no existing tags yet)")
+        } else {
+            existing_tags.join(", ")
+        };
+
+        let prompt = format!(
+            "You are a tagging assistant for a personal journal app. \
+             Generate 1-4 concise tags for the memo below. \
+             Prefer reusing tags from the existing tag list when they fit. \
+             Only create new tags when none of the existing ones are appropriate. \
+             Tags should be short (1-3 words), lowercase, in the same language as the memo content. \
+             Respond with ONLY a JSON array of tag strings, e.g.: [\"work\", \"health\"]\n\n\
+             Existing tags: {}\n\nMemo content:\n{}",
+            existing_tags_hint, memo.content
+        );
+
+        let base_url = config.base_url.trim_end_matches('/');
+        let url = format!("{}/chat/completions", base_url);
+
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+            .unwrap_or_default();
+
+        let body = serde_json::json!({
+            "model": config.model.trim(),
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 100,
+            "temperature": 0.3
+        });
+
+        let resp = match client
+            .post(&url)
+            .header("Authorization", format!("Bearer {}", config.api_key.trim()))
+            .header("Content-Type", "application/json")
+            .json(&body)
+            .send()
+            .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                log::warn!("[AutoTag] HTTP request failed for memo {}: {}", memo.id, e);
+                return;
+            }
+        };
+
+        let json: serde_json::Value = match resp.json().await {
+            Ok(v) => v,
+            Err(e) => {
+                log::warn!(
+                    "[AutoTag] failed to parse response for memo {}: {}",
+                    memo.id,
+                    e
+                );
+                return;
+            }
+        };
+
+        let raw = match json["choices"][0]["message"]["content"].as_str() {
+            Some(s) => s.trim().to_string(),
+            None => {
+                log::warn!("[AutoTag] unexpected response shape for memo {}", memo.id);
+                return;
+            }
+        };
+
+        let start = raw.find('[').unwrap_or(0);
+        let end = raw.rfind(']').map(|i| i + 1).unwrap_or(raw.len());
+        let tags: Vec<String> = match serde_json::from_str(&raw[start..end]) {
+            Ok(v) => v,
+            Err(e) => {
+                log::warn!(
+                    "[AutoTag] failed to parse tags JSON for memo {}: {} — raw: {}",
+                    memo.id,
+                    e,
+                    raw
+                );
+                return;
+            }
+        };
+
+        if tags.is_empty() {
+            return;
+        }
+
+        let tags_json = serde_json::json!(tags);
+        let now = chrono::Utc::now().timestamp_millis();
+
+        if let Err(e) = sqlx::query(
+            "UPDATE memos SET tags = $1, updated_at = $2 WHERE id = $3 AND user_id = $4",
+        )
+        .bind(tags_json)
+        .bind(now)
+        .bind(memo.id)
+        .bind(user_uuid)
+        .execute(pool)
+        .await
+        {
+            log::error!(
+                "[AutoTag] failed to update tags for memo {}: {}",
+                memo.id,
+                e
+            );
+        } else {
+            log::info!("[AutoTag] tagged memo {} with {:?}", memo.id, tags);
+        }
     }
 
     pub async fn get_memo(

@@ -44,8 +44,8 @@ pub use memo::{
     ResourceResponse as MemoResourceResponse, TagResponse, UpdateMemoRequest,
 };
 pub use memory::{
-    AnchorMemoContext, BotMemoryContext, BotMemoryDebugContext, DiaryMemoryContext, EpisodeContext,
-    MemoEpisode, MemoEpisodeLink, MemoryStatsResponse, RelatedMemoContext, UserMemoryProfile,
+    BotMemoryContext, BotMemoryDebugContext, MemoEpisode, MemoEpisodeLink, MemoryStatsResponse,
+    RelatedMemoContext,
 };
 pub use resource::{
     build_download_route, build_thumbnail_route, thumbnail_mime_type, thumbnail_storage_path,

@@ -62,35 +62,11 @@ pub async fn get_memory_stats(req: HttpRequest, pool: web::Data<PgPool>) -> Http
         }
     };
 
-    let profile = sqlx::query_as::<_, (String, serde_json::Value, i64)>(
-        "SELECT profile_summary, topic_signals, updated_at FROM user_memory_profiles WHERE user_id = $1",
-    )
-    .bind(user_uuid)
-    .fetch_optional(pool.get_ref())
-    .await
-    .unwrap_or(None);
-
-    let (profile_summary, profile_topic_count, profile_updated_at) = match profile {
-        Some((summary, topics, updated_at)) => {
-            let topic_count = topics.as_array().map(|a| a.len() as i64).unwrap_or(0);
-            let summary_opt = if summary.trim().is_empty() {
-                None
-            } else {
-                Some(summary)
-            };
-            (summary_opt, topic_count, Some(updated_at))
-        }
-        None => (None, 0, None),
-    };
-
     HttpResponse::Ok().json(MemoryStatsResponse {
         total_memos: counts.total_memos,
         indexed_memos: counts.indexed_memos,
         ongoing_episodes: counts.ongoing_episodes,
         resolved_episodes: counts.resolved_episodes,
-        profile_summary,
-        profile_topic_count,
-        profile_updated_at,
     })
 }
 
@@ -183,7 +159,6 @@ pub(crate) struct ContextQuery {
 struct MemoryContextResponse {
     retrieved_memos: Vec<RetrievedMemoItem>,
     episode: Option<EpisodeContextItem>,
-    profile_summary: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -222,7 +197,6 @@ pub async fn get_memory_context(
     let empty = MemoryContextResponse {
         retrieved_memos: vec![],
         episode: None,
-        profile_summary: None,
     };
 
     #[derive(sqlx::FromRow)]
@@ -349,20 +323,9 @@ pub async fn get_memory_context(
         None
     };
 
-    let profile_summary = sqlx::query_scalar::<_, String>(
-        "SELECT profile_summary FROM user_memory_profiles WHERE user_id = $1",
-    )
-    .bind(user_uuid)
-    .fetch_optional(pool.get_ref())
-    .await
-    .ok()
-    .flatten()
-    .filter(|s| !s.trim().is_empty());
-
     HttpResponse::Ok().json(MemoryContextResponse {
         retrieved_memos,
         episode,
-        profile_summary,
     })
 }
 

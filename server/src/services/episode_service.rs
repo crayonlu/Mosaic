@@ -118,17 +118,13 @@ impl EpisodeService {
 
         let (episode_id, relevance) = match best_episode {
             Some((episode, score)) => {
-                let title = self.derive_episode_title(memo);
-                let summary = self
-                    .build_episode_summary(memo, &episode.summary)
-                    .await;
+                let summary = self.build_episode_summary(memo, &episode.summary).await;
                 let merged_keywords = self.merge_keywords(&episode.keywords, &memo.tags);
                 sqlx::query(
                     "UPDATE memo_episodes
-                     SET title = $1, summary = $2, keywords = $3, last_memo_id = $4, end_at = $5, updated_at = $6
-                     WHERE id = $7",
+                     SET summary = $1, keywords = $2, last_memo_id = $3, end_at = $4, updated_at = $5
+                     WHERE id = $6",
                 )
-                .bind(title)
                 .bind(summary)
                 .bind(merged_keywords)
                 .bind(memo.id)
@@ -146,13 +142,14 @@ impl EpisodeService {
                     .ai_summary
                     .clone()
                     .unwrap_or_else(|| memo.content.chars().take(140).collect());
+                let title = self.derive_episode_title_with_llm(memo).await;
                 sqlx::query(
                     "INSERT INTO memo_episodes (id, user_id, title, status, summary, keywords, last_memo_id, start_at, end_at, updated_at)
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
                 )
                 .bind(new_id)
                 .bind(memo.user_id)
-                .bind(self.derive_episode_title(memo))
+                .bind(title)
                 .bind("ongoing")
                 .bind(initial_summary)
                 .bind(memo.tags.clone())
@@ -198,7 +195,10 @@ impl EpisodeService {
             return new_content;
         }
 
-        if let Some(llm_summary) = self.summarize_with_llm(existing_summary, &new_content).await {
+        if let Some(llm_summary) = self
+            .summarize_with_llm(existing_summary, &new_content)
+            .await
+        {
             return llm_summary;
         }
 
@@ -392,7 +392,10 @@ impl EpisodeService {
                 continue;
             }
 
-            if let Some(llm) = self.summarize_with_llm(&running_summary, &new_content).await {
+            if let Some(llm) = self
+                .summarize_with_llm(&running_summary, &new_content)
+                .await
+            {
                 running_summary = llm;
             } else {
                 running_summary = self.build_summary_fallback(&running_summary, &new_content);
@@ -413,6 +416,150 @@ impl EpisodeService {
         );
 
         Ok(())
+    }
+
+    pub async fn regenerate_all_episode_titles(&self) -> Result<(u32, u32), AppError> {
+        #[derive(sqlx::FromRow)]
+        struct EpisodeTitleRow {
+            id: Uuid,
+            title: String,
+        }
+
+        let episodes = sqlx::query_as::<_, EpisodeTitleRow>(
+            "SELECT e.id, e.title
+             FROM memo_episodes e
+             WHERE e.status <> 'resolved'
+             ORDER BY e.updated_at DESC",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(AppError::Database)?;
+
+        let mut ok = 0u32;
+        let mut skipped = 0u32;
+
+        for ep in &episodes {
+            let first_memo = sqlx::query_as::<_, (Option<String>, String)>(
+                "SELECT m.ai_summary, m.content
+                 FROM memo_episode_links el
+                 JOIN memos m ON m.id = el.memo_id
+                 WHERE el.episode_id = $1 AND m.is_deleted = false
+                 ORDER BY el.event_at ASC
+                 LIMIT 1",
+            )
+            .bind(ep.id)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(AppError::Database)?;
+
+            let Some((ai_summary, content)) = first_memo else {
+                skipped += 1;
+                continue;
+            };
+
+            let memo_stub = crate::models::Memo {
+                id: Uuid::nil(),
+                user_id: Uuid::nil(),
+                content,
+                tags: serde_json::Value::Array(vec![]),
+                is_archived: false,
+                is_deleted: false,
+                diary_date: None,
+                ai_summary,
+                created_at: 0,
+                updated_at: 0,
+            };
+
+            let new_title = self.derive_episode_title_with_llm(&memo_stub).await;
+
+            sqlx::query("UPDATE memo_episodes SET title = $1 WHERE id = $2")
+                .bind(&new_title)
+                .bind(ep.id)
+                .execute(&self.pool)
+                .await
+                .map_err(AppError::Database)?;
+
+            log::info!(
+                "[EpisodeService] Retitled episode {}: {:?} -> {:?}",
+                ep.id,
+                ep.title,
+                new_title
+            );
+            ok += 1;
+        }
+
+        Ok((ok, skipped))
+    }
+
+    async fn derive_episode_title_with_llm(&self, memo: &Memo) -> String {
+        if let Some(title) = self.generate_title_with_llm(memo).await {
+            return title;
+        }
+        self.derive_episode_title(memo)
+    }
+
+    async fn generate_title_with_llm(&self, memo: &Memo) -> Option<String> {
+        let config_service = self.server_ai_config_service.as_ref()?;
+        let config = config_service.get("bot").await.ok()?;
+
+        if config.api_key.trim().is_empty()
+            || config.model.trim().is_empty()
+            || config.base_url.trim().is_empty()
+        {
+            return None;
+        }
+
+        let content = memo
+            .ai_summary
+            .clone()
+            .filter(|s| !s.trim().is_empty())
+            .unwrap_or_else(|| memo.content.chars().take(200).collect());
+
+        let base_url = config.base_url.trim_end_matches('/');
+        let url = format!("{}/chat/completions", base_url);
+
+        let system = "你是一个生活事件命名助手。根据用户的记录内容，\
+            用 4-12 个汉字概括这条记录对应的生活事件或正在经历的事情，\
+            输出一个简短的名词短语（如「备考英语四级」「找新工作」「装修新家」），\
+            不要加任何标点、引号或解释，只输出短语本身。";
+        let user = format!("记录内容：\n{}", content);
+
+        let response = self
+            .client
+            .post(&url)
+            .header("Authorization", format!("Bearer {}", config.api_key))
+            .json(&json!({
+                "model": config.model,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user}
+                ],
+                "max_tokens": 30,
+                "temperature": 0.3
+            }))
+            .send()
+            .await
+            .ok()?;
+
+        if !response.status().is_success() {
+            log::warn!(
+                "[EpisodeService] LLM title generation failed: {}",
+                response.status()
+            );
+            return None;
+        }
+
+        let payload: serde_json::Value = response.json().await.ok()?;
+        let title = payload["choices"][0]["message"]["content"]
+            .as_str()?
+            .trim()
+            .to_string();
+
+        if title.is_empty() || title.chars().count() > 20 {
+            None
+        } else {
+            Some(title)
+        }
     }
 
     pub async fn get_episode_links(&self, memo_id: Uuid) -> Result<Vec<MemoEpisodeLink>, AppError> {
