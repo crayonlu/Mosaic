@@ -16,16 +16,6 @@ import { useBots, useCreateBot, useDeleteBot, useUpdateBot } from '@mosaic/api'
 import { Bot as BotIcon, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
-function relativeTime(ts: number): string {
-  const seconds = Math.floor((Date.now() - ts) / 1000)
-  if (seconds < 60) return '刚刚'
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} 分钟前`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} 小时前`
-  const days = Math.floor(hours / 24)
-  return `${days} 天前`
-}
 
 export function BotSettings() {
   const { data: bots, isLoading } = useBots()
@@ -154,24 +144,6 @@ export function BotSettings() {
                           ))}
                         </div>
                       )}
-                      <div className="flex items-center gap-1.5 mt-1">
-                        {bot.memoryStats && bot.memoryStats.totalContextsBuilt > 0 ? (
-                          <>
-                            <span className="h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />
-                            <span className="text-xs text-muted-foreground">
-                              已记忆 {bot.memoryStats.totalContextsBuilt} 次
-                              {bot.memoryStats.lastContextAt && (
-                                <> · {relativeTime(bot.memoryStats.lastContextAt)}</>
-                              )}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
-                            <span className="text-xs text-muted-foreground">暂无记忆记录</span>
-                          </>
-                        )}
-                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-2 shrink-0">
