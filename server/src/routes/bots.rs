@@ -1,18 +1,9 @@
 use crate::admin::activity_log::ActivityLog;
 use crate::middleware::get_user_id;
 use crate::models::{CreateBotRequest, ReorderBotsRequest, ReplyToBotRequest, UpdateBotRequest};
-use crate::services::{bot_service::AiConfig, BotService};
+use crate::services::BotService;
 use actix_web::{web, HttpRequest, HttpResponse};
 use uuid::Uuid;
-
-fn placeholder_ai_config() -> AiConfig {
-    AiConfig {
-        provider: String::new(),
-        base_url: String::new(),
-        api_key: String::new(),
-        model: String::new(),
-    }
-}
 
 pub async fn list_bots(req: HttpRequest, bot_service: web::Data<BotService>) -> HttpResponse {
     let user_id = match get_user_id(&req) {
@@ -192,10 +183,7 @@ pub async fn trigger_replies(
     };
 
     let memo_id = path.into_inner();
-    match bot_service
-        .trigger_replies(&user_id, memo_id, placeholder_ai_config())
-        .await
-    {
+    match bot_service.trigger_replies(&user_id, memo_id).await {
         Ok(_) => {
             activity_log.record_info(
                 "trigger_replies",
@@ -222,12 +210,7 @@ pub async fn reply_to_bot(
     };
 
     match bot_service
-        .reply_to_bot(
-            &user_id,
-            path.into_inner(),
-            payload.into_inner(),
-            placeholder_ai_config(),
-        )
+        .reply_to_bot(&user_id, path.into_inner(), payload.into_inner())
         .await
     {
         Ok(reply) => {

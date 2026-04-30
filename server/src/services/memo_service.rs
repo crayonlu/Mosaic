@@ -3,7 +3,7 @@ use crate::models::{
     CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse, MemoWithResources,
     PaginatedResponse, Resource, TagResponse, UpdateMemoRequest,
 };
-use crate::services::{EpisodeService, MemoryEmbeddingService, ProfileMemoryService};
+use crate::services::{BotService, EpisodeService, MemoryEmbeddingService, ProfileMemoryService};
 use chrono::Utc;
 use serde_json::json;
 use sqlx::PgPool;
@@ -15,6 +15,7 @@ pub struct MemoService {
     memory_embedding_service: Option<MemoryEmbeddingService>,
     episode_service: Option<EpisodeService>,
     profile_memory_service: Option<ProfileMemoryService>,
+    bot_service: Option<BotService>,
 }
 
 impl MemoService {
@@ -24,6 +25,7 @@ impl MemoService {
             memory_embedding_service: None,
             episode_service: None,
             profile_memory_service: None,
+            bot_service: None,
         }
     }
 
@@ -36,6 +38,11 @@ impl MemoService {
         self.memory_embedding_service = Some(memory_embedding_service);
         self.episode_service = Some(episode_service);
         self.profile_memory_service = Some(profile_memory_service);
+        self
+    }
+
+    pub fn with_bot_service(mut self, bot_service: BotService) -> Self {
+        self.bot_service = Some(bot_service);
         self
     }
 
@@ -232,6 +239,8 @@ impl MemoService {
 
         let memo_id = memo.id;
         let user_id = memo.user_id;
+        let user_id_str = user_id.to_string();
+        let bot_service = self.bot_service.clone();
 
         tokio::spawn(async move {
             let result = tokio::time::timeout(std::time::Duration::from_secs(60), async {
@@ -257,6 +266,16 @@ impl MemoService {
                         user_id,
                         error
                     );
+                }
+
+                if let Some(bot_svc) = bot_service {
+                    if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
+                        log::error!(
+                            "[MemoryRefresh] bot trigger_replies failed for memo {}: {}",
+                            memo_id,
+                            error
+                        );
+                    }
                 }
             })
             .await;

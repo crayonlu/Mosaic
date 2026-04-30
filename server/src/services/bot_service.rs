@@ -402,12 +402,7 @@ impl BotService {
         })
     }
 
-    pub async fn trigger_replies(
-        &self,
-        user_id: &str,
-        memo_id: Uuid,
-        _ai_config: AiConfig,
-    ) -> Result<(), AppError> {
+    pub async fn trigger_replies(&self, user_id: &str, memo_id: Uuid) -> Result<(), AppError> {
         let ai_config = self.load_server_ai_config("bot").await?;
         let user_uuid = Uuid::parse_str(user_id)
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
@@ -537,7 +532,6 @@ impl BotService {
         user_id: &str,
         parent_reply_id: Uuid,
         req: ReplyToBotRequest,
-        _ai_config: AiConfig,
     ) -> Result<BotReplyResponse, AppError> {
         let ai_config = self.load_server_ai_config("bot").await?;
         let user_uuid = Uuid::parse_str(user_id)
