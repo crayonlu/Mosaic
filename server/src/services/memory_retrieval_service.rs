@@ -150,4 +150,64 @@ impl MemoryRetrievalService {
         scored.truncate(limit as usize);
         Ok(scored)
     }
+
+    pub async fn retrieve_recent_memos(
+        &self,
+        user_id: Uuid,
+        anchor_memo: &Memo,
+        within_hours: i64,
+        limit: i64,
+    ) -> Result<Vec<RelatedMemoContext>, AppError> {
+        let now_ms = chrono::Utc::now().timestamp_millis();
+        let cutoff = now_ms - within_hours * 3_600_000;
+
+        #[derive(sqlx::FromRow)]
+        struct RecentRow {
+            id: Uuid,
+            tags: serde_json::Value,
+            ai_summary: Option<String>,
+            content: String,
+            created_at: i64,
+        }
+
+        let rows = sqlx::query_as::<_, RecentRow>(
+            "SELECT id, tags, ai_summary, content, created_at
+             FROM memos
+             WHERE user_id = $1 AND id <> $2 AND is_deleted = false
+               AND created_at >= $3
+             ORDER BY created_at DESC
+             LIMIT $4",
+        )
+        .bind(user_id)
+        .bind(anchor_memo.id)
+        .bind(cutoff)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(AppError::Database)?;
+
+        let contexts: Vec<RelatedMemoContext> = rows
+            .into_iter()
+            .map(|r| {
+                let tags: Vec<String> =
+                    serde_json::from_value(r.tags.clone()).unwrap_or_default();
+                let age_ms = (now_ms - r.created_at).max(0) as f64;
+                let recency = (-age_ms / (24.0 * 86_400_000.0)).exp();
+
+                RelatedMemoContext {
+                    memo_id: r.id,
+                    summary_excerpt: r
+                        .ai_summary
+                        .clone()
+                        .unwrap_or_else(|| r.content.chars().take(120).collect()),
+                    tags,
+                    created_at: r.created_at,
+                    relevance_score: recency,
+                    reason: "recent_24h".to_string(),
+                }
+            })
+            .collect();
+
+        Ok(contexts)
+    }
 }

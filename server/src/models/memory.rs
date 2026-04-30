@@ -135,8 +135,11 @@ pub struct BotMemoryContext {
     pub diary_context: Option<DiaryMemoryContext>,
     pub thread_context: Vec<serde_json::Value>,
     pub related_memos: Vec<RelatedMemoContext>,
+    pub recent_memos: Vec<RelatedMemoContext>,
+    pub weekly_memos: Vec<RelatedMemoContext>,
     pub selected_episode: Option<EpisodeContext>,
     pub timeline_summary: Option<String>,
     pub profile_summary: Option<String>,
+    pub current_time: String,
     pub debug: BotMemoryDebugContext,
 }

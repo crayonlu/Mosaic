@@ -13,6 +13,7 @@ pub mod resource_service;
 pub mod server_ai_config_service;
 pub mod stats_service;
 pub mod sync_service;
+pub mod time_formatter;
 pub mod timeline_memory_service;
 pub mod video_processor;
 
