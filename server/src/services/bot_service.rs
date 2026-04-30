@@ -36,6 +36,7 @@ pub struct AiConfig {
     pub base_url: String,
     pub api_key: String,
     pub model: String,
+    pub max_tokens: Option<i32>,
 }
 
 #[derive(Debug, Clone)]
@@ -699,6 +700,7 @@ impl BotService {
             base_url: config.base_url,
             api_key: config.api_key,
             model: config.model,
+            max_tokens: config.max_tokens,
         })
     }
 
@@ -1174,7 +1176,7 @@ async fn send_ai_messages(
             let url = format!("{}/messages", base_url);
             let body = json!({
                 "model": target_model,
-                "max_tokens": 512,
+                "max_tokens": config.max_tokens.unwrap_or(512),
                 "system": system_prompt,
                 "messages": messages,
             });
@@ -1188,7 +1190,7 @@ async fn send_ai_messages(
             let body = json!({
                 "model": target_model,
                 "messages": full_messages,
-                "max_tokens": 512,
+                "max_tokens": config.max_tokens.unwrap_or(512),
                 "temperature": 0.8,
             });
             (url, body)

@@ -16,6 +16,7 @@ interface ConfigForm {
   apiKey: string
   model: string
   embeddingDim?: number
+  maxTokens?: number
 }
 
 interface ConfigResponseItem {
@@ -24,6 +25,7 @@ interface ConfigResponseItem {
   apiKey?: string
   model?: string
   embeddingDim?: number | null
+  maxTokens?: number | null
   supportsVision?: boolean
   supportsThinking?: boolean
 }
@@ -57,8 +59,8 @@ export default function AIConfigPanel() {
   })
 
   const [form, setForm] = useState({
-    bot: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '', embeddingDim: undefined as number | undefined },
-    embedding: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '', embeddingDim: undefined as number | undefined },
+    bot: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '', embeddingDim: undefined as number | undefined, maxTokens: undefined as number | undefined },
+    embedding: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '', embeddingDim: undefined as number | undefined, maxTokens: undefined as number | undefined },
   })
 
   function setFormField(key: ConfigKey, field: Partial<ConfigForm>) {
@@ -90,6 +92,7 @@ export default function AIConfigPanel() {
             apiKey: data[k].apiKey || '',
             model: data[k].model || '',
             embeddingDim: data[k].embeddingDim ?? undefined,
+            maxTokens: data[k].maxTokens ?? undefined,
           },
         }))
         setSaved((s) => ({ ...s, [k]: { supportsVision: data[k].supportsVision || false, supportsThinking: data[k].supportsThinking || false } }))
@@ -132,7 +135,7 @@ export default function AIConfigPanel() {
       const f = form[key]
       const result = (await adminApi(`/ai-config/${key}`, {
         method: 'PUT',
-        body: { provider: f.provider, baseUrl: f.baseUrl, apiKey: f.apiKey, model: f.model, embeddingDim: f.embeddingDim },
+        body: { provider: f.provider, baseUrl: f.baseUrl, apiKey: f.apiKey, model: f.model, embeddingDim: f.embeddingDim, maxTokens: f.maxTokens },
       })) as SaveResponse
       setSaved((s) => ({
         ...s,
@@ -266,6 +269,22 @@ export default function AIConfigPanel() {
             </div>
           )}
         </div>
+
+        {key === 'bot' && (
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-medium text-muted-foreground">Max Tokens</label>
+            <input
+              type="number"
+              className="w-full rounded-md border border-border bg-card px-3 py-2 text-[13px] text-foreground font-sans outline-none transition-colors focus:border-ring"
+              placeholder="512"
+              min={1}
+              max={128000}
+              value={f.maxTokens ?? ''}
+              onChange={(e) => setFormField(key, { maxTokens: e.target.value ? Number(e.target.value) : undefined })}
+            />
+            <p className="m-0 text-[11px] text-muted-foreground">每次回复的最大 token 数。留空则使用默认值 512。</p>
+          </div>
+        )}
 
         {key === 'embedding' && (
           <div className="flex flex-col gap-1">
