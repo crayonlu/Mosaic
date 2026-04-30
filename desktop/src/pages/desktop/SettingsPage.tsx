@@ -1,5 +1,6 @@
 import { AppSettings } from '@/components/settings/AppSettings'
 import { BotSettings } from '@/components/settings/BotSettings'
+import { MemoryStatusPanel } from '@/components/settings/MemoryStatusPanel'
 import { ServerAIConfigSettings } from '@/components/settings/ServerAIConfigSettings'
 import { StorageSettings } from '@/components/settings/StorageSettings'
 import { SyncStatusDisplay } from '@/components/settings/SyncStatus'
@@ -15,6 +16,7 @@ export default function SettingsPage() {
       <StorageSettings />
       <SystemSettings />
       <ServerAIConfigSettings />
+      <MemoryStatusPanel />
       <BotSettings />
     </div>
   )

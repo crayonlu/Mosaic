@@ -178,6 +178,7 @@ async fn main() -> anyhow::Result<()> {
                     .configure(routes::configure_resource_routes)
                     .configure(routes::configure_stats_routes)
                     .configure(routes::configure_bot_routes)
+                    .configure(routes::configure_memory_routes)
                     .configure(routes::configure_sync_routes),
             )
             .service(

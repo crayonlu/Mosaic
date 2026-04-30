@@ -1,9 +1,9 @@
 use crate::error::AppError;
 use crate::models::Resource;
 use crate::models::{
-    Bot, BotMemoryContext, BotReplyResponse, BotResponse, BotSummary, BotThreadMessage,
-    BotThreadResponse, CreateBotRequest, Memo, ReorderBotsRequest, ReplyToBotRequest,
-    UpdateBotRequest,
+    Bot, BotMemoryContext, BotMemoryStats, BotReplyResponse, BotResponse, BotSummary,
+    BotThreadMessage, BotThreadResponse, CreateBotRequest, Memo, ReorderBotsRequest,
+    ReplyToBotRequest, UpdateBotRequest,
 };
 use crate::services::{BotMemoryContextService, ServerAiConfigService};
 use crate::storage::traits::Storage;
@@ -13,6 +13,23 @@ use serde_json::json;
 use sqlx::PgPool;
 use std::sync::Arc;
 use uuid::Uuid;
+
+#[derive(sqlx::FromRow)]
+struct BotWithStatsRow {
+    id: Uuid,
+    name: String,
+    avatar_url: Option<String>,
+    description: String,
+    tags: serde_json::Value,
+    auto_reply: bool,
+    sort_order: i32,
+    model: Option<String>,
+    ai_config: Option<serde_json::Value>,
+    created_at: i64,
+    updated_at: i64,
+    total_contexts_built: i64,
+    last_context_at: Option<i64>,
+}
 
 pub struct AiConfig {
     pub provider: String,
@@ -71,16 +88,52 @@ impl BotService {
         let user_uuid = Uuid::parse_str(user_id)
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
 
-        let bots = sqlx::query_as::<_, Bot>(
-            "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, model, ai_config, created_at, updated_at
-             FROM bots WHERE user_id = $1 AND is_deleted = FALSE ORDER BY sort_order ASC, created_at ASC",
+        let rows = sqlx::query_as::<_, BotWithStatsRow>(
+            r#"WITH memory_stats AS (
+                SELECT bot_id,
+                    COUNT(*) AS total_contexts_built,
+                    MAX(created_at) AS last_context_at
+                FROM bot_memory_debug_logs
+                WHERE user_id = $1
+                GROUP BY bot_id
+            )
+            SELECT b.id, b.name, b.avatar_url, b.description, b.tags,
+                b.auto_reply, b.sort_order, b.model, b.ai_config, b.created_at, b.updated_at,
+                COALESCE(ms.total_contexts_built, 0) AS total_contexts_built,
+                ms.last_context_at
+            FROM bots b
+            LEFT JOIN memory_stats ms ON ms.bot_id = b.id
+            WHERE b.user_id = $1 AND b.is_deleted = FALSE
+            ORDER BY b.sort_order ASC, b.created_at ASC"#,
         )
         .bind(user_uuid)
         .fetch_all(&self.pool)
         .await
         .map_err(AppError::Database)?;
 
-        Ok(bots.into_iter().map(BotResponse::from_bot).collect())
+        Ok(rows
+            .into_iter()
+            .map(|row| {
+                let tags: Vec<String> = serde_json::from_value(row.tags).unwrap_or_default();
+                BotResponse {
+                    id: row.id,
+                    name: row.name,
+                    avatar_url: row.avatar_url,
+                    description: row.description,
+                    tags,
+                    auto_reply: row.auto_reply,
+                    sort_order: row.sort_order,
+                    model: row.model,
+                    ai_config: row.ai_config,
+                    created_at: row.created_at,
+                    updated_at: row.updated_at,
+                    memory_stats: Some(BotMemoryStats {
+                        total_contexts_built: row.total_contexts_built,
+                        last_context_at: row.last_context_at,
+                    }),
+                }
+            })
+            .collect())
     }
 
     pub async fn get_bot(&self, user_id: &str, bot_id: Uuid) -> Result<BotResponse, AppError> {

@@ -1,6 +1,7 @@
 export * from './useAuth'
 export * from './useBots'
 export * from './useDiaries'
+export * from './useMemory'
 export * from './useMemos'
 export * from './useResources'
 export * from './useStats'

@@ -302,11 +302,20 @@ pub async fn backfill_memory(
     embedding_service: web::Data<MemoryEmbeddingService>,
     episode_service: web::Data<EpisodeService>,
     profile_service: web::Data<ProfileMemoryService>,
+    activity_log: web::Data<ActivityLog>,
 ) -> HttpResponse {
     let pool_ref = pool.get_ref().clone();
     let embedding = embedding_service.get_ref().clone();
     let episode = episode_service.get_ref().clone();
     let profile = profile_service.get_ref().clone();
+    let log_clone = activity_log.clone();
+
+    activity_log.record_info(
+        "backfill_memory_started",
+        "system",
+        None,
+        "Memory backfill started".to_string(),
+    );
 
     tokio::spawn(async move {
         log::info!("[Backfill] Starting memory backfill");
@@ -381,6 +390,17 @@ pub async fn backfill_memory(
             success,
             failed,
             user_ids.len()
+        );
+        log_clone.record_info(
+            "backfill_memory_completed",
+            "system",
+            None,
+            format!(
+                "Memory backfill complete: {} indexed, {} failed, {} users",
+                success,
+                failed,
+                user_ids.len()
+            ),
         );
     });
 
