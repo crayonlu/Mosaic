@@ -1,4 +1,5 @@
 pub mod ai_client;
+pub mod ai_diary_service;
 pub mod app_settings_service;
 pub mod auth_service;
 pub mod bot_memory_context_service;
@@ -19,6 +20,7 @@ pub mod timeline_memory_service;
 pub mod video_processor;
 
 pub use ai_client::AiClient;
+pub use ai_diary_service::AiDiaryService;
 pub use app_settings_service::AppSettingsService;
 pub use auth_service::AuthService;
 pub use bot_memory_context_service::BotMemoryContextService;

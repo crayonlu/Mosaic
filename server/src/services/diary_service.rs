@@ -5,6 +5,7 @@ use crate::models::{
     UpdateDiaryRequest,
 };
 use chrono::{NaiveDate, Utc};
+use serde_json::json;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -35,7 +36,9 @@ impl DiaryService {
         let now = Utc::now().timestamp_millis();
 
         let existing: Option<Diary> = sqlx::query_as(
-            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at
+            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id,
+                    generation_source, auto_generation_locked, generated_from_memo_ids,
+                    last_auto_generated_at, created_at, updated_at
              FROM diaries WHERE date = $1 AND user_id = $2",
         )
         .bind(req.date)
@@ -57,6 +60,8 @@ impl DiaryService {
                  mood_key = $2,
                  mood_score = $3,
                  cover_image_id = $4,
+                 generation_source = 'manual',
+                 auto_generation_locked = true,
                  updated_at = $5
                  WHERE date = $6 AND user_id = $7
                  RETURNING *",
@@ -72,8 +77,12 @@ impl DiaryService {
             .await?
         } else {
             sqlx::query_as::<_, Diary>(
-                "INSERT INTO diaries (date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                "INSERT INTO diaries (
+                    date, user_id, summary, mood_key, mood_score, cover_image_id,
+                    generation_source, auto_generation_locked, generated_from_memo_ids,
+                    last_auto_generated_at, created_at, updated_at
+                 )
+                 VALUES ($1, $2, $3, $4, $5, $6, 'manual', true, $7, NULL, $8, $9)
                  RETURNING *",
             )
             .bind(req.date)
@@ -82,6 +91,7 @@ impl DiaryService {
             .bind(&req.mood_key)
             .bind(req.mood_score)
             .bind(req.cover_image_id)
+            .bind(json!([]))
             .bind(now)
             .bind(now)
             .fetch_one(&self.pool)
@@ -106,7 +116,9 @@ impl DiaryService {
     ) -> Result<DiaryResponse, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let diary = sqlx::query_as::<_, Diary>(
-            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at
+            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id,
+                    generation_source, auto_generation_locked, generated_from_memo_ids,
+                    last_auto_generated_at, created_at, updated_at
              FROM diaries WHERE date = $1 AND user_id = $2",
         )
         .bind(date)
@@ -122,7 +134,9 @@ impl DiaryService {
     pub async fn list_diaries(&self, user_id: &str) -> Result<Vec<DiaryResponse>, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let diaries = sqlx::query_as::<_, Diary>(
-            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at
+            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id,
+                    generation_source, auto_generation_locked, generated_from_memo_ids,
+                    last_auto_generated_at, created_at, updated_at
              FROM diaries WHERE user_id = $1 ORDER BY date DESC",
         )
         .bind(user_uuid)
@@ -144,7 +158,9 @@ impl DiaryService {
         let offset = (page - 1) * page_size;
 
         let diaries = sqlx::query_as::<_, Diary>(
-            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at
+            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id,
+                    generation_source, auto_generation_locked, generated_from_memo_ids,
+                    last_auto_generated_at, created_at, updated_at
              FROM diaries
              WHERE user_id = $1
              AND ($2::date IS NULL OR date >= $2)
@@ -180,7 +196,9 @@ impl DiaryService {
         let user_uuid = Uuid::parse_str(user_id)?;
 
         let diary = match sqlx::query_as::<_, Diary>(
-            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id, created_at, updated_at
+            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id,
+                    generation_source, auto_generation_locked, generated_from_memo_ids,
+                    last_auto_generated_at, created_at, updated_at
              FROM diaries WHERE date = $1 AND user_id = $2",
         )
         .bind(date)
@@ -214,6 +232,11 @@ impl DiaryService {
             mood_key: diary.mood_key,
             mood_score: diary.mood_score,
             cover_image_id: diary.cover_image_id,
+            generation_source: diary.generation_source,
+            auto_generation_locked: diary.auto_generation_locked,
+            generated_from_memo_ids: serde_json::from_value(diary.generated_from_memo_ids)
+                .unwrap_or_default(),
+            last_auto_generated_at: diary.last_auto_generated_at,
             created_at: diary.created_at,
             updated_at: diary.updated_at,
             memos: memo_responses,
@@ -289,12 +312,14 @@ impl DiaryService {
         let now = Utc::now().timestamp_millis();
 
         let diary = sqlx::query_as::<_, Diary>(
-            "UPDATE diaries SET 
+            "UPDATE diaries SET
              updated_at = $1,
              summary = COALESCE($2, summary),
              mood_key = COALESCE($3, mood_key),
              mood_score = COALESCE($4, mood_score),
-             cover_image_id = CASE WHEN $5 THEN $6 ELSE cover_image_id END
+             cover_image_id = CASE WHEN $5 THEN $6 ELSE cover_image_id END,
+             generation_source = 'manual',
+             auto_generation_locked = true
              WHERE date = $7 AND user_id = $8
              RETURNING *",
         )
@@ -323,7 +348,7 @@ impl DiaryService {
         let now = Utc::now().timestamp_millis();
 
         let diary = sqlx::query_as::<_, Diary>(
-            "UPDATE diaries SET summary = $1, updated_at = $2
+            "UPDATE diaries SET summary = $1, updated_at = $2, generation_source = 'manual', auto_generation_locked = true
              WHERE date = $3 AND user_id = $4
              RETURNING *",
         )
@@ -349,7 +374,7 @@ impl DiaryService {
         let now = Utc::now().timestamp_millis();
 
         let diary = sqlx::query_as::<_, Diary>(
-            "UPDATE diaries SET mood_key = $1, mood_score = $2, updated_at = $3
+            "UPDATE diaries SET mood_key = $1, mood_score = $2, updated_at = $3, generation_source = 'manual', auto_generation_locked = true
              WHERE date = $4 AND user_id = $5
              RETURNING *",
         )

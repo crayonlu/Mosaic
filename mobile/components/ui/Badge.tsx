@@ -27,6 +27,8 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
 
   const getBorderColor = () => {
     switch (variant) {
+      case 'solid':
+        return 'transparent'
       case 'outline':
         return theme.borderStrong
       case 'soft':
@@ -82,7 +84,7 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
           {
             backgroundColor: getBackgroundColor(),
             borderColor: getBorderColor(),
-            borderWidth: variant === 'outline' || variant === 'soft' ? 1 : 0,
+            borderWidth: 1,
             paddingVertical: getPaddingVertical(),
             paddingHorizontal: getPaddingHorizontal(),
             borderRadius: theme.radius.pill,

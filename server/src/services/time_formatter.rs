@@ -1,4 +1,5 @@
-use chrono::{Datelike, FixedOffset, Local, NaiveDate, NaiveDateTime, Weekday};
+use chrono::{DateTime, Datelike, NaiveDate, Utc, Weekday};
+use chrono_tz::Tz;
 
 const WEEKDATE_FULL: [&str; 7] = [
     "星期一",
@@ -10,8 +11,8 @@ const WEEKDATE_FULL: [&str; 7] = [
     "星期日",
 ];
 
-pub fn now_formatted() -> String {
-    let now = Local::now();
+pub fn now_formatted(tz: Tz) -> String {
+    let now = Utc::now().with_timezone(&tz);
     format!(
         "{}年{}月{}日 {} {}",
         now.year(),
@@ -22,8 +23,8 @@ pub fn now_formatted() -> String {
     )
 }
 
-pub fn relative_time(ts_ms: i64) -> String {
-    let now = Local::now();
+pub fn relative_time(ts_ms: i64, tz: Tz) -> String {
+    let now = Utc::now().with_timezone(&tz);
     let now_ms = now.timestamp_millis();
     let diff_ms = (now_ms - ts_ms).max(0);
 
@@ -44,19 +45,13 @@ pub fn relative_time(ts_ms: i64) -> String {
         return format!("{}天前", diff_days);
     }
 
-    let tz = timezone_offset();
     let ts_secs = ts_ms / 1000;
-    let memo_dt = NaiveDateTime::from_timestamp_opt(ts_secs, ((ts_ms % 1000) * 1_000_000) as u32)
-        .and_then(|dt| dt.and_local_timezone(tz).earliest())
-        .unwrap_or_else(|| Local::now().into());
-
-    let memo_date = memo_dt.date_naive();
+    let memo_date = DateTime::from_timestamp(ts_secs, 0)
+        .map(|dt| dt.with_timezone(&tz).date_naive())
+        .unwrap_or_else(|| now.date_naive());
     let today = now.date_naive();
 
     if memo_date.year() == today.year() {
-        if memo_date.month() == today.month() {
-            return format!("{}月{}日", memo_date.month(), memo_date.day());
-        }
         return format!("{}月{}日", memo_date.month(), memo_date.day());
     }
 
@@ -68,24 +63,28 @@ pub fn relative_time(ts_ms: i64) -> String {
     )
 }
 
-pub fn absolute_date(ts_ms: i64) -> String {
-    let tz = timezone_offset();
+pub fn absolute_date(ts_ms: i64, tz: Tz) -> String {
     let ts_secs = ts_ms / 1000;
-    NaiveDateTime::from_timestamp_opt(ts_secs, ((ts_ms % 1000) * 1_000_000) as u32)
-        .and_then(|dt| dt.and_local_timezone(tz).earliest())
-        .map(|dt| format!("{}月{}日 {}", dt.month(), dt.day(), dt.format("%H:%M")))
+    DateTime::from_timestamp(ts_secs, 0)
+        .map(|dt| {
+            let local = dt.with_timezone(&tz);
+            format!(
+                "{}月{}日 {}",
+                local.month(),
+                local.day(),
+                local.format("%H:%M")
+            )
+        })
         .unwrap_or_default()
 }
 
-pub fn date_label(ts_ms: i64) -> String {
-    let tz = timezone_offset();
+pub fn date_label(ts_ms: i64, tz: Tz) -> String {
+    let now = Utc::now().with_timezone(&tz);
+    let today = now.date_naive();
     let ts_secs = ts_ms / 1000;
-    let memo_dt = NaiveDateTime::from_timestamp_opt(ts_secs, ((ts_ms % 1000) * 1_000_000) as u32)
-        .and_then(|dt| dt.and_local_timezone(tz).earliest())
-        .unwrap_or_else(|| Local::now().into());
-
-    let memo_date = memo_dt.date_naive();
-    let today = Local::now().date_naive();
+    let memo_date = DateTime::from_timestamp(ts_secs, 0)
+        .map(|dt| dt.with_timezone(&tz).date_naive())
+        .unwrap_or(today);
     let diff_days = (today - memo_date).num_days();
 
     if diff_days == 0 {
@@ -99,13 +98,11 @@ pub fn date_label(ts_ms: i64) -> String {
     }
 }
 
-pub fn date_to_naive(ts_ms: i64) -> NaiveDate {
-    let tz = timezone_offset();
+pub fn date_to_naive(ts_ms: i64, tz: Tz) -> NaiveDate {
     let ts_secs = ts_ms / 1000;
-    NaiveDateTime::from_timestamp_opt(ts_secs, ((ts_ms % 1000) * 1_000_000) as u32)
-        .and_then(|dt| dt.and_local_timezone(tz).earliest())
-        .map(|dt| dt.date_naive())
-        .unwrap_or_else(|| Local::now().date_naive())
+    DateTime::from_timestamp(ts_secs, 0)
+        .map(|dt| dt.with_timezone(&tz).date_naive())
+        .unwrap_or_else(|| Utc::now().with_timezone(&tz).date_naive())
 }
 
 fn weekday_index(w: Weekday) -> usize {
@@ -120,7 +117,10 @@ fn weekday_index(w: Weekday) -> usize {
     }
 }
 
-fn timezone_offset() -> FixedOffset {
-    let local = Local::now();
-    *local.offset()
+// Keep for callers that don't have access to AppSettingsService
+pub fn tz_from_env() -> Tz {
+    std::env::var("APP_TIMEZONE")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(chrono_tz::Asia::Shanghai)
 }

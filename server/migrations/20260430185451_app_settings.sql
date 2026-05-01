@@ -6,5 +6,9 @@ CREATE TABLE IF NOT EXISTS app_settings (
 
 INSERT INTO app_settings (key, value, updated_at) VALUES
     ('auto_tag_enabled', 'true', EXTRACT(EPOCH FROM NOW())::BIGINT * 1000),
-    ('auto_summary_enabled', 'false', EXTRACT(EPOCH FROM NOW())::BIGINT * 1000)
+    ('auto_summary_enabled', 'false', EXTRACT(EPOCH FROM NOW())::BIGINT * 1000),
+    ('auto_diary_enabled', 'true', EXTRACT(EPOCH FROM NOW())::BIGINT * 1000),
+    ('auto_diary_min_memos', '2', EXTRACT(EPOCH FROM NOW())::BIGINT * 1000),
+    ('auto_diary_min_chars', '150', EXTRACT(EPOCH FROM NOW())::BIGINT * 1000),
+    ('app_timezone', 'Asia/Shanghai', EXTRACT(EPOCH FROM NOW())::BIGINT * 1000)
 ON CONFLICT DO NOTHING;

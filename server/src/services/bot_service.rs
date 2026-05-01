@@ -6,9 +6,10 @@ use crate::models::{
     ReplyToBotRequest, UpdateBotRequest,
 };
 use crate::services::ai_client::{AiClient, AiConfig, AiImageInput, AiReply};
-use crate::services::{BotMemoryContextService, ServerAiConfigService};
+use crate::services::{AppSettingsService, BotMemoryContextService, ServerAiConfigService};
 use crate::storage::traits::Storage;
 use chrono::Utc;
+use chrono_tz::Tz;
 use serde_json::json;
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -37,6 +38,7 @@ pub struct BotService {
     storage: Arc<dyn Storage>,
     memory_context_service: Option<BotMemoryContextService>,
     server_ai_config_service: Option<ServerAiConfigService>,
+    app_settings_service: Option<AppSettingsService>,
     ai_client: AiClient,
 }
 
@@ -47,6 +49,7 @@ impl BotService {
             storage,
             memory_context_service: None,
             server_ai_config_service: None,
+            app_settings_service: None,
             ai_client: AiClient::new(),
         }
     }
@@ -64,6 +67,11 @@ impl BotService {
         server_ai_config_service: ServerAiConfigService,
     ) -> Self {
         self.server_ai_config_service = Some(server_ai_config_service);
+        self
+    }
+
+    pub fn with_app_settings_service(mut self, app_settings_service: AppSettingsService) -> Self {
+        self.app_settings_service = Some(app_settings_service);
         self
     }
 
@@ -435,6 +443,11 @@ impl BotService {
                 None
             };
 
+        let tz: Tz = match &self.app_settings_service {
+            Some(svc) => svc.get_tz().await,
+            None => chrono_tz::Asia::Shanghai,
+        };
+
         let pool = self.pool.clone();
         let memo_content = memo_content.clone();
         let ai_config = std::sync::Arc::new(ai_config);
@@ -471,6 +484,7 @@ impl BotService {
                         &memo_images,
                         bot.model.as_deref(),
                         &ai_client,
+                        tz,
                     )
                     .await
                     {
@@ -599,6 +613,11 @@ impl BotService {
             None
         };
 
+        let tz: Tz = match &self.app_settings_service {
+            Some(svc) => svc.get_tz().await,
+            None => chrono_tz::Asia::Shanghai,
+        };
+
         let reply = call_ai_for_thread_reply(
             &ai_config,
             &parent.bot_name,
@@ -610,6 +629,7 @@ impl BotService {
             &question_images,
             parent.bot_model.as_deref(),
             &self.ai_client,
+            tz,
         )
         .await
         .map_err(|e| AppError::Internal(e.to_string()))?;
@@ -1000,14 +1020,18 @@ async fn call_ai_for_thread_reply(
     images: &[AiImageInput],
     bot_model: Option<&str>,
     ai_client: &AiClient,
+    tz: Tz,
 ) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
-    let current_time = Utc::now().format("%Y-%m-%d %H:%M").to_string();
+    let current_time = Utc::now()
+        .with_timezone(&tz)
+        .format("%Y-%m-%d %H:%M")
+        .to_string();
     let system_prompt = format!(
         "---IDENTITY START---\nYou are {}\n{}\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: {}\nOngoing conversation anchored to the memo below\nStay in that context\n---CONTEXT END---\n\n---REPLY RULES START---\nRespond naturally as {}\nUse CHINESE to reply\n---REPLY RULES END---",
         bot_name, bot_description, current_time, bot_name
     );
 
-    let memory_prefix = build_memory_prefix(memory_context);
+    let memory_prefix = build_memory_prefix(memory_context, tz);
     let first_msg = if memory_prefix.is_empty() {
         format!("---MEMO START---\n{}\n---MEMO END---", memo_content)
     } else {
@@ -1043,8 +1067,12 @@ async fn call_ai_for_reply(
     images: &[AiImageInput],
     bot_model: Option<&str>,
     ai_client: &AiClient,
+    tz: Tz,
 ) -> Result<AiReply, Box<dyn std::error::Error + Send + Sync>> {
-    let current_time = Utc::now().format("%Y-%m-%d %H:%M").to_string();
+    let current_time = Utc::now()
+        .with_timezone(&tz)
+        .format("%Y-%m-%d %H:%M")
+        .to_string();
 
     let system_prompt = format!(
         "---IDENTITY START---\nYou are {}\n{}\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: {}\n---CONTEXT END---\n\n---THINKING GUIDE START---\nThink fully as yourself\nWhat do I feel reading this memo\nDoes anything from those memories genuinely surface  write only if yes  skip if nothing\nWhat do I want to say  how would I naturally say it\n---THINKING GUIDE END---\n\n---REPLY RULES START---\nBring up recalled memories only if they genuinely surfaced  say nothing about them otherwise\nUse CHINESE to reply\nConcise and genuine  100-200 characters\n---REPLY RULES END---",
@@ -1057,7 +1085,7 @@ async fn call_ai_for_reply(
     } else {
         empty_images
     };
-    let memory_prefix = build_memory_prefix(memory_context);
+    let memory_prefix = build_memory_prefix(memory_context, tz);
     let user_content = if memory_prefix.is_empty() {
         format!("---MEMO START---\n{}\n---MEMO END---", memo_content)
     } else {
@@ -1089,7 +1117,7 @@ async fn call_ai_for_reply(
         .await
 }
 
-fn build_memory_prefix(memory_context: Option<&BotMemoryContext>) -> String {
+fn build_memory_prefix(memory_context: Option<&BotMemoryContext>, tz: Tz) -> String {
     let Some(context) = memory_context else {
         return String::new();
     };
@@ -1099,11 +1127,17 @@ fn build_memory_prefix(memory_context: Option<&BotMemoryContext>) -> String {
         return String::new();
     }
 
-    let now_ms = Utc::now().timestamp_millis();
+    let today = Utc::now().with_timezone(&tz).date_naive();
     let items: Vec<String> = memos
         .iter()
         .map(|m| {
-            let diff_days = (now_ms - m.created_at) / (1000 * 60 * 60 * 24);
+            let memo_date = {
+                let ts_secs = m.created_at / 1000;
+                chrono::DateTime::from_timestamp(ts_secs, 0)
+                    .map(|dt| dt.with_timezone(&tz).date_naive())
+                    .unwrap_or(today)
+            };
+            let diff_days = (today - memo_date).num_days();
             let label = match diff_days {
                 0 => "today".to_string(),
                 1 => "yesterday".to_string(),
