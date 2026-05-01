@@ -138,6 +138,7 @@ export function DraggableImageGrid({
     <View style={styles.container} onLayout={handleGridLayout}>
       {draggable ? (
         <DraggableGrid
+          key={resolvedItems.length <= 2 ? Math.max(1, resolvedItems.length) : 3}
           numColumns={resolvedItems.length <= 2 ? Math.max(1, resolvedItems.length) : 3}
           data={gridData}
           renderItem={(item: GridItem, order: number) => renderGridItem(item, order, false)}
