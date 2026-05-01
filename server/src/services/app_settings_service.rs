@@ -1,4 +1,5 @@
 use crate::error::AppError;
+use chrono_tz::Tz;
 use sqlx::PgPool;
 
 #[derive(Clone)]
@@ -27,6 +28,21 @@ impl AppSettingsService {
         }
     }
 
+    pub async fn get_i32(&self, key: &str, default: i32) -> i32 {
+        let result: Option<String> =
+            sqlx::query_scalar("SELECT value FROM app_settings WHERE key = $1")
+                .bind(key)
+                .fetch_optional(&self.pool)
+                .await
+                .ok()
+                .flatten();
+
+        result
+            .as_deref()
+            .and_then(|value| value.parse::<i32>().ok())
+            .unwrap_or(default)
+    }
+
     pub async fn get_all(&self) -> Result<Vec<(String, String)>, AppError> {
         let rows: Vec<(String, String)> =
             sqlx::query_as("SELECT key, value FROM app_settings ORDER BY key ASC")
@@ -34,6 +50,22 @@ impl AppSettingsService {
                 .await
                 .map_err(AppError::Database)?;
         Ok(rows)
+    }
+
+    pub async fn get_tz(&self) -> Tz {
+        let raw = self.get_str("app_timezone", "Asia/Shanghai").await;
+        raw.parse::<Tz>().unwrap_or(chrono_tz::Asia::Shanghai)
+    }
+
+    pub async fn get_str(&self, key: &str, default: &str) -> String {
+        let result: Option<String> =
+            sqlx::query_scalar("SELECT value FROM app_settings WHERE key = $1")
+                .bind(key)
+                .fetch_optional(&self.pool)
+                .await
+                .ok()
+                .flatten();
+        result.unwrap_or_else(|| default.to_string())
     }
 
     pub async fn set(&self, key: &str, value: &str) -> Result<(), AppError> {

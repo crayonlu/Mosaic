@@ -6,6 +6,7 @@ import { MediaGridTile } from './media/MediaGridTile'
 import { MediaPreviewModal } from './media/MediaPreviewModal'
 import { getMediaTileSize, resolveMediaSource } from './media/mediaPreviewUtils'
 import type { MediaGridItem } from './media/types'
+import { useMediaPreviewStore } from '@/stores/mediaPreviewStore'
 
 export type { MediaGridItem } from './media/types'
 
@@ -48,9 +49,18 @@ export function DraggableImageGrid({
   )
 
   const mediaTileSize = getMediaTileSize(resolvedItems.length, gridWidth)
+  const hasViewedOriginalImage = useMediaPreviewStore(state => state.hasViewedOriginalImage)
+
   const resolvedMediaSources = useMemo(
-    () => resolvedItems.map(item => resolveMediaSource(item, authHeaders)),
-    [authHeaders, resolvedItems]
+    () =>
+      resolvedItems.map(item => {
+        const source = resolveMediaSource(item, authHeaders)
+        if (item.type === 'image' && hasViewedOriginalImage(source.previewUri)) {
+          return { ...source, gridUri: source.previewUri, gridHeaders: source.previewHeaders }
+        }
+        return source
+      }),
+    [authHeaders, resolvedItems, hasViewedOriginalImage]
   )
   const showRemoveButton = Boolean(onItemsChange)
 

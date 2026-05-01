@@ -2,7 +2,8 @@ use crate::config::Config;
 use crate::models::{Memo, ServerAiConfigPayload, ServerAiConfigResponse};
 use crate::services::{AppSettingsService, MemoryEmbeddingService, ServerAiConfigService};
 use actix_web::{web, HttpRequest, HttpResponse};
-use chrono::Datelike;
+use chrono::{Datelike, NaiveDate, TimeZone};
+use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
@@ -132,14 +133,37 @@ pub async fn health(
     })
 }
 
-pub async fn stats(pool: web::Data<PgPool>, _req: HttpRequest) -> HttpResponse {
-    let now = chrono::Utc::now();
-    let month_start = chrono::NaiveDate::from_ymd_opt(now.year(), now.month(), 1).unwrap();
-    let month_start_ts = month_start
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc()
-        .timestamp_millis();
+pub async fn stats(
+    pool: web::Data<PgPool>,
+    _req: HttpRequest,
+    app_settings_service: web::Data<AppSettingsService>,
+) -> HttpResponse {
+    let tz: Tz = app_settings_service.get_tz().await;
+    let now = chrono::Utc::now().with_timezone(&tz);
+    let month_start = NaiveDate::from_ymd_opt(now.year(), now.month(), 1).unwrap();
+    let month_start_ts = tz
+        .with_ymd_and_hms(
+            month_start.year(),
+            month_start.month(),
+            month_start.day(),
+            0,
+            0,
+            0,
+        )
+        .single()
+        .map(|dt| dt.timestamp_millis())
+        .unwrap_or(0);
+    let (next_year, next_month) = if now.month() == 12 {
+        (now.year() + 1, 1u32)
+    } else {
+        (now.year(), now.month() + 1)
+    };
+    let month_end_ts = tz
+        .with_ymd_and_hms(next_year, next_month, 1, 0, 0, 0)
+        .single()
+        .map(|dt| dt.timestamp_millis())
+        .unwrap_or(i64::MAX);
+    let tz_name = format!("{}", tz);
 
     // Single combined query for all stats (global, not user-scoped)
     #[derive(sqlx::FromRow)]
@@ -161,18 +185,20 @@ pub async fn stats(pool: web::Data<PgPool>, _req: HttpRequest) -> HttpResponse {
         r#"
         SELECT
           (SELECT COUNT(*) FROM memos WHERE is_deleted = FALSE) AS memos_total,
-          (SELECT COUNT(*) FROM memos WHERE is_deleted = FALSE AND created_at >= $1) AS memos_month,
+          (SELECT COUNT(*) FROM memos WHERE is_deleted = FALSE AND created_at >= $1 AND created_at < $2) AS memos_month,
           (SELECT COUNT(*) FROM diaries WHERE is_deleted = FALSE) AS diaries_total,
-          (SELECT COUNT(*) FROM diaries WHERE is_deleted = FALSE AND created_at >= $1) AS diaries_month,
+          (SELECT COUNT(*) FROM diaries WHERE is_deleted = FALSE AND created_at >= $1 AND created_at < $2) AS diaries_month,
           (SELECT COUNT(*) FROM resources WHERE is_deleted = FALSE) AS resources_total,
           (SELECT COALESCE(SUM(file_size), 0)::BIGINT FROM resources WHERE is_deleted = FALSE) AS resources_size,
           (SELECT COUNT(*) FROM bots WHERE is_deleted = FALSE) AS bots_total,
           (SELECT COUNT(*) FROM bots WHERE is_deleted = FALSE AND auto_reply = TRUE) AS bots_auto,
           (SELECT COUNT(*) FROM bot_replies) AS replies_total,
-          (SELECT COUNT(DISTINCT to_timestamp(created_at / 1000)::date) FROM memos WHERE is_deleted = FALSE AND created_at >= $1) AS active_days
+          (SELECT COUNT(DISTINCT (to_timestamp(created_at / 1000) AT TIME ZONE $3)::date) FROM memos WHERE is_deleted = FALSE AND created_at >= $1 AND created_at < $2) AS active_days
         "#,
     )
     .bind(month_start_ts)
+    .bind(month_end_ts)
+    .bind(&tz_name)
     .fetch_one(pool.get_ref())
     .await
     {
@@ -399,6 +425,10 @@ pub async fn backfill_memory(
 pub struct AppSettingsPayload {
     pub auto_tag_enabled: bool,
     pub auto_summary_enabled: bool,
+    pub auto_diary_enabled: bool,
+    pub auto_diary_min_memos: i32,
+    pub auto_diary_min_chars: i32,
+    pub app_timezone: String,
 }
 
 pub async fn get_settings(app_settings_service: web::Data<AppSettingsService>) -> HttpResponse {
@@ -408,9 +438,25 @@ pub async fn get_settings(app_settings_service: web::Data<AppSettingsService>) -
     let auto_summary = app_settings_service
         .get_bool("auto_summary_enabled", false)
         .await;
+    let auto_diary = app_settings_service
+        .get_bool("auto_diary_enabled", true)
+        .await;
+    let auto_diary_min_memos = app_settings_service
+        .get_i32("auto_diary_min_memos", 2)
+        .await;
+    let auto_diary_min_chars = app_settings_service
+        .get_i32("auto_diary_min_chars", 150)
+        .await;
+    let app_timezone = app_settings_service
+        .get_str("app_timezone", "Asia/Shanghai")
+        .await;
     HttpResponse::Ok().json(AppSettingsPayload {
         auto_tag_enabled: auto_tag,
         auto_summary_enabled: auto_summary,
+        auto_diary_enabled: auto_diary,
+        auto_diary_min_memos,
+        auto_diary_min_chars,
+        app_timezone,
     })
 }
 
@@ -428,6 +474,22 @@ pub async fn update_settings(
     } else {
         "false"
     };
+    let auto_diary_val = if payload.auto_diary_enabled {
+        "true"
+    } else {
+        "false"
+    };
+
+    if payload.auto_diary_min_memos < 1 || payload.auto_diary_min_chars < 1 {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "auto diary thresholds must be positive"
+        }));
+    }
+    if payload.app_timezone.parse::<Tz>().is_err() {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "invalid timezone: must be a valid IANA timezone name"
+        }));
+    }
 
     if let Err(e) = app_settings_service
         .set("auto_tag_enabled", auto_tag_val)
@@ -438,6 +500,40 @@ pub async fn update_settings(
     }
     if let Err(e) = app_settings_service
         .set("auto_summary_enabled", auto_summary_val)
+        .await
+    {
+        return HttpResponse::InternalServerError()
+            .json(serde_json::json!({ "error": e.to_string() }));
+    }
+    if let Err(e) = app_settings_service
+        .set("auto_diary_enabled", auto_diary_val)
+        .await
+    {
+        return HttpResponse::InternalServerError()
+            .json(serde_json::json!({ "error": e.to_string() }));
+    }
+    if let Err(e) = app_settings_service
+        .set(
+            "auto_diary_min_memos",
+            &payload.auto_diary_min_memos.to_string(),
+        )
+        .await
+    {
+        return HttpResponse::InternalServerError()
+            .json(serde_json::json!({ "error": e.to_string() }));
+    }
+    if let Err(e) = app_settings_service
+        .set(
+            "auto_diary_min_chars",
+            &payload.auto_diary_min_chars.to_string(),
+        )
+        .await
+    {
+        return HttpResponse::InternalServerError()
+            .json(serde_json::json!({ "error": e.to_string() }));
+    }
+    if let Err(e) = app_settings_service
+        .set("app_timezone", &payload.app_timezone)
         .await
     {
         return HttpResponse::InternalServerError()

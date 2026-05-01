@@ -4,9 +4,11 @@ use crate::models::{
     PaginatedResponse, Resource, TagResponse, UpdateMemoRequest,
 };
 use crate::services::{
-    AiClient, AppSettingsService, BotService, MemoryEmbeddingService, ServerAiConfigService,
+    AiClient, AiDiaryService, AppSettingsService, BotService, MemoryEmbeddingService,
+    ServerAiConfigService,
 };
-use chrono::Utc;
+use chrono::{Datelike, NaiveDate, TimeZone, Utc};
+use chrono_tz::Tz;
 use serde_json::json;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -19,6 +21,7 @@ pub struct MemoService {
     server_ai_config_service: Option<ServerAiConfigService>,
     ai_client: Option<AiClient>,
     app_settings_service: Option<AppSettingsService>,
+    ai_diary_service: Option<AiDiaryService>,
 }
 
 impl MemoService {
@@ -30,6 +33,7 @@ impl MemoService {
             server_ai_config_service: None,
             ai_client: None,
             app_settings_service: None,
+            ai_diary_service: None,
         }
     }
 
@@ -61,6 +65,11 @@ impl MemoService {
 
     pub fn with_app_settings_service(mut self, app_settings_service: AppSettingsService) -> Self {
         self.app_settings_service = Some(app_settings_service);
+        self
+    }
+
+    pub fn with_ai_diary_service(mut self, ai_diary_service: AiDiaryService) -> Self {
+        self.ai_diary_service = Some(ai_diary_service);
         self
     }
 
@@ -178,6 +187,16 @@ impl MemoService {
 
         self.spawn_memory_refresh(memo.clone());
 
+        if let Some(ai_diary_service) = &self.ai_diary_service {
+            if let Err(error) = ai_diary_service.queue_job_for_memo(&memo).await {
+                log::error!(
+                    "[MemoService] failed to queue AI diary job for memo {}: {}",
+                    memo.id,
+                    error
+                );
+            }
+        }
+
         Ok(MemoWithResources::from_memo(memo, resources))
     }
 
@@ -268,7 +287,10 @@ impl MemoService {
                 }
 
                 let memo_images = if let Some(bot_svc) = &bot_service {
-                    bot_svc.load_memo_images(user_id, memo_id, 4).await.unwrap_or_default()
+                    bot_svc
+                        .load_memo_images(user_id, memo_id, 4)
+                        .await
+                        .unwrap_or_default()
                 } else {
                     vec![]
                 };
@@ -326,7 +348,14 @@ impl MemoService {
                 }
 
                 if auto_summary && memo.ai_summary.is_none() {
-                    MemoService::auto_generate_summary(&pool, &config_svc, &client, &memo, &memo_images).await;
+                    MemoService::auto_generate_summary(
+                        &pool,
+                        &config_svc,
+                        &client,
+                        &memo,
+                        &memo_images,
+                    )
+                    .await;
                 }
 
                 // Trigger bot replies after tagging/summary complete so bots can see
@@ -417,12 +446,7 @@ impl MemoService {
         let user_message = AiClient::build_user_message(&prompt, vision_images, &config.provider);
 
         let reply = match ai_client
-            .send_ai_messages(
-                &ai_config,
-                String::new(),
-                vec![user_message],
-                None,
-            )
+            .send_ai_messages(&ai_config, String::new(), vec![user_message], None)
             .await
         {
             Ok(r) => r,
@@ -517,12 +541,7 @@ impl MemoService {
         let user_message = AiClient::build_user_message(&prompt, vision_images, &config.provider);
 
         let reply = match ai_client
-            .send_ai_messages(
-                &ai_config,
-                String::new(),
-                vec![user_message],
-                None,
-            )
+            .send_ai_messages(&ai_config, String::new(), vec![user_message], None)
             .await
         {
             Ok(r) => r,
@@ -760,12 +779,19 @@ impl MemoService {
     ) -> Result<Vec<MemoWithResources>, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
 
+        let tz: Tz = match &self.app_settings_service {
+            Some(svc) => svc.get_tz().await,
+            None => chrono_tz::Asia::Shanghai,
+        };
+        let (start_ms, end_ms) = date_str_to_ms_bounds(date, tz)?;
+
         let mut query = String::from(
             "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
              FROM memos
              WHERE user_id = $1
                 AND is_deleted = false
-                AND DATE(to_timestamp(created_at / 1000) AT TIME ZONE 'Asia/Shanghai') = $2::date",
+                AND created_at >= $2
+                AND created_at < $3",
         );
 
         if let Some(is_archived) = archived {
@@ -776,7 +802,8 @@ impl MemoService {
 
         let memos = sqlx::query_as::<_, Memo>(&query)
             .bind(user_uuid)
-            .bind(date)
+            .bind(start_ms)
+            .bind(end_ms)
             .fetch_all(&self.pool)
             .await?;
 
@@ -1023,19 +1050,27 @@ impl MemoService {
             }
         }
 
-        if start_date.is_some() {
-            conditions.push(format!(
-                "DATE(to_timestamp(created_at / 1000)) >= ${}::date",
-                param_count
-            ));
+        let tz: Tz = match &self.app_settings_service {
+            Some(svc) => svc.get_tz().await,
+            None => chrono_tz::Asia::Shanghai,
+        };
+
+        let start_ms: Option<i64> = start_date
+            .as_deref()
+            .map(|d| date_str_to_ms_bounds(d, tz).map(|(s, _)| s))
+            .transpose()?;
+        let end_ms: Option<i64> = end_date
+            .as_deref()
+            .map(|d| date_str_to_ms_bounds(d, tz).map(|(_, e)| e))
+            .transpose()?;
+
+        if start_ms.is_some() {
+            conditions.push(format!("created_at >= ${}", param_count));
             param_count += 1;
         }
 
-        if end_date.is_some() {
-            conditions.push(format!(
-                "DATE(to_timestamp(created_at / 1000)) <= ${}::date",
-                param_count
-            ));
+        if end_ms.is_some() {
+            conditions.push(format!("created_at < ${}", param_count));
             param_count += 1;
         }
 
@@ -1068,11 +1103,11 @@ impl MemoService {
                 count_builder = count_builder.bind(tag_filters);
             }
         }
-        if let Some(ref date) = start_date {
-            count_builder = count_builder.bind(date);
+        if let Some(ms) = start_ms {
+            count_builder = count_builder.bind(ms);
         }
-        if let Some(ref date) = end_date {
-            count_builder = count_builder.bind(date);
+        if let Some(ms) = end_ms {
+            count_builder = count_builder.bind(ms);
         }
 
         let total = count_builder.fetch_one(&self.pool).await?;
@@ -1096,11 +1131,11 @@ impl MemoService {
                 query_builder = query_builder.bind(tag_filters);
             }
         }
-        if let Some(ref date) = start_date {
-            query_builder = query_builder.bind(date);
+        if let Some(ms) = start_ms {
+            query_builder = query_builder.bind(ms);
         }
-        if let Some(ref date) = end_date {
-            query_builder = query_builder.bind(date);
+        if let Some(ms) = end_ms {
+            query_builder = query_builder.bind(ms);
         }
 
         query_builder = query_builder.bind(page_size as i64).bind(offset as i64);
@@ -1123,4 +1158,15 @@ impl MemoService {
             total_pages,
         })
     }
+}
+
+fn date_str_to_ms_bounds(date: &str, tz: Tz) -> Result<(i64, i64), AppError> {
+    let naive = NaiveDate::parse_from_str(date, "%Y-%m-%d")
+        .map_err(|_| AppError::InvalidInput(format!("invalid date: {}", date)))?;
+    let start = tz
+        .with_ymd_and_hms(naive.year(), naive.month(), naive.day(), 0, 0, 0)
+        .single()
+        .ok_or_else(|| AppError::InvalidInput(format!("ambiguous or invalid date: {}", date)))?;
+    let end = start + chrono::Duration::days(1);
+    Ok((start.timestamp_millis(), end.timestamp_millis()))
 }

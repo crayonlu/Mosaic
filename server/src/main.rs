@@ -16,8 +16,8 @@ use config::Config;
 use database::{create_pool, run_migrations};
 use middleware::{configure_cors, configure_logging, AuthMiddleware};
 use services::{
-    AiClient, AppSettingsService, AuthService, BotMemoryContextService, BotService, DiaryService,
-    HybridSearchService, MemoService, MemoryEmbeddingService, MemoryRetrievalService,
+    AiClient, AiDiaryService, AppSettingsService, AuthService, BotMemoryContextService, BotService,
+    DiaryService, HybridSearchService, MemoService, MemoryEmbeddingService, MemoryRetrievalService,
     ResourceService, ServerAiConfigService, StatsService, SyncService, TimelineMemoryService,
 };
 use storage::create_storage;
@@ -86,21 +86,33 @@ async fn main() -> anyhow::Result<()> {
 
     let app_settings_service = AppSettingsService::new(pool.clone());
     let ai_client = AiClient::new();
+    let ai_diary_service = AiDiaryService::new(
+        pool.clone(),
+        storage.clone(),
+        server_ai_config_service.clone(),
+        ai_client.clone(),
+        app_settings_service.clone(),
+    );
 
     let bot_service = BotService::new(pool.clone(), storage.clone())
         .with_memory_context_service(bot_memory_context_service)
-        .with_server_ai_config_service(server_ai_config_service.clone());
+        .with_server_ai_config_service(server_ai_config_service.clone())
+        .with_app_settings_service(app_settings_service.clone());
     let memo_service = MemoService::new(pool.clone())
         .with_memory_services(memory_embedding_service.clone())
         .with_bot_service(bot_service.clone())
         .with_server_ai_config_service(server_ai_config_service.clone())
         .with_ai_client(ai_client.clone())
-        .with_app_settings_service(app_settings_service.clone());
+        .with_app_settings_service(app_settings_service.clone())
+        .with_ai_diary_service(ai_diary_service.clone());
     let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone());
     let diary_service = DiaryService::new(pool.clone());
-    let stats_service = StatsService::new(pool.clone());
+    let stats_service =
+        StatsService::new(pool.clone()).with_app_settings_service(app_settings_service.clone());
     let sync_service = SyncService::new(pool.clone());
-    let hybrid_search_service = HybridSearchService::new(pool.clone());
+    let hybrid_search_service = HybridSearchService::new(pool.clone())
+        .with_app_settings_service(app_settings_service.clone());
+    ai_diary_service.spawn_job_sweeper();
     log::info!("[OK] Business services initialized");
 
     match auth_service

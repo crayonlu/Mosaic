@@ -6,6 +6,10 @@ import { useToast } from '../hooks/useToast'
 interface AutomationSettings {
   autoTagEnabled: boolean
   autoSummaryEnabled: boolean
+  autoDiaryEnabled: boolean
+  autoDiaryMinMemos: number
+  autoDiaryMinChars: number
+  appTimezone: string
 }
 
 export default function AutomationPanel() {
@@ -15,6 +19,10 @@ export default function AutomationPanel() {
   const [settings, setSettings] = useState<AutomationSettings>({
     autoTagEnabled: true,
     autoSummaryEnabled: false,
+    autoDiaryEnabled: true,
+    autoDiaryMinMemos: 2,
+    autoDiaryMinChars: 150,
+    appTimezone: 'Asia/Shanghai',
   })
 
   useEffect(() => {
@@ -69,6 +77,32 @@ export default function AutomationPanel() {
               checked={settings.autoSummaryEnabled}
               onChange={(v) => setSettings((s) => ({ ...s, autoSummaryEnabled: v }))}
             />
+            <ToggleRow
+              label="自动 AI 日记归档"
+              description="每天结束后自动为当天 Memo 生成日记并归档"
+              checked={settings.autoDiaryEnabled}
+              onChange={(v) => setSettings((s) => ({ ...s, autoDiaryEnabled: v }))}
+            />
+            <NumberRow
+              label="最少 Memo 数量"
+              description="达到这个数量后才会尝试自动生成日记"
+              value={settings.autoDiaryMinMemos}
+              onChange={(v) => setSettings((s) => ({ ...s, autoDiaryMinMemos: v }))}
+              min={1}
+            />
+            <NumberRow
+              label="最少总字数"
+              description="当天 Memo 总字数达到这个值后才会尝试自动生成日记"
+              value={settings.autoDiaryMinChars}
+              onChange={(v) => setSettings((s) => ({ ...s, autoDiaryMinChars: v }))}
+              min={1}
+            />
+            <TextRow
+              label="业务时区"
+              description="IANA 时区名称，用于日期分组与 Bot 时间（如 Asia/Shanghai）"
+              value={settings.appTimezone}
+              onChange={(v) => setSettings((s) => ({ ...s, appTimezone: v }))}
+            />
             <button
               className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors cursor-pointer hover:bg-primary/80 disabled:opacity-50"
               disabled={saving}
@@ -79,6 +113,63 @@ export default function AutomationPanel() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function NumberRow({
+  label,
+  description,
+  value,
+  onChange,
+  min,
+}: {
+  label: string
+  description: string
+  value: number
+  onChange: (v: number) => void
+  min?: number
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[13px] font-medium text-foreground">{label}</span>
+        <span className="text-[11px] text-muted-foreground">{description}</span>
+      </div>
+      <input
+        type="number"
+        min={min}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value) || min || 1)}
+        className="w-24 rounded-lg border border-border bg-background px-3 py-1.5 text-right text-[13px] text-foreground"
+      />
+    </div>
+  )
+}
+
+function TextRow({
+  label,
+  description,
+  value,
+  onChange,
+}: {
+  label: string
+  description: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[13px] font-medium text-foreground">{label}</span>
+        <span className="text-[11px] text-muted-foreground">{description}</span>
+      </div>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-44 rounded-lg border border-border bg-background px-3 py-1.5 text-right text-[13px] text-foreground"
+      />
     </div>
   )
 }

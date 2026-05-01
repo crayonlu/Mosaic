@@ -43,6 +43,7 @@ export default function SearchScreen() {
     isLoading,
     hasNextPage,
     isFetchingNextPage,
+    fetchNextPage,
     refetch,
   } = useSearchMemos(searchParams)
 
@@ -61,10 +62,10 @@ export default function SearchScreen() {
   }, [refetch])
 
   const handleLoadMore = useCallback(() => {
-    if (!isLoading && hasNextPage) {
-      // useInfiniteQuery handles fetchNextPage automatically
+    if (!isLoading && !isFetchingNextPage && hasNextPage) {
+      fetchNextPage()
     }
-  }, [isLoading, hasNextPage])
+  }, [isLoading, isFetchingNextPage, hasNextPage, fetchNextPage])
 
   const handleMemoPress = useCallback((memo: Memo) => {
     router.push({ pathname: '/memo/[id]', params: { id: memo.id } })

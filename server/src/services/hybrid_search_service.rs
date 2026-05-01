@@ -1,4 +1,7 @@
 use crate::error::AppError;
+use crate::services::AppSettingsService;
+use chrono::{Datelike, TimeZone};
+use chrono_tz::Tz;
 use pgvector::Vector;
 use sqlx::PgPool;
 use std::collections::HashMap;
@@ -19,6 +22,7 @@ pub struct HybridSearchResult {
 #[derive(Clone)]
 pub struct HybridSearchService {
     db: PgPool,
+    app_settings_service: Option<AppSettingsService>,
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -29,13 +33,21 @@ struct SemanticRow {
 
 impl HybridSearchService {
     pub fn new(db: PgPool) -> Self {
-        Self { db }
+        Self {
+            db,
+            app_settings_service: None,
+        }
+    }
+
+    pub fn with_app_settings_service(mut self, svc: AppSettingsService) -> Self {
+        self.app_settings_service = Some(svc);
+        self
     }
 
     fn build_filter_clauses(
         tags: &Option<Vec<String>>,
-        start_date: &Option<String>,
-        end_date: &Option<String>,
+        start_ms: &Option<i64>,
+        end_ms: &Option<i64>,
         is_archived: &Option<bool>,
         param_start: &mut usize,
         conditions: &mut Vec<String>,
@@ -52,20 +64,14 @@ impl HybridSearchService {
             }
         }
 
-        if start_date.is_some() {
+        if start_ms.is_some() {
             *param_start += 1;
-            conditions.push(format!(
-                "DATE(to_timestamp(created_at / 1000)) >= ${}::date",
-                *param_start
-            ));
+            conditions.push(format!("created_at >= ${}", *param_start));
         }
 
-        if end_date.is_some() {
+        if end_ms.is_some() {
             *param_start += 1;
-            conditions.push(format!(
-                "DATE(to_timestamp(created_at / 1000)) <= ${}::date",
-                *param_start
-            ));
+            conditions.push(format!("created_at < ${}", *param_start));
         }
     }
 
@@ -87,6 +93,20 @@ impl HybridSearchService {
             ));
         }
 
+        let tz: Tz = match &self.app_settings_service {
+            Some(svc) => svc.get_tz().await,
+            None => chrono_tz::Asia::Shanghai,
+        };
+
+        let start_ms: Option<i64> = start_date
+            .as_deref()
+            .map(|d| date_str_to_ms_bounds(d, tz).map(|(s, _)| s))
+            .transpose()?;
+        let end_ms: Option<i64> = end_date
+            .as_deref()
+            .map(|d| date_str_to_ms_bounds(d, tz).map(|(_, e)| e))
+            .transpose()?;
+
         let search_pattern = format!("%{}%", query);
 
         let keyword_rows = self
@@ -94,14 +114,14 @@ impl HybridSearchService {
                 user_id,
                 &search_pattern,
                 &tags,
-                &start_date,
-                &end_date,
+                &start_ms,
+                &end_ms,
                 &is_archived,
             )
             .await?;
 
         let semantic_scores = if let Some(ref emb) = embedding {
-            self.run_semantic_query(user_id, emb, &tags, &start_date, &end_date, &is_archived)
+            self.run_semantic_query(user_id, emb, &tags, &start_ms, &end_ms, &is_archived)
                 .await?
         } else {
             HashMap::new()
@@ -160,16 +180,16 @@ impl HybridSearchService {
         user_id: Uuid,
         search_pattern: &str,
         tags: &Option<Vec<String>>,
-        start_date: &Option<String>,
-        end_date: &Option<String>,
+        start_ms: &Option<i64>,
+        end_ms: &Option<i64>,
         is_archived: &Option<bool>,
     ) -> Result<Vec<HybridSearchResult>, AppError> {
         let mut conditions = vec!["(content ILIKE $2 OR tags::text ILIKE $2)".to_string()];
         let mut param_start = 3;
         Self::build_filter_clauses(
             tags,
-            start_date,
-            end_date,
+            start_ms,
+            end_ms,
             is_archived,
             &mut param_start,
             &mut conditions,
@@ -195,11 +215,11 @@ impl HybridSearchService {
                 q = q.bind(tag_filters);
             }
         }
-        if let Some(ref date) = start_date {
-            q = q.bind(date);
+        if let Some(ms) = start_ms {
+            q = q.bind(ms);
         }
-        if let Some(ref date) = end_date {
-            q = q.bind(date);
+        if let Some(ms) = end_ms {
+            q = q.bind(ms);
         }
 
         q.fetch_all(&self.db).await.map_err(AppError::Database)
@@ -210,16 +230,16 @@ impl HybridSearchService {
         user_id: Uuid,
         embedding: &Vec<f32>,
         tags: &Option<Vec<String>>,
-        start_date: &Option<String>,
-        end_date: &Option<String>,
+        start_ms: &Option<i64>,
+        end_ms: &Option<i64>,
         is_archived: &Option<bool>,
     ) -> Result<HashMap<Uuid, f64>, AppError> {
         let mut conditions = vec!["(1.0 - (me.embedding <=> $2::vector)) >= 0.4".to_string()];
         let mut param_start = 3;
         Self::build_filter_clauses(
             tags,
-            start_date,
-            end_date,
+            start_ms,
+            end_ms,
             is_archived,
             &mut param_start,
             &mut conditions,
@@ -247,11 +267,11 @@ impl HybridSearchService {
                 q = q.bind(tag_filters);
             }
         }
-        if let Some(ref date) = start_date {
-            q = q.bind(date);
+        if let Some(ms) = start_ms {
+            q = q.bind(ms);
         }
-        if let Some(ref date) = end_date {
-            q = q.bind(date);
+        if let Some(ms) = end_ms {
+            q = q.bind(ms);
         }
 
         let rows = q.fetch_all(&self.db).await.map_err(AppError::Database)?;
@@ -320,4 +340,16 @@ impl HybridSearchService {
             .map(|(row, kw, sem, mt, _)| (row, kw, sem, mt))
             .collect())
     }
+}
+
+fn date_str_to_ms_bounds(date: &str, tz: Tz) -> Result<(i64, i64), AppError> {
+    use chrono::NaiveDate;
+    let naive = NaiveDate::parse_from_str(date, "%Y-%m-%d")
+        .map_err(|_| AppError::InvalidInput(format!("invalid date: {}", date)))?;
+    let start = tz
+        .with_ymd_and_hms(naive.year(), naive.month(), naive.day(), 0, 0, 0)
+        .single()
+        .ok_or_else(|| AppError::InvalidInput(format!("ambiguous or invalid date: {}", date)))?;
+    let end = start + chrono::Duration::days(1);
+    Ok((start.timestamp_millis(), end.timestamp_millis()))
 }

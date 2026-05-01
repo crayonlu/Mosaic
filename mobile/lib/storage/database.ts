@@ -57,13 +57,17 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
         CREATE INDEX IF NOT EXISTS idx_resources_type ON resources(resource_type);
 
         CREATE TABLE IF NOT EXISTS diaries (
-          date           TEXT PRIMARY KEY NOT NULL,
-          summary        TEXT,
-          mood_key       TEXT,
-          mood_score     REAL,
-          cover_image_id TEXT,
-          created_at     INTEGER NOT NULL,
-          updated_at     INTEGER NOT NULL
+          date                    TEXT PRIMARY KEY NOT NULL,
+          summary                 TEXT,
+          mood_key                TEXT,
+          mood_score              REAL,
+          cover_image_id          TEXT,
+          generation_source       TEXT,
+          auto_generation_locked  INTEGER NOT NULL DEFAULT 0,
+          generated_from_memo_ids TEXT,
+          last_auto_generated_at  INTEGER,
+          created_at              INTEGER NOT NULL,
+          updated_at              INTEGER NOT NULL
         );
 
         CREATE INDEX IF NOT EXISTS idx_diaries_mood ON diaries(mood_key);
