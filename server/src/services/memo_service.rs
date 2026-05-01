@@ -267,20 +267,34 @@ impl MemoService {
                     );
                 }
 
-                if let Some(bot_svc) = bot_service {
-                    if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
-                        log::error!(
-                            "[MemoryRefresh] bot trigger_replies failed for memo {}: {}",
-                            memo_id,
-                            error
-                        );
-                    }
-                }
+                let memo_images = if let Some(bot_svc) = &bot_service {
+                    bot_svc.load_memo_images(user_id, memo_id, 4).await.unwrap_or_default()
+                } else {
+                    vec![]
+                };
 
                 let Some(config_svc) = server_ai_config_service else {
+                    if let Some(bot_svc) = bot_service {
+                        if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
+                            log::error!(
+                                "[MemoryRefresh] bot trigger_replies failed for memo {}: {}",
+                                memo_id,
+                                error
+                            );
+                        }
+                    }
                     return;
                 };
                 let Some(client) = ai_client else {
+                    if let Some(bot_svc) = bot_service {
+                        if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
+                            log::error!(
+                                "[MemoryRefresh] bot trigger_replies failed for memo {}: {}",
+                                memo_id,
+                                error
+                            );
+                        }
+                    }
                     return;
                 };
 
@@ -306,12 +320,26 @@ impl MemoService {
                         &client,
                         &user_id_str,
                         &memo,
+                        &memo_images,
                     )
                     .await;
                 }
 
                 if auto_summary && memo.ai_summary.is_none() {
-                    MemoService::auto_generate_summary(&pool, &config_svc, &client, &memo).await;
+                    MemoService::auto_generate_summary(&pool, &config_svc, &client, &memo, &memo_images).await;
+                }
+
+                // Trigger bot replies after tagging/summary complete so bots can see
+                // the updated memo state and there is no concurrent AI usage on the
+                // same config that could confuse proxied providers.
+                if let Some(bot_svc) = bot_service {
+                    if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
+                        log::error!(
+                            "[MemoryRefresh] bot trigger_replies failed for memo {}: {}",
+                            memo_id,
+                            error
+                        );
+                    }
                 }
             })
             .await;
@@ -328,6 +356,7 @@ impl MemoService {
         ai_client: &AiClient,
         user_id: &str,
         memo: &Memo,
+        images: &[crate::services::ai_client::AiImageInput],
     ) {
         let config = match config_svc.get("bot").await {
             Ok(c) => c,
@@ -384,11 +413,14 @@ impl MemoService {
             max_tokens: Some(100),
         };
 
+        let vision_images = if config.supports_vision { images } else { &[] };
+        let user_message = AiClient::build_user_message(&prompt, vision_images, &config.provider);
+
         let reply = match ai_client
             .send_ai_messages(
                 &ai_config,
                 String::new(),
-                vec![json!({ "role": "user", "content": prompt })],
+                vec![user_message],
                 None,
             )
             .await
@@ -448,6 +480,7 @@ impl MemoService {
         config_svc: &ServerAiConfigService,
         ai_client: &AiClient,
         memo: &Memo,
+        images: &[crate::services::ai_client::AiImageInput],
     ) {
         let config = match config_svc.get("bot").await {
             Ok(c) => c,
@@ -480,11 +513,14 @@ impl MemoService {
             max_tokens: Some(120),
         };
 
+        let vision_images = if config.supports_vision { images } else { &[] };
+        let user_message = AiClient::build_user_message(&prompt, vision_images, &config.provider);
+
         let reply = match ai_client
             .send_ai_messages(
                 &ai_config,
                 String::new(),
-                vec![json!({ "role": "user", "content": prompt })],
+                vec![user_message],
                 None,
             )
             .await

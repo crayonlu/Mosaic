@@ -746,7 +746,7 @@ impl BotService {
         })
     }
 
-    async fn load_memo_images(
+    pub async fn load_memo_images(
         &self,
         user_uuid: Uuid,
         memo_id: Uuid,
