@@ -106,7 +106,7 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
         {
           backgroundColor: getBackgroundColor(),
           borderColor: getBorderColor(),
-          borderWidth: variant === 'outline' || variant === 'soft' ? 1 : 0,
+          borderWidth: 1,
           paddingVertical: getPaddingVertical(),
           paddingHorizontal: getPaddingHorizontal(),
           borderRadius: theme.radius.pill,

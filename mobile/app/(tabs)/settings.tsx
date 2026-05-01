@@ -429,137 +429,80 @@ export default function SettingsScreen() {
   const renderAISettings = () => {
     const botConfig = adminAiConfig?.bot
     const embConfig = adminAiConfig?.embedding
-    const botConfigured = botConfig && botConfig.model && botConfig.apiKey
+    const botConfigured = Boolean(botConfig?.model && botConfig?.apiKey)
+    const embConfigured = Boolean(embConfig?.model && embConfig?.apiKey)
+
+    const statusText = showAISettings
+      ? '收起'
+      : botConfigured && embConfigured
+        ? '已配置'
+        : botConfigured || embConfigured
+          ? '部分配置'
+          : '未配置'
+
+    const renderModelCard = (
+      label: string,
+      config: typeof botConfig,
+      configured: boolean,
+      pills?: { text: string; show: boolean }[]
+    ) => {
+      if (!configured) {
+        return (
+          <View style={styles.aiModelCard}>
+            <Text style={[styles.aiCardTypeLabel, { color: theme.textTertiary }]}>{label}</Text>
+            <Text style={[styles.aiEmptyText, { color: theme.textTertiary }]}>未配置</Text>
+          </View>
+        )
+      }
+
+      const metaParts = [config!.provider]
+      if (config!.apiKey) metaParts.push(maskKey(config!.apiKey))
+      if (config!.embeddingDim) metaParts.push(`${config!.embeddingDim} 维`)
+      const metaLine = metaParts.filter(Boolean).join('  ·  ')
+
+      const activePills = (pills ?? []).filter(p => p.show)
+
+      return (
+        <View style={styles.aiModelCard}>
+          <Text style={[styles.aiCardTypeLabel, { color: theme.textSecondary }]}>{label}</Text>
+          <View style={styles.aiModelRow}>
+            <View style={styles.aiModelLeft}>
+              <Text style={[styles.aiModelName, { color: theme.text }]}>{config!.model}</Text>
+              {metaLine ? (
+                <Text style={[styles.aiModelMeta, { color: theme.textSecondary }]}>{metaLine}</Text>
+              ) : null}
+            </View>
+            {activePills.length > 0 && (
+              <Text style={[styles.aiPillText, { color: theme.textSecondary }]}>
+                {activePills.map(p => p.text).join('\n')}
+              </Text>
+            )}
+          </View>
+        </View>
+      )
+    }
 
     return (
       <View style={[styles.section]}>
         <View style={[styles.card, { backgroundColor: theme.surface }]}>
           <TouchableOpacity
-            style={[styles.menuItem, showAISettings && { borderBottomColor: theme.border }]}
+            style={styles.menuItem}
             onPress={() => toggleSectionWithAnimation(setShowAISettings)}
           >
             <Sparkles size={18} color={theme.text} />
             <Text style={[styles.menuItemText, { color: theme.text }]}>AI 配置</Text>
             <View style={{ flex: 1, alignItems: 'flex-end' }}>
-              <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-                {showAISettings ? '收起' : botConfigured ? '已配置' : '未配置'}
-              </Text>
+              <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>{statusText}</Text>
             </View>
           </TouchableOpacity>
           {showAISettings && (
             <View style={[styles.aiSettings, { borderTopColor: theme.border }]}>
-              <Text style={{ fontWeight: '600', fontSize: 14, color: theme.text, marginBottom: 6 }}>
-                Bot 模型
-              </Text>
-              {botConfig ? (
-                <View style={{ gap: 4 }}>
-                  <View style={styles.configRow}>
-                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>规范</Text>
-                    <Text style={[styles.configValue, { color: theme.text }]}>
-                      {botConfig.provider || '—'}
-                    </Text>
-                  </View>
-                  <View style={styles.configRow}>
-                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>模型</Text>
-                    <Text
-                      style={[
-                        styles.configValue,
-                        { color: theme.text, fontFamily: 'monospace', fontSize: 12 },
-                      ]}
-                    >
-                      {botConfig.model || '—'}
-                    </Text>
-                  </View>
-                  <View style={styles.configRow}>
-                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
-                      API Key
-                    </Text>
-                    <Text
-                      style={[
-                        styles.configValue,
-                        { color: theme.text, fontFamily: 'monospace', fontSize: 12 },
-                      ]}
-                    >
-                      {maskKey(botConfig.apiKey)}
-                    </Text>
-                  </View>
-                  {(botConfig.supportsVision || botConfig.supportsThinking) && (
-                    <View style={[styles.capabilityRow, { marginTop: 4 }]}>
-                      {botConfig.supportsVision && (
-                        <Text style={[styles.capabilityHint, { color: theme.primary }]}>
-                          ✓ 图片输入
-                        </Text>
-                      )}
-                      {botConfig.supportsThinking && (
-                        <Text style={[styles.capabilityHint, { color: theme.primary }]}>
-                          ✓ 心路历程
-                        </Text>
-                      )}
-                    </View>
-                  )}
-                </View>
-              ) : (
-                <Text style={{ fontSize: 13, color: theme.textSecondary }}>未配置</Text>
-              )}
-
-              <View
-                style={[
-                  { borderTopWidth: StyleSheet.hairlineWidth, marginVertical: 12 },
-                  { borderTopColor: theme.border },
-                ]}
-              />
-              <Text style={{ fontWeight: '600', fontSize: 14, color: theme.text, marginBottom: 6 }}>
-                Embedding 模型
-              </Text>
-              {embConfig ? (
-                <View style={{ gap: 4 }}>
-                  <View style={styles.configRow}>
-                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>规范</Text>
-                    <Text style={[styles.configValue, { color: theme.text }]}>
-                      {embConfig.provider || '—'}
-                    </Text>
-                  </View>
-                  <View style={styles.configRow}>
-                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>模型</Text>
-                    <Text
-                      style={[
-                        styles.configValue,
-                        { color: theme.text, fontFamily: 'monospace', fontSize: 12 },
-                      ]}
-                    >
-                      {embConfig.model || '—'}
-                    </Text>
-                  </View>
-                  {embConfig.embeddingDim ? (
-                    <View style={styles.configRow}>
-                      <Text style={[styles.configLabel, { color: theme.textSecondary }]}>维度</Text>
-                      <Text
-                        style={[
-                          styles.configValue,
-                          { color: theme.text, fontFamily: 'monospace', fontSize: 12 },
-                        ]}
-                      >
-                        {embConfig.embeddingDim}
-                      </Text>
-                    </View>
-                  ) : null}
-                  <View style={styles.configRow}>
-                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
-                      API Key
-                    </Text>
-                    <Text
-                      style={[
-                        styles.configValue,
-                        { color: theme.text, fontFamily: 'monospace', fontSize: 12 },
-                      ]}
-                    >
-                      {maskKey(embConfig.apiKey)}
-                    </Text>
-                  </View>
-                </View>
-              ) : (
-                <Text style={{ fontSize: 13, color: theme.textSecondary }}>未配置</Text>
-              )}
+              {renderModelCard('BOT 模型', botConfig, botConfigured, [
+                { text: '图片输入', show: Boolean(botConfig?.supportsVision) },
+                { text: '心路历程', show: Boolean(botConfig?.supportsThinking) },
+              ])}
+              <View style={[styles.aiDivider, { backgroundColor: theme.border }]} />
+              {renderModelCard('EMBEDDING 模型', embConfig, embConfigured)}
             </View>
           )}
         </View>
@@ -843,9 +786,56 @@ const styles = StyleSheet.create({
     width: 140,
   },
   aiSettings: {
-    padding: 12,
-    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  aiModelCard: {
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  aiModelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  aiModelLeft: {
+    flex: 1,
+  },
+  aiModelCardEmpty: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  aiDivider: {
+    height: StyleSheet.hairlineWidth,
+  },
+  aiCardTypeLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  aiModelName: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'monospace',
+    marginBottom: 3,
+  },
+  aiModelMeta: {
+    fontSize: 11,
+    marginBottom: 6,
+  },
+  aiPillText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'right',
+    lineHeight: 20,
+  },
+  aiEmptyText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
   permissionSettings: {
     padding: 12,
@@ -957,36 +947,5 @@ const styles = StyleSheet.create({
   addBotText: {
     fontSize: 14,
     fontWeight: '500',
-  },
-  capabilityHints: {
-    marginTop: -2,
-    paddingLeft: 2,
-  },
-  capabilityHint: {
-    fontSize: 12,
-    lineHeight: 17,
-    fontWeight: '500',
-  },
-  capabilityRow: {
-    flexDirection: 'row',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  configRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 2,
-  },
-  configLabel: {
-    fontSize: 12,
-    minWidth: 52,
-    flexShrink: 0,
-  },
-  configValue: {
-    fontSize: 13,
-    fontWeight: '500',
-    flex: 1,
-    textAlign: 'right',
   },
 })

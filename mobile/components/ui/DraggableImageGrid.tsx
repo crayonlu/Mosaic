@@ -49,18 +49,18 @@ export function DraggableImageGrid({
   )
 
   const mediaTileSize = getMediaTileSize(resolvedItems.length, gridWidth)
-  const hasViewedOriginalImage = useMediaPreviewStore(state => state.hasViewedOriginalImage)
+  const originalImageKeys = useMediaPreviewStore(state => state.originalImageKeys)
 
   const resolvedMediaSources = useMemo(
     () =>
       resolvedItems.map(item => {
         const source = resolveMediaSource(item, authHeaders)
-        if (item.type === 'image' && hasViewedOriginalImage(source.previewUri)) {
+        if (item.type === 'image' && originalImageKeys[source.previewUri]) {
           return { ...source, gridUri: source.previewUri, gridHeaders: source.previewHeaders }
         }
         return source
       }),
-    [authHeaders, resolvedItems, hasViewedOriginalImage]
+    [authHeaders, resolvedItems, originalImageKeys]
   )
   const showRemoveButton = Boolean(onItemsChange)
 
