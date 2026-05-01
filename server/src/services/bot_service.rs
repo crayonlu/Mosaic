@@ -420,7 +420,7 @@ impl BotService {
 
         let memory_context: Option<Arc<BotMemoryContext>> =
             if let Some(service) = &self.memory_context_service {
-                match service.build_for_memo(&memo, None).await {
+                match service.build_for_memo(&memo).await {
                     Ok(ctx) => Some(Arc::new(ctx)),
                     Err(e) => {
                         log::error!(
@@ -439,6 +439,7 @@ impl BotService {
         let memo_content = memo_content.clone();
         let ai_config = std::sync::Arc::new(ai_config);
         let ai_client = self.ai_client.clone();
+        let memory_context_service = self.memory_context_service.clone();
 
         tokio::spawn(async move {
             let mut handles = vec![];
@@ -449,8 +450,16 @@ impl BotService {
                 let memo_images = memo_images.clone();
                 let memory_context = memory_context.clone();
                 let ai_client = ai_client.clone();
+                let memory_context_service = memory_context_service.clone();
+                let memo_user_id = memo.user_id;
 
                 handles.push(tokio::spawn(async move {
+                    if let (Some(svc), Some(ctx)) = (&memory_context_service, &memory_context) {
+                        let _ = svc
+                            .persist_for_bot(memo_user_id, memo_id, bot.id, ctx)
+                            .await;
+                    }
+
                     if let Ok(reply) = call_ai_for_reply(
                         &ai_config,
                         &bot.name,
@@ -570,8 +579,21 @@ impl BotService {
             };
 
             service
-                .build_for_memo(&memo, Some(parent.bot_id))
+                .build_for_memo(&memo)
                 .await
+                .map(|ctx| {
+                    let _ = tokio::spawn({
+                        let svc = service.clone();
+                        let bot_id = parent.bot_id;
+                        let ctx2 = ctx.clone();
+                        async move {
+                            let _ = svc
+                                .persist_for_bot(user_uuid, parent.memo_id, bot_id, &ctx2)
+                                .await;
+                        }
+                    });
+                    ctx
+                })
                 .ok()
         } else {
             None
