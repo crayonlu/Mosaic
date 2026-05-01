@@ -18,11 +18,7 @@ impl BotMemoryContextService {
         }
     }
 
-    pub async fn build_for_memo(
-        &self,
-        memo: &Memo,
-        bot_id: Option<Uuid>,
-    ) -> Result<BotMemoryContext, AppError> {
+    pub async fn build_for_memo(&self, memo: &Memo) -> Result<BotMemoryContext, AppError> {
         let similar_memos = self
             .retrieval_service
             .retrieve_related_memos(memo.user_id, memo, 12)
@@ -39,27 +35,31 @@ impl BotMemoryContextService {
             prompt_chars: estimated_chars,
         };
 
-        self.persist_debug_log(memo.user_id, memo.id, bot_id, &similar_memos, &debug)
-            .await?;
-
         Ok(BotMemoryContext {
             similar_memos,
             debug,
         })
     }
 
+    pub async fn persist_for_bot(
+        &self,
+        user_id: Uuid,
+        memo_id: Uuid,
+        bot_id: Uuid,
+        ctx: &BotMemoryContext,
+    ) -> Result<(), AppError> {
+        self.persist_debug_log(user_id, memo_id, bot_id, &ctx.similar_memos, &ctx.debug)
+            .await
+    }
+
     async fn persist_debug_log(
         &self,
         user_id: Uuid,
         memo_id: Uuid,
-        bot_id: Option<Uuid>,
+        bot_id: Uuid,
         related_memos: &[crate::models::RelatedMemoContext],
         debug: &BotMemoryDebugContext,
     ) -> Result<(), AppError> {
-        let Some(bot_id) = bot_id else {
-            return Ok(());
-        };
-
         sqlx::query(
             "INSERT INTO bot_memory_debug_logs
              (id, user_id, memo_id, bot_id, mode, retrieved_memo_ids, score_payload, prompt_size, created_at)
