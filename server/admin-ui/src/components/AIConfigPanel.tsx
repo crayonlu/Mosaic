@@ -169,6 +169,7 @@ export default function AIConfigPanel() {
               apiKey: data[k].apiKey || '',
               model: data[k].model || '',
               embeddingDim: data[k].embeddingDim ?? undefined,
+              maxTokens: data[k].maxTokens ?? undefined,
             },
           }))
           setSaved((s) => ({ ...s, [k]: { supportsVision: data[k].supportsVision || false, supportsThinking: data[k].supportsThinking || false } }))

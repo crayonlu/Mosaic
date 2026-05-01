@@ -56,6 +56,10 @@ impl BotMemoryContextService {
         related_memos: &[crate::models::RelatedMemoContext],
         debug: &BotMemoryDebugContext,
     ) -> Result<(), AppError> {
+        let Some(bot_id) = bot_id else {
+            return Ok(());
+        };
+
         sqlx::query(
             "INSERT INTO bot_memory_debug_logs
              (id, user_id, memo_id, bot_id, mode, retrieved_memo_ids, score_payload, prompt_size, created_at)
@@ -64,7 +68,7 @@ impl BotMemoryContextService {
         .bind(Uuid::new_v4())
         .bind(user_id)
         .bind(memo_id)
-        .bind(bot_id.unwrap_or(Uuid::nil()))
+        .bind(bot_id)
         .bind("context_build")
         .bind(serde_json::json!(debug.retrieved_memo_ids))
         .bind(serde_json::json!(related_memos
