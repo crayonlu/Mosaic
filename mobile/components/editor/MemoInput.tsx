@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui'
 import { useThemeStore } from '@/stores/themeStore'
 import { Maximize2 } from 'lucide-react-native'
-import { useState } from 'react'
-import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { Keyboard, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
 import { FullScreenEditor } from './FullScreenEditor'
 
 interface MemoInputProps {
@@ -19,9 +19,17 @@ export function MemoInput({
   disabled = false,
 }: MemoInputProps) {
   const { theme } = useThemeStore()
+  const inputRef = useRef<TextInput>(null)
   const [isFullScreenVisible, setIsFullScreenVisible] = useState(false)
   const [text, setText] = useState('')
   const [isFocused, setIsFocused] = useState(false)
+
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidHide', () => {
+      inputRef.current?.blur()
+    })
+    return () => sub.remove()
+  }, [])
 
   const handleSubmit = () => {
     if (!text.trim() || disabled) return
@@ -47,9 +55,9 @@ export function MemoInput({
           style={[
             styles.inputWrapper,
             {
-              backgroundColor: isFocused ? theme.surface : theme.surfaceMuted,
+              backgroundColor: theme.surfaceMuted,
               borderColor: isFocused ? theme.primary : 'transparent',
-              borderWidth: isFocused ? 1 : 0,
+              borderWidth: 1,
               borderRadius: theme.radius.medium,
               paddingHorizontal: theme.spacingScale.medium,
               height: 48,
@@ -58,6 +66,7 @@ export function MemoInput({
           ]}
         >
           <TextInput
+            ref={inputRef}
             style={[styles.input, { color: theme.text, fontSize: theme.typography.bodyLarge }]}
             placeholder={placeholder}
             placeholderTextColor={theme.textSecondary}
