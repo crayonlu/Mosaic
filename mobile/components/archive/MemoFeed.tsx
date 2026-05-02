@@ -1,4 +1,4 @@
-import { Loading } from '@/components/ui'
+import { MemoListSkeleton } from '@/components/ui'
 import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
@@ -130,7 +130,7 @@ export function MemoFeed({
   }
 
   if (isLoading) {
-    return <Loading text="加载中..." fullScreen />
+    return <MemoListSkeleton count={6} />
   }
 
   if (memos.length === 0) {

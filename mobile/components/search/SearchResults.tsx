@@ -1,5 +1,5 @@
 import { MemoCard } from '@/components/memo/MemoCard'
-import { Loading } from '@/components/ui'
+import { MemoListSkeleton } from '@/components/ui'
 import { useThemeStore } from '@/stores/themeStore'
 import type { Memo } from '@mosaic/api'
 import { FileX, Search } from 'lucide-react-native'
@@ -85,7 +85,7 @@ export function SearchResults({
   }
 
   if (loading && results.length === 0) {
-    return <Loading text="搜索中..." fullScreen />
+    return <MemoListSkeleton count={6} />
   }
 
   if (results.length === 0) {

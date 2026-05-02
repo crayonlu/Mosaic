@@ -1,5 +1,5 @@
 import { ArchiveDateFilter } from '@/components/archive/ArchiveDateFilter'
-import { ArchiveDialog } from '@/components/archive/ArchiveDialog'
+import { ArchiveDialog, type ArchiveDialogRef } from '@/components/archive/ArchiveDialog'
 import { MemoFeed } from '@/components/archive/MemoFeed'
 import { useDeleteMemo, useDiary } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
@@ -7,16 +7,16 @@ import type { MemoWithResources } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { router } from 'expo-router'
 import { Check, X } from 'lucide-react-native'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function ArchiveScreen() {
   const { theme } = useThemeStore()
+  const dialogRef = useRef<ArchiveDialogRef>(null)
   const [selectedDate, setSelectedDate] = useState<string | undefined>(dayjs().format('YYYY-MM-DD'))
   const [isArchiveMode, setIsArchiveMode] = useState(false)
   const [selectedMemoIds, setSelectedMemoIds] = useState<string[]>([])
   const [visibleMemos, setVisibleMemos] = useState<MemoWithResources[]>([])
-  const [showArchiveDialog, setShowArchiveDialog] = useState(false)
   const { mutateAsync: deleteMemo } = useDeleteMemo()
 
   const today = dayjs().format('YYYY-MM-DD')
@@ -41,20 +41,23 @@ export default function ArchiveScreen() {
   const handleArchivePress = () => {
     if (isArchiveMode) {
       if (selectedMemoIds.length > 0) {
-        setShowArchiveDialog(true)
+        dialogRef.current?.present()
       } else {
         setIsArchiveMode(false)
-        setSelectedMemoIds([])
       }
     } else {
       setIsArchiveMode(true)
-      setSelectedMemoIds([])
     }
   }
 
   const handleArchiveSuccess = () => {
-    setShowArchiveDialog(false)
+    dialogRef.current?.dismiss()
     setIsArchiveMode(false)
+    setSelectedMemoIds([])
+  }
+
+  const handleArchiveCancel = () => {
+    dialogRef.current?.dismiss()
     setSelectedMemoIds([])
   }
 
@@ -111,12 +114,12 @@ export default function ArchiveScreen() {
         onMemosChange={setVisibleMemos}
       />
       <ArchiveDialog
-        visible={showArchiveDialog}
+        ref={dialogRef}
         selectedMemos={selectedMemos}
         targetDate={selectedDate || today}
         existingDiary={selectedDate === today ? todayDiary : undefined}
         onSuccess={handleArchiveSuccess}
-        onCancel={() => setShowArchiveDialog(false)}
+        onCancel={handleArchiveCancel}
       />
     </View>
   )
