@@ -1,12 +1,9 @@
 import { ArchiveDateFilter } from '@/components/archive/ArchiveDateFilter'
 import { ArchiveDialog } from '@/components/archive/ArchiveDialog'
 import { MemoFeed } from '@/components/archive/MemoFeed'
-import { toast } from '@/components/ui/Toast'
 import { useDeleteMemo, useDiary } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
-import { memosApi } from '@mosaic/api'
-import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { router } from 'expo-router'
 import { Check, X } from 'lucide-react-native'
@@ -20,12 +17,10 @@ export default function ArchiveScreen() {
   const [selectedMemoIds, setSelectedMemoIds] = useState<string[]>([])
   const [visibleMemos, setVisibleMemos] = useState<MemoWithResources[]>([])
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
-  const queryClient = useQueryClient()
   const { mutateAsync: deleteMemo } = useDeleteMemo()
 
   const today = dayjs().format('YYYY-MM-DD')
   const { data: todayDiary } = useDiary(today)
-  const hasDiaryForToday = !!todayDiary
 
   const selectedMemos = useMemo(() => {
     return visibleMemos.filter(m => selectedMemoIds.includes(m.id))
@@ -46,11 +41,7 @@ export default function ArchiveScreen() {
   const handleArchivePress = () => {
     if (isArchiveMode) {
       if (selectedMemoIds.length > 0) {
-        if (hasDiaryForToday && selectedDate === today) {
-          handleDirectArchive()
-        } else {
-          setShowArchiveDialog(true)
-        }
+        setShowArchiveDialog(true)
       } else {
         setIsArchiveMode(false)
         setSelectedMemoIds([])
@@ -60,27 +51,6 @@ export default function ArchiveScreen() {
       setSelectedMemoIds([])
     }
   }
-
-  const handleDirectArchive = async () => {
-    try {
-      for (const memo of selectedMemos) {
-        await memosApi.archive(memo.id, today)
-      }
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['memos'] }),
-        queryClient.invalidateQueries({ queryKey: ['diaries'] }),
-        queryClient.invalidateQueries({ queryKey: ['diary', today] }),
-      ])
-      setIsArchiveMode(false)
-      setSelectedMemoIds([])
-    } catch (error) {
-      console.error('添加失败:', error)
-      toast.error('添加失败')
-    }
-  }
-
-  const shouldShowAddButton =
-    isArchiveMode && selectedMemoIds.length > 0 && hasDiaryForToday && selectedDate === today
 
   const handleArchiveSuccess = () => {
     setShowArchiveDialog(false)
@@ -105,15 +75,14 @@ export default function ArchiveScreen() {
             style={[
               styles.archiveActionButton,
               {
-                backgroundColor:
-                  selectedCount > 0 || shouldShowAddButton ? theme.primary : theme.surfaceMuted,
+                backgroundColor: selectedCount > 0 ? theme.primary : theme.surfaceMuted,
                 borderRadius: theme.radius.medium,
               },
             ]}
             onPress={handleArchivePress}
             activeOpacity={theme.state.pressedOpacity}
           >
-            {selectedCount > 0 || shouldShowAddButton ? (
+            {selectedCount > 0 ? (
               <Check size={18} color={theme.onPrimary} />
             ) : isArchiveMode ? (
               <X size={18} color={theme.textSecondary} />
@@ -121,21 +90,10 @@ export default function ArchiveScreen() {
             <Text
               style={[
                 styles.archiveActionText,
-                {
-                  color:
-                    selectedCount > 0 || shouldShowAddButton
-                      ? theme.onPrimary
-                      : theme.textSecondary,
-                },
+                { color: selectedCount > 0 ? theme.onPrimary : theme.textSecondary },
               ]}
             >
-              {shouldShowAddButton
-                ? '添加'
-                : selectedCount > 0
-                  ? '归档'
-                  : isArchiveMode
-                    ? '完成'
-                    : '归档'}
+              {selectedCount > 0 ? '归档' : isArchiveMode ? '完成' : '归档'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -155,7 +113,8 @@ export default function ArchiveScreen() {
       <ArchiveDialog
         visible={showArchiveDialog}
         selectedMemos={selectedMemos}
-        targetDate={selectedDate || dayjs().format('YYYY-MM-DD')}
+        targetDate={selectedDate || today}
+        existingDiary={selectedDate === today ? todayDiary : undefined}
         onSuccess={handleArchiveSuccess}
         onCancel={() => setShowArchiveDialog(false)}
       />

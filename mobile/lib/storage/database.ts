@@ -61,7 +61,6 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
           summary                 TEXT,
           mood_key                TEXT,
           mood_score              REAL,
-          cover_image_id          TEXT,
           generation_source       TEXT,
           auto_generation_locked  INTEGER NOT NULL DEFAULT 0,
           generated_from_memo_ids TEXT,
@@ -84,6 +83,21 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
           last_sync_at INTEGER NOT NULL
         );
       `)
+
+      // Migrations — ALTER TABLE ignores "duplicate column" errors so re-runs are safe.
+      const migrations: string[] = [
+        `ALTER TABLE diaries ADD COLUMN generation_source TEXT`,
+        `ALTER TABLE diaries ADD COLUMN auto_generation_locked INTEGER NOT NULL DEFAULT 0`,
+        `ALTER TABLE diaries ADD COLUMN generated_from_memo_ids TEXT`,
+        `ALTER TABLE diaries ADD COLUMN last_auto_generated_at INTEGER`,
+      ]
+      for (const sql of migrations) {
+        try {
+          await database.execAsync(sql)
+        } catch {
+          // Column already exists — safe to ignore.
+        }
+      }
 
       db = database
       return database

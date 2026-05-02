@@ -83,7 +83,7 @@ export const MOOD_INTENSITY_LEVELS = 10
 export const DEFAULT_MOOD: MoodKey = 'neutral'
 
 export function getMoodColorWithIntensity(moodKey?: MoodKey, intensity?: number): string {
-  if (!moodKey) return 'rgba(154, 148, 138, 0.5)'
+  if (!moodKey) return 'rgba(215, 213, 206, 0.12)'
   const baseColor = MOOD_COLOR_MAP[moodKey] || MOOD_COLOR_MAP.neutral
   const opacity = 0.2 + (intensity !== undefined ? (intensity / 10) * 0.6 : 0.5)
 

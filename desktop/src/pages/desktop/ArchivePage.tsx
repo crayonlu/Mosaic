@@ -25,11 +25,6 @@ import { Archive, Calendar, CheckSquare, Square, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 type Mode = 'view' | 'select'
-type SelectedMemoResource = {
-  id: string
-  previewUrl: string
-  type: 'image' | 'video'
-}
 
 export default function ArchivePage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -58,7 +53,6 @@ export default function ArchivePage() {
         summary: diaryData.summary,
         moodKey: diaryData.moodKey,
         moodScore: diaryData.moodScore,
-        coverImageId: diaryData.coverImageId,
       }
     : undefined
 
@@ -148,7 +142,6 @@ export default function ArchivePage() {
     summary?: string,
     moodKey?: string,
     moodScore?: number,
-    coverImageId?: string
   ) => {
     if (selectedMemos.size === 0) return
 
@@ -159,7 +152,6 @@ export default function ArchivePage() {
           summary,
           moodKey: moodKey as MoodKey,
           moodScore,
-          coverImageId,
         },
       })
 
@@ -376,22 +368,6 @@ export default function ArchivePage() {
         onConfirm={handleArchiveConfirm}
         isLoading={isArchiving}
         selectedMemosContent={getSelectedMemosContent()}
-        selectedMemosResources={memos
-          .filter(m => selectedMemos.has(m.id) && !m.isArchived)
-          .flatMap(
-            m =>
-              m.resources?.flatMap((r): SelectedMemoResource[] => {
-                if (r.resourceType === 'image') {
-                  return [{ id: r.id, previewUrl: r.url, type: 'image' }]
-                }
-
-                if (r.thumbnailUrl) {
-                  return [{ id: r.id, previewUrl: r.thumbnailUrl, type: 'video' }]
-                }
-
-                return []
-              }) ?? []
-          )}
       />
 
       <MemoDetail

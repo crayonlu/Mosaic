@@ -14,7 +14,6 @@ import { MOODS, type MoodKey } from '@mosaic/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { CoverImagePicker } from './CoverImagePicker'
 
 interface ArchiveDialogProps {
   visible: boolean
@@ -36,21 +35,31 @@ export function ArchiveDialog({
   const { theme } = useThemeStore()
   const queryClient = useQueryClient()
   const sheetRef = useRef<BottomSheetModal>(null)
+  const hasOpenedRef = useRef(false)
+
   const [summary, setSummary] = useState(existingDiary?.summary || '')
   const [moodKey, setMoodKey] = useState<MoodKey | undefined>(existingDiary?.moodKey as MoodKey)
   const [moodScore, setMoodScore] = useState(existingDiary?.moodScore || 5)
-  const [coverImageId, setCoverImageId] = useState<string | undefined>(existingDiary?.coverImageId)
   const [loading, setLoading] = useState(false)
 
   const snapPoints = useMemo(() => ['40%', '70%'], [])
 
   useEffect(() => {
     if (visible) {
+      hasOpenedRef.current = true
       sheetRef.current?.present()
-    } else {
+    } else if (hasOpenedRef.current) {
       sheetRef.current?.dismiss()
     }
   }, [visible])
+
+  useEffect(() => {
+    if (existingDiary) {
+      setSummary(existingDiary.summary || '')
+      setMoodKey(existingDiary.moodKey as MoodKey)
+      setMoodScore(existingDiary.moodScore || 5)
+    }
+  }, [existingDiary?.date])
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -73,11 +82,10 @@ export function ArchiveDialog({
 
     setLoading(true)
     try {
-      await diariesApi.create(targetDate, {
+      await diariesApi.createOrUpdate(targetDate, {
         summary,
         moodKey: (moodKey || 'neutral') as any,
         moodScore,
-        coverImageId,
       })
 
       for (const memo of selectedMemos) {
@@ -99,10 +107,6 @@ export function ArchiveDialog({
       setLoading(false)
     }
   }
-
-  const allImages = selectedMemos.flatMap(memo =>
-    memo.resources.filter(r => r.resourceType === 'image')
-  )
 
   return (
     <BottomSheetModal
@@ -141,11 +145,7 @@ export function ArchiveDialog({
             numberOfLines={3}
             style={[
               styles.summaryInput,
-              {
-                backgroundColor: theme.surfaceMuted,
-                color: theme.text,
-                borderColor: 'transparent',
-              },
+              { backgroundColor: theme.surfaceMuted, color: theme.text, borderColor: 'transparent' },
             ]}
             placeholderTextColor={theme.textSecondary}
           />
@@ -160,10 +160,7 @@ export function ArchiveDialog({
                 style={[
                   styles.moodOption,
                   { backgroundColor: mood.color },
-                  moodKey === mood.key && {
-                    borderColor: theme.text,
-                    borderWidth: StyleSheet.hairlineWidth,
-                  },
+                  moodKey === mood.key && { borderColor: theme.text, borderWidth: StyleSheet.hairlineWidth },
                 ]}
                 onPress={() => setMoodKey(mood.key)}
               >
@@ -182,15 +179,6 @@ export function ArchiveDialog({
             </View>
           )}
         </View>
-
-        {allImages.length > 0 && (
-          <CoverImagePicker
-            memos={selectedMemos}
-            selectedCoverId={coverImageId}
-            onSelect={setCoverImageId}
-            onClear={() => setCoverImageId(undefined)}
-          />
-        )}
       </BottomSheetScrollView>
 
       <View style={[styles.footer, { borderTopColor: theme.border }]}>

@@ -1,5 +1,4 @@
 import { AILoadingIndicator } from '@/components/common/AILoadingIndicator'
-import { AuthImage } from '@/components/common/AuthImage'
 import { Button } from '@/components/ui/button'
 import { DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -7,7 +6,6 @@ import { Slider } from '@/components/ui/slider'
 import { StandardDialog } from '@/components/ui/standard-dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { useAI } from '@/hooks/useAI'
-import { resolveApiUrl } from '@/lib/sharedApi'
 import { MOODS } from '@mosaic/utils'
 import dayjs from 'dayjs'
 import { Archive, Loader2, Sparkles } from 'lucide-react'
@@ -22,17 +20,14 @@ interface ArchiveDialogProps {
     summary?: string
     moodKey?: string
     moodScore?: number
-    coverImageId?: string
   }
   onConfirm: (
     summary?: string,
     moodKey?: string,
     moodScore?: number,
-    coverImageId?: string
   ) => Promise<void>
   isLoading: boolean
   selectedMemosContent?: string
-  selectedMemosResources?: Array<{ id: string; previewUrl: string; type: 'image' | 'video' }>
 }
 
 export function ArchiveDialog({
@@ -44,19 +39,17 @@ export function ArchiveDialog({
   onConfirm,
   isLoading,
   selectedMemosContent,
-  selectedMemosResources = [],
 }: ArchiveDialogProps) {
   const [summary, setSummary] = useState(existingDiary?.summary || '')
   const [moodKey, setMoodKey] = useState<string>(existingDiary?.moodKey || '')
   const [moodScore, setMoodScore] = useState<number[]>([existingDiary?.moodScore || 5])
-  const [coverImageId, setCoverImageId] = useState<string | undefined>(existingDiary?.coverImageId)
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
   const [isReplaceDialogOpen, setIsReplaceDialogOpen] = useState(false)
   const [pendingSummary, setPendingSummary] = useState<string>('')
   const { summarizeText, loading: aiLoading } = useAI()
 
   const handleConfirm = async () => {
-    await onConfirm(summary.trim() || undefined, moodKey || undefined, moodScore[0], coverImageId)
+    await onConfirm(summary.trim() || undefined, moodKey || undefined, moodScore[0])
   }
 
   const handleClose = () => {
@@ -64,22 +57,16 @@ export function ArchiveDialog({
       setSummary('')
       setMoodKey('')
       setMoodScore([5])
-      setCoverImageId(undefined)
       onClose()
     }
   }
 
   const handleGenerateSummary = async () => {
-    if (!selectedMemosContent?.trim()) {
-      return
-    }
+    if (!selectedMemosContent?.trim()) return
 
     setIsGeneratingSummary(true)
     try {
-      const result = await summarizeText({
-        text: selectedMemosContent,
-      })
-
+      const result = await summarizeText({ text: selectedMemosContent })
       if (result?.summary) {
         if (summary.trim()) {
           setPendingSummary(result.summary)
@@ -106,16 +93,8 @@ export function ArchiveDialog({
     setIsReplaceDialogOpen(false)
   }
 
-  const handleSelectMood = (key: string) => {
-    setMoodKey(key)
-  }
-
   const dateDisplay = dayjs(date).format('M月D日 dddd')
   const isUpdate = !!existingDiary
-  const allImages = selectedMemosResources.map(r => ({
-    ...r,
-    previewUrl: resolveApiUrl(r.previewUrl) || r.previewUrl,
-  }))
 
   return (
     <StandardDialog open={open} onOpenChange={handleClose} size="full">
@@ -174,7 +153,7 @@ export function ArchiveDialog({
                 <button
                   key={mood.key}
                   type="button"
-                  onClick={() => handleSelectMood(mood.key)}
+                  onClick={() => setMoodKey(mood.key)}
                   disabled={isLoading}
                   className="flex flex-col items-center justify-center h-14 min-w-18 rounded-lg border-2 transition-all hover:scale-105"
                   style={{
@@ -203,48 +182,6 @@ export function ArchiveDialog({
               </div>
             )}
           </div>
-
-          {allImages.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>选择封面图片</Label>
-                {coverImageId && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCoverImageId(undefined)}
-                    className="h-7 text-xs"
-                  >
-                    清除选择
-                  </Button>
-                )}
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {allImages.map(resource => (
-                  <div
-                    key={resource.id}
-                    className={`relative aspect-square overflow-hidden cursor-pointer transition-all ${
-                      coverImageId === resource.id ? 'ring-2 ring-primary ring-offset-2' : ''
-                    }`}
-                    onClick={() => setCoverImageId(resource.id)}
-                  >
-                    <AuthImage
-                      src={resource.previewUrl}
-                      variant="thumb"
-                      alt="cover"
-                      className="w-full h-full object-cover"
-                    />
-                    {coverImageId === resource.id && (
-                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                        <div className="bg-primary text-white text-xs px-2 py-1 rounded">封面</div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
