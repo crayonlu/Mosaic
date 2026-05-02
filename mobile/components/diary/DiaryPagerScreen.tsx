@@ -6,8 +6,8 @@ import { router } from 'expo-router'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Pencil } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { type DayPageViewRef, DayPageView } from './DayPageView'
 import PagerView from 'react-native-pager-view'
+import { type DayPageViewRef, DayPageView } from './DayPageView'
 
 const PREFETCH_DAYS = 2
 
@@ -41,7 +41,6 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
       }
       return
     }
-
     if (diaryQuery.status === 'error') {
       setCurrentMood(undefined, 5)
     }
@@ -63,9 +62,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     }
   }, [currentDate, setCurrentDate, today])
 
-  useEffect(() => {
-    setIsEditing(false)
-  }, [currentDate])
+  useEffect(() => { setIsEditing(false) }, [currentDate])
 
   const currentPageIndex = PREFETCH_DAYS
 
@@ -74,9 +71,8 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     const availableFutureDays = Math.max(0, dayjs(today).diff(safeCurrent, 'day'))
     const futureDays = Math.min(PREFETCH_DAYS, availableFutureDays)
     const totalPages = PREFETCH_DAYS + futureDays + 1
-
-    return Array.from({ length: totalPages }, (_, index) =>
-      safeCurrent.add(index - currentPageIndex, 'day').format('YYYY-MM-DD')
+    return Array.from({ length: totalPages }, (_, i) =>
+      safeCurrent.add(i - currentPageIndex, 'day').format('YYYY-MM-DD')
     )
   }, [currentDate, currentPageIndex, today])
 
@@ -87,7 +83,6 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
       currentPageRef.current = currentPageIndex
       return
     }
-
     skipNextPageSelectedRef.current = false
   }, [currentDate, currentPageIndex])
 
@@ -95,31 +90,21 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     router.push({ pathname: '/memo/[id]', params: { id: memoId } })
   }, [])
 
-  const handleStartEdit = useCallback(() => {
-    setIsEditing(true)
-  }, [])
-
+  const handleStartEdit = useCallback(() => setIsEditing(true), [])
   const handleCancelEdit = useCallback(() => {
     dayPageRef.current?.cancel()
     setIsEditing(false)
   }, [])
-
   const handleSave = useCallback(async () => {
     await dayPageRef.current?.save()
     setIsEditing(false)
   }, [])
-
-  const refreshEditState = useCallback(() => {
-    setEditTick(t => t + 1)
-  }, [])
+  const refreshEditState = useCallback(() => setEditTick(t => t + 1), [])
 
   const normalizeAndClampDate = useCallback(
     (date: string) => {
-      const nextDate = dayjs(date)
-      if (nextDate.isAfter(today, 'day')) {
-        return today.format('YYYY-MM-DD')
-      }
-      return nextDate.format('YYYY-MM-DD')
+      const d = dayjs(date)
+      return d.isAfter(today, 'day') ? today.format('YYYY-MM-DD') : d.format('YYYY-MM-DD')
     },
     [today]
   )
@@ -129,7 +114,6 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
       const safeDate = normalizeAndClampDate(date)
       if (safeDate === currentDate) return
       setCurrentDate(safeDate)
-
       if (currentPageRef.current !== currentPageIndex) {
         skipNextPageSelectedRef.current = true
         pagerRef.current?.setPageWithoutAnimation(currentPageIndex)
@@ -141,19 +125,11 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
 
   useEffect(() => {
     if (!initialDate) return
-
     const safeDate = normalizeAndClampDate(initialDate)
-    if (handledRouteDateRef.current === safeDate) {
-      return
-    }
-
+    if (handledRouteDateRef.current === safeDate) return
     handledRouteDateRef.current = safeDate
     pendingRouteDateRef.current = safeDate
-
-    if (currentDate !== safeDate) {
-      setCurrentDate(safeDate)
-    }
-
+    if (currentDate !== safeDate) setCurrentDate(safeDate)
     skipNextPageSelectedRef.current = true
     pagerRef.current?.setPageWithoutAnimation(currentPageIndex)
     currentPageRef.current = currentPageIndex
@@ -162,59 +138,35 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
   const handlePageSelected = useCallback(
     (e: { nativeEvent: { position: number } }) => {
       const newIndex = e.nativeEvent.position
-
       if (pendingRouteDateRef.current && newIndex !== currentPageIndex) {
         skipNextPageSelectedRef.current = true
         pagerRef.current?.setPageWithoutAnimation(currentPageIndex)
         currentPageRef.current = currentPageIndex
         return
       }
-
       currentPageRef.current = newIndex
-
       if (skipNextPageSelectedRef.current) {
         skipNextPageSelectedRef.current = false
-        if (pendingRouteDateRef.current && newIndex === currentPageIndex) {
-          pendingRouteDateRef.current = null
-        }
+        if (pendingRouteDateRef.current && newIndex === currentPageIndex) pendingRouteDateRef.current = null
         return
       }
-
       const targetDate = displayDates[newIndex]
       if (!targetDate) return
-
-      if (pendingRouteDateRef.current && targetDate !== pendingRouteDateRef.current) {
-        return
-      }
-
-      if (pendingRouteDateRef.current && targetDate === pendingRouteDateRef.current) {
-        pendingRouteDateRef.current = null
-      }
-
+      if (pendingRouteDateRef.current && targetDate !== pendingRouteDateRef.current) return
+      if (pendingRouteDateRef.current && targetDate === pendingRouteDateRef.current) pendingRouteDateRef.current = null
       navigateToDate(targetDate)
     },
     [currentPageIndex, displayDates, navigateToDate]
   )
 
-  const handlePreviousMonth = useCallback(() => {
-    navigateToDate(dayjs(currentDate).subtract(1, 'month').format('YYYY-MM-DD'))
-  }, [currentDate, navigateToDate])
+  const handlePreviousMonth = useCallback(() => navigateToDate(dayjs(currentDate).subtract(1, 'month').format('YYYY-MM-DD')), [currentDate, navigateToDate])
+  const handlePreviousYear  = useCallback(() => navigateToDate(dayjs(currentDate).subtract(1, 'year').format('YYYY-MM-DD')), [currentDate, navigateToDate])
+  const handleNextMonth     = useCallback(() => navigateToDate(dayjs(currentDate).add(1, 'month').format('YYYY-MM-DD')), [currentDate, navigateToDate])
+  const handleNextYear      = useCallback(() => navigateToDate(dayjs(currentDate).add(1, 'year').format('YYYY-MM-DD')), [currentDate, navigateToDate])
 
-  const handlePreviousYear = useCallback(() => {
-    navigateToDate(dayjs(currentDate).subtract(1, 'year').format('YYYY-MM-DD'))
-  }, [currentDate, navigateToDate])
-
-  const handleNextMonth = useCallback(() => {
-    navigateToDate(dayjs(currentDate).add(1, 'month').format('YYYY-MM-DD'))
-  }, [currentDate, navigateToDate])
-
-  const handleNextYear = useCallback(() => {
-    navigateToDate(dayjs(currentDate).add(1, 'year').format('YYYY-MM-DD'))
-  }, [currentDate, navigateToDate])
-
-  const hasDiary = dayPageRef.current?.hasDiary ?? false
+  const hasDiary   = dayPageRef.current?.hasDiary   ?? false
   const hasChanges = dayPageRef.current?.hasChanges ?? false
-  const isSaving = dayPageRef.current?.isPending ?? false
+  const isSaving   = dayPageRef.current?.isPending  ?? false
 
   const renderPage = useCallback(
     (date: string) => {
@@ -226,6 +178,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
             date={date}
             onMemoPress={handleMemoPress}
             isEditing={isCurrent && isEditing}
+            onEditStateChange={isCurrent ? refreshEditState : undefined}
           />
         </View>
       )
@@ -234,10 +187,9 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     [handleMemoPress, isEditing, currentDate, editTick]
   )
 
-  const pages = displayDates.map(renderPage)
-
   return (
-    <View style={[styles.container]}>
+    <View style={styles.container}>
+      {/* Header in normal flow — readable over mood gradient */}
       <View style={styles.header}>
         {isEditing ? (
           <TouchableOpacity style={styles.headerAction} onPress={handleCancelEdit}>
@@ -261,46 +213,20 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
         {isEditing ? (
           <TouchableOpacity
             style={styles.headerAction}
-            onPress={() => {
-              refreshEditState()
-              void handleSave()
-            }}
+            onPress={() => { refreshEditState(); void handleSave() }}
             disabled={!hasChanges || isSaving}
           >
-            <Text
-              style={[
-                styles.headerActionText,
-                { color: hasChanges && !isSaving ? theme.primary : theme.textSecondary },
-              ]}
-            >
+            <Text style={[styles.headerActionText, { color: hasChanges && !isSaving ? theme.primary : theme.textSecondary }]}>
               {isSaving ? '保存中...' : '保存'}
             </Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.headerNavGroup}>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={handleNextMonth}
-              disabled={isToday}
-              hitSlop={8}
-            >
-              <ChevronRight
-                size={22}
-                color={isToday ? theme.textSecondary : theme.text}
-                strokeWidth={2.2}
-              />
+            <TouchableOpacity style={styles.navButton} onPress={handleNextMonth} disabled={isToday} hitSlop={8}>
+              <ChevronRight size={22} color={isToday ? theme.textSecondary : theme.text} strokeWidth={2.2} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={handleNextYear}
-              disabled={isToday}
-              hitSlop={8}
-            >
-              <ChevronsRight
-                size={22}
-                color={isToday ? theme.textSecondary : theme.text}
-                strokeWidth={2.2}
-              />
+            <TouchableOpacity style={styles.navButton} onPress={handleNextYear} disabled={isToday} hitSlop={8}>
+              <ChevronsRight size={22} color={isToday ? theme.textSecondary : theme.text} strokeWidth={2.2} />
             </TouchableOpacity>
             {hasDiary && (
               <TouchableOpacity style={styles.navButton} onPress={handleStartEdit} hitSlop={8}>
@@ -318,7 +244,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
         onPageSelected={handlePageSelected}
         overdrag={!isToday}
       >
-        {pages}
+        {displayDates.map(renderPage)}
       </PagerView>
     </View>
   )

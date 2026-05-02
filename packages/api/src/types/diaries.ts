@@ -15,7 +15,6 @@ export interface Diary {
   summary: string
   moodKey: MoodKey
   moodScore: number
-  coverImageId?: string
   generationSource: string
   autoGenerationLocked: boolean
   generatedFromMemoIds: string[]
@@ -44,14 +43,12 @@ export interface CreateDiaryRequest {
   summary: string
   moodKey: MoodKey
   moodScore?: number
-  coverImageId?: string
 }
 
 export interface UpdateDiaryRequest {
   summary?: string
   moodKey?: MoodKey
   moodScore?: number
-  coverImageId?: string | null
 }
 
 export interface UpdateDiarySummaryRequest {

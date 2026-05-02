@@ -89,14 +89,14 @@ export const CLEAN_SLATE_DARK: ThemeScale = {
 }
 
 export const MOOD_COLORS = {
-  joy: '#F59E0B',
-  anger: '#EF4444',
-  sadness: '#60A5FA',
-  calm: '#34D399',
-  anxiety: '#F97316',
-  focus: '#A78BFA',
-  tired: '#94A3B8',
-  neutral: '#CBD5E1',
+  joy: '#E2C9B3',
+  anger: '#D1A9A9',
+  sadness: '#A7BDD6',
+  calm: '#9FC4BC',
+  anxiety: '#D2B29D',
+  focus: '#B4ACD1',
+  tired: '#B1B8C2',
+  neutral: '#D7D5CE',
 } as const
 
 /** @deprecated use MOOD_COLORS */

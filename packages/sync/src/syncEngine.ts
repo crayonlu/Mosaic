@@ -29,29 +29,44 @@ export function createSyncEngine(api: SyncApiAdapter, store: SyncStoreAdapter, c
   async function sync(): Promise<SyncResult> {
     setStatus('syncing')
 
+    let cursors: SyncCursors | undefined
     try {
-      const cursors = await store.getCursors()
-
-      const pullResponse = await api.pull({
-        clientId: config.clientId,
-        cursors,
-      })
-
-      if (store.applyChanges) {
-        await store.applyChanges(pullResponse.changes)
-      }
-
-      await store.updateCursors(pullResponse.cursors)
-
-      const pulledCount = countChanges(pullResponse.changes)
-      lastSyncAt = Date.now()
-
-      setStatus('completed')
-      return { status: 'completed', pulledCount }
-    } catch {
+      cursors = await store.getCursors()
+      console.log('[Sync] getCursors ok:', JSON.stringify(cursors))
+    } catch (e) {
+      console.error('[Sync] getCursors failed:', e)
       setStatus('offline')
       return { status: 'offline', pulledCount: 0 }
     }
+
+    let pullResponse: Awaited<ReturnType<SyncApiAdapter['pull']>>
+    try {
+      console.log('[Sync] pulling with clientId:', config.clientId, 'cursors:', JSON.stringify(cursors))
+      pullResponse = await api.pull({ clientId: config.clientId, cursors })
+      console.log('[Sync] pull ok, cursors back:', JSON.stringify(pullResponse.cursors))
+    } catch (e: any) {
+      console.error('[Sync] api.pull failed:', e?.message ?? e, 'status:', e?.status, 'stack:', e?.stack)
+      setStatus('offline')
+      return { status: 'offline', pulledCount: 0 }
+    }
+
+    try {
+      if (store.applyChanges) {
+        console.log('[Sync] applying changes')
+        await store.applyChanges(pullResponse.changes)
+      }
+      await store.updateCursors(pullResponse.cursors)
+    } catch (e) {
+      console.error('[Sync] applyChanges/updateCursors failed:', e)
+      setStatus('offline')
+      return { status: 'offline', pulledCount: 0 }
+    }
+
+    const pulledCount = countChanges(pullResponse.changes)
+    lastSyncAt = Date.now()
+    console.log('[Sync] completed, pulledCount:', pulledCount)
+    setStatus('completed')
+    return { status: 'completed', pulledCount }
   }
 
   function getStatus(): SyncStatus {

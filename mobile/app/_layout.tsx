@@ -11,13 +11,15 @@ import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { type ReactNode, useCallback, useEffect, useState } from 'react'
+import { type ReactNode, useCallback, useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import BootSplash from 'react-native-bootsplash'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import Animated, {
-  runOnJS,
+  cancelAnimation,
+  Easing,
+  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -118,33 +120,33 @@ export default function RootLayout() {
   const isDiariesTab = segments[0] === '(tabs)' && segments[1] === 'diaries'
 
   const moodColor = getMoodColorWithIntensity(currentMood, currentMoodIntensity)
-  const [baseMoodColor, setBaseMoodColor] = useState(moodColor)
-  const [overlayMoodColor, setOverlayMoodColor] = useState(moodColor)
-  const overlayOpacity = useSharedValue(0)
 
-  const overlayStyle = useAnimatedStyle(() => ({
-    opacity: overlayOpacity.value,
-  }))
-
-  const completeGradientTransition = useCallback(
-    (nextColor: string) => {
-      setBaseMoodColor(nextColor)
-      overlayOpacity.value = 0
-    },
-    [overlayOpacity]
-  )
+  // Animate the mood color directly on the UI thread via interpolateColor.
+  // fromColor = last stable color (or previous target on interrupt)
+  // toColor   = next color to transition toward
+  // progress  = 0→1 drives the interpolation
+  const fromColor = useSharedValue(moodColor)
+  const toColor   = useSharedValue(moodColor)
+  const progress  = useSharedValue(1)
 
   useEffect(() => {
-    if (moodColor === baseMoodColor) return
+    if (moodColor === toColor.value) return
+    cancelAnimation(progress)
+    fromColor.value = toColor.value  // start from previous target
+    toColor.value   = moodColor
+    progress.value  = 0
+    progress.value  = withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moodColor])
 
-    setOverlayMoodColor(moodColor)
-    overlayOpacity.value = 0
-    overlayOpacity.value = withTiming(1, { duration: 200 }, finished => {
-      if (finished) {
-        runOnJS(completeGradientTransition)(moodColor)
-      }
-    })
-  }, [baseMoodColor, completeGradientTransition, moodColor, overlayOpacity])
+  // Runs on UI thread — true RGB lerp at 60fps, no JS bridge
+  const moodBgStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      progress.value,
+      [0, 1],
+      [fromColor.value, toColor.value],
+    ),
+  }))
 
   const isAppReady = isInitialized && !isLoading
 
@@ -164,18 +166,14 @@ export default function RootLayout() {
             <SafeAreaContainer backgroundColor={isDiariesTab ? 'transparent' : theme.background}>
               {isDiariesTab && (
                 <>
-                  <LinearGradient
-                    colors={[baseMoodColor, 'transparent']}
-                    style={StyleSheet.absoluteFill}
-                    start={{ x: 0.5, y: 0 }}
-                    end={{ x: 0.5, y: 1 }}
-                  />
+                  {/* Animated.View drives the mood color on UI thread via interpolateColor.
+                      Inner LinearGradient fades it to transparent downward — no animated props needed. */}
                   <Animated.View
                     pointerEvents="none"
-                    style={[StyleSheet.absoluteFill, overlayStyle]}
+                    style={[StyleSheet.absoluteFill, moodBgStyle]}
                   >
                     <LinearGradient
-                      colors={[overlayMoodColor, 'transparent']}
+                      colors={['transparent', theme.background]}
                       style={StyleSheet.absoluteFill}
                       start={{ x: 0.5, y: 0 }}
                       end={{ x: 0.5, y: 1 }}

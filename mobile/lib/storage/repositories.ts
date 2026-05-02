@@ -222,16 +222,15 @@ export async function upsertDiary(diary: Diary): Promise<void> {
 
   await db.runAsync(
     `INSERT INTO diaries (
-      date, summary, mood_key, mood_score, cover_image_id,
+      date, summary, mood_key, mood_score,
       generation_source, auto_generation_locked, generated_from_memo_ids,
       last_auto_generated_at, created_at, updated_at
     )
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(date) DO UPDATE SET
        summary = excluded.summary,
        mood_key = excluded.mood_key,
        mood_score = excluded.mood_score,
-       cover_image_id = excluded.cover_image_id,
        generation_source = excluded.generation_source,
        auto_generation_locked = excluded.auto_generation_locked,
        generated_from_memo_ids = excluded.generated_from_memo_ids,
@@ -241,7 +240,6 @@ export async function upsertDiary(diary: Diary): Promise<void> {
     diary.summary,
     diary.moodKey,
     diary.moodScore,
-    diary.coverImageId ?? null,
     diary.generationSource,
     diary.autoGenerationLocked ? 1 : 0,
     JSON.stringify(diary.generatedFromMemoIds ?? []),
@@ -260,16 +258,15 @@ export async function upsertDiaries(diaries: Diary[]): Promise<void> {
       for (const diary of diaries) {
         await db.runAsync(
           `INSERT INTO diaries (
-            date, summary, mood_key, mood_score, cover_image_id,
+            date, summary, mood_key, mood_score,
             generation_source, auto_generation_locked, generated_from_memo_ids,
             last_auto_generated_at, created_at, updated_at
           )
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(date) DO UPDATE SET
            summary = excluded.summary,
            mood_key = excluded.mood_key,
            mood_score = excluded.mood_score,
-           cover_image_id = excluded.cover_image_id,
            generation_source = excluded.generation_source,
            auto_generation_locked = excluded.auto_generation_locked,
            generated_from_memo_ids = excluded.generated_from_memo_ids,
@@ -279,7 +276,6 @@ export async function upsertDiaries(diaries: Diary[]): Promise<void> {
           diary.summary,
           diary.moodKey,
           diary.moodScore,
-          diary.coverImageId ?? null,
           diary.generationSource,
           diary.autoGenerationLocked ? 1 : 0,
           JSON.stringify(diary.generatedFromMemoIds ?? []),
@@ -518,7 +514,6 @@ function rowToDiary(row: any): Diary {
     summary: row.summary ?? '',
     moodKey: row.mood_key,
     moodScore: row.mood_score,
-    coverImageId: row.cover_image_id ?? undefined,
     generationSource: row.generation_source ?? 'manual',
     autoGenerationLocked: Boolean(row.auto_generation_locked),
     generatedFromMemoIds: row.generated_from_memo_ids
@@ -630,23 +625,21 @@ export async function applyPulledDiaries(
       const date = item.date as string
       const summary = (item.summary as string) ?? ''
       const moodKey = (item.moodKey as string) ?? 'neutral'
-      const moodScore = (item.moodScore as number) ?? 50
-      const coverImageId = (item.coverImageId as string) ?? null
+      const moodScore = (item.moodScore as number) ?? 5
       const createdAt = (item.createdAt as number) ?? 0
       const updatedAt = (item.updatedAt as number) ?? 0
 
       await db.runAsync(
         `INSERT OR REPLACE INTO diaries (
-          date, summary, mood_key, mood_score, cover_image_id,
+          date, summary, mood_key, mood_score,
           generation_source, auto_generation_locked, generated_from_memo_ids,
           last_auto_generated_at, created_at, updated_at
         )
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         date,
         summary,
         moodKey,
         moodScore,
-        coverImageId,
         (item.generationSource as string) ?? 'manual',
         (item.autoGenerationLocked as boolean) ? 1 : 0,
         JSON.stringify((item.generatedFromMemoIds as string[]) ?? []),
@@ -677,19 +670,23 @@ export async function applyPulledResources(
       const storageType = (item.storageType as string) ?? 'local'
       const createdAt = (item.createdAt as number) ?? 0
 
-      await db.runAsync(
-        `INSERT OR REPLACE INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, url, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        id,
-        memoId,
-        filename,
-        resourceType,
-        mimeType,
-        fileSize,
-        storageType,
-        `/api/resources/${id}/download`,
-        createdAt
-      )
+      const insertSql = `INSERT OR REPLACE INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, url, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      try {
+        await db.runAsync(
+          insertSql,
+          id, memoId, filename, resourceType, mimeType, fileSize, storageType,
+          `/api/resources/${id}/download`,
+          createdAt
+        )
+      } catch (e: any) {
+        if (e?.message?.includes('FOREIGN KEY')) {
+          // memo was deleted — skip this orphaned resource
+          console.warn('[applyPulledResources] skipping orphaned resource', id, '(memoId', memoId, 'not found locally)')
+        } else {
+          throw e
+        }
+      }
     }
   })
 }
