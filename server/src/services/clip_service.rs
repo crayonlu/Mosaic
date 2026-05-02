@@ -1,7 +1,10 @@
 use crate::error::AppError;
 use crate::services::ai_client::{AiClient, AiConfig, AiImageInput};
 use crate::services::ServerAiConfigService;
+use crate::storage::Storage;
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
+use std::sync::Arc;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,16 +38,22 @@ pub struct ClipResult {
 
 #[derive(Clone)]
 pub struct ClipService {
+    pool: PgPool,
+    storage: Arc<dyn Storage>,
     ai_client: AiClient,
     server_ai_config_service: ServerAiConfigService,
 }
 
 impl ClipService {
     pub fn new(
+        pool: PgPool,
+        storage: Arc<dyn Storage>,
         ai_client: AiClient,
         server_ai_config_service: ServerAiConfigService,
     ) -> Self {
         Self {
+            pool,
+            storage,
             ai_client,
             server_ai_config_service,
         }
@@ -162,9 +171,34 @@ impl ClipService {
     }
 
     async fn load_image_data(&self, resource_id: &str) -> Result<Vec<u8>, AppError> {
-        let _id = uuid::Uuid::parse_str(resource_id)
+        let id = uuid::Uuid::parse_str(resource_id)
             .map_err(|_| AppError::InvalidInput("Invalid resource_id".to_string()))?;
-        Ok(vec![])
+
+        #[derive(sqlx::FromRow)]
+        struct ResourceRow {
+            storage_path: String,
+            mime_type: String,
+        }
+
+        let resource = sqlx::query_as::<_, ResourceRow>(
+            "SELECT storage_path, mime_type FROM resources WHERE id = $1 AND is_deleted = false",
+        )
+        .bind(id)
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or_else(|| AppError::ResourceNotFound)?;
+
+        if !resource.mime_type.starts_with("image/") {
+            return Err(AppError::InvalidInput("Resource is not an image".to_string()));
+        }
+
+        let data = self
+            .storage
+            .download(&resource.storage_path)
+            .await
+            .map_err(|e| AppError::Storage(e.to_string()))?;
+
+        Ok(data.to_vec())
     }
 }
 

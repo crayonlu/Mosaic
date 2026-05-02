@@ -113,7 +113,12 @@ async fn main() -> anyhow::Result<()> {
     let sync_service = SyncService::new(pool.clone());
     let hybrid_search_service = HybridSearchService::new(pool.clone())
         .with_app_settings_service(app_settings_service.clone());
-    let clip_service = ClipService::new(ai_client.clone(), server_ai_config_service.clone());
+    let clip_service = ClipService::new(
+        pool.clone(),
+        storage.clone(),
+        ai_client.clone(),
+        server_ai_config_service.clone(),
+    );
     ai_diary_service.spawn_job_sweeper();
     log::info!("[OK] Business services initialized");
 
