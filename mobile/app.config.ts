@@ -20,5 +20,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     })
   )
 
+  merged.plugins?.push([
+    'expo-share-intent',
+    {
+      androidIntentFilters: ['text/plain', 'image/*'],
+      androidMainActivityAttributes: {
+        'android:launchMode': 'singleTask',
+      },
+    },
+  ])
+
   return merged
 }

@@ -1,5 +1,7 @@
 import { apiClient } from './client'
 import type {
+  ClipRequest,
+  ClipResult,
   CreateMemoRequest,
   ListMemosQuery,
   MemoWithResourcesResponse,
@@ -49,5 +51,9 @@ export const memosApi = {
 
   getAllTags(): Promise<TagResponse[]> {
     return apiClient.get<TagResponse[]>('/api/memos/tags')
+  },
+
+  clip(data: ClipRequest): Promise<ClipResult> {
+    return apiClient.post<ClipResult>('/api/memos/clip', data)
   },
 }
