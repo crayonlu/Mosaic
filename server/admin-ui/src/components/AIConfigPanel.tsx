@@ -17,6 +17,8 @@ interface ConfigForm {
   model: string
   embeddingDim?: number
   maxTokens?: number
+  supportsVision: boolean
+  supportsThinking: boolean
 }
 
 interface ConfigResponseItem {
@@ -39,11 +41,6 @@ interface ModelListResponse {
   data?: Array<{ id: string }>
 }
 
-interface SaveResponse {
-  supportsVision?: boolean
-  supportsThinking?: boolean
-}
-
 export default function AIConfigPanel() {
   const toast = useToast()
   const [loading, setLoading] = useState(false)
@@ -53,14 +50,9 @@ export default function AIConfigPanel() {
   const [modelsLoading, setModelsLoading] = useState({ bot: false, embedding: false })
   const [modelErrors, setModelErrors] = useState({ bot: '', embedding: '' })
   const [modelLists, setModelLists] = useState({ bot: [] as string[], embedding: [] as string[] })
-  const [saved, setSaved] = useState({
-    bot: { supportsVision: false, supportsThinking: false },
-    embedding: { supportsVision: false, supportsThinking: false },
-  })
-
   const [form, setForm] = useState({
-    bot: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '', embeddingDim: undefined as number | undefined, maxTokens: undefined as number | undefined },
-    embedding: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '', embeddingDim: undefined as number | undefined, maxTokens: undefined as number | undefined },
+    bot: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '', embeddingDim: undefined as number | undefined, maxTokens: undefined as number | undefined, supportsVision: false, supportsThinking: false },
+    embedding: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '', embeddingDim: undefined as number | undefined, maxTokens: undefined as number | undefined, supportsVision: false, supportsThinking: false },
   })
 
   function setFormField(key: ConfigKey, field: Partial<ConfigForm>) {
@@ -93,9 +85,10 @@ export default function AIConfigPanel() {
             model: data[k].model || '',
             embeddingDim: data[k].embeddingDim ?? undefined,
             maxTokens: data[k].maxTokens ?? undefined,
+            supportsVision: data[k].supportsVision || false,
+            supportsThinking: data[k].supportsThinking || false,
           },
         }))
-        setSaved((s) => ({ ...s, [k]: { supportsVision: data[k].supportsVision || false, supportsThinking: data[k].supportsThinking || false } }))
       }
     } catch {
       /* ignore */
@@ -133,14 +126,10 @@ export default function AIConfigPanel() {
     setSaving((s) => ({ ...s, [key]: true }))
     try {
       const f = form[key]
-      const result = (await adminApi(`/ai-config/${key}`, {
+      await adminApi(`/ai-config/${key}`, {
         method: 'PUT',
-        body: { provider: f.provider, baseUrl: f.baseUrl, apiKey: f.apiKey, model: f.model, embeddingDim: f.embeddingDim, maxTokens: f.maxTokens },
-      })) as SaveResponse
-      setSaved((s) => ({
-        ...s,
-        [key]: { supportsVision: result.supportsVision || false, supportsThinking: result.supportsThinking || false },
-      }))
+        body: { provider: f.provider, baseUrl: f.baseUrl, apiKey: f.apiKey, model: f.model, embeddingDim: f.embeddingDim, maxTokens: f.maxTokens, supportsVision: f.supportsVision, supportsThinking: f.supportsThinking },
+      })
       toast.success(`${key === 'bot' ? 'Bot' : 'Embedding'} 配置已保存`)
     } catch {
       toast.error('保存失败')
@@ -170,9 +159,10 @@ export default function AIConfigPanel() {
               model: data[k].model || '',
               embeddingDim: data[k].embeddingDim ?? undefined,
               maxTokens: data[k].maxTokens ?? undefined,
+              supportsVision: data[k].supportsVision || false,
+              supportsThinking: data[k].supportsThinking || false,
             },
           }))
-          setSaved((s) => ({ ...s, [k]: { supportsVision: data[k].supportsVision || false, supportsThinking: data[k].supportsThinking || false } }))
         }
       } catch {
         /* ignore */
@@ -301,12 +291,28 @@ export default function AIConfigPanel() {
           </div>
         )}
 
-        {(saved[key].supportsVision || saved[key].supportsThinking) && (
-          <div className="flex gap-2 text-[11px] text-muted-foreground">
-            {saved[key].supportsVision && <span>✓ 图片输入</span>}
-            {saved[key].supportsThinking && <span>✓ 心路历程</span>}
+        <div className="flex flex-col gap-1">
+          <label className="text-[11px] font-medium text-muted-foreground">模型能力</label>
+          <p className="m-0 text-[10px] text-muted-foreground">保存时会自动检测，也可手动覆盖。</p>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-1.5 text-[12px] text-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={f.supportsVision}
+                onChange={(e) => setFormField(key, { supportsVision: e.target.checked })}
+              />
+              图片输入
+            </label>
+            <label className="flex items-center gap-1.5 text-[12px] text-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={f.supportsThinking}
+                onChange={(e) => setFormField(key, { supportsThinking: e.target.checked })}
+              />
+              心路历程
+            </label>
           </div>
-        )}
+        </div>
 
         <button
           className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors cursor-pointer hover:bg-primary/80 disabled:opacity-50"
