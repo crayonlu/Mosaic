@@ -10,6 +10,7 @@ import { getMoodColorWithIntensity } from '@mosaic/utils'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
+import { ShareIntentProvider } from 'expo-share-intent'
 import { StatusBar } from 'expo-status-bar'
 import { type ReactNode, useCallback, useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
@@ -159,6 +160,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <ShareIntentProvider>
       <KeyboardProvider>
         <SafeAreaProvider>
           <View style={{ flex: 1, backgroundColor: theme.background }}>
@@ -209,6 +211,14 @@ export default function RootLayout() {
                         headerShown: false,
                       }}
                     />
+                    <Stack.Screen
+                      name="share"
+                      options={{
+                        presentation: 'modal',
+                        animation: 'slide_from_bottom',
+                        headerShown: false,
+                      }}
+                    />
                   </Stack>
                   {themeName !== 'cleanSlate' && (
                     <View
@@ -234,6 +244,7 @@ export default function RootLayout() {
           </View>
         </SafeAreaProvider>
       </KeyboardProvider>
+      </ShareIntentProvider>
     </GestureHandlerRootView>
   )
 }

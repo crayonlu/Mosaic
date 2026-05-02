@@ -1,7 +1,8 @@
 use crate::admin::activity_log::ActivityLog;
 use crate::middleware::get_user_id;
 use crate::models::{CreateMemoRequest, MemoListQuery, UpdateMemoRequest};
-use crate::services::{HybridSearchService, MemoService, MemoryEmbeddingService};
+use crate::services::clip_service::ClipRequest;
+use crate::services::{ClipService, HybridSearchService, MemoService, MemoryEmbeddingService};
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -354,12 +355,29 @@ pub async fn get_all_tags(req: HttpRequest, memo_service: web::Data<MemoService>
     }
 }
 
+pub async fn clip_content(
+    req: HttpRequest,
+    payload: web::Json<ClipRequest>,
+    clip_service: web::Data<ClipService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match clip_service.process_clip(payload.into_inner()).await {
+        Ok(result) => HttpResponse::Ok().json(result),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
 pub fn configure_memo_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/memos")
             .route(web::post().to(create_memo))
             .route(web::get().to(list_memos)),
     )
+    .service(web::resource("/memos/clip").route(web::post().to(clip_content)))
     .service(web::resource("/memos/tags").route(web::get().to(get_all_tags)))
     .service(web::resource("/memos/search").route(web::get().to(search_memos)))
     .service(web::resource("/memos/date/{date}").route(web::get().to(get_memos_by_date)))

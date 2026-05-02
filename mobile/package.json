@@ -31,6 +31,7 @@
     "expo-notifications": "~0.32.16",
     "expo-router": "~6.0.23",
     "expo-secure-store": "^55.0.9",
+    "expo-share-intent": "5.1.1",
     "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",
     "expo-system-ui": "~6.0.9",
@@ -68,6 +69,7 @@
     "babel-preset-expo": "~54.0.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "patch-package": "^8.0.1",
     "prettier": "^3.7.4",
     "typescript": "~5.9.2"
   },

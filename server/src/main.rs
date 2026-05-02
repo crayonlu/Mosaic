@@ -17,8 +17,9 @@ use database::{create_pool, run_migrations};
 use middleware::{configure_cors, configure_logging, AuthMiddleware};
 use services::{
     AiClient, AiDiaryService, AppSettingsService, AuthService, BotMemoryContextService, BotService,
-    DiaryService, HybridSearchService, MemoService, MemoryEmbeddingService, MemoryRetrievalService,
-    ResourceService, ServerAiConfigService, StatsService, SyncService, TimelineMemoryService,
+    ClipService, DiaryService, HybridSearchService, MemoService, MemoryEmbeddingService,
+    MemoryRetrievalService, ResourceService, ServerAiConfigService, StatsService, SyncService,
+    TimelineMemoryService,
 };
 use storage::create_storage;
 
@@ -112,6 +113,7 @@ async fn main() -> anyhow::Result<()> {
     let sync_service = SyncService::new(pool.clone());
     let hybrid_search_service = HybridSearchService::new(pool.clone())
         .with_app_settings_service(app_settings_service.clone());
+    let clip_service = ClipService::new(ai_client.clone(), server_ai_config_service.clone());
     ai_diary_service.spawn_job_sweeper();
     log::info!("[OK] Business services initialized");
 
@@ -155,6 +157,7 @@ async fn main() -> anyhow::Result<()> {
             .app_data(web::Data::new(memory_embedding_service.clone()))
             .app_data(web::Data::new(hybrid_search_service.clone()))
             .app_data(web::Data::new(app_settings_service.clone()))
+            .app_data(web::Data::new(clip_service.clone()))
             .app_data(activity_log.clone())
             .app_data(started_at.clone())
             .route("/health", web::get().to(health_check))

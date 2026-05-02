@@ -32,3 +32,5 @@ image = { version = "0.25", features = ["jpeg", "webp"] }
 sha2 = "0.10"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 pgvector = { version = "0.4", features = ["sqlx"] }
+readability = "0.3"
+htmd = "0.5"

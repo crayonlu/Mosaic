@@ -70,3 +70,21 @@ export interface SearchMemosResponse {
   pageSize: number
   semanticEnabled: boolean
 }
+
+export interface ClipRequest {
+  clipType: 'url' | 'text' | 'image'
+  url?: string
+  content?: string
+  resourceId?: string
+  userNote?: string
+}
+
+export interface ClipResult {
+  title: string
+  content: string
+  aiSummary: string
+  tags: string[]
+  sourceUrl: string | null
+  sourceType: string
+  originalTitle: string | null
+}
