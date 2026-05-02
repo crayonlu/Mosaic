@@ -1,6 +1,7 @@
 import { useThemeStore } from '@/stores/themeStore'
 import { useEffect, useMemo, useState } from 'react'
 import { StyleSheet, TextInput, View } from 'react-native'
+import { useListContinuation } from './useListContinuation'
 
 interface TextEditorProps {
   value: string
@@ -21,6 +22,7 @@ export function TextEditor({
   const isPlain = appearance === 'plain'
   const minHeight = useMemo(() => (isPlain ? 56 : 120), [isPlain])
   const [contentHeight, setContentHeight] = useState(minHeight)
+  const { handleChange, handleSelectionChange } = useListContinuation(value, onChange)
   const computedHeight = Math.max(minHeight, contentHeight)
 
   useEffect(() => {
@@ -47,7 +49,8 @@ export function TextEditor({
           },
         ]}
         value={value}
-        onChangeText={onChange}
+        onChangeText={handleChange}
+        onSelectionChange={handleSelectionChange}
         onContentSizeChange={event => {
           const nextHeight = Math.ceil(event.nativeEvent.contentSize.height)
           if (nextHeight > 0) {
