@@ -153,7 +153,7 @@ impl SyncService {
         if !updated_dates.is_empty() {
             for date_val in &updated_dates {
                 let diary: Option<DiaryRow> = sqlx::query_as::<_, DiaryRow>(
-                    "SELECT date, summary, mood_key, mood_score, cover_image_id, created_at, updated_at
+                    "SELECT date, summary, mood_key, mood_score, created_at, updated_at
                      FROM diaries WHERE user_id = $1 AND date = $2 AND is_deleted = FALSE",
                 )
                 .bind(user_uuid)
@@ -167,7 +167,6 @@ impl SyncService {
                         "summary": d.summary,
                         "moodKey": d.mood_key,
                         "moodScore": d.mood_score,
-                        "coverImageId": d.cover_image_id.map(|id| id.to_string()),
                         "createdAt": d.created_at,
                         "updatedAt": d.updated_at,
                     }));
@@ -191,6 +190,7 @@ impl SyncService {
              FROM resources r
              LEFT JOIN memos m ON r.memo_id = m.id
              WHERE (m.user_id = $1 OR r.storage_path LIKE $2) AND r.updated_at > $3
+               AND (r.memo_id IS NULL OR (m.is_deleted = FALSE))
              ORDER BY r.updated_at ASC LIMIT 200",
         )
         .bind(user_uuid)
@@ -342,7 +342,6 @@ struct DiaryRow {
     summary: String,
     mood_key: String,
     mood_score: i32,
-    cover_image_id: Option<Uuid>,
     created_at: i64,
     updated_at: i64,
 }

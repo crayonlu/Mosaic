@@ -19,7 +19,6 @@ pub struct DiaryWithMemosResponse {
     pub summary: String,
     pub mood_key: String,
     pub mood_score: i32,
-    pub cover_image_id: Option<uuid::Uuid>,
     pub generation_source: String,
     pub auto_generation_locked: bool,
     pub generated_from_memo_ids: Vec<uuid::Uuid>,

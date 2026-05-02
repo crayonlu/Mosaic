@@ -144,9 +144,9 @@ impl StatsService {
         .fetch_all(&self.pool)
         .await?;
 
-        let diaries = sqlx::query_as::<_, (NaiveDate, String, String, i32, Option<Uuid>)>(
+        let diaries = sqlx::query_as::<_, (NaiveDate, String, String, i32)>(
             r#"
-            SELECT date, summary, mood_key, mood_score, cover_image_id
+            SELECT date, summary, mood_key, mood_score
             FROM diaries
             WHERE user_id = $1 AND date BETWEEN $2 AND $3
             ORDER BY date DESC

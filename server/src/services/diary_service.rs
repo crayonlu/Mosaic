@@ -25,18 +25,17 @@ impl DiaryService {
         req: CreateDiaryRequest,
     ) -> Result<DiaryResponse, AppError> {
         log::info!(
-            "[DiaryService] create_diary start user_id={} date={} mood_key={} mood_score={} cover_image_id={:?}",
+            "[DiaryService] create_diary start user_id={} date={} mood_key={} mood_score={}",
             user_id,
             req.date,
             req.mood_key,
-            req.mood_score,
-            req.cover_image_id
+            req.mood_score
         );
         let user_uuid = Uuid::parse_str(user_id)?;
         let now = Utc::now().timestamp_millis();
 
         let existing: Option<Diary> = sqlx::query_as(
-            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id,
+            "SELECT date, user_id, summary, mood_key, mood_score,
                     generation_source, auto_generation_locked, generated_from_memo_ids,
                     last_auto_generated_at, created_at, updated_at
              FROM diaries WHERE date = $1 AND user_id = $2",
@@ -59,17 +58,15 @@ impl DiaryService {
                  summary = $1,
                  mood_key = $2,
                  mood_score = $3,
-                 cover_image_id = $4,
                  generation_source = 'manual',
                  auto_generation_locked = true,
-                 updated_at = $5
-                 WHERE date = $6 AND user_id = $7
+                 updated_at = $4
+                 WHERE date = $5 AND user_id = $6
                  RETURNING *",
             )
             .bind(&req.summary)
             .bind(&req.mood_key)
             .bind(req.mood_score)
-            .bind(req.cover_image_id)
             .bind(now)
             .bind(req.date)
             .bind(user_uuid)
@@ -78,11 +75,11 @@ impl DiaryService {
         } else {
             sqlx::query_as::<_, Diary>(
                 "INSERT INTO diaries (
-                    date, user_id, summary, mood_key, mood_score, cover_image_id,
+                    date, user_id, summary, mood_key, mood_score,
                     generation_source, auto_generation_locked, generated_from_memo_ids,
                     last_auto_generated_at, created_at, updated_at
                  )
-                 VALUES ($1, $2, $3, $4, $5, $6, 'manual', true, $7, NULL, $8, $9)
+                 VALUES ($1, $2, $3, $4, $5, 'manual', true, $6, NULL, $7, $8)
                  RETURNING *",
             )
             .bind(req.date)
@@ -90,7 +87,6 @@ impl DiaryService {
             .bind(&req.summary)
             .bind(&req.mood_key)
             .bind(req.mood_score)
-            .bind(req.cover_image_id)
             .bind(json!([]))
             .bind(now)
             .bind(now)
@@ -116,7 +112,7 @@ impl DiaryService {
     ) -> Result<DiaryResponse, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let diary = sqlx::query_as::<_, Diary>(
-            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id,
+            "SELECT date, user_id, summary, mood_key, mood_score,
                     generation_source, auto_generation_locked, generated_from_memo_ids,
                     last_auto_generated_at, created_at, updated_at
              FROM diaries WHERE date = $1 AND user_id = $2",
@@ -134,7 +130,7 @@ impl DiaryService {
     pub async fn list_diaries(&self, user_id: &str) -> Result<Vec<DiaryResponse>, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let diaries = sqlx::query_as::<_, Diary>(
-            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id,
+            "SELECT date, user_id, summary, mood_key, mood_score,
                     generation_source, auto_generation_locked, generated_from_memo_ids,
                     last_auto_generated_at, created_at, updated_at
              FROM diaries WHERE user_id = $1 ORDER BY date DESC",
@@ -158,7 +154,7 @@ impl DiaryService {
         let offset = (page - 1) * page_size;
 
         let diaries = sqlx::query_as::<_, Diary>(
-            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id,
+            "SELECT date, user_id, summary, mood_key, mood_score,
                     generation_source, auto_generation_locked, generated_from_memo_ids,
                     last_auto_generated_at, created_at, updated_at
              FROM diaries
@@ -196,7 +192,7 @@ impl DiaryService {
         let user_uuid = Uuid::parse_str(user_id)?;
 
         let diary = match sqlx::query_as::<_, Diary>(
-            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id,
+            "SELECT date, user_id, summary, mood_key, mood_score,
                     generation_source, auto_generation_locked, generated_from_memo_ids,
                     last_auto_generated_at, created_at, updated_at
              FROM diaries WHERE date = $1 AND user_id = $2",
@@ -231,7 +227,6 @@ impl DiaryService {
             summary: diary.summary,
             mood_key: diary.mood_key,
             mood_score: diary.mood_score,
-            cover_image_id: diary.cover_image_id,
             generation_source: diary.generation_source,
             auto_generation_locked: diary.auto_generation_locked,
             generated_from_memo_ids: serde_json::from_value(diary.generated_from_memo_ids)
@@ -317,18 +312,15 @@ impl DiaryService {
              summary = COALESCE($2, summary),
              mood_key = COALESCE($3, mood_key),
              mood_score = COALESCE($4, mood_score),
-             cover_image_id = CASE WHEN $5 THEN $6 ELSE cover_image_id END,
              generation_source = 'manual',
              auto_generation_locked = true
-             WHERE date = $7 AND user_id = $8
+             WHERE date = $5 AND user_id = $6
              RETURNING *",
         )
         .bind(now)
         .bind(&req.summary)
         .bind(&req.mood_key)
         .bind(req.mood_score)
-        .bind(req.cover_image_id.is_some()) // Flag to indicate if cover_image_id should be updated
-        .bind(req.cover_image_id.as_ref().and_then(|v| v.as_ref())) // The actual cover_image_id value
         .bind(date)
         .bind(user_uuid)
         .fetch_optional(&self.pool)
