@@ -174,6 +174,9 @@ struct Article {
 }
 
 async fn fetch_and_extract(url: &str) -> Result<Article, AppError> {
+    let parsed_url = reqwest::Url::parse(url)
+        .map_err(|e| AppError::InvalidInput(format!("Invalid URL: {}", e)))?;
+
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .user_agent("Mozilla/5.0 (compatible; MosaicBot/1.0)")
@@ -192,7 +195,7 @@ async fn fetch_and_extract(url: &str) -> Result<Article, AppError> {
         .map_err(|e| AppError::Internal(format!("Failed to read response: {}", e)))?;
 
     let mut reader = html.as_bytes();
-    let article = readability::extractor::extract(&mut reader, url)
+    let article = readability::extractor::extract(&mut reader, &parsed_url)
         .map_err(|e| AppError::Internal(format!("Failed to extract content: {}", e)))?;
 
     Ok(Article {

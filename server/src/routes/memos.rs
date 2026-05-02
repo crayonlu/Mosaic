@@ -360,7 +360,7 @@ pub async fn clip_content(
     payload: web::Json<ClipRequest>,
     clip_service: web::Data<ClipService>,
 ) -> HttpResponse {
-    let user_id = match get_user_id(&req) {
+    let _user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(e) => return HttpResponse::from_error(e),
     };
