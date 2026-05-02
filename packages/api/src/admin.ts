@@ -23,6 +23,8 @@ export interface ServerAiConfigPayload {
   temperature?: number
   maxTokens?: number
   timeoutSeconds?: number
+  supportsVision?: boolean
+  supportsThinking?: boolean
   embeddingDim?: number
 }
 

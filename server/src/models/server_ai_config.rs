@@ -28,6 +28,8 @@ pub struct ServerAiConfigPayload {
     pub temperature: Option<f64>,
     pub max_tokens: Option<i32>,
     pub timeout_seconds: Option<i32>,
+    pub supports_vision: Option<bool>,
+    pub supports_thinking: Option<bool>,
     pub embedding_dim: Option<i32>,
 }
 

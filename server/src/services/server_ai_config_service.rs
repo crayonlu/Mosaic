@@ -105,7 +105,9 @@ impl ServerAiConfigService {
         key: &str,
         payload: ServerAiConfigPayload,
     ) -> Result<ServerAiConfig, AppError> {
-        let caps = detect_capabilities(&payload.base_url, &payload.api_key, &payload.model).await;
+        let auto_caps = detect_capabilities(&payload.base_url, &payload.api_key, &payload.model).await;
+        let supports_vision = payload.supports_vision.unwrap_or(auto_caps.supports_vision);
+        let supports_thinking = payload.supports_thinking.unwrap_or(auto_caps.supports_thinking);
         let now = chrono::Utc::now().timestamp_millis();
         sqlx::query_as::<_, ServerAiConfig>(
             "INSERT INTO server_ai_configs
@@ -133,8 +135,8 @@ impl ServerAiConfigService {
         .bind(payload.temperature)
         .bind(payload.max_tokens)
         .bind(payload.timeout_seconds)
-        .bind(caps.supports_vision)
-        .bind(caps.supports_thinking)
+        .bind(supports_vision)
+        .bind(supports_thinking)
         .bind(payload.embedding_dim)
         .bind(now)
         .fetch_one(&self.pool)
