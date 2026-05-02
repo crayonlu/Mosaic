@@ -12,11 +12,10 @@ import {
 import { diariesApi, memosApi, type DiaryResponse, type MemoWithResources } from '@mosaic/api'
 import { MOODS, type MoodKey } from '@mosaic/utils'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface ArchiveDialogProps {
-  visible: boolean
   selectedMemos: MemoWithResources[]
   targetDate: string
   existingDiary?: DiaryResponse
@@ -24,34 +23,31 @@ interface ArchiveDialogProps {
   onCancel: () => void
 }
 
-export function ArchiveDialog({
-  visible,
-  selectedMemos,
-  targetDate,
-  existingDiary,
-  onSuccess,
-  onCancel,
-}: ArchiveDialogProps) {
-  const { theme } = useThemeStore()
-  const queryClient = useQueryClient()
-  const sheetRef = useRef<BottomSheetModal>(null)
-  const hasOpenedRef = useRef(false)
+export interface ArchiveDialogRef {
+  present: () => void
+  dismiss: () => void
+}
 
-  const [summary, setSummary] = useState(existingDiary?.summary || '')
-  const [moodKey, setMoodKey] = useState<MoodKey | undefined>(existingDiary?.moodKey as MoodKey)
-  const [moodScore, setMoodScore] = useState(existingDiary?.moodScore || 5)
-  const [loading, setLoading] = useState(false)
+export const ArchiveDialog = forwardRef<ArchiveDialogRef, ArchiveDialogProps>(
+  function ArchiveDialog(
+    { selectedMemos, targetDate, existingDiary, onSuccess, onCancel },
+    ref
+  ) {
+    const { theme } = useThemeStore()
+    const queryClient = useQueryClient()
+    const sheetRef = useRef<BottomSheetModal>(null)
 
-  const snapPoints = useMemo(() => ['40%', '70%'], [])
+    const [summary, setSummary] = useState(existingDiary?.summary || '')
+    const [moodKey, setMoodKey] = useState<MoodKey | undefined>(existingDiary?.moodKey as MoodKey)
+    const [moodScore, setMoodScore] = useState(existingDiary?.moodScore || 5)
+    const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (visible) {
-      hasOpenedRef.current = true
-      sheetRef.current?.present()
-    } else if (hasOpenedRef.current) {
-      sheetRef.current?.dismiss()
-    }
-  }, [visible])
+    const snapPoints = useMemo(() => ['40%', '70%'], [])
+
+    useImperativeHandle(ref, () => ({
+      present: () => sheetRef.current?.present(),
+      dismiss: () => sheetRef.current?.dismiss(),
+    }))
 
   useEffect(() => {
     if (existingDiary) {
@@ -98,7 +94,6 @@ export function ArchiveDialog({
         queryClient.invalidateQueries({ queryKey: ['diary', targetDate] }),
       ])
 
-      sheetRef.current?.dismiss()
       onSuccess()
     } catch (error) {
       console.error('归档失败:', error)
@@ -193,7 +188,7 @@ export function ArchiveDialog({
       </View>
     </BottomSheetModal>
   )
-}
+})
 
 const styles = StyleSheet.create({
   content: {

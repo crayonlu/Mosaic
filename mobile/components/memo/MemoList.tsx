@@ -1,4 +1,4 @@
-import { Loading } from '@/components/ui'
+import { MemoListSkeleton } from '@/components/ui'
 import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
@@ -178,7 +178,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
   }
 
   if (isLoading) {
-    return <Loading text="加载中..." fullScreen />
+    return <MemoListSkeleton count={5} />
   }
 
   return (

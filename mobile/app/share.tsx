@@ -74,7 +74,7 @@ export default function ShareScreen() {
         return
       }
 
-      const result = await apiClient.post<ClipResult>('/api/memos/clip', body)
+      const result = await apiClient.post<ClipResult>('/api/memos/clip', body, 120_000)
       setClipResult(result)
       setTitle(result.title)
       setSelectedTags(result.tags)
@@ -171,11 +171,25 @@ export default function ShareScreen() {
           showsVerticalScrollIndicator={false}
         >
           {clipState === 'loading' && (
-            <View style={styles.centerContent}>
-              <ActivityIndicator size="large" color={theme.primary} />
-              <Text style={[styles.loadingText, { color: theme.textTertiary }]}>
-                提炼中...
-              </Text>
+            <View style={styles.contentFlow}>
+              <View style={[styles.skeletonLine, styles.skeletonShort, { backgroundColor: theme.surfaceMuted }]} />
+              <View style={[styles.skeletonLine, styles.skeletonTitle, { backgroundColor: theme.surfaceMuted }]} />
+              <View style={[styles.skeletonLine, { backgroundColor: theme.surfaceMuted }]} />
+              <View style={[styles.skeletonLine, { backgroundColor: theme.surfaceMuted }]} />
+              <View style={[styles.skeletonLine, styles.skeletonMedium, { backgroundColor: theme.surfaceMuted }]} />
+              <View style={[styles.skeletonLine, styles.skeletonShort, { backgroundColor: theme.surfaceMuted }]} />
+              <View style={[styles.skeletonLine, { backgroundColor: theme.surfaceMuted }]} />
+              <View style={[styles.skeletonLine, styles.skeletonMedium, { backgroundColor: theme.surfaceMuted }]} />
+              <View style={styles.skeletonGap} />
+              <View style={[styles.skeletonLine, styles.skeletonShort, { backgroundColor: theme.surfaceMuted }]} />
+              <View style={[styles.skeletonLine, { backgroundColor: theme.surfaceMuted }]} />
+              <View style={[styles.skeletonLine, styles.skeletonMedium, { backgroundColor: theme.surfaceMuted }]} />
+              <View style={styles.skeletonGap} />
+              <View style={styles.skeletonTagsRow}>
+                <View style={[styles.skeletonTag, { backgroundColor: theme.surfaceMuted }]} />
+                <View style={[styles.skeletonTag, { backgroundColor: theme.surfaceMuted }]} />
+                <View style={[styles.skeletonTag, styles.skeletonTagWide, { backgroundColor: theme.surfaceMuted }]} />
+              </View>
             </View>
           )}
 
@@ -350,5 +364,38 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     minHeight: 80,
     padding: 0,
+  },
+  skeletonLine: {
+    height: 14,
+    borderRadius: 7,
+    marginBottom: 10,
+  },
+  skeletonShort: {
+    width: '40%',
+  },
+  skeletonMedium: {
+    width: '70%',
+  },
+  skeletonTitle: {
+    height: 22,
+    borderRadius: 4,
+    width: '80%',
+    marginBottom: 20,
+  },
+  skeletonGap: {
+    height: 16,
+  },
+  skeletonTagsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  skeletonTag: {
+    height: 28,
+    width: 60,
+    borderRadius: 100,
+  },
+  skeletonTagWide: {
+    width: 80,
   },
 })

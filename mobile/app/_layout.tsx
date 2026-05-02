@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { ShareIntentProvider, useShareIntentContext } from 'expo-share-intent'
 import { StatusBar } from 'expo-status-bar'
-import { type ReactNode, useCallback, useEffect } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import BootSplash from 'react-native-bootsplash'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -53,15 +53,19 @@ function SafeAreaContainer({
 }
 
 function ShareIntentHandler({ children }: { children: ReactNode }) {
-  const { hasShareIntent } = useShareIntentContext()
+  const { hasShareIntent, resetShareIntent } = useShareIntentContext()
   const router = useRouter()
-  const segments = useSegments()
+  const handled = useRef(false)
 
   useEffect(() => {
-    if (hasShareIntent && segments[0] !== 'share') {
+    if (hasShareIntent && !handled.current) {
+      handled.current = true
       router.push('/share')
     }
-  }, [hasShareIntent, segments, router])
+    if (!hasShareIntent) {
+      handled.current = false
+    }
+  }, [hasShareIntent, router, resetShareIntent])
 
   return <>{children}</>
 }

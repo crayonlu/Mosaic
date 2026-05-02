@@ -350,9 +350,10 @@ export class ApiClient {
       auth?: boolean
       retry?: boolean
       extraHeaders?: Record<string, string>
+      timeout?: number
     } = {}
   ): Promise<T> {
-    const { body, query, auth = true, retry = true, extraHeaders } = options
+    const { body, query, auth = true, retry = true, extraHeaders, timeout } = options
 
     try {
       const headers = await this.getHeaders(auth)
@@ -366,7 +367,7 @@ export class ApiClient {
         headers,
         data: body,
         params: query,
-        timeout: REQUEST_TIMEOUT,
+        timeout: timeout ?? REQUEST_TIMEOUT,
       })
 
       if (response.status === 204) {
@@ -527,8 +528,8 @@ export class ApiClient {
     return this.request<T>('GET', path, { query })
   }
 
-  post<T>(path: string, body?: unknown): Promise<T> {
-    return this.request<T>('POST', path, { body })
+  post<T>(path: string, body?: unknown, timeout?: number): Promise<T> {
+    return this.request<T>('POST', path, { body, timeout })
   }
 
   postWithHeaders<T>(
