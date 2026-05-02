@@ -1,7 +1,7 @@
 use crate::error::AppError;
 use crate::services::ai_client::{AiClient, AiConfig, AiImageInput};
 use crate::services::ServerAiConfigService;
-use crate::storage::Storage;
+use crate::storage::traits::Storage;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::sync::Arc;
