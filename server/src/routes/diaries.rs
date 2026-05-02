@@ -82,6 +82,12 @@ pub async fn create_or_update_diary(
     let mut req = payload.into_inner();
     req.date = date;
 
+    if !(1..=10).contains(&req.mood_score) {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "moodScore must be between 1 and 10"
+        }));
+    }
+
     match diary_service.create_diary(&user_id, req).await {
         Ok(diary) => {
             activity_log.record_info(
@@ -118,8 +124,17 @@ pub async fn update_diary(
         }
     };
 
+    let payload = payload.into_inner();
+    if let Some(score) = payload.mood_score {
+        if !(1..=10).contains(&score) {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "moodScore must be between 1 and 10"
+            }));
+        }
+    }
+
     match diary_service
-        .update_diary(&user_id, date, payload.into_inner())
+        .update_diary(&user_id, date, payload)
         .await
     {
         Ok(diary) => {
@@ -185,6 +200,12 @@ pub async fn update_diary_mood(
             }))
         }
     };
+
+    if !(1..=10).contains(&payload.mood_score) {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "moodScore must be between 1 and 10"
+        }));
+    }
 
     match diary_service
         .update_diary_mood(&user_id, date, payload.mood_key.clone(), payload.mood_score)

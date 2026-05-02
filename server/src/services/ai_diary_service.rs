@@ -1,6 +1,6 @@
 use crate::error::AppError;
 use crate::models::{Diary, Memo};
-use crate::services::ai_client::{AiConfig, AiImageInput};
+use crate::services::ai_client::AiConfig;
 use crate::services::{AiClient, AppSettingsService, ServerAiConfigService};
 use crate::storage::traits::Storage;
 use chrono::{DateTime, Datelike, Duration, NaiveDate, TimeZone, Utc};
@@ -24,7 +24,6 @@ pub struct AiDiaryPayload {
     pub summary: String,
     pub mood_key: String,
     pub mood_score: i32,
-    pub cover_image_id: Option<Uuid>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -33,18 +32,6 @@ struct RawAiDiaryPayload {
     summary: String,
     mood_key: String,
     mood_score: i32,
-    cover_image_id: Option<Uuid>,
-}
-
-#[derive(Debug, Clone)]
-struct CoverImageCandidate {
-    id: Uuid,
-    memo_id: Uuid,
-    storage_path: String,
-    mime_type: String,
-    file_size: i64,
-    memo_content: String,
-    created_at: i64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -210,17 +197,9 @@ impl AiDiaryService {
             ));
         }
 
-        let cover_candidates = self.load_cover_candidates(user_id, &memos).await?;
-        let allowed_cover_ids: Vec<Uuid> = cover_candidates.iter().map(|item| item.id).collect();
-        let vision_images = if config.supports_vision {
-            self.load_ai_images(&cover_candidates).await
-        } else {
-            vec![]
-        };
-
         let system_prompt = build_diary_system_prompt();
-        let prompt = build_diary_prompt(target_date, &memos, &cover_candidates, tz);
-        let message = AiClient::build_user_message(&prompt, &vision_images, &config.provider);
+        let prompt = build_diary_prompt(target_date, &memos, tz);
+        let message = AiClient::build_user_message(&prompt, &[], &config.provider);
         let ai_reply = self
             .ai_client
             .send_ai_messages(
@@ -238,7 +217,7 @@ impl AiDiaryService {
             .await
             .map_err(|error| AppError::Processing(error.to_string()))?;
 
-        let payload = Self::parse_ai_diary_payload(&ai_reply.content, &allowed_cover_ids)?;
+        let payload = Self::parse_ai_diary_payload(&ai_reply.content)?;
         self.persist_generated_diary(user_id, target_date, &memos, payload)
             .await?;
 
@@ -251,7 +230,7 @@ impl AiDiaryService {
         target_date: NaiveDate,
     ) -> Result<Option<Diary>, AppError> {
         sqlx::query_as::<_, Diary>(
-            "SELECT date, user_id, summary, mood_key, mood_score, cover_image_id,
+            "SELECT date, user_id, summary, mood_key, mood_score,
                     generation_source, auto_generation_locked, generated_from_memo_ids,
                     last_auto_generated_at, created_at, updated_at
              FROM diaries
@@ -289,72 +268,6 @@ impl AiDiaryService {
         .map_err(AppError::Database)
     }
 
-    async fn load_cover_candidates(
-        &self,
-        user_id: Uuid,
-        memos: &[Memo],
-    ) -> Result<Vec<CoverImageCandidate>, AppError> {
-        let memo_ids: Vec<Uuid> = memos.iter().map(|memo| memo.id).collect();
-        if memo_ids.is_empty() {
-            return Ok(vec![]);
-        }
-
-        let rows = sqlx::query_as::<_, (Uuid, Uuid, String, String, i64, String, i64)>(
-            "SELECT r.id, r.memo_id, r.storage_path, r.mime_type, r.file_size, m.content, r.created_at
-             FROM resources r
-             JOIN memos m ON m.id = r.memo_id
-             WHERE m.user_id = $1
-               AND r.memo_id = ANY($2)
-               AND r.resource_type = 'image'
-               AND r.is_deleted = false
-             ORDER BY r.created_at ASC",
-        )
-        .bind(user_id)
-        .bind(&memo_ids)
-        .fetch_all(&self.pool)
-        .await?;
-
-        Ok(rows
-            .into_iter()
-            .map(
-                |(id, memo_id, storage_path, mime_type, file_size, memo_content, created_at)| {
-                    CoverImageCandidate {
-                        id,
-                        memo_id,
-                        storage_path,
-                        mime_type,
-                        file_size,
-                        memo_content,
-                        created_at,
-                    }
-                },
-            )
-            .collect())
-    }
-
-    async fn load_ai_images(&self, candidates: &[CoverImageCandidate]) -> Vec<AiImageInput> {
-        let mut images = Vec::new();
-        for candidate in candidates.iter().take(4) {
-            if !is_supported_ai_image(candidate) {
-                continue;
-            }
-            match self.storage.download(&candidate.storage_path).await {
-                Ok(data) => images.push(AiImageInput {
-                    mime_type: candidate.mime_type.clone(),
-                    data: data.to_vec(),
-                }),
-                Err(error) => {
-                    log::warn!(
-                        "[AiDiary] failed to load image {} for AI diary prompt: {}",
-                        candidate.id,
-                        error
-                    );
-                }
-            }
-        }
-        images
-    }
-
     async fn persist_generated_diary(
         &self,
         user_id: Uuid,
@@ -370,16 +283,15 @@ impl AiDiaryService {
         let mut tx = self.pool.begin().await?;
         sqlx::query(
             "INSERT INTO diaries (
-                date, user_id, summary, mood_key, mood_score, cover_image_id,
+                date, user_id, summary, mood_key, mood_score,
                 generation_source, auto_generation_locked, generated_from_memo_ids,
                 last_auto_generated_at, created_at, updated_at
              )
-             VALUES ($1, $2, $3, $4, $5, $6, 'ai', false, $7, $8, $8, $8)
+             VALUES ($1, $2, $3, $4, $5, 'ai', false, $6, $7, $7, $7)
              ON CONFLICT (date)
              DO UPDATE SET summary = EXCLUDED.summary,
                            mood_key = EXCLUDED.mood_key,
                            mood_score = EXCLUDED.mood_score,
-                           cover_image_id = EXCLUDED.cover_image_id,
                            generation_source = 'ai',
                            auto_generation_locked = false,
                            generated_from_memo_ids = EXCLUDED.generated_from_memo_ids,
@@ -392,7 +304,6 @@ impl AiDiaryService {
         .bind(&payload.summary)
         .bind(&payload.mood_key)
         .bind(payload.mood_score)
-        .bind(payload.cover_image_id)
         .bind(memo_ids_json)
         .bind(now)
         .execute(&mut *tx)
@@ -473,7 +384,6 @@ impl AiDiaryService {
 
     pub fn parse_ai_diary_payload(
         raw: &str,
-        allowed_cover_ids: &[Uuid],
     ) -> Result<AiDiaryPayload, AppError> {
         let json_slice = extract_json_object(raw)?;
         let payload: RawAiDiaryPayload = serde_json::from_str(json_slice)
@@ -492,32 +402,23 @@ impl AiDiaryService {
             ));
         }
 
-        if !(0..=100).contains(&payload.mood_score) {
+        if !(1..=10).contains(&payload.mood_score) {
             return Err(AppError::InvalidInput(
                 "invalid AI diary mood score".to_string(),
             ));
-        }
-
-        if let Some(cover_image_id) = payload.cover_image_id {
-            if !allowed_cover_ids.contains(&cover_image_id) {
-                return Err(AppError::InvalidInput(
-                    "invalid AI diary cover image selection".to_string(),
-                ));
-            }
         }
 
         Ok(AiDiaryPayload {
             summary,
             mood_key: payload.mood_key,
             mood_score: payload.mood_score,
-            cover_image_id: payload.cover_image_id,
         })
     }
 }
 
 fn build_diary_system_prompt() -> String {
     format!(
-        "You write a daily diary entry from the user's memos. Return only valid JSON with keys summary, moodKey, moodScore, coverImageId. summary must stay grounded in the memos and images. moodKey must be one of: {}. moodScore must be an integer from 0 to 100. coverImageId must be null or one of the candidate image ids provided by the server.",
+        "You write a daily diary entry from the user's memos. Return only valid JSON with keys summary, moodKey, moodScore. summary must stay grounded in the memos. moodKey must be one of: {}. moodScore must be an integer from 1 to 10.",
         ALLOWED_MOOD_KEYS.join(", ")
     )
 }
@@ -525,7 +426,6 @@ fn build_diary_system_prompt() -> String {
 fn build_diary_prompt(
     target_date: NaiveDate,
     memos: &[Memo],
-    cover_candidates: &[CoverImageCandidate],
     tz: Tz,
 ) -> String {
     let memo_lines = memos
@@ -542,27 +442,9 @@ fn build_diary_prompt(
         .collect::<Vec<_>>()
         .join("\n\n");
 
-    let cover_lines = if cover_candidates.is_empty() {
-        "- No candidate images. coverImageId must be null.".to_string()
-    } else {
-        cover_candidates
-            .iter()
-            .map(|candidate| {
-                format!(
-                    "- {} | memo {} | {} | {}",
-                    candidate.id,
-                    candidate.memo_id,
-                    time_label(candidate.created_at, tz),
-                    truncate_text(candidate.memo_content.trim(), 80)
-                )
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
-
     format!(
-        "Target date: {}\n\nMemos:\n{}\n\nCandidate cover images:\n{}\n\nReturn JSON only.",
-        target_date, memo_lines, cover_lines
+        "Target date: {}\n\nMemos:\n{}\n\nReturn JSON only.",
+        target_date, memo_lines
     )
 }
 
@@ -611,13 +493,6 @@ fn time_label(ts_ms: i64, tz: Tz) -> String {
     DateTime::from_timestamp(ts_secs, 0)
         .map(|dt| dt.with_timezone(&tz).format("%H:%M").to_string())
         .unwrap_or_else(|| "00:00".to_string())
-}
-
-fn is_supported_ai_image(candidate: &CoverImageCandidate) -> bool {
-    matches!(
-        candidate.mime_type.as_str(),
-        "image/jpeg" | "image/png" | "image/webp"
-    ) && candidate.file_size <= 10 * 1024 * 1024
 }
 
 fn truncate_text(value: &str, max_chars: usize) -> String {
