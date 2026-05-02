@@ -1,5 +1,3 @@
-import { useRef } from 'react'
-
 type Selection = { start: number; end: number }
 
 const UNORDERED = /^(\s*)([-*])\s/
@@ -29,18 +27,6 @@ function getLineContent(line: string, prefix: string): string {
   return line.slice(prefix.length)
 }
 
-function isEmptyListLine(line: string): boolean {
-  const taskDone = line.match(TASK_DONE)
-  if (taskDone) return line.slice(taskDone[0].length).trim() === ''
-  const taskOpen = line.match(TASK_OPEN)
-  if (taskOpen) return line.slice(taskOpen[0].length).trim() === ''
-  const unordered = line.match(UNORDERED)
-  if (unordered) return line.slice(unordered[0].length).trim() === ''
-  const ordered = line.match(ORDERED)
-  if (ordered) return line.slice(ordered[0].length).trim() === ''
-  return false
-}
-
 function getCurrentLinePrefix(line: string): string {
   const taskDone = line.match(TASK_DONE)
   if (taskDone) return taskDone[0]
@@ -60,36 +46,36 @@ export function useListContinuation(
   handleChange: (newText: string) => void
   handleSelectionChange: (event: { nativeEvent: { selection: Selection } }) => void
 } {
-  const selectionRef = useRef<Selection>({ start: 0, end: 0 })
-
-  function handleSelectionChange(event: { nativeEvent: { selection: Selection } }) {
-    selectionRef.current = event.nativeEvent.selection
+  function handleSelectionChange(_event: { nativeEvent: { selection: Selection } }) {
+    // kept for API compatibility with TextInput onSelectionChange
   }
 
   function handleChange(newText: string) {
-    const cursor = selectionRef.current.start
-
     // Detect a single newline insertion
     if (newText.length !== value.length + 1) {
       onChange(newText)
       return
     }
 
-    // Multi-char selection replaced — don't intervene
-    if (selectionRef.current.start !== selectionRef.current.end) {
+    // Find the inserted character by diffing old and new text
+    // This avoids relying on the stale selectionRef (onChangeText fires before onSelectionChange)
+    let insertPos = -1
+    for (let i = 0; i < newText.length; i++) {
+      if (newText[i] !== value[i]) {
+        insertPos = i
+        break
+      }
+    }
+
+    if (insertPos === -1 || newText[insertPos] !== '\n') {
       onChange(newText)
       return
     }
 
-    // The inserted character must be \n
-    const insertedChar = newText[cursor - 1]
-    if (insertedChar !== '\n') {
-      onChange(newText)
-      return
-    }
+    const cursor = insertPos + 1
 
     // Find the line that was just completed (above the new \n)
-    const textBeforeCursor = newText.slice(0, cursor - 1)
+    const textBeforeCursor = newText.slice(0, insertPos)
     const lineStart = textBeforeCursor.lastIndexOf('\n') + 1
     const currentLine = textBeforeCursor.slice(lineStart)
 
