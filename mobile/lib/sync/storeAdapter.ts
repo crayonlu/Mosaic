@@ -28,19 +28,13 @@ export function createMobileSyncStoreAdapter(): SyncStoreAdapter {
     resource?: { updated: Record<string, unknown>[]; deletedIds: string[] }
   }): Promise<void> {
     if (changes.memo) {
-      console.log('[Sync][store] applying memos updated:', changes.memo.updated.length, 'deleted:', changes.memo.deletedIds.length)
       await applyPulledMemos(changes.memo.updated, changes.memo.deletedIds)
-      console.log('[Sync][store] memos ok')
     }
     if (changes.diary) {
-      console.log('[Sync][store] applying diaries updated:', changes.diary.updated.length, 'deleted:', changes.diary.deletedIds.length)
       await applyPulledDiaries(changes.diary.updated, changes.diary.deletedIds)
-      console.log('[Sync][store] diaries ok')
     }
     if (changes.resource) {
-      console.log('[Sync][store] applying resources updated:', changes.resource.updated.length, 'deleted:', changes.resource.deletedIds.length)
       await applyPulledResources(changes.resource.updated, changes.resource.deletedIds)
-      console.log('[Sync][store] resources ok')
     }
   }
 

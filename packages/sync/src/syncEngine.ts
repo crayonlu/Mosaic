@@ -32,7 +32,6 @@ export function createSyncEngine(api: SyncApiAdapter, store: SyncStoreAdapter, c
     let cursors: SyncCursors | undefined
     try {
       cursors = await store.getCursors()
-      console.log('[Sync] getCursors ok:', JSON.stringify(cursors))
     } catch (e) {
       console.error('[Sync] getCursors failed:', e)
       setStatus('offline')
@@ -41,9 +40,7 @@ export function createSyncEngine(api: SyncApiAdapter, store: SyncStoreAdapter, c
 
     let pullResponse: Awaited<ReturnType<SyncApiAdapter['pull']>>
     try {
-      console.log('[Sync] pulling with clientId:', config.clientId, 'cursors:', JSON.stringify(cursors))
       pullResponse = await api.pull({ clientId: config.clientId, cursors })
-      console.log('[Sync] pull ok, cursors back:', JSON.stringify(pullResponse.cursors))
     } catch (e: any) {
       console.error('[Sync] api.pull failed:', e?.message ?? e, 'status:', e?.status, 'stack:', e?.stack)
       setStatus('offline')
@@ -52,7 +49,6 @@ export function createSyncEngine(api: SyncApiAdapter, store: SyncStoreAdapter, c
 
     try {
       if (store.applyChanges) {
-        console.log('[Sync] applying changes')
         await store.applyChanges(pullResponse.changes)
       }
       await store.updateCursors(pullResponse.cursors)
@@ -64,7 +60,6 @@ export function createSyncEngine(api: SyncApiAdapter, store: SyncStoreAdapter, c
 
     const pulledCount = countChanges(pullResponse.changes)
     lastSyncAt = Date.now()
-    console.log('[Sync] completed, pulledCount:', pulledCount)
     setStatus('completed')
     return { status: 'completed', pulledCount }
   }
