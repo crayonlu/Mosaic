@@ -10,7 +10,7 @@ import { getMoodColorWithIntensity } from '@mosaic/utils'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
-import { ShareIntentProvider } from 'expo-share-intent'
+import { ShareIntentProvider, useShareIntentContext } from 'expo-share-intent'
 import { StatusBar } from 'expo-status-bar'
 import { type ReactNode, useCallback, useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
@@ -50,6 +50,20 @@ function SafeAreaContainer({
       {children}
     </View>
   )
+}
+
+function ShareIntentHandler({ children }: { children: ReactNode }) {
+  const { hasShareIntent } = useShareIntentContext()
+  const router = useRouter()
+  const segments = useSegments()
+
+  useEffect(() => {
+    if (hasShareIntent && segments[0] !== 'share') {
+      router.push('/share')
+    }
+  }, [hasShareIntent, segments, router])
+
+  return <>{children}</>
 }
 
 export default function RootLayout() {
@@ -161,6 +175,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ShareIntentProvider>
+      <ShareIntentHandler>
       <KeyboardProvider>
         <SafeAreaProvider>
           <View style={{ flex: 1, backgroundColor: theme.background }}>
@@ -244,6 +259,7 @@ export default function RootLayout() {
           </View>
         </SafeAreaProvider>
       </KeyboardProvider>
+      </ShareIntentHandler>
       </ShareIntentProvider>
     </GestureHandlerRootView>
   )
