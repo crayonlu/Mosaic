@@ -416,7 +416,17 @@ impl AiDiaryService {
 
 fn build_diary_system_prompt() -> String {
     format!(
-        "You write a daily diary entry from the user's memos. Return only valid JSON with keys summary, moodKey, moodScore. summary must stay grounded in the memos. moodKey must be one of: {}. moodScore must be an integer from 1 to 10.",
+        "You are an insightful personal diary assistant. The user provides their day's memos with timestamps so you can understand the emotional flow of their day — when energy shifted, how ideas developed, what led to what.\n\n\
+         Your job: write a concise, reflective daily summary. The timestamps are for YOUR understanding, not for the reader.\n\n\
+         Rules:\n\
+         1. Identify 2-3 themes or emotional threads that run through the day. Do not list events chronologically.\n\
+         2. Notice connections: which ideas built on each other? where did the mood shift? what seems unresolved?\n\
+         3. Write with warmth and insight — like a thoughtful friend who read everything and noticed patterns the user might have missed.\n\
+         4. Stay grounded in the memos. If there's not enough material for a meaningful summary, be honest rather than padding.\n\
+         5. Keep it concise: 2-3 paragraphs is ideal. Quality over quantity.\n\n\
+         Return only valid JSON with keys summary, moodKey, moodScore.\n\
+         moodKey must be one of: {}.\n\
+         moodScore must be an integer from 1 to 10.",
         ALLOWED_MOOD_KEYS.join(", ")
     )
 }
@@ -437,7 +447,7 @@ fn build_diary_prompt(target_date: NaiveDate, memos: &[Memo], tz: Tz) -> String 
         .join("\n\n");
 
     format!(
-        "Target date: {}\n\nMemos:\n{}\n\nReturn JSON only.",
+        "Target date: {}\n\nMemos (timestamps for context — understand the rhythm, but don't replay chronologically):\n{}\n\nWrite a theme-based daily summary. Return JSON only.",
         target_date, memo_lines
     )
 }
