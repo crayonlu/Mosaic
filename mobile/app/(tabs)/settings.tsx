@@ -492,7 +492,9 @@ export default function SettingsScreen() {
             <Sparkles size={18} color={theme.text} />
             <Text style={[styles.menuItemText, { color: theme.text }]}>AI 配置</Text>
             <View style={{ flex: 1, alignItems: 'flex-end' }}>
-              <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>{statusText}</Text>
+              <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
+                {statusText}
+              </Text>
             </View>
           </TouchableOpacity>
           {showAISettings && (

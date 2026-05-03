@@ -21,11 +21,7 @@ interface ArchiveDialogProps {
     moodKey?: string
     moodScore?: number
   }
-  onConfirm: (
-    summary?: string,
-    moodKey?: string,
-    moodScore?: number,
-  ) => Promise<void>
+  onConfirm: (summary?: string, moodKey?: string, moodScore?: number) => Promise<void>
   isLoading: boolean
   selectedMemosContent?: string
 }

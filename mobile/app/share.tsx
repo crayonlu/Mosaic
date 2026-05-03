@@ -91,9 +91,7 @@ export default function ShareScreen() {
   }, [processShareIntent])
 
   const handleToggleTag = useCallback((tag: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-    )
+    setSelectedTags(prev => (prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]))
   }, [])
 
   const handleSave = useCallback(async () => {
@@ -122,7 +120,15 @@ export default function ShareScreen() {
     } finally {
       setIsSaving(false)
     }
-  }, [clipResult, isSaving, userNote, selectedTags, attachedResourceId, createMemo, resetShareIntent])
+  }, [
+    clipResult,
+    isSaving,
+    userNote,
+    selectedTags,
+    attachedResourceId,
+    createMemo,
+    resetShareIntent,
+  ])
 
   const handleCancel = useCallback(() => {
     resetShareIntent()
@@ -144,20 +150,11 @@ export default function ShareScreen() {
           <Pressable onPress={handleCancel} hitSlop={12} style={styles.headerBtn}>
             <X size={20} color={theme.textTertiary} strokeWidth={1.5} />
           </Pressable>
-          <Pressable
-            onPress={handleSave}
-            disabled={!canSave}
-            style={styles.headerBtn}
-          >
+          <Pressable onPress={handleSave} disabled={!canSave} style={styles.headerBtn}>
             {isSaving ? (
               <ActivityIndicator size="small" color={theme.primary} />
             ) : (
-              <Text
-                style={[
-                  styles.saveText,
-                  { color: theme.primary, opacity: canSave ? 1 : 0.3 },
-                ]}
-              >
+              <Text style={[styles.saveText, { color: theme.primary, opacity: canSave ? 1 : 0.3 }]}>
                 保存
               </Text>
             )}
@@ -172,45 +169,87 @@ export default function ShareScreen() {
         >
           {clipState === 'loading' && (
             <View style={styles.contentFlow}>
-              <View style={[styles.skeletonLine, styles.skeletonShort, { backgroundColor: theme.surfaceMuted }]} />
-              <View style={[styles.skeletonLine, styles.skeletonTitle, { backgroundColor: theme.surfaceMuted }]} />
+              <View
+                style={[
+                  styles.skeletonLine,
+                  styles.skeletonShort,
+                  { backgroundColor: theme.surfaceMuted },
+                ]}
+              />
+              <View
+                style={[
+                  styles.skeletonLine,
+                  styles.skeletonTitle,
+                  { backgroundColor: theme.surfaceMuted },
+                ]}
+              />
               <View style={[styles.skeletonLine, { backgroundColor: theme.surfaceMuted }]} />
               <View style={[styles.skeletonLine, { backgroundColor: theme.surfaceMuted }]} />
-              <View style={[styles.skeletonLine, styles.skeletonMedium, { backgroundColor: theme.surfaceMuted }]} />
-              <View style={[styles.skeletonLine, styles.skeletonShort, { backgroundColor: theme.surfaceMuted }]} />
+              <View
+                style={[
+                  styles.skeletonLine,
+                  styles.skeletonMedium,
+                  { backgroundColor: theme.surfaceMuted },
+                ]}
+              />
+              <View
+                style={[
+                  styles.skeletonLine,
+                  styles.skeletonShort,
+                  { backgroundColor: theme.surfaceMuted },
+                ]}
+              />
               <View style={[styles.skeletonLine, { backgroundColor: theme.surfaceMuted }]} />
-              <View style={[styles.skeletonLine, styles.skeletonMedium, { backgroundColor: theme.surfaceMuted }]} />
+              <View
+                style={[
+                  styles.skeletonLine,
+                  styles.skeletonMedium,
+                  { backgroundColor: theme.surfaceMuted },
+                ]}
+              />
               <View style={styles.skeletonGap} />
-              <View style={[styles.skeletonLine, styles.skeletonShort, { backgroundColor: theme.surfaceMuted }]} />
+              <View
+                style={[
+                  styles.skeletonLine,
+                  styles.skeletonShort,
+                  { backgroundColor: theme.surfaceMuted },
+                ]}
+              />
               <View style={[styles.skeletonLine, { backgroundColor: theme.surfaceMuted }]} />
-              <View style={[styles.skeletonLine, styles.skeletonMedium, { backgroundColor: theme.surfaceMuted }]} />
+              <View
+                style={[
+                  styles.skeletonLine,
+                  styles.skeletonMedium,
+                  { backgroundColor: theme.surfaceMuted },
+                ]}
+              />
               <View style={styles.skeletonGap} />
               <View style={styles.skeletonTagsRow}>
                 <View style={[styles.skeletonTag, { backgroundColor: theme.surfaceMuted }]} />
                 <View style={[styles.skeletonTag, { backgroundColor: theme.surfaceMuted }]} />
-                <View style={[styles.skeletonTag, styles.skeletonTagWide, { backgroundColor: theme.surfaceMuted }]} />
+                <View
+                  style={[
+                    styles.skeletonTag,
+                    styles.skeletonTagWide,
+                    { backgroundColor: theme.surfaceMuted },
+                  ]}
+                />
               </View>
             </View>
           )}
 
           {clipState === 'error' && (
             <View style={styles.centerContent}>
-              <Text style={[styles.errorText, { color: theme.error }]}>
-                {errorMessage}
-              </Text>
+              <Text style={[styles.errorText, { color: theme.error }]}>{errorMessage}</Text>
               <Pressable onPress={handleCancel}>
-                <Text style={[styles.retryText, { color: theme.textSecondary }]}>
-                  返回
-                </Text>
+                <Text style={[styles.retryText, { color: theme.textSecondary }]}>返回</Text>
               </Pressable>
             </View>
           )}
 
           {clipState === 'ready' && clipResult && (
             <View style={styles.contentFlow}>
-              <Text style={[styles.source, { color: theme.textTertiary }]}>
-                {sourceLabel}
-              </Text>
+              <Text style={[styles.source, { color: theme.textTertiary }]}>{sourceLabel}</Text>
 
               <TextInput
                 style={[styles.title, { color: theme.text }]}
@@ -221,9 +260,7 @@ export default function ShareScreen() {
                 multiline
               />
 
-              <Text style={[styles.body_, { color: theme.text }]}>
-                {clipResult.content}
-              </Text>
+              <Text style={[styles.body_, { color: theme.text }]}>{clipResult.content}</Text>
 
               <Text style={[styles.summary, { color: theme.textSecondary }]}>
                 {clipResult.aiSummary}
@@ -236,9 +273,7 @@ export default function ShareScreen() {
                     onPress={() => handleToggleTag(tag)}
                     style={[styles.tag, { backgroundColor: theme.primary }]}
                   >
-                    <Text style={[styles.tagText, { color: theme.onPrimary }]}>
-                      {tag}
-                    </Text>
+                    <Text style={[styles.tagText, { color: theme.onPrimary }]}>{tag}</Text>
                   </Pressable>
                 ))}
                 {clipResult.tags
@@ -249,9 +284,7 @@ export default function ShareScreen() {
                       onPress={() => handleToggleTag(tag)}
                       style={[styles.tag, { backgroundColor: theme.surfaceMuted }]}
                     >
-                      <Text style={[styles.tagText, { color: theme.textSecondary }]}>
-                        {tag}
-                      </Text>
+                      <Text style={[styles.tagText, { color: theme.textSecondary }]}>{tag}</Text>
                     </Pressable>
                   ))}
               </View>

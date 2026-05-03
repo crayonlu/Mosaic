@@ -8,15 +8,15 @@ interface SkeletonLineProps {
   style?: ViewStyle
 }
 
-export function SkeletonLine({ width = '100%', height = 14, borderRadius = 7, style }: SkeletonLineProps) {
+export function SkeletonLine({
+  width = '100%',
+  height = 14,
+  borderRadius = 7,
+  style,
+}: SkeletonLineProps) {
   const { theme } = useThemeStore()
   return (
-    <View
-      style={[
-        { width, height, borderRadius, backgroundColor: theme.surfaceMuted },
-        style,
-      ]}
-    />
+    <View style={[{ width, height, borderRadius, backgroundColor: theme.surfaceMuted }, style]} />
   )
 }
 
