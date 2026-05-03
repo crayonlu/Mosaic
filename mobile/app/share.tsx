@@ -99,9 +99,15 @@ export default function ShareScreen() {
     setIsSaving(true)
 
     try {
-      const content = userNote.trim()
-        ? `${clipResult.content}\n\n---\n我的想法：${userNote}`
-        : clipResult.content
+      let content = clipResult.content
+
+      if (clipResult.sourceUrl) {
+        content = `> ${clipResult.sourceUrl}\n\n${content}`
+      }
+
+      if (userNote.trim()) {
+        content = `${content}\n\n---\n我的想法：${userNote}`
+      }
 
       const resourceIds = attachedResourceId ? [attachedResourceId] : []
 
