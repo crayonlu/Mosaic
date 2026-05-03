@@ -62,7 +62,9 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     }
   }, [currentDate, setCurrentDate, today])
 
-  useEffect(() => { setIsEditing(false) }, [currentDate])
+  useEffect(() => {
+    setIsEditing(false)
+  }, [currentDate])
 
   const currentPageIndex = PREFETCH_DAYS
 
@@ -147,26 +149,40 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
       currentPageRef.current = newIndex
       if (skipNextPageSelectedRef.current) {
         skipNextPageSelectedRef.current = false
-        if (pendingRouteDateRef.current && newIndex === currentPageIndex) pendingRouteDateRef.current = null
+        if (pendingRouteDateRef.current && newIndex === currentPageIndex)
+          pendingRouteDateRef.current = null
         return
       }
       const targetDate = displayDates[newIndex]
       if (!targetDate) return
       if (pendingRouteDateRef.current && targetDate !== pendingRouteDateRef.current) return
-      if (pendingRouteDateRef.current && targetDate === pendingRouteDateRef.current) pendingRouteDateRef.current = null
+      if (pendingRouteDateRef.current && targetDate === pendingRouteDateRef.current)
+        pendingRouteDateRef.current = null
       navigateToDate(targetDate)
     },
     [currentPageIndex, displayDates, navigateToDate]
   )
 
-  const handlePreviousMonth = useCallback(() => navigateToDate(dayjs(currentDate).subtract(1, 'month').format('YYYY-MM-DD')), [currentDate, navigateToDate])
-  const handlePreviousYear  = useCallback(() => navigateToDate(dayjs(currentDate).subtract(1, 'year').format('YYYY-MM-DD')), [currentDate, navigateToDate])
-  const handleNextMonth     = useCallback(() => navigateToDate(dayjs(currentDate).add(1, 'month').format('YYYY-MM-DD')), [currentDate, navigateToDate])
-  const handleNextYear      = useCallback(() => navigateToDate(dayjs(currentDate).add(1, 'year').format('YYYY-MM-DD')), [currentDate, navigateToDate])
+  const handlePreviousMonth = useCallback(
+    () => navigateToDate(dayjs(currentDate).subtract(1, 'month').format('YYYY-MM-DD')),
+    [currentDate, navigateToDate]
+  )
+  const handlePreviousYear = useCallback(
+    () => navigateToDate(dayjs(currentDate).subtract(1, 'year').format('YYYY-MM-DD')),
+    [currentDate, navigateToDate]
+  )
+  const handleNextMonth = useCallback(
+    () => navigateToDate(dayjs(currentDate).add(1, 'month').format('YYYY-MM-DD')),
+    [currentDate, navigateToDate]
+  )
+  const handleNextYear = useCallback(
+    () => navigateToDate(dayjs(currentDate).add(1, 'year').format('YYYY-MM-DD')),
+    [currentDate, navigateToDate]
+  )
 
-  const hasDiary   = dayPageRef.current?.hasDiary   ?? false
+  const hasDiary = dayPageRef.current?.hasDiary ?? false
   const hasChanges = dayPageRef.current?.hasChanges ?? false
-  const isSaving   = dayPageRef.current?.isPending  ?? false
+  const isSaving = dayPageRef.current?.isPending ?? false
 
   const renderPage = useCallback(
     (date: string) => {
@@ -213,20 +229,46 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
         {isEditing ? (
           <TouchableOpacity
             style={styles.headerAction}
-            onPress={() => { refreshEditState(); void handleSave() }}
+            onPress={() => {
+              refreshEditState()
+              void handleSave()
+            }}
             disabled={!hasChanges || isSaving}
           >
-            <Text style={[styles.headerActionText, { color: hasChanges && !isSaving ? theme.primary : theme.textSecondary }]}>
+            <Text
+              style={[
+                styles.headerActionText,
+                { color: hasChanges && !isSaving ? theme.primary : theme.textSecondary },
+              ]}
+            >
               {isSaving ? '保存中...' : '保存'}
             </Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.headerNavGroup}>
-            <TouchableOpacity style={styles.navButton} onPress={handleNextMonth} disabled={isToday} hitSlop={8}>
-              <ChevronRight size={22} color={isToday ? theme.textSecondary : theme.text} strokeWidth={2.2} />
+            <TouchableOpacity
+              style={styles.navButton}
+              onPress={handleNextMonth}
+              disabled={isToday}
+              hitSlop={8}
+            >
+              <ChevronRight
+                size={22}
+                color={isToday ? theme.textSecondary : theme.text}
+                strokeWidth={2.2}
+              />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.navButton} onPress={handleNextYear} disabled={isToday} hitSlop={8}>
-              <ChevronsRight size={22} color={isToday ? theme.textSecondary : theme.text} strokeWidth={2.2} />
+            <TouchableOpacity
+              style={styles.navButton}
+              onPress={handleNextYear}
+              disabled={isToday}
+              hitSlop={8}
+            >
+              <ChevronsRight
+                size={22}
+                color={isToday ? theme.textSecondary : theme.text}
+                strokeWidth={2.2}
+              />
             </TouchableOpacity>
             {hasDiary && (
               <TouchableOpacity style={styles.navButton} onPress={handleStartEdit} hitSlop={8}>

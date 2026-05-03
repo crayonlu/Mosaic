@@ -138,11 +138,7 @@ export default function ArchivePage() {
     setIsArchiveDialogOpen(true)
   }
 
-  const handleArchiveConfirm = async (
-    summary?: string,
-    moodKey?: string,
-    moodScore?: number,
-  ) => {
+  const handleArchiveConfirm = async (summary?: string, moodKey?: string, moodScore?: number) => {
     if (selectedMemos.size === 0) return
 
     try {

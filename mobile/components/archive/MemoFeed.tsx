@@ -21,6 +21,7 @@ export function MemoFeed({
   targetDate,
   onMemoPress,
   onMemoDelete,
+  headerComponent,
   isSelectionMode = false,
   selectedIds = [],
   onSelectionChange,
@@ -130,7 +131,12 @@ export function MemoFeed({
   }
 
   if (isLoading) {
-    return <MemoListSkeleton count={6} />
+    return (
+      <View>
+        {headerComponent}
+        <MemoListSkeleton count={6} />
+      </View>
+    )
   }
 
   if (memos.length === 0) {
@@ -154,6 +160,7 @@ export function MemoFeed({
       onEndReached={handleLoadMore}
       onEndReachedThreshold={0.3}
       ListFooterComponent={renderFooter}
+      ListHeaderComponent={headerComponent}
       showsVerticalScrollIndicator={false}
     />
   )

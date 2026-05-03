@@ -178,7 +178,14 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
   }
 
   if (isLoading) {
-    return <MemoListSkeleton count={5} />
+    const HeaderComponent = headerComponent
+    const Header = typeof HeaderComponent === 'function' ? <HeaderComponent /> : HeaderComponent
+    return (
+      <View>
+        {Header}
+        <MemoListSkeleton count={5} />
+      </View>
+    )
   }
 
   return (

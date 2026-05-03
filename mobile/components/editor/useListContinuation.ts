@@ -41,7 +41,7 @@ function getCurrentLinePrefix(line: string): string {
 
 export function useListContinuation(
   value: string,
-  onChange: (text: string) => void,
+  onChange: (text: string) => void
 ): {
   handleChange: (newText: string) => void
   handleSelectionChange: (event: { nativeEvent: { selection: Selection } }) => void

@@ -114,9 +114,9 @@ impl ClipService {
     }
 
     async fn process_text_clip(&self, request: ClipRequest) -> Result<ClipResult, AppError> {
-        let content = request
-            .content
-            .ok_or_else(|| AppError::InvalidInput("Content is required for text clip".to_string()))?;
+        let content = request.content.ok_or_else(|| {
+            AppError::InvalidInput("Content is required for text clip".to_string())
+        })?;
 
         let user_note = request.user_note.unwrap_or_default();
         let ai_input = if user_note.is_empty() {
@@ -189,7 +189,9 @@ impl ClipService {
         .ok_or_else(|| AppError::ResourceNotFound)?;
 
         if !resource.mime_type.starts_with("image/") {
-            return Err(AppError::InvalidInput("Resource is not an image".to_string()));
+            return Err(AppError::InvalidInput(
+                "Resource is not an image".to_string(),
+            ));
         }
 
         let data = self

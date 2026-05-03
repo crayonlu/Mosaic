@@ -145,26 +145,22 @@ export default function RootLayout() {
   // toColor   = next color to transition toward
   // progress  = 0→1 drives the interpolation
   const fromColor = useSharedValue(moodColor)
-  const toColor   = useSharedValue(moodColor)
-  const progress  = useSharedValue(1)
+  const toColor = useSharedValue(moodColor)
+  const progress = useSharedValue(1)
 
   useEffect(() => {
     if (moodColor === toColor.value) return
     cancelAnimation(progress)
-    fromColor.value = toColor.value  // start from previous target
-    toColor.value   = moodColor
-    progress.value  = 0
-    progress.value  = withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    fromColor.value = toColor.value // start from previous target
+    toColor.value = moodColor
+    progress.value = 0
+    progress.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moodColor])
 
   // Runs on UI thread — true RGB lerp at 60fps, no JS bridge
   const moodBgStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      progress.value,
-      [0, 1],
-      [fromColor.value, toColor.value],
-    ),
+    backgroundColor: interpolateColor(progress.value, [0, 1], [fromColor.value, toColor.value]),
   }))
 
   const isAppReady = isInitialized && !isLoading
@@ -179,91 +175,93 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ShareIntentProvider>
-      <ShareIntentHandler>
-      <KeyboardProvider>
-        <SafeAreaProvider>
-          <View style={{ flex: 1, backgroundColor: theme.background }}>
-            {!isAppReady && <ThemeAwareSplash />}
-            <SafeAreaContainer backgroundColor={isDiariesTab ? 'transparent' : theme.background}>
-              {isDiariesTab && (
-                <>
-                  {/* Animated.View drives the mood color on UI thread via interpolateColor.
+        <ShareIntentHandler>
+          <KeyboardProvider>
+            <SafeAreaProvider>
+              <View style={{ flex: 1, backgroundColor: theme.background }}>
+                {!isAppReady && <ThemeAwareSplash />}
+                <SafeAreaContainer
+                  backgroundColor={isDiariesTab ? 'transparent' : theme.background}
+                >
+                  {isDiariesTab && (
+                    <>
+                      {/* Animated.View drives the mood color on UI thread via interpolateColor.
                       Inner LinearGradient fades it to transparent downward — no animated props needed. */}
-                  <Animated.View
-                    pointerEvents="none"
-                    style={[StyleSheet.absoluteFill, moodBgStyle]}
-                  >
-                    <LinearGradient
-                      colors={['transparent', theme.background]}
-                      style={StyleSheet.absoluteFill}
-                      start={{ x: 0.5, y: 0 }}
-                      end={{ x: 0.5, y: 1 }}
-                    />
-                  </Animated.View>
-                </>
-              )}
-              <StatusBar style="auto" />
-              <BottomSheetModalProvider>
-                <QueryProvider>
-                  {isAuthenticated && !isServerReachable && (
-                    <View style={[styles.offlineBanner, { backgroundColor: theme.error }]}>
-                      <Text style={[styles.offlineText, { color: theme.onPrimary }]}>
-                        {lastError || '无法连接到服务器'}
-                      </Text>
-                    </View>
+                      <Animated.View
+                        pointerEvents="none"
+                        style={[StyleSheet.absoluteFill, moodBgStyle]}
+                      >
+                        <LinearGradient
+                          colors={['transparent', theme.background]}
+                          style={StyleSheet.absoluteFill}
+                          start={{ x: 0.5, y: 0 }}
+                          end={{ x: 0.5, y: 1 }}
+                        />
+                      </Animated.View>
+                    </>
                   )}
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                      contentStyle: {
-                        backgroundColor: isDiariesTab ? 'transparent' : theme.background,
-                      },
-                    }}
-                  >
-                    <Stack.Screen name="setup" options={{ headerShown: false }} />
-                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                    <Stack.Screen
-                      name="modal"
-                      options={{
-                        presentation: 'modal',
-                        animation: 'slide_from_bottom',
-                        headerShown: false,
-                      }}
-                    />
-                    <Stack.Screen
-                      name="share"
-                      options={{
-                        presentation: 'modal',
-                        animation: 'slide_from_bottom',
-                        headerShown: false,
-                      }}
-                    />
-                  </Stack>
-                  {themeName !== 'cleanSlate' && (
-                    <View
-                      pointerEvents="none"
-                      style={[StyleSheet.absoluteFill, styles.noiseOverlay]}
-                    >
-                      <Image
-                        source={require('../assets/images/noise.png')}
-                        contentFit="cover"
-                        style={[styles.noiseImage, { opacity: 0.6 }]}
-                      />
-                    </View>
-                  )}
-                  <ToastContainer />
-                  {!isAppReady && (
-                    <View style={styles.splashOverlay}>
-                      <ThemeAwareSplash />
-                    </View>
-                  )}
-                </QueryProvider>
-              </BottomSheetModalProvider>
-            </SafeAreaContainer>
-          </View>
-        </SafeAreaProvider>
-      </KeyboardProvider>
-      </ShareIntentHandler>
+                  <StatusBar style="auto" />
+                  <BottomSheetModalProvider>
+                    <QueryProvider>
+                      {isAuthenticated && !isServerReachable && (
+                        <View style={[styles.offlineBanner, { backgroundColor: theme.error }]}>
+                          <Text style={[styles.offlineText, { color: theme.onPrimary }]}>
+                            {lastError || '无法连接到服务器'}
+                          </Text>
+                        </View>
+                      )}
+                      <Stack
+                        screenOptions={{
+                          headerShown: false,
+                          contentStyle: {
+                            backgroundColor: isDiariesTab ? 'transparent' : theme.background,
+                          },
+                        }}
+                      >
+                        <Stack.Screen name="setup" options={{ headerShown: false }} />
+                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                        <Stack.Screen
+                          name="modal"
+                          options={{
+                            presentation: 'modal',
+                            animation: 'slide_from_bottom',
+                            headerShown: false,
+                          }}
+                        />
+                        <Stack.Screen
+                          name="share"
+                          options={{
+                            presentation: 'modal',
+                            animation: 'slide_from_bottom',
+                            headerShown: false,
+                          }}
+                        />
+                      </Stack>
+                      {themeName !== 'cleanSlate' && (
+                        <View
+                          pointerEvents="none"
+                          style={[StyleSheet.absoluteFill, styles.noiseOverlay]}
+                        >
+                          <Image
+                            source={require('../assets/images/noise.png')}
+                            contentFit="cover"
+                            style={[styles.noiseImage, { opacity: 0.6 }]}
+                          />
+                        </View>
+                      )}
+                      <ToastContainer />
+                      {!isAppReady && (
+                        <View style={styles.splashOverlay}>
+                          <ThemeAwareSplash />
+                        </View>
+                      )}
+                    </QueryProvider>
+                  </BottomSheetModalProvider>
+                </SafeAreaContainer>
+              </View>
+            </SafeAreaProvider>
+          </KeyboardProvider>
+        </ShareIntentHandler>
       </ShareIntentProvider>
     </GestureHandlerRootView>
   )

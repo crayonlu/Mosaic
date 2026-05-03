@@ -1,8 +1,8 @@
 import { useThemeStore } from '@/stores/themeStore'
-import { statsApi } from '@mosaic/api'
+import { useHeatmap } from '@/lib/query'
 import { MOODS, getMoodColor } from '@mosaic/utils'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Animated, {
   useAnimatedStyle,
@@ -95,8 +95,7 @@ function HeatMapSkeleton() {
 
 export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
   const { theme } = useThemeStore()
-  const [data, setData] = useState<HeatMapData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data: heatmapData, isLoading: loading } = useHeatmap()
   const scrollViewRef = useRef<ScrollView>(null)
 
   const moodLegend = useMemo(() => MOODS, [])
@@ -108,80 +107,59 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
     [theme.border]
   )
 
-  const loadHeatMapData = useCallback(async () => {
-    try {
-      setLoading(true)
+  // Process API response into display cells
+  const data = useMemo(() => {
+    if (!heatmapData) return null
 
-      const endDate = new Date()
-      const startDate = new Date()
-      startDate.setMonth(startDate.getMonth() - 6)
+    const startDateStr = dayjs().subtract(6, 'month').format('YYYY-MM-DD')
+    const endDateStr = dayjs().format('YYYY-MM-DD')
 
-      const startDateStr = dayjs(startDate).format('YYYY-MM-DD')
-      const endDateStr = dayjs(endDate).format('YYYY-MM-DD')
-      const response = await statsApi.getHeatmap({
-        startDate: startDateStr,
-        endDate: endDateStr,
+    const dateInfoMap = new Map<string, { count: number; moodKey?: string }>()
+    heatmapData.dates.forEach((date, index) => {
+      const moodKey =
+        (heatmapData.moods?.[index] ?? heatmapData.moodScores?.[index] !== undefined)
+          ? (heatmapData.moods?.[index] ?? undefined)
+          : undefined
+      dateInfoMap.set(date, {
+        count: heatmapData.counts[index],
+        moodKey: moodKey as string | undefined,
       })
+    })
 
-      // Build a map of date to count and mood from API response
-      const dateInfoMap = new Map<string, { count: number; moodKey?: string }>()
-      response.dates.forEach((date, index) => {
-        const moodKey =
-          (response.moods?.[index] ?? response.moodScores?.[index] !== undefined)
-            ? (response.moods?.[index] ?? undefined)
-            : undefined
-        dateInfoMap.set(date, {
-          count: response.counts[index],
-          moodKey: moodKey as string | undefined,
-        })
-      })
+    const cells: HeatMapCell[] = []
+    const start = dayjs(startDateStr)
+    const end = dayjs(endDateStr)
+    const today = dayjs().format('YYYY-MM-DD')
 
-      // Build complete cells array for each day in the range
-      const cells: HeatMapCell[] = []
-      const start = dayjs(startDateStr)
-      const end = dayjs(endDateStr)
-      const today = dayjs().format('YYYY-MM-DD')
+    let current = start
+    while (current.isBefore(end) || current.isSame(end, 'day')) {
+      const dateStr = current.format('YYYY-MM-DD')
+      const info = dateInfoMap.get(dateStr)
+      const count = info?.count || 0
+      const moodKey = info?.moodKey
 
-      let current = start
-      while (current.isBefore(end) || current.isSame(end, 'day')) {
-        const dateStr = current.format('YYYY-MM-DD')
-        const info = dateInfoMap.get(dateStr)
-        const count = info?.count || 0
-        const moodKey = info?.moodKey
-
-        // Calculate color based on mood
-        let color = theme.border // default empty color
-        if (count > 0) {
-          color = getLocalMoodColor(moodKey)
-        }
-
-        cells.push({
-          date: dateStr,
-          count,
-          color,
-          moodKey,
-          isToday: dateStr === today,
-        })
-
-        current = current.add(1, 'day')
+      let color = theme.border
+      if (count > 0) {
+        color = getLocalMoodColor(moodKey)
       }
 
-      setData({
-        startDate: startDateStr,
-        endDate: endDateStr,
-        cells,
+      cells.push({
+        date: dateStr,
+        count,
+        color,
+        moodKey,
+        isToday: dateStr === today,
       })
-    } catch (error) {
-      console.error('Failed to load heat map data:', error)
-      setData(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [theme.border, getLocalMoodColor])
 
-  useEffect(() => {
-    loadHeatMapData()
-  }, [loadHeatMapData])
+      current = current.add(1, 'day')
+    }
+
+    return {
+      startDate: startDateStr,
+      endDate: endDateStr,
+      cells,
+    }
+  }, [heatmapData, theme.border, getLocalMoodColor])
 
   // Scroll to end (today) after data loads
   useEffect(() => {

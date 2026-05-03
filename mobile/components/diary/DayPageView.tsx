@@ -85,18 +85,19 @@ export const DayPageView = forwardRef<DayPageViewRef, DayPageViewProps>(function
     if (isEditing) onEditStateChange?.()
   }, [hasChanges, isEditing]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  useImperativeHandle(ref, () => ({
-    hasChanges,
-    isPending: updateDiary.isPending,
-    hasDiary: !!diary,
-    save: handleSave,
-    cancel: handleCancel,
-  }), [hasChanges, updateDiary.isPending, diary, handleSave, handleCancel])
-
-  const handleMemoPress = useCallback(
-    (memoId: string) => onMemoPress?.(memoId),
-    [onMemoPress]
+  useImperativeHandle(
+    ref,
+    () => ({
+      hasChanges,
+      isPending: updateDiary.isPending,
+      hasDiary: !!diary,
+      save: handleSave,
+      cancel: handleCancel,
+    }),
+    [hasChanges, updateDiary.isPending, diary, handleSave, handleCancel]
   )
+
+  const handleMemoPress = useCallback((memoId: string) => onMemoPress?.(memoId), [onMemoPress])
 
   if (isLoading) {
     return (

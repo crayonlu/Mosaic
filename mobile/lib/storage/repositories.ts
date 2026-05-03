@@ -675,14 +675,26 @@ export async function applyPulledResources(
       try {
         await db.runAsync(
           insertSql,
-          id, memoId, filename, resourceType, mimeType, fileSize, storageType,
+          id,
+          memoId,
+          filename,
+          resourceType,
+          mimeType,
+          fileSize,
+          storageType,
           `/api/resources/${id}/download`,
           createdAt
         )
       } catch (e: any) {
         if (e?.message?.includes('FOREIGN KEY')) {
           // memo was deleted — skip this orphaned resource
-          console.warn('[applyPulledResources] skipping orphaned resource', id, '(memoId', memoId, 'not found locally)')
+          console.warn(
+            '[applyPulledResources] skipping orphaned resource',
+            id,
+            '(memoId',
+            memoId,
+            'not found locally)'
+          )
         } else {
           throw e
         }

@@ -8,7 +8,14 @@ export function createMobileSyncApiAdapter(): SyncApiAdapter {
         const res = await apiClient.post<SyncPullResponse>('/api/sync/pull', request)
         return res
       } catch (e: any) {
-        console.error('[Sync][apiAdapter] pull error:', e?.message ?? e, 'status:', e?.status ?? e?.statusCode, 'response:', e?.response ?? e?.body)
+        console.error(
+          '[Sync][apiAdapter] pull error:',
+          e?.message ?? e,
+          'status:',
+          e?.status ?? e?.statusCode,
+          'response:',
+          e?.response ?? e?.body
+        )
         throw e
       }
     },

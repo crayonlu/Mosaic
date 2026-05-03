@@ -382,9 +382,7 @@ impl AiDiaryService {
             .timestamp_millis()
     }
 
-    pub fn parse_ai_diary_payload(
-        raw: &str,
-    ) -> Result<AiDiaryPayload, AppError> {
+    pub fn parse_ai_diary_payload(raw: &str) -> Result<AiDiaryPayload, AppError> {
         let json_slice = extract_json_object(raw)?;
         let payload: RawAiDiaryPayload = serde_json::from_str(json_slice)
             .map_err(|e| AppError::InvalidInput(format!("invalid AI diary JSON: {}", e)))?;
@@ -423,11 +421,7 @@ fn build_diary_system_prompt() -> String {
     )
 }
 
-fn build_diary_prompt(
-    target_date: NaiveDate,
-    memos: &[Memo],
-    tz: Tz,
-) -> String {
+fn build_diary_prompt(target_date: NaiveDate, memos: &[Memo], tz: Tz) -> String {
     let memo_lines = memos
         .iter()
         .map(|memo| {

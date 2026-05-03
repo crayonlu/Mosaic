@@ -105,9 +105,12 @@ impl ServerAiConfigService {
         key: &str,
         payload: ServerAiConfigPayload,
     ) -> Result<ServerAiConfig, AppError> {
-        let auto_caps = detect_capabilities(&payload.base_url, &payload.api_key, &payload.model).await;
+        let auto_caps =
+            detect_capabilities(&payload.base_url, &payload.api_key, &payload.model).await;
         let supports_vision = payload.supports_vision.unwrap_or(auto_caps.supports_vision);
-        let supports_thinking = payload.supports_thinking.unwrap_or(auto_caps.supports_thinking);
+        let supports_thinking = payload
+            .supports_thinking
+            .unwrap_or(auto_caps.supports_thinking);
         let now = chrono::Utc::now().timestamp_millis();
         sqlx::query_as::<_, ServerAiConfig>(
             "INSERT INTO server_ai_configs

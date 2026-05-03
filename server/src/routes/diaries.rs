@@ -133,10 +133,7 @@ pub async fn update_diary(
         }
     }
 
-    match diary_service
-        .update_diary(&user_id, date, payload)
-        .await
-    {
+    match diary_service.update_diary(&user_id, date, payload).await {
         Ok(diary) => {
             activity_log.record_info(
                 "update_diary",
