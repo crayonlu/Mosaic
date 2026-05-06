@@ -47,6 +47,22 @@ function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
   return <Image source={{ uri: avatarUrl, headers: authHeaders }} style={styles.avatarImage} />
 }
 
+function BotAvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    void getBearerAuthHeaders().then(setAuthHeaders)
+  }, [])
+
+  return (
+    <Image
+      source={{ uri: avatarUrl, headers: authHeaders }}
+      style={styles.botAvatarImage}
+      contentFit="cover"
+    />
+  )
+}
+
 export default function SettingsScreen() {
   const { theme, themeMode, themeName, setThemeMode, setThemeName } = useThemeStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
@@ -300,11 +316,7 @@ export default function SettingsScreen() {
               >
                 <View style={[styles.botAvatar, { backgroundColor: theme.primary }]}>
                   {bot.avatarUrl ? (
-                    <Image
-                      source={{ uri: bot.avatarUrl }}
-                      style={styles.botAvatarImage}
-                      contentFit="cover"
-                    />
+                    <BotAvatarImageWithAuth avatarUrl={bot.avatarUrl} />
                   ) : (
                     <Text style={[styles.botAvatarText, { color: theme.onPrimary }]}>
                       {bot.name.charAt(0).toUpperCase()}
