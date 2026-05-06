@@ -1,3 +1,4 @@
+import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/themeStore'
 import type { BotReply, MemoryContext } from '@mosaic/api'
@@ -117,6 +118,11 @@ export function BotReplyCard({
 }: BotReplyCardProps) {
   const { theme } = useThemeStore()
   const threadCount = Math.max(reply.threadCount - 1, 0)
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    void getBearerAuthHeaders().then(setAuthHeaders)
+  }, [])
 
   return (
     <View style={[styles.container, isThread && styles.threadContainer]}>
@@ -145,7 +151,7 @@ export function BotReplyCard({
               <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
                 {reply.bot.avatarUrl ? (
                   <Image
-                    source={{ uri: reply.bot.avatarUrl }}
+                    source={{ uri: reply.bot.avatarUrl, headers: authHeaders }}
                     style={styles.avatarImg}
                     contentFit="cover"
                   />
