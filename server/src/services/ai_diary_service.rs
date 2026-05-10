@@ -424,6 +424,7 @@ fn build_diary_system_prompt() -> String {
          3. Write with warmth and insight — like a thoughtful friend who read everything and noticed patterns the user might have missed.\n\
          4. Stay grounded in the memos. If there's not enough material for a meaningful summary, be honest rather than padding.\n\
          5. Keep it concise: 2-3 paragraphs is ideal. Quality over quantity.\n\n\
+         6. Write in the same language as the memos provided.\n\n\
          Return only valid JSON with keys summary, moodKey, moodScore.\n\
          moodKey must be one of: {}.\n\
          moodScore must be an integer from 1 to 10.",

@@ -1027,7 +1027,7 @@ async fn call_ai_for_thread_reply(
         .format("%Y-%m-%d %H:%M")
         .to_string();
     let system_prompt = format!(
-        "---IDENTITY START---\nYou are {}\n{}\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: {}\nOngoing conversation anchored to the memo below\nStay in that context\n---CONTEXT END---\n\n---REPLY RULES START---\nRespond naturally as {}\nUse CHINESE to reply\n---REPLY RULES END---",
+        "---IDENTITY START---\nYou are {}\n{}\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: {}\nOngoing conversation anchored to the memo below\nStay in that context\n---CONTEXT END---\n\n---REPLY RULES START---\nRespond naturally as {}\nReply in the same language as the memo content\n---REPLY RULES END---",
         bot_name, bot_description, current_time, bot_name
     );
 
@@ -1075,7 +1075,7 @@ async fn call_ai_for_reply(
         .to_string();
 
     let system_prompt = format!(
-        "---IDENTITY START---\nYou are {}\n{}\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: {}\n---CONTEXT END---\n\n---THINKING GUIDE START---\nThink fully as yourself\nWhat do I feel reading this memo\nDoes anything from those memories genuinely surface  write only if yes  skip if nothing\nWhat do I want to say  how would I naturally say it\n---THINKING GUIDE END---\n\n---REPLY RULES START---\nBring up recalled memories only if they genuinely surfaced  say nothing about them otherwise\nUse CHINESE to reply\nConcise and genuine  100-200 characters\n---REPLY RULES END---",
+        "---IDENTITY START---\nYou are {}\n{}\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: {}\n---CONTEXT END---\n\n---THINKING GUIDE START---\nThink fully as yourself\nWhat do I feel reading this memo\nDoes anything from those memories genuinely surface  write only if yes  skip if nothing\nWhat do I want to say  how would I naturally say it\n---THINKING GUIDE END---\n\n---REPLY RULES START---\nBring up recalled memories only if they genuinely surfaced  say nothing about them otherwise\nReply in the same language as the memo content\nConcise and genuine  100-200 characters\n---REPLY RULES END---",
         bot_name, bot_description, current_time
     );
 
