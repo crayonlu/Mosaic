@@ -97,7 +97,7 @@ impl ClipService {
             format!("{}\n\n---\n\n{}", article.title, truncated)
         } else {
             format!(
-                "{}\n\n---\n\n{}\n\n---\n\n用户备注: {}",
+                "{}\n\n---\n\n{}\n\n---\n\nUser note: {}",
                 article.title, truncated, user_note
             )
         };
@@ -122,7 +122,7 @@ impl ClipService {
         let ai_input = if user_note.is_empty() {
             content.clone()
         } else {
-            format!("{}\n\n---\n\n用户备注: {}", content, user_note)
+            format!("{}\n\n---\n\nUser note: {}", content, user_note)
         };
 
         let config = self.load_ai_config().await?;
@@ -141,10 +141,10 @@ impl ClipService {
 
         let user_note = request.user_note.unwrap_or_default();
         let ai_input = if user_note.is_empty() {
-            "请描述这张图片的内容，并为它生成一个合适的标题和摘要。".to_string()
+            "Describe this image and generate a suitable title and summary.".to_string()
         } else {
             format!(
-                "请描述这张图片的内容，并为它生成一个合适的标题和摘要。\n\n用户备注: {}",
+                "Describe this image and generate a suitable title and summary.\n\nUser note: {}",
                 user_note
             )
         };
@@ -289,31 +289,32 @@ fn extract_field(text: &str, field: &str) -> Option<String> {
 
 fn build_clip_system_prompt(clip_type: &str) -> String {
     let type_instruction = match clip_type {
-        "url" => "用户提供了一篇网页文章的内容。请提炼出核心观点和信息，用简洁的中文重写。",
-        "text" => "用户提供了一段文本内容。请提炼出核心信息，用简洁的中文重写。",
-        "image" => "用户提供了一张图片。请根据图片内容生成描述和摘要。",
-        _ => "请提炼用户提供的内容。",
+        "url" => "The user has provided a web article. Extract the key points and information, and rewrite it concisely.",
+        "text" => "The user has provided a text passage. Extract the key information and rewrite it concisely.",
+        "image" => "The user has provided an image. Generate a description and summary based on the image content.",
+        _ => "Extract and refine the user's content.",
     };
 
     format!(
-        r#"你是一个内容提炼助手。{type_instruction}
+        r#"You are a content refinement assistant. {type_instruction}
+Use the same language as the provided content.
 
-请严格按照以下格式输出：
+Output strictly in the following format:
 
 [TITLE]
-一个简洁有力的标题（15字以内）
+A concise and compelling title
 [/TITLE]
 
 [SUMMARY]
-一句话摘要（30字以内）
+A one-sentence summary
 [/SUMMARY]
 
 [CONTENT]
-提炼后的正文内容（200-500字，保留关键信息，去除噪音）
+The refined main content, preserving key information while removing noise
 [/CONTENT]
 
 [TAGS]
-标签1, 标签2, 标签3（3-5个，用逗号分隔）
+tag1, tag2, tag3 (3-5 tags, comma-separated)
 [/TAGS]"#
     )
 }
