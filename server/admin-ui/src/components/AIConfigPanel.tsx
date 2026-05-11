@@ -246,7 +246,7 @@ export default function AIConfigPanel() {
           </div>
           {modelErrors[key] && <p className="m-0 text-[11px] text-destructive">{modelErrors[key]}</p>}
           {modelLists[key].length > 0 && (
-            <div className="max-h-[160px] overflow-y-auto rounded-md border border-border">
+            <div className="max-h-40 overflow-y-auto rounded-md border border-border">
               {filteredModels(key).map((m) => (
                 <button
                   key={m}
@@ -291,28 +291,30 @@ export default function AIConfigPanel() {
           </div>
         )}
 
-        <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-muted-foreground">模型能力</label>
-          <p className="m-0 text-[10px] text-muted-foreground">保存时会自动检测，也可手动覆盖。</p>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-1.5 text-[12px] text-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={f.supportsVision}
-                onChange={(e) => setFormField(key, { supportsVision: e.target.checked })}
-              />
-              图片输入
-            </label>
-            <label className="flex items-center gap-1.5 text-[12px] text-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={f.supportsThinking}
-                onChange={(e) => setFormField(key, { supportsThinking: e.target.checked })}
-              />
-              心路历程
-            </label>
+        {key === 'bot' && (
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-medium text-muted-foreground">模型能力</label>
+            <p className="m-0 text-[10px] text-muted-foreground">保存时会自动检测，也可手动覆盖。</p>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-1.5 text-[12px] text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={f.supportsVision}
+                  onChange={(e) => setFormField(key, { supportsVision: e.target.checked })}
+                />
+                图片输入
+              </label>
+              <label className="flex items-center gap-1.5 text-[12px] text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={f.supportsThinking}
+                  onChange={(e) => setFormField(key, { supportsThinking: e.target.checked })}
+                />
+                心路历程
+              </label>
+            </div>
           </div>
-        </div>
+        )}
 
         <button
           className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors cursor-pointer hover:bg-primary/80 disabled:opacity-50"
@@ -335,7 +337,7 @@ export default function AIConfigPanel() {
         <button className="border-none bg-transparent text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors" onClick={loadConfig}>刷新</button>
       </div>
       <div className="px-3 py-3 sm:px-4">
-        {loading ? <div className="skeleton h-[120px]" /> : (
+        {loading ? <div className="skeleton h-30" /> : (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {renderCard('bot', 'Bot 模型')}
             {renderCard('embedding', 'Embedding 模型')}

@@ -271,7 +271,7 @@ pub async fn get_ai_config(
         Err(e) => return HttpResponse::from_error(e),
     };
     let embedding = match server_ai_config_service.get("embedding").await {
-        Ok(config) => ServerAiConfigResponse::from_config(config),
+        Ok(config) => ServerAiConfigResponse::from_config(config).without_runtime_capabilities(),
         Err(e) => return HttpResponse::from_error(e),
     };
     HttpResponse::Ok().json(AdminAiConfigResponse { bot, embedding })
@@ -294,7 +294,14 @@ pub async fn update_ai_config(
         .upsert(&key, payload.into_inner())
         .await
     {
-        Ok(config) => HttpResponse::Ok().json(ServerAiConfigResponse::from_config(config)),
+        Ok(config) => {
+            let response = ServerAiConfigResponse::from_config(config);
+            if key == "embedding" {
+                HttpResponse::Ok().json(response.without_runtime_capabilities())
+            } else {
+                HttpResponse::Ok().json(response)
+            }
+        }
         Err(e) => HttpResponse::from_error(e),
     }
 }

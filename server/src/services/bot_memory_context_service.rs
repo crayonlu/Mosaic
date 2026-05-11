@@ -4,6 +4,8 @@ use crate::services::MemoryRetrievalService;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+const MAX_RELATED_MEMOS: i64 = 30;
+
 #[derive(Clone)]
 pub struct BotMemoryContextService {
     pool: PgPool,
@@ -21,7 +23,7 @@ impl BotMemoryContextService {
     pub async fn build_for_memo(&self, memo: &Memo) -> Result<BotMemoryContext, AppError> {
         let similar_memos = self
             .retrieval_service
-            .retrieve_related_memos(memo.user_id, memo, 12)
+            .retrieve_related_memos(memo.user_id, memo, MAX_RELATED_MEMOS)
             .await?;
 
         let estimated_chars = similar_memos
