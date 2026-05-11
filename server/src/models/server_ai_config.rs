@@ -67,4 +67,10 @@ impl ServerAiConfigResponse {
             updated_at: config.updated_at,
         }
     }
+
+    pub fn without_runtime_capabilities(mut self) -> Self {
+        self.supports_vision = false;
+        self.supports_thinking = false;
+        self
+    }
 }

@@ -1122,34 +1122,42 @@ fn build_memory_prefix(memory_context: Option<&BotMemoryContext>, tz: Tz) -> Str
         return String::new();
     };
 
-    let memos: Vec<_> = context.similar_memos.iter().take(6).collect();
-    if memos.is_empty() {
-        return String::new();
-    }
+    const MAX_MEMORY_PREFIX_CHARS: usize = 1600;
 
     let today = Utc::now().with_timezone(&tz).date_naive();
-    let items: Vec<String> = memos
-        .iter()
-        .map(|m| {
-            let memo_date = {
-                let ts_secs = m.created_at / 1000;
-                chrono::DateTime::from_timestamp(ts_secs, 0)
-                    .map(|dt| dt.with_timezone(&tz).date_naive())
-                    .unwrap_or(today)
-            };
-            let diff_days = (today - memo_date).num_days();
-            let label = match diff_days {
-                0 => "today".to_string(),
-                1 => "yesterday".to_string(),
-                2..=6 => format!("{} days ago", diff_days),
-                7..=13 => "last week".to_string(),
-                14..=27 => "2 weeks ago".to_string(),
-                28..=45 => "a month ago".to_string(),
-                _ => format!("{} months ago", diff_days / 30),
-            };
-            format!("- {}  {}", label, m.summary_excerpt)
-        })
-        .collect();
+    let mut items: Vec<String> = Vec::new();
+    let mut used_chars = 0usize;
+
+    for memo in &context.similar_memos {
+        let memo_date = {
+            let ts_secs = memo.created_at / 1000;
+            chrono::DateTime::from_timestamp(ts_secs, 0)
+                .map(|dt| dt.with_timezone(&tz).date_naive())
+                .unwrap_or(today)
+        };
+        let diff_days = (today - memo_date).num_days();
+        let label = match diff_days {
+            0 => "today".to_string(),
+            1 => "yesterday".to_string(),
+            2..=6 => format!("{} days ago", diff_days),
+            7..=13 => "last week".to_string(),
+            14..=27 => "2 weeks ago".to_string(),
+            28..=45 => "a month ago".to_string(),
+            _ => format!("{} months ago", diff_days / 30),
+        };
+
+        let entry = format!("- {}  {}", label, memo.summary_excerpt);
+        let entry_chars = entry.chars().count();
+        if !items.is_empty() && used_chars + entry_chars > MAX_MEMORY_PREFIX_CHARS {
+            break;
+        }
+        used_chars += entry_chars;
+        items.push(entry);
+    }
+
+    if items.is_empty() {
+        return String::new();
+    }
 
     format!(
         "---MEMORY START---\nThings that may naturally surface  no need to force or reference them\n{}\n---MEMORY END---",

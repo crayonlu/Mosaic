@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 const RECENT_DAYS: i64 = 30;
 const MAX_CANDIDATES: i64 = 30;
-const MIN_SEMANTIC: f64 = 0.50;
+const MIN_SEMANTIC: f64 = 0.55;
 
 #[derive(Clone)]
 pub struct MemoryRetrievalService {
@@ -127,6 +127,7 @@ impl MemoryRetrievalService {
         Ok(scored)
     }
 
+    #[allow(dead_code)]
     pub async fn retrieve_recent_memos(
         &self,
         user_id: Uuid,
