@@ -2,6 +2,7 @@ import { MarkdownPreview } from '@/components/common/MarkdownPreview'
 import { ResourceThumbnails } from '@/components/common/ResourceThumbnails'
 import { cn } from '@/lib/utils'
 import type { Memo } from '@mosaic/api'
+import { Pencil } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
 interface MemoCardProps {
@@ -208,6 +209,12 @@ export function MemoCard({
               {(memo.tags?.length ?? 0) > 3 && (
                 <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                   +{(memo.tags?.length ?? 0) - 3}
+                </span>
+              )}
+              {(memo.revisionCount ?? 0) > 1 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                  <Pencil className="h-2.5 w-2.5" />
+                  已编辑
                 </span>
               )}
             </div>

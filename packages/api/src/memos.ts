@@ -4,6 +4,7 @@ import type {
   ClipResult,
   CreateMemoRequest,
   ListMemosQuery,
+  MemoRevision,
   MemoWithResourcesResponse,
   PaginatedResponse,
   SearchMemosQuery,
@@ -55,5 +56,13 @@ export const memosApi = {
 
   clip(data: ClipRequest): Promise<ClipResult> {
     return apiClient.post<ClipResult>('/api/memos/clip', data)
+  },
+
+  getRevisions(memoId: string): Promise<MemoRevision[]> {
+    return apiClient.get<MemoRevision[]>(`/api/memos/${memoId}/revisions`)
+  },
+
+  deleteRevision(memoId: string, revisionId: string): Promise<void> {
+    return apiClient.delete<void>(`/api/memos/${memoId}/revisions/${revisionId}`)
   },
 }

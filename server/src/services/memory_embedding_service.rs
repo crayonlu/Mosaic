@@ -28,9 +28,8 @@ impl MemoryEmbeddingService {
         }
     }
 
-    pub fn build_source_text(&self, memo: &Memo) -> String {
+    pub fn build_source_text(&self, memo: &Memo, revision_context: Option<&str>) -> String {
         let tags: Vec<String> = serde_json::from_value(memo.tags.clone()).unwrap_or_default();
-        let content_excerpt = memo.content.chars().take(500).collect::<String>();
         let summary = memo.ai_summary.clone().unwrap_or_default();
         let tags_text = if tags.is_empty() {
             String::new()
@@ -38,14 +37,29 @@ impl MemoryEmbeddingService {
             tags.join(", ")
         };
 
+        // Use full revision history when available so that historical content
+        // remains discoverable even after the memo is edited.
+        let content_part = match revision_context {
+            Some(ctx) if !ctx.is_empty() => ctx.chars().take(2000).collect::<String>(),
+            _ => memo.content.chars().take(500).collect::<String>(),
+        };
+
         format!(
             "这是一条个人日记记录，用于检索相关历史背景事件。\nsummary: {}\ncontent: {}\ntags: {}",
-            summary, content_excerpt, tags_text
+            summary, content_part, tags_text
         )
     }
 
     pub async fn refresh_for_memo(&self, memo: &Memo) -> Result<(), AppError> {
-        let source_text = self.build_source_text(memo);
+        self.refresh_for_memo_with_context(memo, None).await
+    }
+
+    pub async fn refresh_for_memo_with_context(
+        &self,
+        memo: &Memo,
+        revision_context: Option<&str>,
+    ) -> Result<(), AppError> {
+        let source_text = self.build_source_text(memo, revision_context);
         let now = chrono::Utc::now().timestamp_millis();
         let config = self.server_ai_config_service.get("embedding").await.ok();
         let embedding = self
