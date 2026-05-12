@@ -7,7 +7,7 @@ import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
 import type { Memo } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
-import { Trash2 } from 'lucide-react-native'
+import { Pencil, Trash2 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 
@@ -118,6 +118,12 @@ export function MemoCard({
                 {formattedTime}
               </Text>
             )}
+            {(memo.revisionCount ?? 0) > 1 && (
+              <View style={[styles.editedBadge, { backgroundColor: theme.surfaceMuted }]}>
+                <Pencil size={10} color={theme.textSecondary} strokeWidth={2} />
+                <Text style={[styles.editedBadgeText, { color: theme.textSecondary }]}>已编辑</Text>
+              </View>
+            )}
             {showActions && (
               <View style={styles.actionsContainer}>
                 {onDelete && (
@@ -181,6 +187,17 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 12,
     opacity: 0.7,
+  },
+  editedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  editedBadgeText: {
+    fontSize: 10,
   },
   actionsContainer: {
     flexDirection: 'row',

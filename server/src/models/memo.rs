@@ -24,6 +24,53 @@ pub struct Memo {
     pub ai_summary: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
+    #[serde(default = "default_revision_count")]
+    pub revision_count: i32,
+}
+
+fn default_revision_count() -> i32 {
+    1
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct MemoRevision {
+    pub id: Uuid,
+    pub memo_id: Uuid,
+    pub user_id: Uuid,
+    pub revision_number: i32,
+    pub content: String,
+    pub tags: serde_json::Value,
+    pub ai_summary: Option<String>,
+    pub is_deleted: bool,
+    pub created_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MemoRevisionResponse {
+    pub id: Uuid,
+    pub memo_id: Uuid,
+    pub revision_number: i32,
+    pub content: String,
+    pub tags: Vec<String>,
+    pub ai_summary: Option<String>,
+    pub created_at: i64,
+}
+
+impl MemoRevisionResponse {
+    pub fn from_revision(rev: MemoRevision) -> Self {
+        let tags: Vec<String> = serde_json::from_value(rev.tags).unwrap_or_default();
+        MemoRevisionResponse {
+            id: rev.id,
+            memo_id: rev.memo_id,
+            revision_number: rev.revision_number,
+            content: rev.content,
+            tags,
+            ai_summary: rev.ai_summary,
+            created_at: rev.created_at,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,6 +101,7 @@ pub struct MemoWithResources {
     pub ai_summary: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
+    pub revision_count: i32,
     pub resources: Vec<ResourceResponse>,
 }
 
@@ -199,6 +247,7 @@ impl MemoWithResources {
             ai_summary: memo.ai_summary,
             created_at: memo.created_at,
             updated_at: memo.updated_at,
+            revision_count: memo.revision_count,
             resources,
         }
     }

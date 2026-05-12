@@ -1,275 +1,245 @@
-import { BotReplyList } from '@/components/bot/BotReplyList'
-import { BotThreadSheet } from '@/components/bot/BotThreadSheet'
-import { FullScreenEditor } from '@/components/editor/FullScreenEditor'
-import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
-import { DraggableImageGrid, Loading, toast } from '@/components/ui'
-import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
-import { useConnection } from '@/hooks/useConnection'
-import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { useBotReplies, useDeleteMemo, useMemo as useQueryMemo, useUpdateMemo } from '@/lib/query'
-import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
-import { stringUtils } from '@/lib/utils'
+import { MemoRevisionPage } from '@/components/memo/MemoRevisionPage'
+import { toast } from '@/components/ui/Toast'
+import { useDeleteRevision, useMemo, useRevisions } from '@/lib/query/hooks/useMemos'
+import { useDeleteMemo } from '@/lib/query/mutations/memoMutations'
 import { useThemeStore } from '@/stores/themeStore'
-import { resourcesApi, type BotReply, type ResourceResponse } from '@mosaic/api'
-import { router, useLocalSearchParams } from 'expo-router'
-import { ArrowLeft } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import type { MemoWithResources } from '@mosaic/api'
+import { router, useLocalSearchParams, useNavigation } from 'expo-router'
+import { ArrowLeft, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react-native'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo as useRNMemo,
+  useState,
+} from 'react'
+import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import PagerView from 'react-native-pager-view'
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { theme } = useThemeStore()
-  const { canUseNetwork } = useConnection()
-  const handleError = useErrorHandler()
-  const { data: memo, isLoading } = useQueryMemo(id || '')
-  const { mutateAsync: updateMemo, isPending: isUpdating } = useUpdateMemo()
-  const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
+  const navigation = useNavigation()
+  const pagerRef = useRef<PagerView>(null)
+  const hasInitializedRef = useRef(false)
 
-  const [isEditorVisible, setIsEditorVisible] = useState(false)
-  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
-  const [threadReply, setThreadReply] = useState<BotReply | null>(null)
+  const { data: memo, isLoading: memoLoading } = useMemo(id ?? '')
+  const { data: revisions = [] } = useRevisions(id ?? '')
+  const { mutateAsync: deleteMemo } = useDeleteMemo()
+  const { mutateAsync: deleteRevision } = useDeleteRevision()
 
-  const { refetch: refetchReplies } = useBotReplies(id || '')
+  const pages = useRNMemo(() => {
+    return [...revisions].sort((a, b) => a.revisionNumber - b.revisionNumber)
+  }, [revisions])
 
-  const isPending = isUpdating || isDeleting
+  const totalPages = pages.length > 0 ? pages.length : 1
+  const latestPageIndex = totalPages - 1
+
+  const [currentPage, setCurrentPage] = useState(latestPageIndex)
 
   useEffect(() => {
-    const loadAuthHeaders = async () => {
-      const headers = await getBearerAuthHeaders()
-      setAuthHeaders(headers)
+    // Only jump to latest on first load, not on subsequent refetches
+    // (e.g. after a revision is deleted, we don't want to force-jump the user)
+    if (pages.length > 0 && !hasInitializedRef.current) {
+      hasInitializedRef.current = true
+      const idx = pages.length - 1
+      setCurrentPage(idx)
+      pagerRef.current?.setPageWithoutAnimation(idx)
     }
+  }, [pages.length])
 
-    loadAuthHeaders()
-  }, [])
+  const isOnLatest = currentPage === latestPageIndex
 
-  const toMediaItem = useCallback(
-    (resource: ResourceResponse): MediaGridItem => ({
-      key: resource.id,
-      uri: resourcesApi.getDownloadUrl(resource.id),
-      type: resource.resourceType,
-      thumbnailUri:
-        resource.resourceType === 'video' ? resourcesApi.getThumbnailUrl(resource.id) : undefined,
-    }),
-    []
-  )
+  const goToPrev = useCallback(() => {
+    if (currentPage > 0) {
+      pagerRef.current?.setPage(currentPage - 1)
+    }
+  }, [currentPage])
 
-  const memoMediaItems = useMemo(
-    () => (memo?.resources ?? []).map(toMediaItem),
-    [memo?.resources, toMediaItem]
-  )
-
-  const handleEditSubmit = useCallback(
-    async (content: string, tags: string[], resourceIds: string[], aiSummary?: string) => {
-      if (!memo || !canUseNetwork || isPending) return
-
-      try {
-        const existingResourceIds = memo.resources.map(resource => resource.id)
-        const removedResourceIds = existingResourceIds.filter(id => !resourceIds.includes(id))
-
-        await updateMemo({
-          id: memo.id,
-          data: {
-            content: content.trim(),
-            tags,
-            resourceIds,
-            aiSummary,
-          },
-        })
-
-        for (const resourceId of removedResourceIds) {
-          try {
-            await resourcesApi.delete(resourceId)
-          } catch {
-            // Best-effort cleanup: memo update has succeeded even if resource delete fails.
-          }
-        }
-
-        setIsEditorVisible(false)
-      } catch (error) {
-        handleError(error)
-        toast.error('错误', '更新失败')
-      }
-    },
-    [memo, canUseNetwork, isPending, updateMemo, handleError]
-  )
+  const goToNext = useCallback(() => {
+    if (currentPage < totalPages - 1) {
+      pagerRef.current?.setPage(currentPage + 1)
+    }
+  }, [currentPage, totalPages])
 
   const handleDelete = useCallback(() => {
     if (!memo) return
+    const canDeleteRevision = pages.length > 1 && !isOnLatest
 
-    toast.show({
-      type: 'warning',
-      title: '确认删除',
-      message: '确定要删除这条Memo吗？此操作无法撤销。',
-      actionLabel: '删除',
-      onAction: async () => {
-        try {
-          await deleteMemo(memo.id)
-          router.back()
-        } catch (error) {
-          handleError(error)
-          toast.error('错误', '删除失败')
-        }
-      },
+    const doDeleteRevision = async () => {
+      const rev = pages[currentPage]
+      if (!rev) return
+      try {
+        await deleteRevision({ memoId: memo.id, revisionId: rev.id })
+        toast.show({ type: 'success', title: '已删除该版本' })
+      } catch {
+        toast.show({ type: 'error', title: '删除失败' })
+      }
+    }
+
+    const doDeleteMemo = async () => {
+      try {
+        await deleteMemo(memo.id)
+        toast.show({ type: 'success', title: '已删除' })
+        router.back()
+      } catch {
+        toast.show({ type: 'error', title: '删除失败' })
+      }
+    }
+
+    if (canDeleteRevision) {
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ['取消', '删除此版本', '删除整个记录'],
+            destructiveButtonIndex: [1, 2],
+            cancelButtonIndex: 0,
+          },
+          buttonIdx => {
+            if (buttonIdx === 1) doDeleteRevision()
+            else if (buttonIdx === 2) doDeleteMemo()
+          }
+        )
+      } else {
+        Alert.alert('删除', '请选择删除方式', [
+          { text: '取消', style: 'cancel' },
+          { text: '删除此版本', style: 'destructive', onPress: doDeleteRevision },
+          { text: '删除整个记录', style: 'destructive', onPress: doDeleteMemo },
+        ])
+      }
+    } else {
+      Alert.alert('删除记录', '确定要删除这条记录吗？', [
+        { text: '取消', style: 'cancel' },
+        { text: '删除', style: 'destructive', onPress: doDeleteMemo },
+      ])
+    }
+  }, [memo, pages, currentPage, isOnLatest, deleteRevision, deleteMemo])
+
+  const handleEdit = useCallback(() => {
+    if (!memo) return
+    router.push(`/modal?memoId=${memo.id}`)
+  }, [memo])
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      headerTransparent: false,
+      headerStyle: { backgroundColor: theme.background },
+      headerShadowVisible: false,
+      headerLeft: () => (
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={styles.headerBtn}
+        >
+          <ArrowLeft size={22} color={theme.text} strokeWidth={2} />
+        </Pressable>
+      ),
+      headerTitle: () =>
+        totalPages > 1 ? (
+          <View style={styles.headerTitle}>
+            <Pressable
+              onPress={goToPrev}
+              disabled={currentPage === 0}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <ChevronLeft
+                size={20}
+                color={currentPage === 0 ? theme.textSecondary : theme.text}
+                strokeWidth={2}
+              />
+            </Pressable>
+            <Text style={[styles.headerPageLabel, { color: theme.textSecondary }]}>
+              {currentPage + 1} / {totalPages}
+            </Text>
+            <Pressable
+              onPress={goToNext}
+              disabled={currentPage === totalPages - 1}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <ChevronRight
+                size={20}
+                color={currentPage === totalPages - 1 ? theme.textSecondary : theme.text}
+                strokeWidth={2}
+              />
+            </Pressable>
+          </View>
+        ) : null,
+      headerRight: () => (
+        <View style={styles.headerRight}>
+          {isOnLatest && (
+            <Pressable
+              onPress={handleEdit}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={styles.headerBtn}
+            >
+              <Pencil size={18} color={theme.text} strokeWidth={2} />
+            </Pressable>
+          )}
+          <Pressable
+            onPress={handleDelete}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={styles.headerBtn}
+          >
+            <Trash2 size={18} color={theme.textSecondary} strokeWidth={2} />
+          </Pressable>
+        </View>
+      ),
     })
-  }, [memo, deleteMemo, handleError])
+  }, [
+    navigation,
+    theme,
+    currentPage,
+    totalPages,
+    isOnLatest,
+    goToPrev,
+    goToNext,
+    handleEdit,
+    handleDelete,
+  ])
 
-  const handleBotReply = useCallback((reply: BotReply) => {
-    setThreadReply(reply)
-  }, [])
-
-  if (isLoading) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Loading text="加载中..." fullScreen />
-      </View>
-    )
+  if (memoLoading || !memo) {
+    return <View style={[styles.container, { backgroundColor: theme.background }]} />
   }
 
-  if (!memo) {
+  if (pages.length <= 1) {
+    const rev = pages[0] ?? null
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { color: theme.text }]}>Memo不存在</Text>
-        </View>
+        <MemoRevisionPage
+          memo={memo as MemoWithResources}
+          revision={rev}
+          isLatest
+          onBotReply={() => {}}
+        />
       </View>
     )
   }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <TouchableOpacity onPress={router.back} style={styles.backButton}>
-          <ArrowLeft size={24} color={theme.text} />
-        </TouchableOpacity>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            onPress={() => setIsEditorVisible(true)}
-            disabled={isPending}
-            style={[styles.headerAction, { opacity: isPending ? theme.state.disabledOpacity : 1 }]}
-          >
-            <Text style={[styles.headerActionText, { color: theme.textSecondary }]}>编辑</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleDelete}
-            disabled={isPending}
-            style={[styles.headerAction, { opacity: isPending ? theme.state.disabledOpacity : 1 }]}
-          >
-            <Text style={[styles.headerActionText, { color: theme.textSecondary }]}>删除</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
+      <PagerView
+        ref={pagerRef}
+        style={styles.pager}
+        initialPage={latestPageIndex}
+        onPageSelected={e => setCurrentPage(e.nativeEvent.position)}
         scrollEnabled
-        nestedScrollEnabled
-        showsVerticalScrollIndicator
-        alwaysBounceVertical
-        keyboardShouldPersistTaps="handled"
       >
-        {memo.aiSummary && (
-          <View
-            style={[
-              styles.aiSummaryContainer,
-              {
-                backgroundColor: theme.surfaceMuted,
-                borderRadius: theme.radius.medium,
-              },
-            ]}
-          >
-            <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
-            <Text style={[styles.aiSummaryText, { color: theme.textSecondary }]}>
-              {memo.aiSummary}
-            </Text>
-          </View>
-        )}
-
-        <View style={{ padding: 16 }}>
-          <MarkdownRenderer content={memo.content} />
-        </View>
-        {memo.resources.length > 0 && (
-          <View style={styles.resourcesContainer}>
-            <DraggableImageGrid
-              items={memoMediaItems}
-              authHeaders={authHeaders}
-              draggable={false}
-            />
-          </View>
-        )}
-
-        {memo.tags.length > 0 && (
-          <View style={styles.tagsContainer}>
-            {memo.tags.map((tag, index) => (
-              <View key={index} style={[styles.tag, { backgroundColor: theme.surfaceMuted }]}>
-                <Text style={[styles.tagText, { color: theme.textSecondary }]}>#{tag}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <View style={styles.metadata}>
-          <View
-            style={[
-              styles.metadataChip,
-              {
-                backgroundColor: theme.surfaceMuted,
-                borderColor: theme.border,
-              },
-            ]}
-          >
-            <Text style={[styles.metadataLabel, { color: theme.textSecondary }]}>创建</Text>
-            <Text style={[styles.metadataValue, { color: theme.textSecondary }]}>
-              {stringUtils.formatDateTime(memo.createdAt)}
-            </Text>
-          </View>
-          {memo.updatedAt > memo.createdAt && (
-            <View
-              style={[
-                styles.metadataChip,
-                {
-                  backgroundColor: theme.surfaceMuted,
-                  borderColor: theme.border,
-                },
-              ]}
-            >
-              <Text style={[styles.metadataLabel, { color: theme.textSecondary }]}>更新</Text>
-              <Text style={[styles.metadataValue, { color: theme.textSecondary }]}>
-                {stringUtils.formatDateTime(memo.updatedAt)}
-              </Text>
+        {pages.map((rev, idx) => {
+          const isLatest = idx === latestPageIndex
+          return (
+            <View key={rev.id} style={styles.page}>
+              <MemoRevisionPage
+                memo={memo as MemoWithResources}
+                revision={rev}
+                isLatest={isLatest}
+                onBotReply={() => {}}
+              />
             </View>
-          )}
-        </View>
-
-        <BotReplyList
-          memoId={memo.id}
-          onReply={handleBotReply}
-          onMemoNavigate={memoId => router.push(`/memo/${memoId}`)}
-        />
-      </ScrollView>
-
-      <BotThreadSheet
-        visible={Boolean(threadReply)}
-        reply={threadReply}
-        onClose={async () => {
-          setThreadReply(null)
-          await refetchReplies()
-        }}
-      />
-
-      <FullScreenEditor
-        visible={isEditorVisible}
-        title="编辑 Memo"
-        submitLabel="保存"
-        initialContent={memo.content}
-        initialTags={memo.tags}
-        initialAISummary={memo.aiSummary || undefined}
-        initialMediaItems={memoMediaItems}
-        initialResourceIds={memo.resources.map(resource => resource.id)}
-        uploadMemoId={memo.id}
-        onClose={() => setIsEditorVisible(false)}
-        onSubmit={handleEditSubmit}
-      />
+          )
+        })}
+      </PagerView>
     </View>
   )
 }
@@ -278,108 +248,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: 14,
-  },
-  headerAction: {
-    height: 32,
-    paddingHorizontal: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerActionText: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  content: {
+  pager: {
     flex: 1,
   },
-  contentContainer: {
-    flexGrow: 1,
-    paddingTop: 8,
-    paddingBottom: 20,
+  page: {
+    flex: 1,
   },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-    gap: 8,
+  headerBtn: {
+    padding: 4,
   },
-  tag: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  tagText: {
-    fontSize: 13,
-  },
-  aiSummaryContainer: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    padding: 12,
-  },
-  aiSummaryTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  aiSummaryText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  resourcesContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  metadata: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 14,
-  },
-  metadataChip: {
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
+    gap: 8,
   },
-  metadataLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    letterSpacing: 0.2,
+  headerTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  metadataValue: {
-    fontSize: 12,
+  headerPageLabel: {
+    fontSize: 14,
   },
 })

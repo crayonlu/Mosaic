@@ -1,14 +1,14 @@
 import type { ListMemosQuery } from '@mosaic/api'
 import { memosApi } from '@mosaic/api'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  withOfflineFallback,
-  syncMemosPage,
-  syncMemosList,
-  syncSingleMemo,
-  fallbackMemosList,
   fallbackMemosByDate,
+  fallbackMemosList,
   fallbackSingleMemo,
+  syncMemosList,
+  syncMemosPage,
+  syncSingleMemo,
+  withOfflineFallback,
 } from '../offlineSync'
 
 export function useMemos(query: ListMemosQuery = {}) {
@@ -72,5 +72,26 @@ export function useMemosByDate(date: string, query: ListMemosQuery = {}) {
       fallback: () => fallbackMemosByDate(date),
     }),
     enabled: !!date,
+  })
+}
+
+export function useRevisions(memoId: string) {
+  return useQuery({
+    queryKey: ['memo', memoId, 'revisions'],
+    queryFn: () => memosApi.getRevisions(memoId),
+    enabled: !!memoId,
+  })
+}
+
+export function useDeleteRevision() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ memoId, revisionId }: { memoId: string; revisionId: string }) =>
+      memosApi.deleteRevision(memoId, revisionId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['memo', variables.memoId, 'revisions'] })
+      queryClient.invalidateQueries({ queryKey: ['memo', variables.memoId] })
+      queryClient.invalidateQueries({ queryKey: ['memos'] })
+    },
   })
 }

@@ -25,12 +25,13 @@ import { toast } from '@/hooks/useToast'
 import { resolveApiUrl } from '@/lib/sharedApi'
 import { cn } from '@/lib/utils'
 import { normalizeContent } from '@/utils/content'
-import type { BotReply, Memo, Resource } from '@mosaic/api'
+import type { BotReply, Memo, MemoRevision, Resource } from '@mosaic/api'
 import {
   resourcesApi,
   useBotReplies,
   useDeleteMemo,
-  useTriggerReplies,
+  useDeleteRevision,
+  useRevisions,
   useUpdateMemo,
 } from '@mosaic/api'
 import dayjs from 'dayjs'
@@ -38,7 +39,11 @@ import utc from 'dayjs/plugin/utc'
 import {
   ArrowLeft,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
   Edit2,
+  History,
   Image as ImageIcon,
   Loader2,
   Save,
@@ -83,6 +88,7 @@ export function MemoDetail({
   const [isReplaceSummaryDialogOpen, setIsReplaceSummaryDialogOpen] = useState(false)
   const [pendingSummary, setPendingSummary] = useState('')
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [deleteRevisionMode, setDeleteRevisionMode] = useState(false)
   const [isDeleteResourceDialogOpen, setIsDeleteResourceDialogOpen] = useState(false)
   const [resourceToDelete, setResourceToDelete] = useState<string | null>(null)
   const [editingResources, setEditingResources] = useState<Resource[]>([])
@@ -91,12 +97,26 @@ export function MemoDetail({
   const [videoUrls, setVideoUrls] = useState<Map<string, string>>(new Map())
   const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map())
   const [targetReply, setTargetReply] = useState<BotReply | null>(null)
+  const [currentRevisionIndex, setCurrentRevisionIndex] = useState<number | null>(null)
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const { suggestTags, summarizeText, loading: aiLoading } = useAI()
   const updateMemo = useUpdateMemo()
   const deleteMemo = useDeleteMemo()
+  const deleteRevision = useDeleteRevision()
+  const { data: revisions = [] } = useRevisions(memo?.id ?? '')
   const { refetch: refetchReplies } = useBotReplies(memo?.id ?? '')
-  const { mutateAsync: triggerReplies } = useTriggerReplies()
+
+  const sortedRevisions = useMemo(
+    () => [...revisions].sort((a, b) => a.revisionNumber - b.revisionNumber),
+    [revisions]
+  )
+  const totalRevisions = sortedRevisions.length
+  // null = latest (head), or index into sortedRevisions for historical view
+  const isOnLatest = currentRevisionIndex === null
+  const activeRevision: MemoRevision | null =
+    currentRevisionIndex !== null ? (sortedRevisions[currentRevisionIndex] ?? null) : null
+  const displayRevisionNumber =
+    currentRevisionIndex !== null ? currentRevisionIndex + 1 : totalRevisions || 1
 
   const displayResources = useMemo(
     () => (isEditing ? editingResources : memo?.resources || []),
@@ -105,9 +125,16 @@ export function MemoDetail({
   const imageResources = displayResources.filter(r => r.resourceType === 'image')
   const videoResources = displayResources.filter(r => r.resourceType === 'video')
 
+  const memoId = memo?.id
+  useEffect(() => {
+    // Reset to latest view only when the memo itself changes (id change),
+    // not on every background refetch that updates memo content.
+    setCurrentRevisionIndex(null)
+    setIsEditing(false)
+  }, [memoId])
+
   useEffect(() => {
     if (!memo) {
-      setIsEditing(false)
       setEditedContent('')
       setEditedAISummary('')
       return
@@ -236,14 +263,6 @@ export function MemoDetail({
       setHasResourceChanges(false)
       setIsEditing(false)
       onUpdate?.()
-
-      // 触发 Bot 自动回复
-      try {
-        await triggerReplies(memo.id)
-        refetchReplies()
-      } catch (err) {
-        console.error('触发 Bot 回复失败:', err)
-      }
     } catch (error) {
       console.error('保存失败:', error)
       toast.error('Memo保存失败')
@@ -322,14 +341,21 @@ export function MemoDetail({
 
     try {
       setIsDeleting(true)
-      await deleteMemo.mutateAsync(memo.id)
-      onDelete?.()
-      onClose()
+      if (deleteRevisionMode && activeRevision) {
+        await deleteRevision.mutateAsync({ memoId: memo.id, revisionId: activeRevision.id })
+        setCurrentRevisionIndex(null)
+        toast.success('已删除该版本')
+      } else {
+        await deleteMemo.mutateAsync(memo.id)
+        onDelete?.()
+        onClose()
+      }
     } catch (error) {
       console.error('删除失败:', error)
-      toast.error('Memo删除失败')
+      toast.error(deleteRevisionMode ? '版本删除失败' : 'Memo删除失败')
     } finally {
       setIsDeleting(false)
+      setDeleteRevisionMode(false)
     }
   }
 
@@ -467,20 +493,66 @@ export function MemoDetail({
             </Button>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>{dayjs.utc(memo.createdAt).local().format('YYYY-MM-DD HH:mm')}</span>
+                {isOnLatest ? <Calendar className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                <span>
+                  {activeRevision
+                    ? activeRevision.revisionNumber === 1
+                      ? `创建于 ${dayjs.utc(activeRevision.createdAt).local().format('YYYY-MM-DD HH:mm')}`
+                      : `更新于 ${dayjs.utc(activeRevision.createdAt).local().format('YYYY-MM-DD HH:mm')}`
+                    : dayjs.utc(memo.createdAt).local().format('YYYY-MM-DD HH:mm')}
+                </span>
               </div>
             </div>
+            {totalRevisions > 1 && !isEditing && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  disabled={currentRevisionIndex !== null && currentRevisionIndex === 0}
+                  onClick={() =>
+                    setCurrentRevisionIndex(prev =>
+                      prev === null ? totalRevisions - 2 : Math.max(0, prev - 1)
+                    )
+                  }
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground tabular-nums w-10 text-center">
+                  {displayRevisionNumber} / {totalRevisions}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  disabled={isOnLatest}
+                  onClick={() =>
+                    setCurrentRevisionIndex(prev => {
+                      if (prev === null) return null
+                      const next = prev + 1
+                      return next >= totalRevisions - 1 ? null : next
+                    })
+                  }
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
             {!isEditing ? (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={handleStartEdit} disabled={isDeleting}>
-                  <Edit2 className="h-4 w-4 mr-1" />
-                  编辑
-                </Button>
+                {isOnLatest && (
+                  <Button variant="ghost" size="sm" onClick={handleStartEdit} disabled={isDeleting}>
+                    <Edit2 className="h-4 w-4 mr-1" />
+                    编辑
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsDeleteDialogOpen(true)}
+                  onClick={() => {
+                    setDeleteRevisionMode(!isOnLatest && totalRevisions > 1)
+                    setIsDeleteDialogOpen(true)
+                  }}
                   disabled={isDeleting}
                   className="text-destructive hover:text-destructive"
                 >
@@ -661,11 +733,25 @@ export function MemoDetail({
             </div>
           ) : (
             <>
+              {!isOnLatest && activeRevision && (
+                <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">
+                  <History className="h-4 w-4 shrink-0" />
+                  <span>
+                    这是第 {activeRevision.revisionNumber} 版记录（共 {totalRevisions} 版）
+                  </span>
+                  <button
+                    className="ml-auto shrink-0 underline underline-offset-2 hover:opacity-75"
+                    onClick={() => setCurrentRevisionIndex(null)}
+                  >
+                    查看最新版本 →
+                  </button>
+                </div>
+              )}
               <div className="prose prose-sm max-w-none">
-                {normalizeContent(memo.content) ? (
+                {(isOnLatest ? memo.content : (activeRevision?.content ?? '')) ? (
                   <div className="overflow-hidden rounded-xl bg-card/55">
                     <MarkdownPreview
-                      content={memo.content}
+                      content={isOnLatest ? memo.content : (activeRevision?.content ?? '')}
                       className="p-4 prose-p:my-1 prose-headings:my-1 prose-ul:my-1 prose-ol:my-1"
                     />
                   </div>
@@ -677,7 +763,7 @@ export function MemoDetail({
               <div className="space-y-2 rounded-xl bg-muted/20 p-4">
                 <div className="text-sm font-medium text-foreground">AI 摘要</div>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {memo.aiSummary?.trim() ? memo.aiSummary : '暂无摘要'}
+                  {(isOnLatest ? memo.aiSummary : activeRevision?.aiSummary)?.trim() || '暂无摘要'}
                 </p>
               </div>
             </>
@@ -740,19 +826,21 @@ export function MemoDetail({
                 <span>标签</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {memo.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-medium"
-                  >
-                    {tag}
-                  </span>
-                ))}
+                {(isOnLatest ? memo.tags : (activeRevision?.tags ?? memo.tags)).map(
+                  (tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-medium"
+                    >
+                      {tag}
+                    </span>
+                  )
+                )}
               </div>
             </div>
           )}
 
-          {!isEditing && memo?.id && (
+          {!isEditing && isOnLatest && memo?.id && (
             <div className="space-y-4 pt-4 border-t">
               <BotReplyList
                 memoId={memo.id}
@@ -777,18 +865,42 @@ export function MemoDetail({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>删除 memo</DialogTitle>
+            <DialogTitle>{deleteRevisionMode ? '删除此版本' : '删除 memo'}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">确定要删除这条 memo 吗？此操作不可撤销</p>
+          <p className="text-sm text-muted-foreground">
+            {deleteRevisionMode
+              ? `确定要删除第 ${activeRevision?.revisionNumber} 版记录吗？此操作不可撤销。`
+              : '确定要删除这条 memo 吗？此操作不可撤销'}
+          </p>
+          {!isOnLatest && totalRevisions > 1 && !deleteRevisionMode && (
+            <p className="text-xs text-muted-foreground mt-1">
+              该 memo 共有 {totalRevisions} 个版本，将全部删除。
+            </p>
+          )}
           <DialogFooter className="mt-4 flex justify-end gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setIsDeleteDialogOpen(false)}
+              onClick={() => {
+                setIsDeleteDialogOpen(false)
+                setDeleteRevisionMode(false)
+              }}
               disabled={isDeleting}
             >
               取消
             </Button>
+            {!isOnLatest && totalRevisions > 1 && deleteRevisionMode && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setDeleteRevisionMode(false)
+                }}
+                disabled={isDeleting}
+              >
+                改为删除整个记录
+              </Button>
+            )}
             <Button
               variant="destructive"
               size="sm"
@@ -798,7 +910,7 @@ export function MemoDetail({
               }}
               disabled={isDeleting}
             >
-              {isDeleting ? '删除中...' : '删除'}
+              {isDeleting ? '删除中...' : deleteRevisionMode ? '删除此版本' : '删除'}
             </Button>
           </DialogFooter>
         </DialogContent>
