@@ -819,26 +819,27 @@ export function MemoDetail({
             </div>
           )}
 
-          {memo.tags && memo.tags.length > 0 && !isEditing && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Tag className="h-4 w-4" />
-                <span>标签</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {(isOnLatest ? memo.tags : (activeRevision?.tags ?? memo.tags)).map(
-                  (tag, index) => (
+          {(() => {
+            const visibleTags = isOnLatest ? memo.tags : (activeRevision?.tags ?? memo.tags)
+            return visibleTags && visibleTags.length > 0 && !isEditing ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Tag className="h-4 w-4" />
+                  <span>标签</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {visibleTags.map((tag, index) => (
                     <span
                       key={index}
                       className="inline-flex items-center rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-medium"
                     >
                       {tag}
                     </span>
-                  )
-                )}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            ) : null
+          })()}
 
           {!isEditing && isOnLatest && memo?.id && (
             <div className="space-y-4 pt-4 border-t">

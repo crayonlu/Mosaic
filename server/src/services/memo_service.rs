@@ -107,6 +107,8 @@ impl MemoService {
         let now = Utc::now().timestamp_millis();
 
         let memo_id = Uuid::new_v4();
+        // Atomically insert memo + initial revision so they can never diverge.
+        let mut tx = self.pool.begin().await.map_err(AppError::Database)?;
         let memo = sqlx::query_as::<_, Memo>(
             "INSERT INTO memos (id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1)
@@ -122,7 +124,7 @@ impl MemoService {
         .bind(&req.ai_summary)
         .bind(now)
         .bind(now)
-        .fetch_one(&self.pool)
+        .fetch_one(&mut *tx)
         .await
         .map_err(|e| {
             log::error!("[MemoService] Failed to insert memo: {}", e);
@@ -141,12 +143,13 @@ impl MemoService {
         .bind(&tags_json)
         .bind(&req.ai_summary)
         .bind(now)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| {
             log::error!("[MemoService] Failed to insert initial revision for memo {}: {}", memo.id, e);
             AppError::Database(e)
         })?;
+        tx.commit().await.map_err(AppError::Database)?;
 
         // Update resources with the new memo_id if resource_ids are provided
         if !req.resource_ids.is_empty() {
@@ -284,14 +287,20 @@ impl MemoService {
     }
 
     async fn load_revisions(pool: &PgPool, memo_id: Uuid) -> Vec<MemoRevision> {
-        sqlx::query_as::<_, MemoRevision>(
+        match sqlx::query_as::<_, MemoRevision>(
             "SELECT id, memo_id, user_id, revision_number, content, tags, ai_summary, is_deleted, created_at
              FROM memo_revisions WHERE memo_id = $1 AND is_deleted = false ORDER BY revision_number ASC",
         )
         .bind(memo_id)
         .fetch_all(pool)
         .await
-        .unwrap_or_default()
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                log::error!("[MemoService] load_revisions failed for memo {}: {}", memo_id, e);
+                vec![]
+            }
+        }
     }
 
     pub fn build_revision_context(revisions: &[MemoRevision]) -> String {
@@ -384,10 +393,16 @@ impl MemoService {
         // concurrent deletes could bring revision count below 1.
         let mut tx = self.pool.begin().await?;
 
+        // Join memos to ensure the user owns this memo before locking its revisions.
         let count: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM memo_revisions WHERE memo_id = $1 AND is_deleted = false FOR UPDATE",
+            "SELECT COUNT(*)
+             FROM memo_revisions mr
+             INNER JOIN memos m ON m.id = mr.memo_id
+             WHERE mr.memo_id = $1 AND m.user_id = $2 AND mr.is_deleted = false
+             FOR UPDATE",
         )
         .bind(memo_id)
+        .bind(user_uuid)
         .fetch_one(&mut *tx)
         .await?;
 
@@ -411,13 +426,14 @@ impl MemoService {
             return Err(AppError::MemoNotFound);
         }
 
-        sqlx::query(
-            "UPDATE memos SET revision_count = revision_count - 1, updated_at = $1 WHERE id = $2",
-        )
-        .bind(now)
-        .bind(memo_id)
-        .execute(&mut *tx)
-        .await?;
+        // revision_count tracks the highest-ever revision_number (monotonic),
+        // NOT the active revision count. Do not decrement it on soft-delete so
+        // that future revision_number allocations remain collision-free.
+        sqlx::query("UPDATE memos SET updated_at = $1 WHERE id = $2")
+            .bind(now)
+            .bind(memo_id)
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
 
@@ -1070,6 +1086,8 @@ impl MemoService {
         let now = Utc::now().timestamp_millis();
 
         let content_changed = req.content.is_some();
+        let embedding_relevant_changed =
+            req.content.is_some() || req.tags.is_some() || req.ai_summary.is_some();
 
         let mut set_clauses = vec!["updated_at = $1".to_string()];
         let mut param_idx = 2;
@@ -1143,9 +1161,13 @@ impl MemoService {
         if content_changed {
             let tags_json =
                 json!(serde_json::from_value::<Vec<String>>(memo.tags.clone()).unwrap_or_default());
+            // revision_count was already incremented atomically in the UPDATE above.
+            // Include ai_summary so historical revisions are self-contained even when
+            // the background refresh fails or auto-summary is disabled.
+            let mut revision_tx = self.pool.begin().await.map_err(AppError::Database)?;
             sqlx::query(
                 "INSERT INTO memo_revisions (id, memo_id, user_id, revision_number, content, tags, ai_summary, is_deleted, created_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, NULL, false, $7)",
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8)",
             )
             .bind(Uuid::new_v4())
             .bind(memo.id)
@@ -1153,13 +1175,15 @@ impl MemoService {
             .bind(memo.revision_count)
             .bind(&memo.content)
             .bind(&tags_json)
+            .bind(&memo.ai_summary)
             .bind(now)
-            .execute(&self.pool)
+            .execute(&mut *revision_tx)
             .await
             .map_err(|e| {
                 log::error!("[MemoService] Failed to insert revision for memo {}: {}", memo.id, e);
                 AppError::Database(e)
             })?;
+            revision_tx.commit().await.map_err(AppError::Database)?;
 
             self.spawn_memory_refresh(memo.clone());
 
@@ -1172,6 +1196,12 @@ impl MemoService {
                     );
                 }
             }
+        }
+
+        // Refresh embeddings/bot context when any field that feeds into the
+        // embedding source text changes, not only on content changes.
+        if !content_changed && embedding_relevant_changed {
+            self.spawn_memory_refresh(memo.clone());
         }
 
         if let Some(resource_ids) = &req.resource_ids {
