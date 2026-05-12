@@ -14,7 +14,16 @@ import {
   useMemo as useRNMemo,
   useState,
 } from 'react'
-import { ActionSheetIOS, ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import {
+  ActionSheetIOS,
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native'
 import PagerView from 'react-native-pager-view'
 
 export default function MemoDetailScreen() {
