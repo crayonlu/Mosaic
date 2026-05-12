@@ -420,6 +420,10 @@ impl BotService {
             .bind(memo_id)
             .fetch_all(&self.pool)
             .await
+            .map_err(|e| {
+                log::error!("[BotService] Failed to load revisions for memo {}: {}", memo_id, e);
+                e
+            })
             .unwrap_or_default();
 
             crate::services::MemoService::build_revision_context(&revisions)

@@ -14,7 +14,7 @@ import {
   useMemo as useRNMemo,
   useState,
 } from 'react'
-import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActionSheetIOS, ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import PagerView from 'react-native-pager-view'
 
 export default function MemoDetailScreen() {
@@ -199,8 +199,20 @@ export default function MemoDetailScreen() {
     handleDelete,
   ])
 
-  if (memoLoading || !memo) {
-    return <View style={[styles.container, { backgroundColor: theme.background }]} />
+  if (memoLoading) {
+    return (
+      <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.textSecondary} />
+      </View>
+    )
+  }
+
+  if (!memo) {
+    return (
+      <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
+        <Text style={[styles.notFoundText, { color: theme.textSecondary }]}>记录不存在</Text>
+      </View>
+    )
   }
 
   if (pages.length <= 1) {
@@ -269,5 +281,12 @@ const styles = StyleSheet.create({
   },
   headerPageLabel: {
     fontSize: 14,
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notFoundText: {
+    fontSize: 15,
   },
 })
