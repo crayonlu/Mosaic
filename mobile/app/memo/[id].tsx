@@ -1,3 +1,4 @@
+import { BotThreadSheet } from '@/components/bot/BotThreadSheet'
 import { FullScreenEditor } from '@/components/editor/FullScreenEditor'
 import { MemoRevisionPage } from '@/components/memo/MemoRevisionPage'
 import { toast } from '@/components/ui/Toast'
@@ -5,7 +6,7 @@ import { useToastConfirm } from '@/hooks/useToastConfirm'
 import { useDeleteRevision, useMemo, useRevisions } from '@/lib/query/hooks/useMemos'
 import { useDeleteMemo, useUpdateMemo } from '@/lib/query/mutations/memoMutations'
 import { useThemeStore } from '@/stores/themeStore'
-import { resourcesApi, type MemoWithResources, type UpdateMemoRequest } from '@mosaic/api'
+import { resourcesApi, type BotReply, type MemoWithResources, type UpdateMemoRequest } from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useMemo as useRNMemo, useState } from 'react'
@@ -22,6 +23,7 @@ export default function MemoDetailScreen() {
   const { theme } = useThemeStore()
   const pagerRef = useRef<PagerView>(null)
   const hasInitializedRef = useRef(false)
+  const saveJumpRef = useRef(false)
 
   const { confirm } = useToastConfirm()
 
@@ -31,6 +33,8 @@ export default function MemoDetailScreen() {
   const { mutateAsync: deleteRevision } = useDeleteRevision()
   const { mutateAsync: updateMemo } = useUpdateMemo()
   const [showEditor, setShowEditor] = useState(false)
+  const [botReply, setBotReply] = useState<BotReply | null>(null)
+  const [threadVisible, setThreadVisible] = useState(false)
 
   const pages = useRNMemo(() => {
     return [...revisions].sort((a, b) => a.revisionNumber - b.revisionNumber)
@@ -42,11 +46,25 @@ export default function MemoDetailScreen() {
   const [currentPage, setCurrentPage] = useState(latestPageIndex)
 
   useEffect(() => {
-    // Only jump to latest on first load, not on subsequent refetches
-    // (e.g. after a revision is deleted, we don't want to force-jump the user)
-    if (pages.length > 0 && !hasInitializedRef.current) {
+    console.log('[MemoDetail] revisions loaded:', revisions.length, 'pages:', pages.length)
+  }, [revisions])
+
+  useEffect(() => {
+    if (pages.length === 0) return
+
+    if (!hasInitializedRef.current) {
       hasInitializedRef.current = true
       const idx = pages.length - 1
+      console.log('[MemoDetail] first load, jumping to page', idx + 1, '/', pages.length)
+      setCurrentPage(idx)
+      pagerRef.current?.setPageWithoutAnimation(idx)
+      return
+    }
+
+    if (saveJumpRef.current) {
+      saveJumpRef.current = false
+      const idx = pages.length - 1
+      console.log('[MemoDetail] save detected, jumping to page', idx + 1, '/', pages.length)
       setCurrentPage(idx)
       pagerRef.current?.setPageWithoutAnimation(idx)
     }
@@ -102,6 +120,11 @@ export default function MemoDetailScreen() {
     if (!memo) return
     setShowEditor(true)
   }, [memo])
+
+  const handleBotReply = useCallback((reply: BotReply) => {
+    setBotReply(reply)
+    setThreadVisible(true)
+  }, [])
 
   const renderHeader = () => (
     <View
@@ -227,7 +250,11 @@ export default function MemoDetailScreen() {
               )
                 data.resourceIds = resources
               if (aiSummary !== (memo.aiSummary ?? undefined)) data.aiSummary = aiSummary ?? null
-              if (Object.keys(data).length > 0) await updateMemo({ id: memo.id, data })
+              if (Object.keys(data).length > 0) {
+                console.log('[MemoDetail] saving changes:', data)
+                await updateMemo({ id: memo.id, data })
+                saveJumpRef.current = true
+              }
               setShowEditor(false)
             }}
           />
@@ -237,8 +264,13 @@ export default function MemoDetailScreen() {
           memo={memo as MemoWithResources}
           revision={rev}
           isLatest
-          onBotReply={() => {}}
+          onBotReply={handleBotReply}
         />
+      <BotThreadSheet
+        visible={threadVisible}
+        reply={botReply}
+        onClose={() => setThreadVisible(false)}
+      />
       </View>
     )
   }
@@ -277,7 +309,10 @@ export default function MemoDetailScreen() {
             )
               data.resourceIds = resources
             if (aiSummary !== (memo.aiSummary ?? undefined)) data.aiSummary = aiSummary ?? null
-            if (Object.keys(data).length > 0) await updateMemo({ id: memo.id, data })
+            if (Object.keys(data).length > 0) {
+              await updateMemo({ id: memo.id, data })
+              saveJumpRef.current = true
+            }
             setShowEditor(false)
           }}
         />
@@ -298,12 +333,17 @@ export default function MemoDetailScreen() {
                 memo={memo as MemoWithResources}
                 revision={rev}
                 isLatest={isLatest}
-                onBotReply={() => {}}
+                onBotReply={handleBotReply}
               />
             </View>
           )
         })}
       </PagerView>
+      <BotThreadSheet
+        visible={threadVisible}
+        reply={botReply}
+        onClose={() => setThreadVisible(false)}
+      />
     </View>
   )
 }
