@@ -6,13 +6,18 @@ import { BotReplyCard } from './BotReplyCard'
 
 interface BotReplyListProps {
   memoId: string
+  revisionNumber?: number
   onReply: (reply: BotReply) => void
   onMemoNavigate?: (memoId: string) => void
 }
 
-export function BotReplyList({ memoId, onReply, onMemoNavigate }: BotReplyListProps) {
+export function BotReplyList({ memoId, revisionNumber, onReply, onMemoNavigate }: BotReplyListProps) {
   const { theme } = useThemeStore()
-  const { data: replies = [] } = useBotReplies(memoId)
+  const { data: allReplies = [] } = useBotReplies(memoId)
+
+  const replies = revisionNumber != null
+    ? allReplies.filter(r => r.revisionNumber == null || r.revisionNumber === revisionNumber)
+    : allReplies
 
   if (replies.length === 0) return null
 

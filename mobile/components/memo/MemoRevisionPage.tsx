@@ -5,8 +5,8 @@ import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
-import type { BotReply, MemoRevision } from '@mosaic/api'
-import { resourcesApi, type MemoWithResources } from '@mosaic/api'
+import type { BotReply, MemoRevision, MemoWithResources } from '@mosaic/api'
+import { resourcesApi } from '@mosaic/api'
 import { router } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -57,6 +57,17 @@ export function MemoRevisionPage({ memo, revision, isLatest, onBotReply }: MemoR
       alwaysBounceVertical
       keyboardShouldPersistTaps="handled"
     >
+      <View style={styles.revisionBar}>
+        <Text style={[styles.revisionTime, { color: theme.textSecondary }]}>{timeLabel}</Text>
+        {!isLatest && revision && (
+          <View style={[styles.revisionBadge, { backgroundColor: theme.surfaceMuted }]}>
+            <Text style={[styles.revisionBadgeText, { color: theme.textSecondary }]}>
+              第 {revision.revisionNumber} 版
+            </Text>
+          </View>
+        )}
+      </View>
+
       {aiSummary && (
         <View
           style={[
@@ -82,42 +93,22 @@ export function MemoRevisionPage({ memo, revision, isLatest, onBotReply }: MemoR
         </View>
       )}
 
-      {tags.length > 0 && (
-        <View style={styles.tagsContainer}>
-          {tags.map((tag, i) => (
+      <View style={styles.tagsContainer}>
+        {tags.length > 0 ? (
+          tags.map((tag, i) => (
             <View key={i} style={[styles.tag, { backgroundColor: theme.surfaceMuted }]}>
               <Text style={[styles.tagText, { color: theme.textSecondary }]}>#{tag}</Text>
             </View>
-          ))}
-        </View>
-      )}
-
-      <View style={styles.metadata}>
-        <View
-          style={[
-            styles.metadataChip,
-            { backgroundColor: theme.surfaceMuted, borderColor: theme.border },
-          ]}
-        >
-          <Text style={[styles.metadataValue, { color: theme.textSecondary }]}>{timeLabel}</Text>
-        </View>
-        {!isLatest && revision && (
-          <View
-            style={[
-              styles.metadataChip,
-              { backgroundColor: theme.surfaceMuted, borderColor: theme.border },
-            ]}
-          >
-            <Text style={[styles.metadataValue, { color: theme.textSecondary }]}>
-              第 {revision.revisionNumber} 版
-            </Text>
-          </View>
+          ))
+        ) : (
+          <Text style={[styles.tagText, { color: theme.textTertiary }]}>暂无标签</Text>
         )}
       </View>
 
       {isLatest && (
         <BotReplyList
           memoId={memo.id}
+          revisionNumber={revision?.revisionNumber}
           onReply={onBotReply}
           onMemoNavigate={id => router.push(`/memo/${id}`)}
         />
@@ -171,23 +162,23 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 13,
   },
-  metadata: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 14,
-  },
-  metadataChip: {
+  revisionBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 2,
   },
-  metadataValue: {
+  revisionTime: {
+    fontSize: 12,
+  },
+  revisionBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  revisionBadgeText: {
     fontSize: 12,
   },
 })

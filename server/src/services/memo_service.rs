@@ -575,8 +575,11 @@ impl MemoService {
                     .await;
                 }
 
-                let did_refresh_ai = auto_tag || auto_summary;
-                if did_refresh_ai {
+                // Only write back AI results to the revision on initial creation.
+                // On edits the revision INSERT already captured a complete snapshot
+                // (old content + old tags + old ai_summary). Overwriting it with
+                // newly generated tags/summary would produce an inconsistent record.
+                if revisions.len() == 1 && (auto_tag || auto_summary) {
                     MemoService::update_latest_revision_ai_results(&pool, memo_id).await;
                 }
 
