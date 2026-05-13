@@ -1,42 +1,36 @@
+import { FullScreenEditor } from '@/components/editor/FullScreenEditor'
 import { MemoRevisionPage } from '@/components/memo/MemoRevisionPage'
 import { toast } from '@/components/ui/Toast'
+import { useToastConfirm } from '@/hooks/useToastConfirm'
 import { useDeleteRevision, useMemo, useRevisions } from '@/lib/query/hooks/useMemos'
-import { useDeleteMemo } from '@/lib/query/mutations/memoMutations'
+import { useDeleteMemo, useUpdateMemo } from '@/lib/query/mutations/memoMutations'
 import { useThemeStore } from '@/stores/themeStore'
-import type { MemoWithResources } from '@mosaic/api'
-import { router, useLocalSearchParams, useNavigation } from 'expo-router'
+import { resourcesApi, type MemoWithResources, type UpdateMemoRequest } from '@mosaic/api'
+import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react-native'
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useMemo as useRNMemo,
-  useState,
-} from 'react'
-import {
-  ActionSheetIOS,
-  ActivityIndicator,
-  Alert,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { useCallback, useEffect, useRef, useMemo as useRNMemo, useState } from 'react'
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import PagerView from 'react-native-pager-view'
+
+function arraysEqual(a: unknown[], b: unknown[]): boolean {
+  if (a.length !== b.length) return false
+  return a.every((v, i) => v === b[i])
+}
 
 export default function MemoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { theme } = useThemeStore()
-  const navigation = useNavigation()
   const pagerRef = useRef<PagerView>(null)
   const hasInitializedRef = useRef(false)
+
+  const { confirm } = useToastConfirm()
 
   const { data: memo, isLoading: memoLoading } = useMemo(id ?? '')
   const { data: revisions = [] } = useRevisions(id ?? '')
   const { mutateAsync: deleteMemo } = useDeleteMemo()
   const { mutateAsync: deleteRevision } = useDeleteRevision()
+  const { mutateAsync: updateMemo } = useUpdateMemo()
+  const [showEditor, setShowEditor] = useState(false)
 
   const pages = useRNMemo(() => {
     return [...revisions].sort((a, b) => a.revisionNumber - b.revisionNumber)
@@ -98,136 +92,147 @@ export default function MemoDetailScreen() {
     }
 
     if (canDeleteRevision) {
-      if (Platform.OS === 'ios') {
-        ActionSheetIOS.showActionSheetWithOptions(
-          {
-            options: ['取消', '删除此版本', '删除整个记录'],
-            destructiveButtonIndex: [1, 2],
-            cancelButtonIndex: 0,
-          },
-          buttonIdx => {
-            if (buttonIdx === 1) doDeleteRevision()
-            else if (buttonIdx === 2) doDeleteMemo()
-          }
-        )
-      } else {
-        Alert.alert('删除', '请选择删除方式', [
-          { text: '取消', style: 'cancel' },
-          { text: '删除此版本', style: 'destructive', onPress: doDeleteRevision },
-          { text: '删除整个记录', style: 'destructive', onPress: doDeleteMemo },
-        ])
-      }
+      confirm('确定要删除该版本吗？', doDeleteRevision)
     } else {
-      Alert.alert('删除记录', '确定要删除这条记录吗？', [
-        { text: '取消', style: 'cancel' },
-        { text: '删除', style: 'destructive', onPress: doDeleteMemo },
-      ])
+      confirm('确定要删除该记录吗？', doDeleteMemo)
     }
-  }, [memo, pages, currentPage, isOnLatest, deleteRevision, deleteMemo])
+  }, [memo, pages, currentPage, isOnLatest, deleteRevision, deleteMemo, confirm])
 
   const handleEdit = useCallback(() => {
     if (!memo) return
-    router.push(`/modal?memoId=${memo.id}`)
+    setShowEditor(true)
   }, [memo])
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: true,
-      headerTransparent: false,
-      headerStyle: { backgroundColor: theme.background },
-      headerShadowVisible: false,
-      headerLeft: () => (
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={styles.headerBtn}
-        >
-          <ArrowLeft size={22} color={theme.text} strokeWidth={2} />
-        </Pressable>
-      ),
-      headerTitle: () =>
-        totalPages > 1 ? (
-          <View style={styles.headerTitle}>
-            <Pressable
-              onPress={goToPrev}
-              disabled={currentPage === 0}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <ChevronLeft
-                size={20}
-                color={currentPage === 0 ? theme.textSecondary : theme.text}
-                strokeWidth={2}
-              />
-            </Pressable>
-            <Text style={[styles.headerPageLabel, { color: theme.textSecondary }]}>
-              {currentPage + 1} / {totalPages}
-            </Text>
-            <Pressable
-              onPress={goToNext}
-              disabled={currentPage === totalPages - 1}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <ChevronRight
-                size={20}
-                color={currentPage === totalPages - 1 ? theme.textSecondary : theme.text}
-                strokeWidth={2}
-              />
-            </Pressable>
-          </View>
-        ) : null,
-      headerRight: () => (
-        <View style={styles.headerRight}>
-          {isOnLatest && (
-            <Pressable
-              onPress={handleEdit}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              style={styles.headerBtn}
-            >
-              <Pencil size={18} color={theme.text} strokeWidth={2} />
-            </Pressable>
-          )}
+  const renderHeader = () => (
+    <View
+      style={[
+        styles.header,
+        { backgroundColor: theme.background, borderBottomColor: theme.border },
+      ]}
+    >
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        style={styles.headerBtn}
+      >
+        <ArrowLeft size={22} color={theme.text} strokeWidth={2} />
+      </Pressable>
+
+      {totalPages > 1 && (
+        <View style={styles.headerTitle}>
           <Pressable
-            onPress={handleDelete}
+            onPress={goToPrev}
+            disabled={currentPage === 0}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <ChevronLeft
+              size={20}
+              color={currentPage === 0 ? theme.textSecondary : theme.text}
+              strokeWidth={2}
+            />
+          </Pressable>
+          <Text style={[styles.headerPageLabel, { color: theme.textSecondary }]}>
+            {currentPage + 1} / {totalPages}
+          </Text>
+          <Pressable
+            onPress={goToNext}
+            disabled={currentPage === totalPages - 1}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <ChevronRight
+              size={20}
+              color={currentPage === totalPages - 1 ? theme.textSecondary : theme.text}
+              strokeWidth={2}
+            />
+          </Pressable>
+        </View>
+      )}
+
+      <View style={styles.headerRight}>
+        {isOnLatest && (
+          <Pressable
+            onPress={handleEdit}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={styles.headerBtn}
           >
-            <Trash2 size={18} color={theme.textSecondary} strokeWidth={2} />
+            <Pencil size={18} color={theme.text} strokeWidth={2} />
           </Pressable>
-        </View>
-      ),
-    })
-  }, [
-    navigation,
-    theme,
-    currentPage,
-    totalPages,
-    isOnLatest,
-    goToPrev,
-    goToNext,
-    handleEdit,
-    handleDelete,
-  ])
+        )}
+        <Pressable
+          onPress={handleDelete}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={styles.headerBtn}
+        >
+          <Trash2 size={18} color={theme.text} strokeWidth={2} />
+        </Pressable>
+      </View>
+    </View>
+  )
 
   if (memoLoading) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color={theme.textSecondary} />
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        {renderHeader()}
+        <View style={[styles.content, styles.centered]}>
+          <ActivityIndicator size="large" color={theme.textSecondary} />
+        </View>
       </View>
     )
   }
 
   if (!memo) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
-        <Text style={[styles.notFoundText, { color: theme.textSecondary }]}>记录不存在</Text>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        {renderHeader()}
+        <View style={[styles.content, styles.centered]}>
+          <Text style={[styles.notFoundText, { color: theme.textSecondary }]}>记录不存在</Text>
+        </View>
       </View>
     )
   }
 
   if (pages.length <= 1) {
     const rev = pages[0] ?? null
+    const validResources = (memo.resources ?? []).filter(r => r.resourceType)
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
+        {showEditor && (
+          <FullScreenEditor
+            visible
+            title="编辑记录"
+            submitLabel="保存"
+            placeholder="编辑内容..."
+            initialContent={memo.content ?? ''}
+            initialTags={Array.isArray(memo.tags) ? memo.tags : []}
+            initialAISummary={memo.aiSummary ?? undefined}
+            initialMediaItems={validResources.map(r => ({
+              key: r.id,
+              uri: resourcesApi.getDownloadUrl(r.id),
+              thumbnailUri:
+                r.resourceType === 'video' ? resourcesApi.getThumbnailUrl(r.id) : undefined,
+              type: r.resourceType as 'image' | 'video',
+            }))}
+            initialResourceIds={validResources.map(r => r.id)}
+            uploadMemoId={memo.id}
+            onClose={() => setShowEditor(false)}
+            onSubmit={async (content, tags, resources, aiSummary) => {
+              const data: UpdateMemoRequest = {}
+              if (content !== (memo.content ?? '')) data.content = content
+              if (!arraysEqual(tags, Array.isArray(memo.tags) ? memo.tags : [])) data.tags = tags
+              if (
+                !arraysEqual(
+                  resources,
+                  validResources.map(r => r.id)
+                )
+              )
+                data.resourceIds = resources
+              if (aiSummary !== (memo.aiSummary ?? undefined)) data.aiSummary = aiSummary ?? null
+              if (Object.keys(data).length > 0) await updateMemo({ id: memo.id, data })
+              setShowEditor(false)
+            }}
+          />
+        )}
+        {renderHeader()}
         <MemoRevisionPage
           memo={memo as MemoWithResources}
           revision={rev}
@@ -238,8 +243,46 @@ export default function MemoDetailScreen() {
     )
   }
 
+  const validResources = (memo.resources ?? []).filter(r => r.resourceType)
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {showEditor && (
+        <FullScreenEditor
+          visible
+          title="编辑记录"
+          submitLabel="保存"
+          placeholder="编辑内容..."
+          initialContent={memo.content ?? ''}
+          initialTags={Array.isArray(memo.tags) ? memo.tags : []}
+          initialAISummary={memo.aiSummary ?? undefined}
+          initialMediaItems={validResources.map(r => ({
+            key: r.id,
+            uri: resourcesApi.getDownloadUrl(r.id),
+            thumbnailUri:
+              r.resourceType === 'video' ? resourcesApi.getThumbnailUrl(r.id) : undefined,
+            type: r.resourceType as 'image' | 'video',
+          }))}
+          initialResourceIds={validResources.map(r => r.id)}
+          uploadMemoId={memo.id}
+          onClose={() => setShowEditor(false)}
+          onSubmit={async (content, tags, resources, aiSummary) => {
+            const data: UpdateMemoRequest = {}
+            if (content !== (memo.content ?? '')) data.content = content
+            if (!arraysEqual(tags, Array.isArray(memo.tags) ? memo.tags : [])) data.tags = tags
+            if (
+              !arraysEqual(
+                resources,
+                validResources.map(r => r.id)
+              )
+            )
+              data.resourceIds = resources
+            if (aiSummary !== (memo.aiSummary ?? undefined)) data.aiSummary = aiSummary ?? null
+            if (Object.keys(data).length > 0) await updateMemo({ id: memo.id, data })
+            setShowEditor(false)
+          }}
+        />
+      )}
+      {renderHeader()}
       <PagerView
         ref={pagerRef}
         style={styles.pager}
@@ -269,6 +312,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  content: {
+    flex: 1,
+  },
   pager: {
     flex: 1,
   },
@@ -287,6 +341,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    pointerEvents: 'box-none',
   },
   headerPageLabel: {
     fontSize: 14,

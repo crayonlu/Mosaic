@@ -60,7 +60,7 @@ export interface UpdateMemoRequest {
   resourceIds?: string[]
   isArchived?: boolean
   diaryDate?: string | null
-  aiSummary?: string
+  aiSummary?: string | null
 }
 
 export interface SearchMemosQuery {
