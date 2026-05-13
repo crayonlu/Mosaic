@@ -38,16 +38,13 @@ export function MemoRevisionPage({ memo, revision, isLatest, onBotReply }: MemoR
 
   const mediaItems: MediaGridItem[] = useMemo(
     () =>
-      isLatest
-        ? (memo.resources ?? []).map(r => ({
-            key: r.id,
-            uri: resourcesApi.getDownloadUrl(r.id),
-            type: r.resourceType,
-            thumbnailUri:
-              r.resourceType === 'video' ? resourcesApi.getThumbnailUrl(r.id) : undefined,
-          }))
-        : [],
-    [isLatest, memo.resources]
+      (memo.resources ?? []).map(r => ({
+        key: r.id,
+        uri: resourcesApi.getDownloadUrl(r.id),
+        type: r.resourceType,
+        thumbnailUri: r.resourceType === 'video' ? resourcesApi.getThumbnailUrl(r.id) : undefined,
+      })),
+    [memo.resources]
   )
 
   return (

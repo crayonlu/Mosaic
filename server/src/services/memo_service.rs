@@ -208,7 +208,7 @@ impl MemoService {
             resources.len()
         );
 
-        self.spawn_memory_refresh(memo.clone());
+        self.spawn_memory_refresh(memo.clone(), true);
 
         if let Some(ai_diary_service) = &self.ai_diary_service {
             if let Err(error) = ai_diary_service.queue_job_for_memo(&memo).await {
@@ -440,7 +440,7 @@ impl MemoService {
         Ok(())
     }
 
-    fn spawn_memory_refresh(&self, memo: Memo) {
+    fn spawn_memory_refresh(&self, memo: Memo, content_changed: bool) {
         let Some(memory_embedding_service) = self.memory_embedding_service.clone() else {
             return;
         };
@@ -526,10 +526,9 @@ impl MemoService {
 
                 let revisions = MemoService::load_revisions(&pool, memo_id).await;
                 let revision_context = MemoService::build_revision_context(&revisions);
-                let is_revision = revisions.len() > 1;
 
-                let needs_tags = is_revision
-                    || memo
+                let needs_tags = content_changed
+                    && memo
                         .tags
                         .as_array()
                         .map(|arr| arr.is_empty())
@@ -548,7 +547,7 @@ impl MemoService {
                     .await;
                 }
 
-                let needs_summary = is_revision || memo.ai_summary.is_none();
+                let needs_summary = content_changed;
                 if auto_summary && needs_summary {
                     MemoService::auto_generate_summary(
                         &pool,
@@ -561,7 +560,8 @@ impl MemoService {
                     .await;
                 }
 
-                if is_revision {
+                let did_refresh_ai = auto_tag || auto_summary;
+                if did_refresh_ai {
                     MemoService::update_latest_revision_ai_results(&pool, memo_id).await;
                 }
 
@@ -591,13 +591,15 @@ impl MemoService {
 
                 // Trigger bot replies after tagging/summary/embedding complete so bots
                 // see the updated memo state and embedding is already consistent.
-                if let Some(bot_svc) = bot_service {
-                    if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
-                        log::error!(
-                            "[MemoryRefresh] bot trigger_replies failed for memo {}: {}",
-                            memo_id,
-                            error
-                        );
+                if content_changed {
+                    if let Some(bot_svc) = bot_service {
+                        if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
+                            log::error!(
+                                "[MemoryRefresh] bot trigger_replies failed for memo {}: {}",
+                                memo_id,
+                                error
+                            );
+                        }
                     }
                 }
             })
@@ -1086,8 +1088,10 @@ impl MemoService {
         let now = Utc::now().timestamp_millis();
 
         let content_changed = req.content.is_some();
-        let embedding_relevant_changed =
-            req.content.is_some() || req.tags.is_some() || req.ai_summary.is_some();
+        let embedding_relevant_changed = req.content.is_some()
+            || req.tags.is_some()
+            || req.ai_summary.is_some()
+            || req.resource_ids.is_some();
 
         let mut set_clauses = vec!["updated_at = $1".to_string()];
         let mut param_idx = 2;
@@ -1185,7 +1189,7 @@ impl MemoService {
             })?;
             revision_tx.commit().await.map_err(AppError::Database)?;
 
-            self.spawn_memory_refresh(memo.clone());
+            self.spawn_memory_refresh(memo.clone(), true);
 
             if let Some(ai_diary_service) = &self.ai_diary_service {
                 if let Err(error) = ai_diary_service.queue_job_for_memo(&memo).await {
@@ -1201,7 +1205,7 @@ impl MemoService {
         // Refresh embeddings/bot context when any field that feeds into the
         // embedding source text changes, not only on content changes.
         if !content_changed && embedding_relevant_changed {
-            self.spawn_memory_refresh(memo.clone());
+            self.spawn_memory_refresh(memo.clone(), false);
         }
 
         if let Some(resource_ids) = &req.resource_ids {
