@@ -251,7 +251,7 @@ impl AiDiaryService {
     ) -> Result<Vec<Memo>, AppError> {
         let (start_ms, end_ms) = day_bounds(target_date, tz);
         sqlx::query_as::<_, Memo>(
-            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
              FROM memos
              WHERE user_id = $1
                AND is_deleted = false

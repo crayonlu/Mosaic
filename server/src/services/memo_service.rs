@@ -334,23 +334,38 @@ impl MemoService {
         let total = selected.len();
         let mut parts = Vec::new();
         for (i, rev) in selected.iter().enumerate() {
-            let ts = chrono::DateTime::from_timestamp_millis(rev.created_at)
-                .map(|dt| dt.format("%Y-%m-%d %H:%M").to_string())
-                .unwrap_or_else(|| rev.created_at.to_string());
+            // Special-case the omit placeholder (revision_number = -1, created_at = 0)
+            let is_placeholder = rev.revision_number == -1;
+            
+            let ts = if is_placeholder {
+                String::new()
+            } else {
+                chrono::DateTime::from_timestamp_millis(rev.created_at)
+                    .map(|dt| dt.format("%Y-%m-%d %H:%M").to_string())
+                    .unwrap_or_else(|| rev.created_at.to_string())
+            };
 
-            let label = if i == total - 1 {
+            let label = if is_placeholder {
+                rev.content.clone()
+            } else if i == total - 1 {
                 format!("---Current entry ({})---", ts)
             } else {
-                format!("---Entry #{} ({})---", i + 1, ts)
+                format!("---Entry #{} ({})---", rev.revision_number, ts)
             };
 
-            let end_label = if i == total - 1 {
+            let end_label = if is_placeholder {
+                String::new()
+            } else if i == total - 1 {
                 "---End of current entry---".to_string()
             } else {
-                format!("---End of entry #{}---", i + 1)
+                format!("---End of entry #{}---", rev.revision_number)
             };
 
-            parts.push(format!("{}\n{}\n{}", label, rev.content, end_label));
+            if is_placeholder {
+                parts.push(label);
+            } else {
+                parts.push(format!("{}\n{}\n{}", label, rev.content, end_label));
+            }
         }
 
         parts.join("\n\n")
@@ -1089,6 +1104,9 @@ impl MemoService {
         let embedding_relevant_changed =
             req.content.is_some() || req.tags.is_some() || req.ai_summary.is_some();
 
+        // Start transaction to ensure atomicity between memo update and revision insert
+        let mut tx = self.pool.begin().await.map_err(AppError::Database)?;
+
         let mut set_clauses = vec!["updated_at = $1".to_string()];
         let mut param_idx = 2;
 
@@ -1154,7 +1172,7 @@ impl MemoService {
         let memo = query_builder
             .bind(memo_id)
             .bind(user_uuid)
-            .fetch_optional(&self.pool)
+            .fetch_optional(&mut *tx)
             .await?
             .ok_or(AppError::MemoNotFound)?;
 
@@ -1162,9 +1180,9 @@ impl MemoService {
             let tags_json =
                 json!(serde_json::from_value::<Vec<String>>(memo.tags.clone()).unwrap_or_default());
             // revision_count was already incremented atomically in the UPDATE above.
+            // Insert revision in the same transaction to prevent race conditions.
             // Include ai_summary so historical revisions are self-contained even when
             // the background refresh fails or auto-summary is disabled.
-            let mut revision_tx = self.pool.begin().await.map_err(AppError::Database)?;
             sqlx::query(
                 "INSERT INTO memo_revisions (id, memo_id, user_id, revision_number, content, tags, ai_summary, is_deleted, created_at)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8)",
@@ -1177,14 +1195,18 @@ impl MemoService {
             .bind(&tags_json)
             .bind(&memo.ai_summary)
             .bind(now)
-            .execute(&mut *revision_tx)
+            .execute(&mut *tx)
             .await
             .map_err(|e| {
                 log::error!("[MemoService] Failed to insert revision for memo {}: {}", memo.id, e);
                 AppError::Database(e)
             })?;
-            revision_tx.commit().await.map_err(AppError::Database)?;
+        }
 
+        // Commit transaction before spawning background tasks
+        tx.commit().await.map_err(AppError::Database)?;
+
+        if content_changed {
             self.spawn_memory_refresh(memo.clone());
 
             if let Some(ai_diary_service) = &self.ai_diary_service {

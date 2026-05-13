@@ -17,6 +17,7 @@ pub struct HybridSearchResult {
     pub diary_date: Option<chrono::NaiveDate>,
     pub created_at: i64,
     pub updated_at: i64,
+    pub revision_count: i32,
 }
 
 #[derive(Clone)]
@@ -164,6 +165,7 @@ impl HybridSearchService {
                     "aiSummary": row.ai_summary,
                     "keywordScore": keyword_score,
                     "createdAt": row.created_at,
+                    "revisionCount": row.revision_count,
                     "updatedAt": row.updated_at,
                     "semanticScore": semantic_score,
                     "matchType": match_type,
@@ -196,7 +198,7 @@ impl HybridSearchService {
         );
 
         let kw_sql = format!(
-            "SELECT id as memo_id, content, tags, ai_summary, is_archived, diary_date, created_at, updated_at
+            "SELECT id as memo_id, content, tags, ai_summary, is_archived, diary_date, created_at, updated_at, revision_count
              FROM memos
              WHERE user_id = $1 AND is_deleted = false AND {}
              LIMIT 200",
@@ -302,7 +304,7 @@ impl HybridSearchService {
 
         if !semantic_only_ids.is_empty() {
             let rows = sqlx::query_as::<_, HybridSearchResult>(
-                "SELECT id as memo_id, content, tags, ai_summary, is_archived, diary_date, created_at, updated_at
+                "SELECT id as memo_id, content, tags, ai_summary, is_archived, diary_date, created_at, updated_at, revision_count
                  FROM memos
                  WHERE user_id = $1 AND is_deleted = false AND id = ANY($2)",
             )
