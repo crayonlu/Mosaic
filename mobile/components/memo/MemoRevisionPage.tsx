@@ -144,13 +144,13 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   resourcesContainer: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingVertical: 8,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingBottom: 8,
     gap: 8,
   },
