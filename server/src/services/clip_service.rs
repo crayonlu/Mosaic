@@ -212,8 +212,16 @@ struct Article {
 }
 
 async fn fetch_and_extract(url: &str, html2llm_url: &str) -> Result<Article, AppError> {
-    // Build the html2llm API URL with headless mode for anti-bot bypass
-    let api_url = format!("{}/{}?headless", html2llm_url.trim_end_matches('/'), url);
+    // Build the html2llm API URL with headless mode for anti-bot bypass.
+    // If the target URL already has query params, append the service flag with '&'
+    // so we don't fold `headless` into the target page's own query string.
+    let headless_separator = if url.contains('?') { '&' } else { '?' };
+    let api_url = format!(
+        "{}/{}{}headless",
+        html2llm_url.trim_end_matches('/'),
+        url,
+        headless_separator
+    );
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30)) // headless is slower, give more time
