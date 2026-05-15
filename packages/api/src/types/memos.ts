@@ -10,9 +10,20 @@ export interface Memo {
   resources?: Resource[]
   createdAt: number
   updatedAt: number
+  revisionCount: number
   semanticScore?: number
   keywordScore?: number
   matchType?: 'keyword' | 'semantic' | 'hybrid'
+}
+
+export interface MemoRevision {
+  id: string
+  memoId: string
+  revisionNumber: number
+  content: string
+  tags: string[]
+  aiSummary?: string
+  createdAt: number
 }
 
 export interface MemoWithResources extends Memo {
@@ -49,7 +60,7 @@ export interface UpdateMemoRequest {
   resourceIds?: string[]
   isArchived?: boolean
   diaryDate?: string | null
-  aiSummary?: string
+  aiSummary?: string | null
 }
 
 export interface SearchMemosQuery {

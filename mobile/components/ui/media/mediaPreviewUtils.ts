@@ -23,7 +23,7 @@ export function getMediaTileSize(count: number, measuredContainerWidth?: number)
 }
 
 export function getOptimizedMediaUri(uri: string, variant?: 'thumb' | 'opt'): string {
-  if (!variant) return uri
+  if (!uri || !variant) return uri ?? ''
   const separator = uri.includes('?') ? '&' : '?'
   return `${uri}${separator}variant=${variant}`
 }

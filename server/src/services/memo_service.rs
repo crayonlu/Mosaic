@@ -1,7 +1,8 @@
 use crate::error::AppError;
 use crate::models::{
-    CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse, MemoWithResources,
-    PaginatedResponse, Resource, TagResponse, UpdateMemoRequest,
+    CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse, MemoRevision,
+    MemoRevisionResponse, MemoWithResources, PaginatedResponse, Resource, TagResponse,
+    UpdateMemoRequest,
 };
 use crate::services::{
     AiClient, AiDiaryService, AppSettingsService, BotService, MemoryEmbeddingService,
@@ -105,28 +106,50 @@ impl MemoService {
         let tags_json = json!(req.tags);
         let now = Utc::now().timestamp_millis();
 
+        let memo_id = Uuid::new_v4();
+        // Atomically insert memo + initial revision so they can never diverge.
+        let mut tx = self.pool.begin().await.map_err(AppError::Database)?;
         let memo = sqlx::query_as::<_, Memo>(
-            "INSERT INTO memos (id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-             RETURNING id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at",
+            "INSERT INTO memos (id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1)
+             RETURNING id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count",
         )
-        .bind(Uuid::new_v4())
+        .bind(memo_id)
         .bind(user_uuid)
         .bind(&req.content)
-        .bind(tags_json)
+        .bind(&tags_json)
         .bind(false)
         .bind(false)
         .bind(req.diary_date)
         .bind(&req.ai_summary)
         .bind(now)
         .bind(now)
-        .fetch_one(&self.pool)
+        .fetch_one(&mut *tx)
         .await
         .map_err(|e| {
             log::error!("[MemoService] Failed to insert memo: {}", e);
             AppError::Database(e)
         })?;
         log::info!("[MemoService] Memo created with ID: {}", memo.id);
+
+        sqlx::query(
+            "INSERT INTO memo_revisions (id, memo_id, user_id, revision_number, content, tags, ai_summary, is_deleted, created_at)
+             VALUES ($1, $2, $3, 1, $4, $5, $6, false, $7)",
+        )
+        .bind(Uuid::new_v4())
+        .bind(memo.id)
+        .bind(user_uuid)
+        .bind(&req.content)
+        .bind(&tags_json)
+        .bind(&req.ai_summary)
+        .bind(now)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| {
+            log::error!("[MemoService] Failed to insert initial revision for memo {}: {}", memo.id, e);
+            AppError::Database(e)
+        })?;
+        tx.commit().await.map_err(AppError::Database)?;
 
         // Update resources with the new memo_id if resource_ids are provided
         if !req.resource_ids.is_empty() {
@@ -185,7 +208,7 @@ impl MemoService {
             resources.len()
         );
 
-        self.spawn_memory_refresh(memo.clone());
+        self.spawn_memory_refresh(memo.clone(), true);
 
         if let Some(ai_diary_service) = &self.ai_diary_service {
             if let Err(error) = ai_diary_service.queue_job_for_memo(&memo).await {
@@ -263,7 +286,176 @@ impl MemoService {
             .collect())
     }
 
-    fn spawn_memory_refresh(&self, memo: Memo) {
+    async fn load_revisions(pool: &PgPool, memo_id: Uuid) -> Vec<MemoRevision> {
+        match sqlx::query_as::<_, MemoRevision>(
+            "SELECT id, memo_id, user_id, revision_number, content, tags, ai_summary, is_deleted, created_at
+             FROM memo_revisions WHERE memo_id = $1 AND is_deleted = false ORDER BY revision_number ASC",
+        )
+        .bind(memo_id)
+        .fetch_all(pool)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                log::error!("[MemoService] load_revisions failed for memo {}: {}", memo_id, e);
+                vec![]
+            }
+        }
+    }
+
+    pub fn build_revision_context(revisions: &[MemoRevision]) -> String {
+        if revisions.len() <= 1 {
+            return revisions
+                .first()
+                .map(|r| r.content.clone())
+                .unwrap_or_default();
+        }
+
+        let omit_placeholder;
+        let selected: Vec<&MemoRevision> = if revisions.len() <= 10 {
+            revisions.iter().collect()
+        } else {
+            omit_placeholder = MemoRevision {
+                id: uuid::Uuid::nil(),
+                memo_id: uuid::Uuid::nil(),
+                user_id: uuid::Uuid::nil(),
+                revision_number: -1,
+                content: format!("[... {} earlier entries omitted ...]", revisions.len() - 10),
+                tags: serde_json::Value::Array(vec![]),
+                ai_summary: None,
+                is_deleted: false,
+                created_at: 0,
+            };
+            let mut v: Vec<&MemoRevision> = vec![&revisions[0], &omit_placeholder];
+            v.extend(revisions[revisions.len() - 9..].iter());
+            v
+        };
+
+        let total = selected.len();
+        let mut parts = Vec::new();
+        for (i, rev) in selected.iter().enumerate() {
+            // Special-case the omit placeholder (revision_number = -1, created_at = 0)
+            let is_placeholder = rev.revision_number == -1;
+            
+            let ts = if is_placeholder {
+                String::new()
+            } else {
+                chrono::DateTime::from_timestamp_millis(rev.created_at)
+                    .map(|dt| dt.format("%Y-%m-%d %H:%M").to_string())
+                    .unwrap_or_else(|| rev.created_at.to_string())
+            };
+
+            let label = if is_placeholder {
+                rev.content.clone()
+            } else if i == total - 1 {
+                format!("---Current entry ({})---", ts)
+            } else {
+                format!("---Entry #{} ({})---", rev.revision_number, ts)
+            };
+
+            let end_label = if is_placeholder {
+                String::new()
+            } else if i == total - 1 {
+                "---End of current entry---".to_string()
+            } else {
+                format!("---End of entry #{}---", rev.revision_number)
+            };
+
+            if is_placeholder {
+                parts.push(label);
+            } else {
+                parts.push(format!("{}\n{}\n{}", label, rev.content, end_label));
+            }
+        }
+
+        parts.join("\n\n")
+    }
+
+    pub async fn get_revisions(
+        &self,
+        user_id: &str,
+        memo_id: Uuid,
+    ) -> Result<Vec<MemoRevisionResponse>, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+        let revisions = sqlx::query_as::<_, MemoRevision>(
+            "SELECT r.id, r.memo_id, r.user_id, r.revision_number, r.content, r.tags, r.ai_summary, r.is_deleted, r.created_at
+             FROM memo_revisions r
+             JOIN memos m ON m.id = r.memo_id
+             WHERE r.memo_id = $1 AND m.user_id = $2 AND r.is_deleted = false
+             ORDER BY r.revision_number ASC",
+        )
+        .bind(memo_id)
+        .bind(user_uuid)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(revisions
+            .into_iter()
+            .map(MemoRevisionResponse::from_revision)
+            .collect())
+    }
+
+    pub async fn delete_revision(
+        &self,
+        user_id: &str,
+        memo_id: Uuid,
+        revision_id: Uuid,
+    ) -> Result<(), AppError> {
+        let user_uuid = Uuid::parse_str(user_id)?;
+        let now = Utc::now().timestamp_millis();
+
+        // Use a transaction to prevent race conditions when multiple
+        // concurrent deletes could bring revision count below 1.
+        let mut tx = self.pool.begin().await?;
+
+        // Join memos to ensure the user owns this memo before locking its revisions.
+        let count: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*)
+             FROM memo_revisions mr
+             INNER JOIN memos m ON m.id = mr.memo_id
+             WHERE mr.memo_id = $1 AND m.user_id = $2 AND mr.is_deleted = false
+             FOR UPDATE",
+        )
+        .bind(memo_id)
+        .bind(user_uuid)
+        .fetch_one(&mut *tx)
+        .await?;
+
+        if count.0 <= 1 {
+            return Err(AppError::InvalidInput(
+                "Cannot delete the last revision. Delete the memo instead.".to_string(),
+            ));
+        }
+
+        let result = sqlx::query(
+            "UPDATE memo_revisions SET is_deleted = true
+             WHERE id = $1 AND memo_id = $2 AND user_id = $3",
+        )
+        .bind(revision_id)
+        .bind(memo_id)
+        .bind(user_uuid)
+        .execute(&mut *tx)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(AppError::MemoNotFound);
+        }
+
+        // revision_count tracks the highest-ever revision_number (monotonic),
+        // NOT the active revision count. Do not decrement it on soft-delete so
+        // that future revision_number allocations remain collision-free.
+        sqlx::query("UPDATE memos SET updated_at = $1 WHERE id = $2")
+            .bind(now)
+            .bind(memo_id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+
+        Ok(())
+    }
+
+    fn spawn_memory_refresh(&self, memo: Memo, content_changed: bool) {
         let Some(memory_embedding_service) = self.memory_embedding_service.clone() else {
             return;
         };
@@ -278,14 +470,6 @@ impl MemoService {
 
         tokio::spawn(async move {
             let result = tokio::time::timeout(std::time::Duration::from_secs(120), async {
-                if let Err(error) = memory_embedding_service.refresh_for_memo(&memo).await {
-                    log::error!(
-                        "[MemoryRefresh] embedding failed for memo {}: {}",
-                        memo_id,
-                        error
-                    );
-                }
-
                 let memo_images = if let Some(bot_svc) = &bot_service {
                     bot_svc
                         .load_memo_images(user_id, memo_id, 4)
@@ -296,6 +480,20 @@ impl MemoService {
                 };
 
                 let Some(config_svc) = server_ai_config_service else {
+                    // No AI config: still generate embedding from current memo content,
+                    // then fall through to bot replies.
+                    let revisions = MemoService::load_revisions(&pool, memo_id).await;
+                    let revision_context = MemoService::build_revision_context(&revisions);
+                    if let Err(error) = memory_embedding_service
+                        .refresh_for_memo_with_context(&memo, Some(&revision_context))
+                        .await
+                    {
+                        log::error!(
+                            "[MemoryRefresh] embedding failed for memo {}: {}",
+                            memo_id,
+                            error
+                        );
+                    }
                     if let Some(bot_svc) = bot_service {
                         if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
                             log::error!(
@@ -308,6 +506,18 @@ impl MemoService {
                     return;
                 };
                 let Some(client) = ai_client else {
+                    let revisions = MemoService::load_revisions(&pool, memo_id).await;
+                    let revision_context = MemoService::build_revision_context(&revisions);
+                    if let Err(error) = memory_embedding_service
+                        .refresh_for_memo_with_context(&memo, Some(&revision_context))
+                        .await
+                    {
+                        log::error!(
+                            "[MemoryRefresh] embedding failed for memo {}: {}",
+                            memo_id,
+                            error
+                        );
+                    }
                     if let Some(bot_svc) = bot_service {
                         if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
                             log::error!(
@@ -329,11 +539,15 @@ impl MemoService {
                     None => false,
                 };
 
-                let needs_tags = memo
-                    .tags
-                    .as_array()
-                    .map(|arr| arr.is_empty())
-                    .unwrap_or(true);
+                let revisions = MemoService::load_revisions(&pool, memo_id).await;
+                let revision_context = MemoService::build_revision_context(&revisions);
+
+                let needs_tags = content_changed
+                    && memo
+                        .tags
+                        .as_array()
+                        .map(|arr| arr.is_empty())
+                        .unwrap_or(true);
 
                 if auto_tag && needs_tags {
                     MemoService::auto_generate_tags(
@@ -343,31 +557,67 @@ impl MemoService {
                         &user_id_str,
                         &memo,
                         &memo_images,
+                        &revision_context,
                     )
                     .await;
                 }
 
-                if auto_summary && memo.ai_summary.is_none() {
+                let needs_summary = content_changed;
+                if auto_summary && needs_summary {
                     MemoService::auto_generate_summary(
                         &pool,
                         &config_svc,
                         &client,
                         &memo,
                         &memo_images,
+                        &revision_context,
                     )
                     .await;
                 }
 
-                // Trigger bot replies after tagging/summary complete so bots can see
-                // the updated memo state and there is no concurrent AI usage on the
-                // same config that could confuse proxied providers.
-                if let Some(bot_svc) = bot_service {
-                    if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
-                        log::error!(
-                            "[MemoryRefresh] bot trigger_replies failed for memo {}: {}",
-                            memo_id,
-                            error
-                        );
+                // Only write back AI results to the revision on initial creation.
+                // On edits the revision INSERT already captured a complete snapshot
+                // (old content + old tags + old ai_summary). Overwriting it with
+                // newly generated tags/summary would produce an inconsistent record.
+                if revisions.len() == 1 && (auto_tag || auto_summary) {
+                    MemoService::update_latest_revision_ai_results(&pool, memo_id).await;
+                }
+
+                // Re-read memo from DB so embedding uses the freshly generated
+                // tags and summary (not the pre-AI stale values).
+                let fresh_memo = sqlx::query_as::<_, Memo>(
+                    "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
+                     FROM memos WHERE id = $1 AND is_deleted = false",
+                )
+                .bind(memo_id)
+                .fetch_optional(&pool)
+                .await
+                .ok()
+                .flatten()
+                .unwrap_or(memo);
+
+                if let Err(error) = memory_embedding_service
+                    .refresh_for_memo_with_context(&fresh_memo, Some(&revision_context))
+                    .await
+                {
+                    log::error!(
+                        "[MemoryRefresh] embedding failed for memo {}: {}",
+                        memo_id,
+                        error
+                    );
+                }
+
+                // Trigger bot replies after tagging/summary/embedding complete so bots
+                // see the updated memo state and embedding is already consistent.
+                if content_changed {
+                    if let Some(bot_svc) = bot_service {
+                        if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
+                            log::error!(
+                                "[MemoryRefresh] bot trigger_replies failed for memo {}: {}",
+                                memo_id,
+                                error
+                            );
+                        }
                     }
                 }
             })
@@ -379,6 +629,31 @@ impl MemoService {
         });
     }
 
+    async fn update_latest_revision_ai_results(pool: &PgPool, memo_id: Uuid) {
+        let memo = match sqlx::query_as::<_, Memo>(
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
+             FROM memos WHERE id = $1",
+        )
+        .bind(memo_id)
+        .fetch_optional(pool)
+        .await
+        {
+            Ok(Some(m)) => m,
+            _ => return,
+        };
+
+        let _ = sqlx::query(
+            "UPDATE memo_revisions SET tags = $1, ai_summary = $2
+             WHERE memo_id = $3 AND revision_number = $4",
+        )
+        .bind(&memo.tags)
+        .bind(&memo.ai_summary)
+        .bind(memo_id)
+        .bind(memo.revision_count)
+        .execute(pool)
+        .await;
+    }
+
     async fn auto_generate_tags(
         pool: &PgPool,
         config_svc: &ServerAiConfigService,
@@ -386,6 +661,7 @@ impl MemoService {
         user_id: &str,
         memo: &Memo,
         images: &[crate::services::ai_client::AiImageInput],
+        revision_context: &str,
     ) {
         let config = match config_svc.get("bot").await {
             Ok(c) => c,
@@ -425,13 +701,15 @@ impl MemoService {
 
         let prompt = format!(
             "You are a tagging assistant for a personal journal app. \
-             Generate 1-4 concise tags for the memo below. \
+             Generate 1-4 concise tags based on the user's complete record history below. \
+             Focus on what is currently most relevant. \
              Prefer reusing tags from the existing tag list when they fit. \
              Only create new tags when none of the existing ones are appropriate. \
-             Tags should be short (1-3 words), lowercase, in the same language as the memo content. \
+             Tags should be short (1-3 words), lowercase. \
+             Use the same language as the provided content. \
              Respond with ONLY a JSON array of tag strings, e.g.: [\"work\", \"health\"]\n\n\
-             Existing tags: {}\n\nMemo content:\n{}",
-            existing_tags_hint, memo.content
+             Existing tags: {}\n\nMemo:\n{}",
+            existing_tags_hint, revision_context
         );
 
         let ai_config = crate::services::ai_client::AiConfig {
@@ -505,6 +783,7 @@ impl MemoService {
         ai_client: &AiClient,
         memo: &Memo,
         images: &[crate::services::ai_client::AiImageInput],
+        revision_context: &str,
     ) {
         let config = match config_svc.get("bot").await {
             Ok(c) => c,
@@ -522,11 +801,12 @@ impl MemoService {
         }
 
         let prompt = format!(
-            "Summarize the following memo in 1-2 sentences. \
+            "Summarize the following memo based on its complete record history in 1-2 sentences. \
+             Focus on the current state. If there are meaningful changes across entries, briefly mention them. \
              Be concise and capture the key point. \
-             Reply in the same language as the memo. \
+             Use the same language as the provided content. \
              Output only the summary, no extra text.\n\nMemo:\n{}",
-            memo.content
+            revision_context
         );
 
         let ai_config = crate::services::ai_client::AiConfig {
@@ -590,7 +870,7 @@ impl MemoService {
             e
         })?;
         let memo = sqlx::query_as::<_, Memo>(
-            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
              FROM memos WHERE id = $1 AND user_id = $2 AND is_deleted = false",
         )
         .bind(memo_id)
@@ -630,7 +910,7 @@ impl MemoService {
         let memos = if let Some(ref search_pattern) = search_pattern {
             // Search mode: search in content and tags
             sqlx::query_as::<_, Memo>(
-                "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
+                "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
                  FROM memos 
                  WHERE user_id = $1 
                    AND is_deleted = false 
@@ -645,7 +925,7 @@ impl MemoService {
             .await?
         } else if let Some(diary_date) = diary_date {
             sqlx::query_as::<_, Memo>(
-                "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
+                "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
                  FROM memos WHERE user_id = $1 AND is_deleted = false AND diary_date = $2 AND is_archived = true
                  ORDER BY created_at DESC LIMIT $3 OFFSET $4",
             )
@@ -659,7 +939,7 @@ impl MemoService {
             match archived {
                 Some(true) => {
                     sqlx::query_as::<_, Memo>(
-                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
+                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
                          FROM memos WHERE user_id = $1 AND is_deleted = false AND is_archived = true
                          ORDER BY created_at DESC LIMIT $2 OFFSET $3",
                     )
@@ -671,7 +951,7 @@ impl MemoService {
                 }
                 Some(false) => {
                     sqlx::query_as::<_, Memo>(
-                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
+                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
                          FROM memos WHERE user_id = $1 AND is_deleted = false AND is_archived = false
                          ORDER BY created_at DESC LIMIT $2 OFFSET $3",
                     )
@@ -683,7 +963,7 @@ impl MemoService {
                 }
                 None => {
                     sqlx::query_as::<_, Memo>(
-                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
+                        "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
                          FROM memos WHERE user_id = $1 AND is_deleted = false
                          ORDER BY created_at DESC LIMIT $2 OFFSET $3",
                     )
@@ -786,7 +1066,7 @@ impl MemoService {
         let (start_ms, end_ms) = date_str_to_ms_bounds(date, tz)?;
 
         let mut query = String::from(
-            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
              FROM memos
              WHERE user_id = $1
                 AND is_deleted = false
@@ -825,6 +1105,15 @@ impl MemoService {
         let user_uuid = Uuid::parse_str(user_id)?;
         let now = Utc::now().timestamp_millis();
 
+        let content_changed = req.content.is_some();
+        let embedding_relevant_changed = req.content.is_some()
+            || req.tags.is_some()
+            || req.ai_summary.is_some()
+            || req.resource_ids.is_some();
+
+        // Start transaction to ensure atomicity between memo update and revision insert
+        let mut tx = self.pool.begin().await.map_err(AppError::Database)?;
+
         let mut set_clauses = vec!["updated_at = $1".to_string()];
         let mut param_idx = 2;
 
@@ -851,6 +1140,10 @@ impl MemoService {
         if req.ai_summary.is_some() {
             set_clauses.push(format!("ai_summary = ${}", param_idx));
             param_idx += 1;
+        }
+
+        if content_changed {
+            set_clauses.push("revision_count = revision_count + 1".to_string());
         }
 
         let query = format!(
@@ -886,9 +1179,59 @@ impl MemoService {
         let memo = query_builder
             .bind(memo_id)
             .bind(user_uuid)
-            .fetch_optional(&self.pool)
+            .fetch_optional(&mut *tx)
             .await?
             .ok_or(AppError::MemoNotFound)?;
+
+        if content_changed {
+            let tags_json =
+                json!(serde_json::from_value::<Vec<String>>(memo.tags.clone()).unwrap_or_default());
+            // revision_count was already incremented atomically in the UPDATE above.
+            // Insert revision in the same transaction to prevent race conditions.
+            // Include ai_summary so historical revisions are self-contained even when
+            // the background refresh fails or auto-summary is disabled.
+            sqlx::query(
+                "INSERT INTO memo_revisions (id, memo_id, user_id, revision_number, content, tags, ai_summary, is_deleted, created_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8)",
+            )
+            .bind(Uuid::new_v4())
+            .bind(memo.id)
+            .bind(user_uuid)
+            .bind(memo.revision_count)
+            .bind(&memo.content)
+            .bind(&tags_json)
+            .bind(&memo.ai_summary)
+            .bind(now)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| {
+                log::error!("[MemoService] Failed to insert revision for memo {}: {}", memo.id, e);
+                AppError::Database(e)
+            })?;
+        }
+
+        // Commit transaction before spawning background tasks
+        tx.commit().await.map_err(AppError::Database)?;
+
+        if content_changed {
+            self.spawn_memory_refresh(memo.clone(), true);
+
+            if let Some(ai_diary_service) = &self.ai_diary_service {
+                if let Err(error) = ai_diary_service.queue_job_for_memo(&memo).await {
+                    log::error!(
+                        "[MemoService] failed to queue AI diary job for memo {}: {}",
+                        memo.id,
+                        error
+                    );
+                }
+            }
+        }
+
+        // Refresh embeddings/bot context when any field that feeds into the
+        // embedding source text changes, not only on content changes.
+        if !content_changed && embedding_relevant_changed {
+            self.spawn_memory_refresh(memo.clone(), false);
+        }
 
         if let Some(resource_ids) = &req.resource_ids {
             let parsed_resource_ids: Vec<Uuid> = resource_ids
@@ -1023,7 +1366,7 @@ impl MemoService {
         let offset = (page - 1) * page_size;
 
         let mut query_str = String::from(
-            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at 
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
              FROM memos WHERE user_id = $1 AND is_deleted = false",
         );
 

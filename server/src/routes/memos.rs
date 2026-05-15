@@ -371,6 +371,54 @@ pub async fn clip_content(
     }
 }
 
+pub async fn get_revisions(
+    req: HttpRequest,
+    path: web::Path<uuid::Uuid>,
+    memo_service: web::Data<MemoService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match memo_service
+        .get_revisions(&user_id, path.into_inner())
+        .await
+    {
+        Ok(revisions) => HttpResponse::Ok().json(revisions),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+pub async fn delete_revision(
+    req: HttpRequest,
+    path: web::Path<(uuid::Uuid, uuid::Uuid)>,
+    memo_service: web::Data<MemoService>,
+    activity_log: web::Data<ActivityLog>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    let (memo_id, revision_id) = path.into_inner();
+    match memo_service
+        .delete_revision(&user_id, memo_id, revision_id)
+        .await
+    {
+        Ok(()) => {
+            activity_log.record_info(
+                "delete_revision",
+                "memo_revision",
+                Some(revision_id.to_string()),
+                format!("删除了 Memo {} 的一个版本", memo_id),
+            );
+            HttpResponse::Ok().finish()
+        }
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
 pub fn configure_memo_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/memos")
@@ -386,6 +434,11 @@ pub fn configure_memo_routes(cfg: &mut web::ServiceConfig) {
             .route(web::get().to(get_memo))
             .route(web::put().to(update_memo))
             .route(web::delete().to(delete_memo)),
+    )
+    .service(web::resource("/memos/{id}/revisions").route(web::get().to(get_revisions)))
+    .service(
+        web::resource("/memos/{id}/revisions/{revision_id}")
+            .route(web::delete().to(delete_revision)),
     )
     .service(web::resource("/memos/{id}/archive").route(web::put().to(archive_memo)))
     .service(web::resource("/memos/{id}/unarchive").route(web::put().to(unarchive_memo)));
