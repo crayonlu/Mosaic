@@ -15,6 +15,7 @@ pub struct Config {
     pub r2_secret_access_key: Option<String>,
     pub admin_username: String,
     pub admin_password: String,
+    pub html2llm_url: String,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -59,6 +60,8 @@ impl Config {
             r2_secret_access_key,
             admin_username: env::var("ADMIN_USERNAME").unwrap_or_else(|_| "admin".to_string()),
             admin_password: env::var("ADMIN_PASSWORD").unwrap_or_else(|_| "admin123".to_string()),
+            html2llm_url: env::var("HTML2LLM_URL")
+                .unwrap_or_else(|_| "https://html2llm.cyncyn.xyz".to_string()),
         })
     }
 }

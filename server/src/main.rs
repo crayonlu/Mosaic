@@ -41,6 +41,7 @@ async fn main() -> anyhow::Result<()> {
             log::info!("  - Storage Type: {:?}", config.storage_type);
             log::info!("  - Local Storage Path: {}", config.local_storage_path);
             log::info!("  - Admin User: {}", config.admin_username);
+            log::info!("  - html2llm URL: {}", config.html2llm_url);
         }
         Err(e) => {
             log::error!("[FAILED] Configuration load failed: {}", e);
@@ -118,6 +119,7 @@ async fn main() -> anyhow::Result<()> {
         storage.clone(),
         ai_client.clone(),
         server_ai_config_service.clone(),
+        config.html2llm_url.clone(),
     );
     ai_diary_service.spawn_job_sweeper();
     log::info!("[OK] Business services initialized");
