@@ -103,3 +103,25 @@ export function useUnarchiveMemo() {
     },
   })
 }
+
+export function useRevisions(memoId: string) {
+  return useQuery({
+    queryKey: ['memos', memoId, 'revisions'],
+    queryFn: () => memosApi.getRevisions(memoId),
+    staleTime: DEFAULT_STALE_TIME,
+    enabled: !!memoId,
+  })
+}
+
+export function useDeleteRevision() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ memoId, revisionId }: { memoId: string; revisionId: string }) =>
+      memosApi.deleteRevision(memoId, revisionId),
+    onSuccess: (_data, { memoId }) => {
+      queryClient.invalidateQueries({ queryKey: ['memos', memoId, 'revisions'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', memoId] })
+      queryClient.invalidateQueries({ queryKey: ['memos'] })
+    },
+  })
+}

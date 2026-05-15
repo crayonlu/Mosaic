@@ -324,6 +324,7 @@ impl BotService {
             thinking_content: Option<String>,
             parent_reply_id: Option<Uuid>,
             user_question: Option<String>,
+            revision_number: Option<i32>,
             created_at: i64,
             bot_name: String,
             bot_avatar_url: Option<String>,
@@ -333,7 +334,7 @@ impl BotService {
 
         let rows = sqlx::query_as::<_, ReplyRow>(
             "SELECT br.id, br.memo_id, br.bot_id, br.content, br.thinking_content, br.parent_reply_id,
-                    br.user_question, br.created_at,
+                    br.user_question, br.revision_number, br.created_at,
                     b.name as bot_name, b.avatar_url as bot_avatar_url,
                     COUNT(*) OVER (PARTITION BY br.memo_id, br.bot_id) as thread_count,
                     FIRST_VALUE(br.id) OVER (PARTITION BY br.memo_id, br.bot_id ORDER BY br.created_at DESC) as latest_reply_id
@@ -362,6 +363,7 @@ impl BotService {
                 thinking_content: r.thinking_content,
                 parent_reply_id: r.parent_reply_id,
                 user_question: r.user_question,
+                revision_number: r.revision_number,
                 created_at: r.created_at,
                 children: vec![],
                 thread_count: r.thread_count,
@@ -399,7 +401,7 @@ impl BotService {
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
 
         let memo: Option<Memo> = sqlx::query_as::<_, Memo>(
-            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at
+            "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
              FROM memos WHERE id = $1 AND user_id = $2 AND is_deleted = FALSE",
         )
         .bind(memo_id)
@@ -409,7 +411,25 @@ impl BotService {
         .map_err(AppError::Database)?;
 
         let memo = memo.ok_or(AppError::MemoNotFound)?;
-        let memo_content = memo.content.clone();
+
+        let memo_content = if memo.revision_count > 1 {
+            let revisions = sqlx::query_as::<_, crate::models::MemoRevision>(
+                "SELECT id, memo_id, user_id, revision_number, content, tags, ai_summary, is_deleted, created_at
+                 FROM memo_revisions WHERE memo_id = $1 AND is_deleted = false ORDER BY revision_number ASC",
+            )
+            .bind(memo_id)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| {
+                log::error!("[BotService] Failed to load revisions for memo {}: {}", memo_id, e);
+                e
+            })
+            .unwrap_or_default();
+
+            crate::services::MemoService::build_revision_context(&revisions)
+        } else {
+            memo.content.clone()
+        };
 
         let bots = sqlx::query_as::<_, Bot>(
             "SELECT id, user_id, name, avatar_url, description, tags, auto_reply, sort_order, model, ai_config, created_at, updated_at
@@ -490,14 +510,15 @@ impl BotService {
                     {
                         let now = Utc::now().timestamp_millis();
                         let _ = sqlx::query(
-                            "INSERT INTO bot_replies (id, memo_id, bot_id, content, thinking_content, parent_reply_id, user_question, created_at)
-                             VALUES ($1, $2, $3, $4, $5, NULL, NULL, $6)",
+                            "INSERT INTO bot_replies (id, memo_id, bot_id, content, thinking_content, parent_reply_id, user_question, revision_number, created_at)
+                             VALUES ($1, $2, $3, $4, $5, NULL, NULL, $6, $7)",
                         )
                         .bind(Uuid::new_v4())
                         .bind(memo_id)
                         .bind(bot.id)
                         .bind(&reply.content)
                         .bind(&reply.thinking_content)
+                        .bind(memo.revision_count)
                         .bind(now)
                         .execute(&pool)
                         .await;
@@ -590,6 +611,7 @@ impl BotService {
                     .map(|reply| reply.created_at)
                     .unwrap_or_else(|| chrono::Utc::now().timestamp_millis()),
                 updated_at: chrono::Utc::now().timestamp_millis(),
+                revision_count: 1,
             };
 
             service
@@ -682,6 +704,7 @@ impl BotService {
             thinking_content: reply.thinking_content,
             parent_reply_id: Some(parent_reply_id),
             user_question: Some(req.question),
+            revision_number: None,
             created_at: now,
             children: vec![],
             thread_count: thread.replies.len() as i64 + 1,

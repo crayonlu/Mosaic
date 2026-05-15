@@ -356,7 +356,7 @@ pub async fn backfill_memory(
         loop {
             let batch = match sqlx::query_as::<_, Memo>(
                 "SELECT m.id, m.user_id, m.content, m.tags, m.is_archived, m.is_deleted,
-                        m.diary_date, m.ai_summary, m.created_at, m.updated_at
+                        m.diary_date, m.ai_summary, m.created_at, m.updated_at, m.revision_count
                  FROM memos m
                  LEFT JOIN memo_embeddings me ON me.memo_id = m.id
                  WHERE m.is_deleted = false AND me.memo_id IS NULL

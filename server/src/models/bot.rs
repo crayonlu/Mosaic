@@ -79,6 +79,7 @@ pub struct BotReply {
     pub content: String,
     pub parent_reply_id: Option<Uuid>,
     pub user_question: Option<String>,
+    pub revision_number: Option<i32>,
     pub created_at: i64,
 }
 
@@ -92,6 +93,7 @@ pub struct BotReplyResponse {
     pub thinking_content: Option<String>,
     pub parent_reply_id: Option<Uuid>,
     pub user_question: Option<String>,
+    pub revision_number: Option<i32>,
     pub created_at: i64,
     pub children: Vec<BotReplyResponse>,
     pub thread_count: i64,

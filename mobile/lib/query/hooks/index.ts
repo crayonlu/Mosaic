@@ -1,7 +1,7 @@
 export {
   useBotReplies,
-  useBotThread,
   useBots,
+  useBotThread,
   useCreateBot,
   useDeleteBot,
   useReorderBots,
@@ -16,7 +16,14 @@ export {
   useSaveCustomPush,
 } from './useCustomPush'
 export { useDiaries, useDiary } from './useDiaries'
-export { useInfiniteMemos, useMemo, useMemos, useMemosByDate } from './useMemos'
-export { useMemoTags, useSearchMemos } from './useSearch'
 export { useMemoryActivity, useMemoryStats } from './useMemory'
+export {
+  useDeleteRevision,
+  useInfiniteMemos,
+  useMemo,
+  useMemos,
+  useMemosByDate,
+  useRevisions,
+} from './useMemos'
+export { useMemoTags, useSearchMemos } from './useSearch'
 export { useHeatmap, useStats } from './useStats'

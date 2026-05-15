@@ -32,6 +32,7 @@ export interface BotReply {
   thinkingContent?: string
   parentReplyId: string | null
   userQuestion: string | null
+  revisionNumber: number | null
   createdAt: number
   children: BotReply[]
   threadCount: number
