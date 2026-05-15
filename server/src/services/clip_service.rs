@@ -42,6 +42,7 @@ pub struct ClipService {
     storage: Arc<dyn Storage>,
     ai_client: AiClient,
     server_ai_config_service: ServerAiConfigService,
+    html2llm_url: String,
 }
 
 impl ClipService {
@@ -50,12 +51,14 @@ impl ClipService {
         storage: Arc<dyn Storage>,
         ai_client: AiClient,
         server_ai_config_service: ServerAiConfigService,
+        html2llm_url: String,
     ) -> Self {
         Self {
             pool,
             storage,
             ai_client,
             server_ai_config_service,
+            html2llm_url,
         }
     }
 
@@ -88,9 +91,8 @@ impl ClipService {
             .url
             .ok_or_else(|| AppError::InvalidInput("URL is required for url clip".to_string()))?;
 
-        let article = fetch_and_extract(&url).await?;
-        let markdown = html_to_markdown(&article.content);
-        let truncated = truncate_str(&markdown, 8000);
+        let article = fetch_and_extract(&url, &self.html2llm_url).await?;
+        let truncated = truncate_str(&article.content, 8000);
 
         let user_note = request.user_note.unwrap_or_default();
         let ai_input = if user_note.is_empty() {
@@ -209,39 +211,77 @@ struct Article {
     content: String,
 }
 
-async fn fetch_and_extract(url: &str) -> Result<Article, AppError> {
-    let parsed_url = reqwest::Url::parse(url)
-        .map_err(|e| AppError::InvalidInput(format!("Invalid URL: {}", e)))?;
+async fn fetch_and_extract(url: &str, html2llm_url: &str) -> Result<Article, AppError> {
+    // Build the html2llm API URL with headless mode for anti-bot bypass
+    let api_url = format!("{}/{}?headless", html2llm_url.trim_end_matches('/'), url);
 
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(15))
-        .user_agent("Mozilla/5.0 (compatible; MosaicBot/1.0)")
+        .timeout(std::time::Duration::from_secs(30)) // headless is slower, give more time
         .build()
         .map_err(|e| AppError::Internal(format!("Failed to create HTTP client: {}", e)))?;
 
     let response = client
-        .get(url)
+        .get(&api_url)
         .send()
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to fetch URL: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to fetch URL via html2llm: {}", e)))?;
 
-    let html = response
+    if !response.status().is_success() {
+        return Err(AppError::Internal(format!(
+            "html2llm returned status {}",
+            response.status()
+        )));
+    }
+
+    let csx = response
         .text()
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to read response: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Failed to read html2llm response: {}", e)))?;
 
-    let mut reader = html.as_bytes();
-    let article = readability::extractor::extract(&mut reader, &parsed_url)
-        .map_err(|e| AppError::Internal(format!("Failed to extract content: {}", e)))?;
+    let title = extract_title_from_csx(&csx).unwrap_or_else(|| "Untitled".to_string());
 
     Ok(Article {
-        title: article.title,
-        content: article.content,
+        title,
+        content: csx,
     })
 }
 
-fn html_to_markdown(html: &str) -> String {
-    htmd::convert(html).unwrap_or_else(|_| html.to_string())
+/// Extract the page title from CSX format.
+/// Looks for (title ...) pattern — the HTML <title> tag rendered as CSX.
+fn extract_title_from_csx(csx: &str) -> Option<String> {
+    // Find the (title ...) pattern in CSX
+    let start = csx.find("(title ")?;
+    let rest = &csx[start + "(title ".len()..];
+    // Walk characters tracking byte offsets for correct &str slicing
+    let mut depth = 1u32;
+    let mut end_byte = 0usize;
+    let mut found = false;
+    for (byte_offset, ch) in rest.char_indices() {
+        match ch {
+            '(' => depth += 1,
+            ')' => {
+                depth -= 1;
+                if depth == 0 {
+                    end_byte = byte_offset;
+                    found = true;
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+    if !found {
+        return None; // malformed CSX: no closing paren
+    }
+    let title_content = rest[..end_byte].trim().to_string();
+    // Strip surrounding quotes if present
+    let title_content = title_content.strip_prefix('"').unwrap_or(&title_content);
+    let title_content = title_content.strip_suffix('"').unwrap_or(title_content);
+    if title_content.is_empty() {
+        None
+    } else {
+        Some(title_content.to_string())
+    }
 }
 
 fn truncate_str(s: &str, max_chars: usize) -> &str {
@@ -289,7 +329,7 @@ fn extract_field(text: &str, field: &str) -> Option<String> {
 
 fn build_clip_system_prompt(clip_type: &str) -> String {
     let type_instruction = match clip_type {
-        "url" => "The user has provided a web article. Extract the key points and information, and rewrite it concisely.",
+        "url" => "The user has provided a web article in CSX (Compact S-Expression) format — a token-efficient HTML representation where (tag.class children...) encodes DOM structure. Extract the key points and information, and rewrite it concisely.",
         "text" => "The user has provided a text passage. Extract the key information and rewrite it concisely.",
         "image" => "The user has provided an image. Generate a description and summary based on the image content.",
         _ => "Extract and refine the user's content.",
