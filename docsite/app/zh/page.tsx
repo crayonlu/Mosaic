@@ -4,22 +4,22 @@ import { Book, Heart, Server, ArrowRight, GitFork } from 'lucide-react';
 const features = [
   {
     icon: Book,
-    title: 'Smart Notes',
-    desc: 'Rich text editor with Markdown and HTML, AI auto-tagging for effortless organization.',
+    title: '智能笔记',
+    desc: '支持 Markdown 和 HTML 的富文本编辑器，AI 自动标签让整理更轻松。',
   },
   {
     icon: Heart,
-    title: 'Mood Diary',
-    desc: 'Daily mood tracking with visualized emotional patterns and insightful trends.',
+    title: '心情日记',
+    desc: '每日心情记录，可视化情绪变化趋势，洞察你的内心世界。',
   },
   {
     icon: Server,
-    title: 'Self-hosted',
-    desc: 'Rust backend — your data stays private and under your full control.',
+    title: '自主托管',
+    desc: 'Rust 后端 —— 你的数据完全由你掌控，隐私无忧。',
   },
 ];
 
-export default function HomePage() {
+export default function ZhHomePage() {
   return (
     <div className="flex flex-col items-center flex-1">
       {/* Hero Section */}
@@ -34,17 +34,17 @@ export default function HomePage() {
         </h1>
 
         <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10 leading-relaxed">
-          A digital second brain for notes, moods, and memories.{' '}
+          你的数字第二大脑 —— 笔记、心情、回忆，尽在掌控。
           <br className="hidden md:inline" />
-          Open source, self-hosted, and built for lasting privacy.
+          开源、自主托管，为持久隐私而构建。
         </p>
 
         <div className="flex flex-wrap gap-4 justify-center">
           <Link
-            href="/docs/getting-started"
+            href="/zh/docs/getting-started"
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
-            Get Started
+            快速开始
             <ArrowRight className="w-4 h-4" />
           </Link>
           <a

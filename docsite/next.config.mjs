@@ -12,6 +12,9 @@ const config = {
     },
     basePath: '/Mosaic',
   }),
+  turbopack: {
+    root: process.cwd(),
+  },
 };
 
 export default withMDX(config);
