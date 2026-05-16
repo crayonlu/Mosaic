@@ -13,7 +13,6 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
       sourceLoader={source}
       page={page}
       pageData={page.data as unknown as PageData}
-      contentDir="content/docs"
     />
   );
 }
