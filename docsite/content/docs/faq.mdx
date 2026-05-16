@@ -1,0 +1,94 @@
+---
+title: FAQ
+description: Frequently asked questions about Mosaic
+---
+
+# FAQ
+
+## General
+
+### What is Mosaic?
+
+Mosaic is a digital second brain that combines note-taking with mood tracking. It's an open-source, self-hosted application with a mobile app (React Native / Expo) and a Rust backend.
+
+### Is Mosaic free?
+
+Yes, Mosaic is open source under the AGPL-3.0 license. You can self-host it for free. The only costs are your own server (VPS, NAS, etc.) and optionally your AI API usage.
+
+### Do I need a server?
+
+Yes, Mosaic requires a server for data storage, sync, and AI features. You can deploy it on any machine with Docker support — a cheap VPS works fine.
+
+## Setup
+
+### How do I get started?
+
+1. Deploy the server with Docker Compose (see [Getting Started](/docs/getting-started))
+2. Install the mobile APK
+3. Connect the mobile app to your server URL
+
+### Do I need AI API keys?
+
+AI features (auto-tagging, auto-summary, bot replies) are optional. They require configuring an AI provider (OpenAI-compatible or Anthropic) in the admin dashboard. Without AI, all core features work normally.
+
+### What are the minimum server requirements?
+
+- 1 CPU core, 512MB RAM, 10GB storage
+- Docker and Docker Compose
+- PostgreSQL-compatible environment (pgvector extension auto-installed via Docker)
+
+## Data & Privacy
+
+### Where is my data stored?
+
+On your own server. All data (notes, images, videos) stays on hardware you control. Storage can be local disk or Cloudflare R2 (S3-compatible).
+
+### Can I export my data?
+
+The API allows fetching all memos, diaries, and resources via standard REST endpoints. The admin dashboard also provides health and stats visibility.
+
+### Is data encrypted?
+
+- **In transit**: Yes, if you configure HTTPS via a reverse proxy (see [Deployment Guide](/docs/server-deployment))
+- **At rest**: Database-level encryption depends on your PostgreSQL setup. File storage is as-is on disk/R2
+- **Passwords**: Hashed with bcrypt
+
+## Features
+
+### Does Mosaic support multiple users?
+
+Currently, Mosaic is designed for single-user or small-team use. Multiple users share the same server instance.
+
+### Can I use Mosaic offline?
+
+The mobile app caches data locally using SQLite. You can view and edit notes offline — they sync when you reconnect to the server.
+
+### What AI models are supported?
+
+Any OpenAI-compatible API or Anthropic API. This includes OpenAI (GPT-4, GPT-4o), Anthropic (Claude), Ollama (local), and any provider offering compatible endpoints.
+
+## Sync
+
+### How does sync work?
+
+Mosaic uses a timestamp-based cursor protocol. Each entity type (memos, diaries, resources, bots) tracks its last update time. The mobile client pulls changes since its last sync cursor and merges them locally.
+
+### What happens if there's a conflict?
+
+Mosaic follows a "last-writer-wins" strategy based on the `updated_at` timestamp. The most recent change is kept.
+
+## Troubleshooting
+
+### The server won't start
+
+- Check that PostgreSQL is running and reachable
+- Verify `DATABASE_URL` is correct
+- Make sure ports are not in use (default: 8080)
+- Check server logs: `docker compose logs mosaic-server`
+
+### The mobile app can't connect
+
+- Ensure the server URL is correct (including port if non-standard)
+- Check that the server is accessible from your network
+- Verify firewall rules allow the connection
+- On the same network, use the server's local IP address

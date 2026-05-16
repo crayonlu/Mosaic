@@ -1,0 +1,69 @@
+---
+title: 环境变量
+description: 服务端所有配置项的完整参考
+---
+
+# 环境变量
+
+Mosaic 服务端通过环境变量进行配置。复制示例文件并修改：
+
+```bash
+cp server/.env.example server/.env
+```
+
+## 必需
+
+| 变量 | 说明 | 示例 |
+|------|------|------|
+| `DATABASE_URL` | PostgreSQL 连接字符串 | `postgres://mosaic:mosaic@localhost:5432/mosaic` |
+| `JWT_SECRET` | JWT 令牌签名密钥 | `your-super-secret-jwt-key-change-in-production` |
+
+## 服务端
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `PORT` | `8080` | HTTP 监听端口 |
+| `ADMIN_USERNAME` | `admin` | 管理面板用户名 |
+| `ADMIN_PASSWORD` | `admin123` | 管理面板密码 |
+
+## 存储
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `STORAGE_TYPE` | `local` | 存储后端：`local` 或 `r2` |
+| `LOCAL_STORAGE_PATH` | `./storage` | 本地文件存储目录 |
+| `FFMPEG_BINARY` | `ffmpeg` | FFmpeg 二进制路径（用于视频处理） |
+
+### Cloudflare R2（当 `STORAGE_TYPE=r2` 时）
+
+| 变量 | 说明 |
+|------|------|
+| `R2_ENDPOINT` | R2 端点 URL |
+| `R2_BUCKET` | R2 存储桶名称 |
+| `R2_ACCESS_KEY_ID` | R2 访问密钥 ID |
+| `R2_SECRET_ACCESS_KEY` | R2 秘密访问密钥 |
+
+## AI
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `HTML2LLM_URL` | `https://html2llm.cyncyn.xyz` | HTML 转 Markdown 的外部服务，用于 LLM 处理 |
+
+## Docker Compose
+
+使用 Docker Compose 时，还需要为 PostgreSQL 服务设置 `POSTGRES_PASSWORD`：
+
+```yaml
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_USER: mosaic
+      POSTGRES_PASSWORD: mosaic_password
+      POSTGRES_DB: mosaic
+  mosaic-server:
+    image: ghcr.io/crayonlu/mosaic-server:latest
+    ports:
+      - '8080:8080'
+    env_file: .env
+```

@@ -1,0 +1,112 @@
+---
+title: 服务端开发
+description: 如何在本地搭建和运行 Mosaic 服务端开发环境
+---
+
+# 服务端开发
+
+Mosaic 服务端使用 **Rust** + **Actix Web** + **SQLx** 构建。
+
+## 前置条件
+
+- Rust（最新稳定版，通过 rustup 安装）
+- PostgreSQL 15+，带 pgvector 扩展
+- FFmpeg（可选，用于视频处理）
+
+## 环境搭建
+
+### 1. 克隆并进入服务端目录
+
+```bash
+git clone https://github.com/crayonlu/Mosaic
+cd Mosaic/server
+```
+
+### 2. 配置环境变量
+
+```bash
+cp .env.example .env
+# 编辑 .env 文件，填入你的数据库连接信息
+```
+
+### 3. 创建数据库
+
+```bash
+createdb mosaic
+# 或
+psql -c "CREATE DATABASE mosaic;"
+```
+
+启用 pgvector 扩展：
+
+```bash
+psql -d mosaic -c "CREATE EXTENSION IF NOT EXISTS vector;"
+```
+
+### 4. 启动服务端
+
+```bash
+cargo run
+```
+
+服务端会自动：
+1. 从 `.env` 读取配置
+2. 连接 PostgreSQL
+3. 自动运行待执行的数据库迁移
+4. 在配置的端口上启动监听（默认：8080）
+
+## 项目结构
+
+```
+server/
+├── src/
+│   ├── main.rs            # 入口点与应用初始化
+│   ├── config.rs          # 环境变量配置
+│   ├── database.rs        # 数据库连接池与迁移
+│   ├── error.rs           # 错误类型
+│   ├── middleware/        # 认证、CORS、日志
+│   ├── models/            # 数据模型
+│   ├── routes/            # API 端点
+│   ├── services/          # 业务逻辑
+│   ├── admin/             # 管理 API 与面板
+│   └── storage/           # 文件存储（本地/S3）
+├── migrations/            # SQL 迁移文件
+├── admin-ui/              # 管理面板前端（React/Shadcn）
+├── Cargo.toml
+└── .env.example
+```
+
+## 主要依赖
+
+| 库 | 用途 |
+|----|------|
+| **actix-web** | HTTP 服务端框架 |
+| **sqlx** | PostgreSQL 客户端，支持编译时查询检查 |
+| **jsonwebtoken** | JWT 认证 |
+| **bcrypt** | 密码哈希 |
+| **pgvector** | 向量嵌入，用于语义搜索 |
+| **opendal** | 对象存储抽象层（S3/R2） |
+| **reqwest** | HTTP 客户端，用于外部 AI API 调用 |
+| **image** | 图片处理（缩略图） |
+
+## 常用命令
+
+```bash
+cargo run              # 启动服务端
+cargo check            # 编译检查（快速）
+cargo build            # 构建二进制文件
+cargo test             # 运行测试
+cargo clippy           # 代码检查
+```
+
+## 数据库迁移
+
+迁移文件位于 `server/migrations/`，服务端启动时自动执行。每个迁移是一个带时间戳的 SQL 文件。添加新迁移：
+
+```bash
+touch server/migrations/$(date -u +"%Y%m%d%H%M%S")_your_description.sql
+```
+
+在文件中编写 SQL。下次重启服务端时会自动应用。
+
+> **注意**：SQLx 使用编译时查询验证。修改迁移后，运行 `cargo sqlx prepare` 更新离线查询缓存，否则服务端可能因无法连接数据库而编译失败。

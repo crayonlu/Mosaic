@@ -1,0 +1,99 @@
+---
+title: Sync
+description: How multi-device synchronization works in Mosaic
+---
+
+# Sync
+
+Mosaic uses a pull-based synchronization protocol that lets the mobile app stay in sync with the server.
+
+## Overview
+
+The sync system is designed for **offline-first** mobile use:
+
+- The mobile app stores data locally in SQLite
+- Changes are synced with the server on demand
+- Conflicts are resolved with "last-writer-wins"
+- Each entity type tracks its own sync state independently
+
+## Protocol
+
+The sync uses a **timestamp-based cursor** approach.
+
+### Pull Request
+
+The client sends its current cursors (timestamps) for each entity type:
+
+```json
+POST /sync/pull
+{
+  "clientId": "unique-device-id",
+  "cursors": {
+    "memo": 1715000000000,
+    "diary": 1715000000000,
+    "resource": 1715000000000,
+    "bot": 1715000000000
+  }
+}
+```
+
+### Pull Response
+
+The server returns changes since each cursor:
+
+```json
+{
+  "cursors": {
+    "memo": 1715080000000,
+    "diary": 1715080000000,
+    "resource": 1715080000000,
+    "bot": 1715080000000
+  },
+  "changes": {
+    "memo": {
+      "updated": [ { "id": "...", "content": "...", ... } ],
+      "deletedIds": [ "deleted-memo-uuid" ]
+    },
+    "diary": { "updated": [...], "deletedIds": [...] },
+    "resource": { "updated": [...], "deletedIds": [...] },
+    "bot": { "updated": [...], "deletedIds": [...] }
+  }
+}
+```
+
+### Push
+
+The client can push local changes to the server via standard CRUD API endpoints before pulling.
+
+## Entity Types
+
+| Entity | Description | Deletion |
+|--------|-------------|----------|
+| **Memo** | Notes with content, tags, and AI summary | Soft delete (`is_deleted`) |
+| **Diary** | Daily mood summary entries | Soft delete (`is_deleted`) |
+| **Resource** | File attachments (images, videos) | Soft delete (`is_deleted`) |
+| **Bot** | AI bot configurations | Soft delete (`is_deleted`) |
+
+## Conflict Resolution
+
+Mosaic uses **last-writer-wins** based on the `updated_at` timestamp (milliseconds). The most recent change always takes precedence.
+
+## Batch Size
+
+Each sync pull returns up to **200 records** per entity type. If there are more changes, the client should update its cursor from the response and pull again.
+
+## Sync Cursors
+
+Sync state is stored in the `sync_cursors` table:
+
+```sql
+CREATE TABLE sync_cursors (
+    client_id VARCHAR(64) NOT NULL,
+    user_id UUID NOT NULL,
+    entity_type VARCHAR(32) NOT NULL,
+    last_sync_at BIGINT NOT NULL,
+    PRIMARY KEY (client_id, user_id, entity_type)
+);
+```
+
+Each device gets its own cursor state, so multiple devices can sync independently.
