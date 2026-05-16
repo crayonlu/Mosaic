@@ -74,19 +74,20 @@ export default function AIConfigPanel() {
     try {
       const data = (await adminApi('/ai-config')) as ConfigResponse
       for (const k of ['bot', 'embedding'] as ConfigKey[]) {
-        if (!data[k]) continue
+        const item = data[k]
+        if (!item) continue
         setForm((f) => ({
           ...f,
           [k]: {
             ...f[k],
-            provider: data[k].provider || 'openai',
-            baseUrl: data[k].baseUrl || '',
-            apiKey: data[k].apiKey || '',
-            model: data[k].model || '',
-            embeddingDim: data[k].embeddingDim ?? undefined,
-            maxTokens: data[k].maxTokens ?? undefined,
-            supportsVision: data[k].supportsVision || false,
-            supportsThinking: data[k].supportsThinking || false,
+            provider: item.provider || 'openai',
+            baseUrl: item.baseUrl || '',
+            apiKey: item.apiKey || '',
+            model: item.model || '',
+            embeddingDim: item.embeddingDim ?? undefined,
+            maxTokens: item.maxTokens ?? undefined,
+            supportsVision: item.supportsVision || false,
+            supportsThinking: item.supportsThinking || false,
           },
         }))
       }
@@ -148,19 +149,20 @@ export default function AIConfigPanel() {
         if (!active) return
 
         for (const k of ['bot', 'embedding'] as ConfigKey[]) {
-          if (!data[k]) continue
+          const item = data[k]
+          if (!item) continue
           setForm((f) => ({
             ...f,
             [k]: {
               ...f[k],
-              provider: data[k].provider || 'openai',
-              baseUrl: data[k].baseUrl || '',
-              apiKey: data[k].apiKey || '',
-              model: data[k].model || '',
-              embeddingDim: data[k].embeddingDim ?? undefined,
-              maxTokens: data[k].maxTokens ?? undefined,
-              supportsVision: data[k].supportsVision || false,
-              supportsThinking: data[k].supportsThinking || false,
+              provider: item.provider || 'openai',
+              baseUrl: item.baseUrl || '',
+              apiKey: item.apiKey || '',
+              model: item.model || '',
+              embeddingDim: item.embeddingDim ?? undefined,
+              maxTokens: item.maxTokens ?? undefined,
+              supportsVision: item.supportsVision || false,
+              supportsThinking: item.supportsThinking || false,
             },
           }))
         }
