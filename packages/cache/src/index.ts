@@ -22,5 +22,4 @@ export type { ICacheManager } from './types';
 export { MemoryCacheManager } from './implementations/memoryCache';
 
 // Platform-specific cache managers must be provided by the app:
-// - Desktop: TauriCacheManager from desktop/src/lib/cache.ts
 // - Mobile: SQLiteCacheManager from mobile/lib/cache.ts

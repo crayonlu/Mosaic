@@ -29,11 +29,10 @@ I realized that even though I have memorable moments every day, they gradually f
 
 **Cross-Platform Support**
 
-- Desktop: Windows, macOS, Linux
 - Mobile: iOS, Android
 - Cloud data sync, access anywhere
 
-> Due to developer device limitations, currently only Windows, Linux, and Android platforms are supported
+> Due to developer device limitations, currently only Android platforms are supported
 
 ---
 
@@ -41,7 +40,6 @@ I realized that even though I have memorable moments every day, they gradually f
 
 ```
 Mosaic/
-├── desktop/     # Tauri desktop application
 ├── mobile/      # Expo mobile application
 ├── server/      # Rust backend service
 ├── packages/    # Shared packages
@@ -52,7 +50,6 @@ Mosaic/
 
 ## Technical Architecture
 
-- Desktop: Tauri 2 + React 19 + TypeScript
 - Mobile: Expo React Native
 - Server: Rust + Actix Web + PostgreSQL
 - AI Integration: Supports multiple AI service providers

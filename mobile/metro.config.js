@@ -23,8 +23,6 @@ config.resolver.unstable_enablePackageExports = true
 
 config.resolver.blockList = [
   /[/\\]server[/\\]target[/\\]/,
-  /[/\\]desktop[/\\]src-tauri[/\\]target[/\\]/,
-  /[/\\]desktop[/\\]node_modules[/\\]/,
   /[/\\]\.git[/\\]/,
 ]
 

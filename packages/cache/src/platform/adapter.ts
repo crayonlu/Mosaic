@@ -1,7 +1,7 @@
 import type { CacheConfig, ICacheManager } from '../types';
 import { DEFAULT_CACHE_CONFIG } from '../types';
 
-export type PlatformType = 'desktop' | 'mobile' | 'web';
+export type PlatformType = 'mobile' | 'web';
 
 export interface HttpClient {
   get(url: string, options?: RequestInit): Promise<Response>;
@@ -27,7 +27,6 @@ let cacheManager: ICacheManager | null = null;
 
 export const detectPlatformFromUA = (): PlatformType => {
   if (typeof window === 'undefined') return 'web';
-  if ('__TAURI__' in window) return 'desktop';
   const userAgent = navigator.userAgent.toLowerCase();
   if (/android|iphone|ipad|ipod|mobile/i.test(userAgent)) return 'mobile';
   return 'web';

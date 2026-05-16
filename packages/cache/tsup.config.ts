@@ -17,9 +17,5 @@ export default defineConfig({
     'react-native-safe-area-context',
     'react-native',
     /^react-native-/,
-    '@tauri-apps/api',
-    '@tauri-apps/api/**',
-    '@tauri-apps/plugin-fs',
-    '@tauri-apps/plugin-fs/**',
   ],
 });

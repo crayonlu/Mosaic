@@ -20,13 +20,6 @@ yarn.lock
 # Logs
 *.log
 
-# Tauri
-**/src-tauri/target
-**/src-tauri/gen
-src-tauri
-target
-gen
-
 # Generated
 vite-env.d.ts
 *.d.ts

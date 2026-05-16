@@ -19,6 +19,3 @@ export * from './hooks'
 
 // Type exports
 export * from './types'
-
-// Tauri plugin exports
-export * from './plugins/tauri'

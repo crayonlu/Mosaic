@@ -9,5 +9,5 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   minify: false,
-  external: ['@tauri-apps/api', '@tauri-apps/api/**', '@tanstack/react-query'],
+  external: ['@tanstack/react-query'],
 })

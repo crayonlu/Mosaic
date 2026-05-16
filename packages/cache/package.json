@@ -21,8 +21,6 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@tauri-apps/api": "^2.2.0",
-    "@tauri-apps/plugin-fs": "^2.2.0",
     "@types/bun": "^1.1.0",
     "@types/react": "^19.1.0",
     "eslint": "^9.17.0",
@@ -32,8 +30,6 @@
     "typescript": "^5.7.0"
   },
   "peerDependencies": {
-    "@tauri-apps/api": "^2.2.0",
-    "@tauri-apps/plugin-fs": "^2.2.0",
     "react": "19.1.0"
   },
   "eslintConfig": {
