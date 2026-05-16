@@ -6,7 +6,7 @@
 | 文件 | 当前版本 |
 |------|---------|
 | 根 `package.json` | `1.2.0` |
-| `mobile/package.json` | `2.5.7` |
+| `mobile/package.json` | `1.0.0` |
 | `server/Cargo.toml` | `0.1.0` |
 
 > Mobile 和 Server 各自独立版本号，根 package.json 为 workspace 版本。
