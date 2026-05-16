@@ -16,7 +16,7 @@ Write-Host "Checking Mosaic project code..." -ForegroundColor Cyan
 Push-Location $ProjectRoot
 
 # Check Rust code (server)
-Write-Host "`n[1/5] Checking Rust (server)..." -ForegroundColor Yellow
+Write-Host "`n[1/4] Checking Rust (server)..." -ForegroundColor Yellow
 if (Test-Path "server/Cargo.toml") {
     Set-Location server
     cargo check
@@ -26,19 +26,8 @@ if (Test-Path "server/Cargo.toml") {
     Write-Host "  skipped (not found)" -ForegroundColor Gray
 }
 
-# Check Rust code (desktop Tauri)
-Write-Host "`n[2/5] Checking Rust (desktop Tauri)..." -ForegroundColor Yellow
-if (Test-Path "desktop/src-tauri/Cargo.toml") {
-    Set-Location desktop/src-tauri
-    cargo check
-    if ($LASTEXITCODE -ne 0) { $Failed += "desktop/src-tauri" }
-    Set-Location $ProjectRoot
-} else {
-    Write-Host "  skipped (not found)" -ForegroundColor Gray
-}
-
 # Check TypeScript packages
-Write-Host "`n[3/5] Checking TypeScript packages..." -ForegroundColor Yellow
+Write-Host "`n[2/4] Checking TypeScript packages..." -ForegroundColor Yellow
 
 $packages = @("packages/api", "packages/cache", "packages/utils", "packages/sync")
 foreach ($pkg in $packages) {
@@ -51,17 +40,8 @@ foreach ($pkg in $packages) {
     }
 }
 
-# Check desktop
-Write-Host "`n[4/5] Checking desktop app..." -ForegroundColor Yellow
-if (Test-Path "desktop/package.json") {
-    Set-Location desktop
-    bun run lint
-    if ($LASTEXITCODE -ne 0) { $Failed += "desktop (lint)" }
-    Set-Location $ProjectRoot
-}
-
 # Check mobile
-Write-Host "`n[5/5] Checking mobile app..." -ForegroundColor Yellow
+Write-Host "`n[3/4] Checking mobile app..." -ForegroundColor Yellow
 if (Test-Path "mobile/package.json") {
     Set-Location mobile
     bun run lint

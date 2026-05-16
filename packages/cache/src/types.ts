@@ -1,4 +1,4 @@
-export type Platform = 'desktop' | 'mobile' | 'web';
+export type Platform = 'mobile' | 'web';
 
 export type StorageStrategy = 'lru' | 'lfu' | 'fifo';
 
@@ -93,25 +93,9 @@ export interface ICacheManager {
   on<T extends CacheEventType>(type: T, handler: CacheEventHandler<T>): () => void;
 }
 
-export type PlatformCacheManager<T extends Platform> = T extends 'desktop'
-  ? ICacheManager
-  : T extends 'mobile'
-    ? ICacheManager
-    : ICacheManager;
+export type PlatformCacheManager = ICacheManager;
 
 export const DEFAULT_CACHE_CONFIG: Record<Platform, CacheConfig> = {
-  desktop: {
-    maxSize: 2 * 1024 * 1024 * 1024,
-    defaultMaxAge: 7 * 24 * 60 * 60 * 1000,
-    storageStrategy: 'lru',
-    enableOffline: true,
-    networkSensitive: false,
-    prefetch: {
-      enabled: true,
-      maxConcurrent: 3,
-      delayMs: 1000,
-    },
-  },
   mobile: {
     maxSize: 512 * 1024 * 1024,
     defaultMaxAge: 3 * 24 * 60 * 60 * 1000,

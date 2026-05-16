@@ -29,11 +29,10 @@
 
 **跨平台支持**
 
-- 桌面端：Windows、macOS、Linux
 - 移动端：iOS、Android
 - 数据云端同步，随时随地访问
 
-> 受限于开发者设备因素，目前只支持 Windows、Linux、Android 平台
+> 受限于开发者设备因素，目前只支持 Android 平台
 
 ---
 
@@ -41,7 +40,6 @@
 
 ```
 Mosaic/
-├── desktop/     # Tauri 桌面应用
 ├── mobile/      # Expo 移动应用
 ├── server/      # Rust 后端服务
 ├── packages/    # 共享包
@@ -52,8 +50,6 @@ Mosaic/
 
 ## 技术架构
 
-- 桌面端：Tauri 2 + React 19 + TypeScript
-- 移动端：Expo React Native
 - 服务端：Rust + Actix Web + PostgreSQL
 - AI 集成：支持多种 AI 服务提供商
 

@@ -1,15 +1,11 @@
 # 已知问题
 
-> 更新时间：2026-04-26
+> 更新时间：2026-05-16
 
 ## 服务端
 
 - `server\src\services\memo_service.rs` 408行 硬编码 `Asia/Shanghai` 时区，需配置化
 - 分页已统一为 `page`/`pageSize`（`SearchMemosRequest` 仍使用独立参数，待对齐）
-
-## 桌面端
-
-- IndexedDB 离线缓存策略不完整（`idb` 已引入但未完全利用）
 
 ## 移动端
 
@@ -19,7 +15,7 @@
 ## 跨平台
 
 - iOS / macOS 未完整测试（等待设备）
-- 自动化测试覆盖率低（仅 desktop 有 Vitest 测试框架，缺用例）
+- 自动化测试覆盖率低，缺用例
 
 ## 已修复历史
 

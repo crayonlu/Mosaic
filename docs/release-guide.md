@@ -6,12 +6,10 @@
 | 文件 | 当前版本 |
 |------|---------|
 | 根 `package.json` | `1.2.0` |
-| `desktop/package.json` | `2.5.7` |
 | `mobile/package.json` | `2.5.7` |
-| `desktop/src-tauri/tauri.conf.json` | `2.5.7` |
 | `server/Cargo.toml` | `0.1.0` |
 
-> Desktop/Mobile 共享主版本号，Server 独立版本号，根 package.json 为 workspace 版本。
+> Mobile 和 Server 各自独立版本号，根 package.json 为 workspace 版本。
 
 ## 发版步骤
 
@@ -26,9 +24,7 @@ git checkout -b release/v2.5.7
 修改以下文件中的版本号（以 `v2.5.7` 为例）：
 
 - `package.json`: `"version": "2.5.7"`（根 workspace）
-- `desktop/package.json`: `"version": "2.5.7"`
 - `mobile/package.json`: `"version": "2.5.7"`
-- `desktop/src-tauri/tauri.conf.json`: `"version": "2.5.7"`
 - `server/Cargo.toml`（如需同步）: `version = "0.1.0"`
 
 ### 3. 提交并推送
