@@ -1,0 +1,28 @@
+---
+title: 架构说明
+description: Mosaic 系统架构概述
+---
+
+# 架构说明
+
+Mosaic 采用客户端-服务端架构，使用 Turborepo 和 Bun 管理 monorepo。
+
+## 目录结构
+
+```
+Mosaic/
+├── mobile/    # Expo React Native 移动端
+├── server/    # Rust 后端 (Actix Web + PostgreSQL)
+├── packages/  # 共享 TypeScript 包
+└── docsite/   # 本文档站点
+```
+
+## 技术栈
+
+| 层 | 技术 |
+|:------|:-----------|
+| 移动端 | Expo (React Native) + TypeScript |
+| 服务端 | Rust + Actix Web + SQLx |
+| 数据库 | PostgreSQL + pgvector |
+| 包管理 | Bun |
+| 构建编排 | Turborepo |

@@ -1,0 +1,100 @@
+---
+title: API 参考
+description: Mosaic 服务端 API 完整文档
+---
+
+# API 参考
+
+> 版本：v2.6 | 更新日期：2026-05-16
+
+## 基础信息
+
+Base URL：`http://localhost:8080`
+
+认证方式：Bearer Token
+
+## 认证
+
+### POST /api/auth/login
+
+```json
+{ "username": "admin", "password": "admin123" }
+```
+
+响应：
+
+```json
+{
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ...",
+  "user": { "id": "uuid", "username": "admin" }
+}
+```
+
+### POST /api/auth/refresh
+
+```json
+{ "refreshToken": "eyJ..." }
+```
+
+## Memo
+
+### GET /api/memos
+
+分页查询。Query：`page`、`pageSize`、`archived`、`diaryDate`、`search`
+
+### POST /api/memos
+
+```json
+{ "content": "# 笔记内容", "tags": ["工作"], "diaryDate": "2026-05-16" }
+```
+
+### GET /api/memos/:id
+
+### PUT /api/memos/:id
+
+### DELETE /api/memos/:id
+
+## Bot 系统
+
+### GET /api/bots
+
+列出所有 Bot。
+
+### POST /api/bots
+
+```json
+{ "name": "助手", "provider": "openai", "model": "gpt-4o", "systemPrompt": "你是一个助手" }
+```
+
+### PUT /api/bots/:id
+
+### DELETE /api/bots/:id
+
+## 记忆系统
+
+### GET /api/memory/stats
+
+Embedding 统计信息。
+
+### GET /api/memory/context
+
+调试用，查看检索到的相关 Memo。
+
+## 日记
+
+### GET /api/diaries
+
+### POST /api/diaries/:date
+
+```json
+{ "moodKey": "happy", "moodScore": 80, "summary": "今天很开心！" }
+```
+
+## 资源
+
+### GET /api/resources
+
+### POST /api/resources/upload
+
+文件上传（multipart/form-data）。

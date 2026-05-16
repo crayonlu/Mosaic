@@ -1,0 +1,18 @@
+---
+title: Mobile Build & Release
+description: Building and releasing the mobile app
+---
+
+# Build & Release
+
+## Building for Android
+
+```bash
+cd Mosaic && bun install
+cd mobile && npx expo prebuild --platform android
+cd android && ./gradlew :app:assembleRelease
+```
+
+## Automated Builds
+
+GitHub Actions builds APKs automatically when `v*` tags are pushed.

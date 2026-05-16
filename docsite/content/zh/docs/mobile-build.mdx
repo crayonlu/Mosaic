@@ -1,0 +1,18 @@
+---
+title: 构建与发布
+description: 移动端构建和发布指南
+---
+
+# 构建与发布
+
+## Android 构建
+
+```bash
+cd Mosaic && bun install
+cd mobile && npx expo prebuild --platform android
+cd android && ./gradlew :app:assembleRelease
+```
+
+## 自动构建
+
+GitHub Actions 会在推送 `v*` tag 时自动构建 APK。

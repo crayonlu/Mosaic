@@ -1,0 +1,33 @@
+---
+title: Server
+description: Mosaic Rust backend overview
+---
+
+# Server
+
+The Mosaic server is built with **Rust**, **Actix Web**, and **PostgreSQL**.
+
+## Tech Stack
+
+- **Web Framework**: Actix Web
+- **Database ORM**: SQLx
+- **Database**: PostgreSQL + pgvector
+- **Auth**: JWT (access + refresh tokens)
+
+## Project Structure
+
+```
+server/
+├── src/           # Server source code
+├── migrations/    # SQL migrations
+└── admin-ui/      # Admin dashboard (Vite + React)
+```
+
+## API Endpoints
+
+| Endpoint | Description |
+|:---------|:------------|
+| `/api/auth/login` | User login |
+| `/api/memos` | Memo CRUD |
+| `/api/diaries` | Diary management |
+| `/api/bots` | Bot configuration |

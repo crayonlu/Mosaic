@@ -1,0 +1,33 @@
+---
+title: 服务端
+description: Mosaic Rust 后端概述
+---
+
+# 服务端
+
+基于 **Rust**、**Actix Web** 和 **PostgreSQL** 构建。
+
+## 技术栈
+
+- **Web 框架**: Actix Web
+- **数据库 ORM**: SQLx
+- **数据库**: PostgreSQL + pgvector
+- **认证**: JWT (access + refresh token)
+
+## 项目结构
+
+```
+server/
+├── src/           # 服务端源码
+├── migrations/    # SQL 迁移
+└── admin-ui/      # 管理后台 (Vite + React)
+```
+
+## API 端点
+
+| 端点 | 说明 |
+|:---------|:------------|
+| `/api/auth/login` | 登录 |
+| `/api/memos` | 笔记 CRUD |
+| `/api/diaries` | 日记管理 |
+| `/api/bots` | Bot 配置 |
