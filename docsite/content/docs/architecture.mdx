@@ -1,0 +1,28 @@
+---
+title: Architecture
+description: Mosaic system architecture overview
+---
+
+# Architecture
+
+Mosaic follows a client-server monorepo structure.
+
+## Directory Structure
+
+```
+Mosaic/
+├── mobile/    # Expo React Native app
+├── server/    # Rust backend (Actix Web + PostgreSQL)
+├── packages/  # Shared TypeScript packages
+└── docsite/   # This documentation
+```
+
+## Technology Stack
+
+| Layer | Technology |
+|:------|:-----------|
+| Mobile | Expo (React Native) + TypeScript |
+| Server | Rust + Actix Web + SQLx |
+| Database | PostgreSQL + pgvector |
+| Package Manager | Bun |
+| Build Orchestration | Turborepo |

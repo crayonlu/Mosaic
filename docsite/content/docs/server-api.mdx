@@ -1,0 +1,219 @@
+---
+title: API Reference
+description: Complete Mosaic server API documentation
+---
+
+# API Reference
+
+> Version: v2.6 | Updated: 2026-05-16
+
+## Base URL
+
+Default: `http://localhost:8080`
+
+All API endpoints return JSON. Authentication uses Bearer tokens.
+
+## Authentication
+
+Protected endpoints require:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+- Access Token: 24 hours
+- Refresh Token: 7 days
+
+### POST /api/auth/login
+
+```json
+{ "username": "admin", "password": "admin123" }
+```
+
+Response:
+
+```json
+{
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ...",
+  "user": { "id": "uuid", "username": "admin", "avatarUrl": null }
+}
+```
+
+### POST /api/auth/refresh
+
+```json
+{ "refreshToken": "eyJ..." }
+```
+
+### GET /api/auth/me
+
+Returns current user info.
+
+### POST /api/auth/change-password
+
+```json
+{ "oldPassword": "old", "newPassword": "new" }
+```
+
+## Memos
+
+### POST /api/memos
+
+```json
+{ "content": "# My note", "tags": ["work"], "diaryDate": "2026-05-16" }
+```
+
+### GET /api/memos
+
+Query: `page`, `pageSize`, `archived`, `diaryDate`, `search`
+
+### GET /api/memos/:id
+
+### PUT /api/memos/:id
+
+```json
+{ "content": "updated", "tags": ["edited"], "isArchived": false }
+```
+
+### DELETE /api/memos/:id
+
+### PUT /api/memos/:id/archive
+
+```json
+{ "diaryDate": "2026-05-16" }
+```
+
+### PUT /api/memos/:id/unarchive
+
+### GET /api/memos/date/:date
+
+Query: `archived`
+
+### GET /api/memos/search
+
+Query: `query`, `tags`, `startDate`, `endDate`, `isArchived`, `page`, `pageSize`
+
+### GET /api/memos/tags
+
+Returns all user tags with counts.
+
+### POST /api/memos/clip
+
+Clip web content into a memo.
+
+### GET /api/memos/:id/revisions
+
+View memo version history.
+
+## Bot System
+
+### GET /api/bots
+
+List all configured bots.
+
+### POST /api/bots
+
+```json
+{ "name": "Assistant", "provider": "openai", "model": "gpt-4o", "systemPrompt": "You are helpful" }
+```
+
+### PUT /api/bots/:id
+
+Update bot configuration.
+
+### DELETE /api/bots/:id
+
+### PUT /api/bots/reorder
+
+```json
+{ "botIds": ["id1", "id2", "id3"] }
+```
+
+### GET /api/memos/:id/bot-replies
+
+Get bot responses for a memo.
+
+### GET /api/bot-replies/:id/thread
+
+Get full conversation thread with thinking content.
+
+### POST /api/memos/:id/trigger-replies
+
+Manually trigger auto-replies for a memo.
+
+## Memory System
+
+### GET /api/memory/stats
+
+Embedding statistics (indexed memos, total memos).
+
+### GET /api/memory/activity
+
+Memory retrieval activity log.
+
+### GET /api/memory/context
+
+Retrieved memos for debugging (with relevance scores).
+
+## Sync
+
+### POST /api/sync/pull
+
+Pull changes with cursor-based pagination.
+
+## Diaries
+
+### GET /api/diaries
+
+Query: `page`, `pageSize`, `startDate`, `endDate`
+
+### GET /api/diaries/:date
+
+Returns diary with memos for that date.
+
+### POST /api/diaries/:date
+
+```json
+{ "moodKey": "happy", "moodScore": 80, "summary": "Great day!" }
+```
+
+### PUT /api/diaries/:date
+
+Partial update. Fields: `summary`, `moodKey`, `moodScore`, `coverImageId`
+
+## Resources
+
+### GET /api/resources
+
+Query: `page`, `pageSize`
+
+### POST /api/resources/upload
+
+Multipart upload. Returns resource metadata.
+
+### GET /api/resources/:id
+
+Download resource file.
+
+### DELETE /api/resources/:id
+
+## Stats
+
+### GET /api/stats
+
+Returns usage statistics for the authenticated user.
+
+## Admin
+
+### POST /admin/api/backfill-memory
+
+Backfill memory embeddings (admin only).
+
+### GET /admin/api/settings
+
+Get app settings.
+
+### PUT /admin/api/settings
+
+Update app settings.

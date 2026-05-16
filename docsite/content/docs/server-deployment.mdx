@@ -1,0 +1,35 @@
+---
+title: Server Deployment
+description: Deploying the Mosaic server
+---
+
+# Deployment
+
+## Docker (Recommended)
+
+```yaml
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_USER: mosaic
+      POSTGRES_PASSWORD: mosaic
+      POSTGRES_DB: mosaic
+  mosaic-server:
+    image: ghcr.io/crayonlu/mosaic-server:latest
+    ports:
+      - '8080:8080'
+    env_file: .env
+```
+
+## Reverse Proxy
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name mosaic.example.com;
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+    }
+}
+```
