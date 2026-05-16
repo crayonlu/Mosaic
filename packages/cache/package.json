@@ -12,12 +12,13 @@
     }
   },
   "scripts": {
-    "build": "bun run tsup",
-    "dev": "bun run tsup --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "format": "prettier --write \"src/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
   },
   "dependencies": {},
   "devDependencies": {
@@ -31,28 +32,5 @@
   },
   "peerDependencies": {
     "react": "19.1.0"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": ["../../eslint.config.js"],
-    "parserOptions": {
-      "project": "./tsconfig.json"
-    },
-    "globals": {
-      "RequestInit": "readonly",
-      "Response": "readonly",
-      "BodyInit": "readonly",
-      "fetch": "readonly",
-      "URL": "readonly",
-      "atob": "readonly",
-      "btoa": "readonly"
-    }
-  },
-  "prettier": {
-    "semi": true,
-    "singleQuote": true,
-    "tabWidth": 2,
-    "trailingComma": "es5",
-    "printWidth": 100
   }
 }

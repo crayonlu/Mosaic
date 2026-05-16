@@ -3,6 +3,7 @@
   "version": "1.2.0",
   "private": true,
   "type": "module",
+  "packageManager": "bun@1.3.13",
   "workspaces": [
     "packages/*",
     "mobile",
@@ -15,23 +16,12 @@
     "mobile:ios": "bun --filter @mosaic/mobile ios",
     "mobile:web": "bun --filter @mosaic/mobile web",
     "build:sync": "bun --filter @mosaic/sync build",
-    "lint": "bun --filter @mosaic/api lint && bun --filter @mosaic/utils lint && bun --filter @mosaic/cache lint && bun --filter @mosaic/mobile lint && bun --filter @mosaic/sync lint",
-    "lint:api": "bun --filter @mosaic/api lint",
-    "lint:utils": "bun --filter @mosaic/utils lint",
-    "lint:cache": "bun --filter @mosaic/cache lint",
-    "lint:cache:fix": "bun --filter @mosaic/cache lint:fix",
-    "lint:mobile": "bun --filter @mosaic/mobile lint",
-    "lint:mobile:fix": "bun --filter @mosaic/mobile lint:fix",
-    "lint:sync": "bun --filter @mosaic/sync lint",
-    "format": "bun --filter @mosaic/api format && bun --filter @mosaic/utils format && bun --filter @mosaic/cache format && bun --filter @mosaic/mobile format && bun --filter admin-ui format",
-    "format:api": "bun --filter @mosaic/api format",
-    "format:utils": "bun --filter @mosaic/utils format",
-    "format:cache": "bun --filter @mosaic/cache format",
-    "format:mobile": "bun --filter @mosaic/mobile format",
-    "format:mobile:check": "bun --filter @mosaic/mobile format:check",
-    "format:admin-ui": "bun --filter admin-ui format",
-    "format:admin-ui:check": "bun --filter admin-ui format:check",
-    "check": "bun lint && bun format:api && bun format:utils && bun format:mobile:check && bun format:admin-ui:check"
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "build": "turbo run build",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
+    "check": "turbo run lint typecheck format:check"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -48,5 +38,8 @@
     "@typescript-eslint/parser": "^8.51.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0"
+  },
+  "devDependencies": {
+    "turbo": "^2.9.14"
   }
 }
