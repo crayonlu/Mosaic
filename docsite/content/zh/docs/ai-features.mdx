@@ -1,0 +1,107 @@
+---
+title: AI 功能
+description: 如何在 Mosaic 中配置和使用 AI 功能
+---
+
+# AI 功能
+
+Mosaic 集成了 AI 用于自动标签、摘要、日记生成和机器人回复。所有 AI 功能都是可选的，需要配置 AI 提供者。
+
+## 架构
+
+Mosaic 支持两个并行 AI 配置：
+
+| 配置键 | 用途 | 模型类型 |
+|--------|------|---------|
+| `bot` | 对话生成、标签、摘要、日记生成 | GPT-4o、Claude 等 |
+| `embedding` | 生成向量嵌入以支持语义搜索 | text-embedding-3-small 等 |
+
+每个配置可以使用不同的提供者。例如，对话用 OpenAI，嵌入用本地 Ollama 模型。
+
+## 支持的提供者
+
+| 提供者 | 协议 | 示例 |
+|--------|------|------|
+| **兼容 OpenAI** | `/chat/completions` + Bearer 认证 | OpenAI、Ollama、Groq、Together AI、vLLM |
+| **Anthropic** | `/messages` + x-api-key 认证 | Claude 3.5 Sonnet、Claude Opus |
+
+## 可用功能
+
+### 自动标签
+
+创建笔记时自动建议标签（仅在笔记无标签时触发）。
+
+- **默认**：开启
+- **设置项**：`auto_tag_enabled`
+- **触发条件**：创建笔记时 tags 为空
+
+### 自动摘要
+
+为每条笔记生成一行摘要。
+
+- **默认**：关闭
+- **设置项**：`auto_summary_enabled`
+- **输出**：存储在 `memo.ai_summary` 字段
+
+### 自动日记
+
+根据当天的笔记自动生成日记条目。
+
+- **默认**：开启
+- **设置项**：
+  - `auto_diary_enabled` — 总开关
+  - `auto_diary_min_memos` — 最少笔记数触发（默认：2）
+  - `auto_diary_min_chars` — 最少总字符数（默认：150）
+- **触发条件**：创建笔记后达到阈值
+- **锁定机制**：自动生成后锁定日记条目以防止覆盖
+
+### 机器人回复
+
+AI 机器人自动回复你的笔记。
+
+- **按机器人设置**：每个机器人有 `auto_reply` 开关
+- **触发条件**：关键词匹配笔记内容
+- **上下文**：机器人可配置使用记忆（历史笔记）通过记忆系统
+
+## 配置
+
+### 通过管理面板
+
+1. 打开管理面板 `http://你的服务器:8080/admin`
+2. 进入 **AI 配置** 部分
+3. 在 **OpenAI** 或 **Anthropic** 提供者之间切换
+4. 填写：`Base URL`、`API Key`、`Model name`
+5. 为每个配置点击保存
+
+### 通过 API
+
+```json
+PUT /admin/ai-config/bot
+{
+  "provider": "openai",
+  "base_url": "https://api.openai.com/v1",
+  "api_key": "sk-...",
+  "model": "gpt-4o",
+  "temperature": 0.7,
+  "max_tokens": 2048,
+  "timeout_seconds": 30
+}
+```
+
+## 本地运行 AI（Ollama）
+
+为最大隐私保护，你可以通过 Ollama 运行本地模型：
+
+1. 安装 [Ollama](https://ollama.ai)
+2. 拉取模型：
+   ```bash
+   ollama pull llama3.2       # 用于对话/标签
+   ollama pull nomic-embed-text  # 用于嵌入
+   ```
+3. 在管理面板 → AI 配置：
+   - 提供者：**OpenAI**
+   - Base URL：`http://host.docker.internal:11434/v1`
+   - 模型：`llama3.2`
+4. 嵌入配置同理，模型设为 `nomic-embed-text`
+
+> **注意**：本地模型可能比云 API 慢且准确度较低。

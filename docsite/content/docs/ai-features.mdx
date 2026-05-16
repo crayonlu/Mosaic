@@ -1,0 +1,107 @@
+---
+title: AI Features
+description: How to configure and use AI-powered features in Mosaic
+---
+
+# AI Features
+
+Mosaic integrates AI for automatic tagging, summaries, diary generation, and conversational bot replies. All AI features are optional and require configuring an AI provider.
+
+## Architecture
+
+Mosaic supports two parallel AI configurations:
+
+| Config Key | Purpose | Model Type |
+|-----------|---------|------------|
+| `bot` | Chat generation, tagging, summarization, diary generation | GPT-4o, Claude, etc. |
+| `embedding` | Generating vector embeddings for semantic search | text-embedding-3-small, etc. |
+
+Each config can use a different provider. For example, use OpenAI for chat and a local Ollama model for embeddings.
+
+## Supported Providers
+
+| Provider | Protocol | Examples |
+|----------|----------|----------|
+| **OpenAI-compatible** | `/chat/completions` with Bearer auth | OpenAI, Ollama, Groq, Together AI, vLLM |
+| **Anthropic** | `/messages` with x-api-key auth | Claude 3.5 Sonnet, Claude Opus |
+
+## Available Features
+
+### Auto Tagging
+
+Automatically suggests tags when you create a memo without tags.
+
+- **Default**: Enabled
+- **Setting**: `auto_tag_enabled`
+- **Trigger**: On memo creation when `tags` is empty
+
+### Auto Summary
+
+Generates a one-line summary for each memo.
+
+- **Default**: Disabled
+- **Setting**: `auto_summary_enabled`
+- **Output**: Stored in `memo.ai_summary` field
+
+### Auto Diary
+
+Automatically generates daily diary entries from memos created that day.
+
+- **Default**: Enabled
+- **Settings**:
+  - `auto_diary_enabled` — Master toggle
+  - `auto_diary_min_memos` — Minimum memos to trigger (default: 2)
+  - `auto_diary_min_chars` — Minimum total character count (default: 150)
+- **Trigger**: After a memo is created meeting the thresholds
+- **Locking**: Once auto-generated, the diary entry is locked to prevent overwrites
+
+### Bot Replies
+
+AI-powered bots that reply to your memos automatically.
+
+- **Per-bot setting**: Each bot has an `auto_reply` toggle
+- **Trigger**: Keyword matching on memo content
+- **Context**: Bots can be configured to use memory (previous memos) via the Memory System
+
+## Configuration
+
+### Via Admin Dashboard
+
+1. Open Admin Dashboard at `http://your-server:8080/admin`
+2. Go to **AI Config** section
+3. Toggle between **OpenAI** or **Anthropic** provider
+4. Enter: `Base URL`, `API Key`, `Model name`
+5. Click Save for each config
+
+### Via API
+
+```json
+PUT /admin/ai-config/bot
+{
+  "provider": "openai",
+  "base_url": "https://api.openai.com/v1",
+  "api_key": "sk-...",
+  "model": "gpt-4o",
+  "temperature": 0.7,
+  "max_tokens": 2048,
+  "timeout_seconds": 30
+}
+```
+
+## Running AI Locally (Ollama)
+
+For full privacy, you can run local models with Ollama:
+
+1. Install [Ollama](https://ollama.ai)
+2. Pull models:
+   ```bash
+   ollama pull llama3.2       # For chat/tagging
+   ollama pull nomic-embed-text  # For embeddings
+   ```
+3. In Admin Dashboard → AI Config:
+   - Provider: **OpenAI**
+   - Base URL: `http://host.docker.internal:11434/v1`
+   - Model: `llama3.2`
+4. Repeat for embedding config with model `nomic-embed-text`
+
+> **Note**: Local models may be slower and less accurate than cloud APIs.

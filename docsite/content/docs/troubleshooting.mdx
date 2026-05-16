@@ -1,0 +1,122 @@
+---
+title: Troubleshooting
+description: Common issues and solutions when using Mosaic
+---
+
+# Troubleshooting
+
+## Server Issues
+
+### Server won't start
+
+**Symptoms**: Docker container exits immediately, or `cargo run` fails.
+
+**Solutions**:
+
+1. **Database not reachable**: Check that PostgreSQL is running and `DATABASE_URL` is correct
+   ```bash
+   psql $DATABASE_URL -c "SELECT 1"
+   ```
+
+2. **Port already in use**: Change the `PORT` environment variable or stop the conflicting process
+   ```bash
+   lsof -i :8080  # Check what's using port 8080
+   ```
+
+3. **Missing pgvector extension**: Ensure PostgreSQL has the `vector` extension
+   ```bash
+   psql -d mosaic -c "CREATE EXTENSION IF NOT EXISTS vector;"
+   ```
+
+4. **Permission denied on storage path**: Ensure the `LOCAL_STORAGE_PATH` directory is writable
+   ```bash
+   mkdir -p ./storage && chmod 755 ./storage
+   ```
+
+### Docker Compose fails
+
+```bash
+# Rebuild and restart
+docker compose down -v
+docker compose up -d
+
+# Check logs
+docker compose logs mosaic-server
+
+# Check PostgreSQL is healthy
+docker compose logs postgres
+```
+
+### Server is slow
+
+- Check server resources: `docker stats`
+- AI API calls may add latency — check if `auto_diary_enabled` or bot auto-reply is causing delays
+- Ensure PostgreSQL has enough memory for indexing
+
+## Mobile App Issues
+
+### Can't connect to server
+
+1. **URL format**: Use `http://your-server-ip:8080` (include `http://` prefix)
+2. **Network**: Ensure both devices are on the same network, or the server port is exposed
+3. **Firewall**: Check that your server's firewall allows the port
+4. **HTPS**: For production, configure HTTPS via a reverse proxy (Nginx/Caddy)
+
+### Sync fails
+
+1. Check internet connection
+2. Verify server is running and reachable
+3. Try reconnecting: go to Settings → Server → Reconnect
+4. Check server logs for sync errors: `docker compose logs mosaic-server | grep sync`
+
+### App crashes on startup
+
+1. Clear app cache: Settings → Apps → Mosaic → Clear Cache
+2. Reinstall the APK
+3. Ensure your Android version is 8.0+
+
+## AI Features
+
+### AI tags/summaries not working
+
+1. **AI not configured**: Go to Admin Dashboard → AI Config and set up a provider
+2. **API key invalid**: Verify your OpenAI/Anthropic API key
+3. **Rate limited**: Check your AI provider's rate limits
+4. **Feature disabled**: Check admin settings — `auto_tag_enabled` and `auto_summary_enabled` must be on
+
+### Bot not replying
+
+1. Check that the bot has `auto_reply` enabled in its settings
+2. Ensure AI config "bot" provider is set up in admin dashboard
+3. Bot replies trigger on memo creation — make sure you're creating new memos
+
+## Database Issues
+
+### Migration failed
+
+```bash
+# Check current migration state
+psql -d mosaic -c "SELECT * FROM _sqlx_migrations ORDER BY version;"
+
+# Manually run a migration if needed
+psql -d mosaic -f server/migrations/20260119083515_init_tables.sql
+```
+
+### Reset the database
+
+```bash
+# Drop and recreate
+psql -c "DROP DATABASE mosaic;"
+psql -c "CREATE DATABASE mosaic;"
+psql -d mosaic -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+# Then restart the server to re-run migrations
+```
+
+## Getting Help
+
+If you can't find a solution here:
+
+- Open a [GitHub Issue](https://github.com/crayonlu/Mosaic/issues)
+- Check the [server logs](/docs/server-deployment#logs) for error messages
+- Include your server version and deployment method (Docker / bare metal)

@@ -1,0 +1,69 @@
+---
+title: Environment Variables
+description: Complete reference for all server configuration options
+---
+
+# Environment Variables
+
+The Mosaic server is configured through environment variables. Copy and modify the example file:
+
+```bash
+cp server/.env.example server/.env
+```
+
+## Required
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string (with `?sslmode=disable` for local) | `postgres://mosaic:mosaic@localhost:5432/mosaic` |
+| `JWT_SECRET` | Secret key for signing JWT tokens | `your-super-secret-jwt-key-change-in-production` |
+
+## Server
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | HTTP server listen port |
+| `ADMIN_USERNAME` | `admin` | Admin dashboard username |
+| `ADMIN_PASSWORD` | `admin123` | Admin dashboard password |
+
+## Storage
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `STORAGE_TYPE` | `local` | Storage backend: `local` or `r2` |
+| `LOCAL_STORAGE_PATH` | `./storage` | Directory for local file storage |
+| `FFMPEG_BINARY` | `ffmpeg` | FFmpeg binary path for video processing |
+
+### Cloudflare R2 (when `STORAGE_TYPE=r2`)
+
+| Variable | Description |
+|----------|-------------|
+| `R2_ENDPOINT` | R2 endpoint URL |
+| `R2_BUCKET` | R2 bucket name |
+| `R2_ACCESS_KEY_ID` | R2 access key ID |
+| `R2_SECRET_ACCESS_KEY` | R2 secret access key |
+
+## AI
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HTML2LLM_URL` | `https://html2llm.cyncyn.xyz` | External service for HTML-to-markdown conversion used in LLM processing |
+
+## Docker Compose
+
+When using Docker Compose, the `POSTGRES_PASSWORD` is also needed for the PostgreSQL service:
+
+```yaml
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_USER: mosaic
+      POSTGRES_PASSWORD: mosaic_password
+      POSTGRES_DB: mosaic
+  mosaic-server:
+    image: ghcr.io/crayonlu/mosaic-server:latest
+    ports:
+      - '8080:8080'
+    env_file: .env
+```

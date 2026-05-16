@@ -1,0 +1,114 @@
+---
+title: Server Development
+description: How to set up and run the Mosaic server locally for development
+---
+
+# Server Development
+
+The Mosaic server is built with **Rust** using **Actix Web** and **SQLx**. This guide covers local development setup.
+
+## Prerequisites
+
+- Rust (latest stable, via rustup)
+- PostgreSQL 15+ with pgvector extension
+- FFmpeg (optional, for video processing)
+
+## Setup
+
+### 1. Clone and enter the server directory
+
+```bash
+git clone https://github.com/crayonlu/Mosaic
+cd Mosaic/server
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+# Edit .env with your database credentials
+```
+
+### 3. Set up the database
+
+Create a PostgreSQL database:
+
+```bash
+createdb mosaic
+# or
+psql -c "CREATE DATABASE mosaic;"
+```
+
+Enable the pgvector extension:
+
+```bash
+psql -d mosaic -c "CREATE EXTENSION IF NOT EXISTS vector;"
+```
+
+### 4. Run the server
+
+```bash
+cargo run
+```
+
+The server will:
+1. Read configuration from `.env`
+2. Connect to PostgreSQL
+3. Automatically run pending migrations
+4. Start listening on the configured port (default: 8080)
+
+## Project Structure
+
+```
+server/
+├── src/
+│   ├── main.rs            # Entry point & initialization
+│   ├── config.rs          # Environment configuration
+│   ├── database.rs        # Database pool & migrations
+│   ├── error.rs           # Error types
+│   ├── middleware/        # Auth, CORS, logging
+│   ├── models/            # Data models
+│   ├── routes/            # API endpoints
+│   ├── services/          # Business logic
+│   ├── admin/             # Admin API & dashboard
+│   └── storage/           # File storage (local/S3)
+├── migrations/            # SQL migration files
+├── admin-ui/               # Admin dashboard frontend (React/Shadcn)
+├── Cargo.toml
+└── .env.example
+```
+
+## Key Dependencies
+
+| Crate | Purpose |
+|-------|---------|
+| **actix-web** | HTTP server framework |
+| **sqlx** | PostgreSQL client with compile-time query checking |
+| **jsonwebtoken** | JWT authentication |
+| **bcrypt** | Password hashing |
+| **pgvector** | Vector embeddings for semantic search |
+| **opendal** | Object storage abstraction (S3/R2) |
+| **reqwest** | HTTP client for external AI API calls |
+| **image** | Image processing (thumbnails) |
+
+## Common Commands
+
+```bash
+cargo run              # Start the server
+cargo check            # Check compilation (fast)
+cargo build            # Build binary
+cargo test             # Run tests
+cargo clippy           # Lint checks
+```
+
+## Database Migrations
+
+Migrations are located in `server/migrations/` and run automatically on startup. Each migration is a timestamped SQL file. To add a new migration:
+
+```bash
+touch server/migrations/$(date -u +"%Y%m%d%H%M%S")_your_description.sql
+```
+
+Write your SQL in the file. On the next server restart, it will be applied automatically.
+
+> **Note**: SQLx uses compile-time query verification. After changing migrations, run `cargo sqlx prepare` to update the offline query cache, otherwise the server may fail to compile if the database is not connected.

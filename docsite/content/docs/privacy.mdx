@@ -1,0 +1,78 @@
+---
+title: Privacy & Data
+description: How Mosaic handles your data and privacy options
+---
+
+# Privacy & Data
+
+## Data Ownership
+
+Mosaic is designed with privacy as a core principle. When you self-host the server:
+
+- **All data stays on your hardware**: Notes, diaries, images, videos — everything is stored on your own server
+- **No third-party access**: Mosaic has no telemetry, analytics, or phone-home features
+- **No cloud dependency**: The only external service is the AI API you optionally configure
+
+## What Data Is Stored
+
+| Data | Where | Purpose |
+|------|-------|---------|
+| Notes (memos) | PostgreSQL | Core app functionality |
+| Tags | PostgreSQL (JSONB) | Organization |
+| Diaries & moods | PostgreSQL | Mood tracking |
+| Images, videos | Disk or R2 | Attachments |
+| User account | PostgreSQL (bcrypt hash) | Authentication |
+| AI summaries | PostgreSQL | Optional AI feature output |
+| Vector embeddings | PostgreSQL (pgvector) | Optional semantic search |
+
+## AI & External Services
+
+When you configure an AI provider (OpenAI, Anthropic, etc.):
+
+- **Memo content is sent to the AI API** for tagging, summarization, and bot replies
+- **You choose the provider**: Use a cloud API or run a local model (Ollama)
+- **No data is sent anywhere** if you don't configure AI
+
+The optional `HTML2LLM_URL` service converts web content to markdown for AI processing. By default it points to a public instance at `https://html2llm.cyncyn.xyz`.
+
+## Data Export
+
+All data is accessible via the REST API:
+
+```bash
+# Export all memos
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/memos
+
+# Export all diaries
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/diaries
+```
+
+For a full database export:
+
+```bash
+pg_dump -h localhost -U mosaic mosaic > mosaic-backup.sql
+```
+
+## Data Deletion
+
+To delete all data:
+
+```bash
+# Drop the database
+docker compose down -v
+# Or manually: psql -c "DROP DATABASE mosaic;"
+```
+
+Individual memos and diaries can be deleted through the mobile app interface. Deleted items are soft-deleted (`is_deleted = true`) and can be permanently removed via database cleanup.
+
+## Passwords
+
+- Passwords are hashed with **bcrypt** — the server never stores plaintext passwords
+- Authentication is done via **JWT tokens** (short-lived access token + long-lived refresh token)
+- Tokens are stored securely on the mobile device using encrypted storage
+
+## Network
+
+- **No exposed ports required**: The server only needs port 8080 (or your configured port) exposed for the mobile app
+- **HTTPS recommended**: In production, use a reverse proxy (Nginx, Caddy) to enable HTTPS
+- **CORS is enforced**: Only configured origins can access the API

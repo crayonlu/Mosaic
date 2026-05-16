@@ -1,0 +1,67 @@
+---
+title: Admin Dashboard
+description: Managing your Mosaic server through the admin interface
+---
+
+# Admin Dashboard
+
+Mosaic includes a web-based admin dashboard for managing your server, AI configuration, and automation settings.
+
+## Access
+
+Open your browser to `http://your-server-address:8080/admin`.
+
+**Default credentials**:
+- Username: `admin`
+- Password: `admin123`
+
+Change these in production via the `ADMIN_USERNAME` and `ADMIN_PASSWORD` environment variables.
+
+## Dashboard
+
+The main dashboard shows:
+
+- **Server health**: Uptime, storage usage, database size
+- **Stats**: Total memos, diaries, resources, and bots
+- **Recent activity**: A log of recent server events
+
+## AI Config
+
+Configure AI providers used by the server:
+
+- **Bot Config**: Used for chat generation, tagging, summarization, and diary generation
+- **Embedding Config**: Used for generating vector embeddings for semantic search
+
+Each config supports:
+- Provider selection: **OpenAI** or **Anthropic**
+- Base URL, API key, and model name
+- Temperature and max tokens
+- Vision and reasoning capability toggles (auto-detected)
+
+See [AI Features](/docs/ai-features) for detailed setup.
+
+## Automation
+
+Control which AI features run automatically:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Auto Tag | Enabled | Auto-tag memos on creation |
+| Auto Summary | Disabled | Generate AI summaries for each memo |
+| Auto Diary | Enabled | Auto-generate daily diary entries |
+| Min Memos | 2 | Minimum memos to trigger auto diary |
+| Min Chars | 150 | Minimum characters to trigger auto diary |
+| Timezone | Asia/Shanghai | Timezone for diary date calculation |
+
+## Bot Management
+
+Create, edit, and delete AI bots from the Bots page. Each bot can have:
+
+- Name and avatar
+- Description and tags
+- Auto-reply toggle (reply to matching memos)
+- Sort order for display
+
+## Memory
+
+The Memory panel shows the status of vector embeddings. You can trigger a **backfill** to generate embeddings for memos that don't have them yet, which is needed for semantic search and bot memory features.

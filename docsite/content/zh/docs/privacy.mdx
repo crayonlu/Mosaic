@@ -1,0 +1,78 @@
+---
+title: 隐私与数据
+description: Mosaic 如何处理你的数据以及隐私选项
+---
+
+# 隐私与数据
+
+## 数据所有权
+
+Mosaic 以隐私为核心设计理念。当你自托管服务端时：
+
+- **所有数据保存在你的硬件上**：笔记、日记、图片、视频——所有内容都存储在你自己的服务器上
+- **无第三方访问**：Mosaic 没有遥测、分析或回传功能
+- **无云依赖**：唯一的外部服务是你可选配置的 AI API
+
+## 存储的数据
+
+| 数据 | 存储位置 | 用途 |
+|------|---------|------|
+| 笔记（memos） | PostgreSQL | 核心应用功能 |
+| 标签 | PostgreSQL（JSONB） | 组织分类 |
+| 日记与心情 | PostgreSQL | 心情追踪 |
+| 图片、视频 | 磁盘或 R2 | 附件 |
+| 用户账户 | PostgreSQL（bcrypt 哈希） | 身份认证 |
+| AI 摘要 | PostgreSQL | 可选 AI 功能输出 |
+| 向量嵌入 | PostgreSQL（pgvector） | 可选的语义搜索 |
+
+## AI 与外部服务
+
+当你配置 AI 提供者（OpenAI、Anthropic 等）时：
+
+- **笔记内容会被发送到 AI API** 用于标签、摘要和机器人回复
+- **你可以选择提供者**：使用云端 API 或运行本地模型（Ollama）
+- **如不配置 AI，不会有任何数据发送到外部**
+
+可选的 `HTML2LLM_URL` 服务可将网页内容转为 Markdown 供 AI 处理。默认指向公共实例 `https://html2llm.cyncyn.xyz`。
+
+## 数据导出
+
+所有数据可通过 REST API 获取：
+
+```bash
+# 导出所有笔记
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/memos
+
+# 导出所有日记
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/diaries
+```
+
+完整数据库导出：
+
+```bash
+pg_dump -h localhost -U mosaic mosaic > mosaic-backup.sql
+```
+
+## 数据删除
+
+删除所有数据：
+
+```bash
+# 删除数据库
+docker compose down -v
+# 或手动：psql -c "DROP DATABASE mosaic;"
+```
+
+单个笔记和日记可通过移动端应用界面删除。删除的数据为软删除（`is_deleted = true`），可通过数据库清理永久移除。
+
+## 密码
+
+- 密码使用 **bcrypt** 哈希存储——服务端从不存储明文密码
+- 通过 **JWT 令牌**进行身份验证（短期访问令牌 + 长期刷新令牌）
+- 令牌通过加密存储安全保存在移动设备上
+
+## 网络
+
+- **无需暴露额外端口**：服务端只需开放 8080 端口（或你配置的端口）供移动端访问
+- **推荐使用 HTTPS**：生产环境中使用反向代理（Nginx、Caddy）启用 HTTPS
+- **CORS 强制**：仅配置的来源可以访问 API

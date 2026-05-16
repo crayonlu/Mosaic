@@ -1,0 +1,107 @@
+---
+title: 数据库
+description: Mosaic 数据库结构与迁移指南
+---
+
+# 数据库
+
+Mosaic 使用 **PostgreSQL 15+** 和 **pgvector** 扩展支持语义搜索。
+
+## 表结构概览
+
+### 用户与认证
+
+```sql
+-- 用户账户
+users (id UUID, username VARCHAR, password_hash VARCHAR, avatar_url VARCHAR, created_at BIGINT, updated_at BIGINT)
+
+-- 认证令牌
+refresh_tokens (id UUID, user_id UUID REFERENCES users, token VARCHAR, expires_at BIGINT, created_at BIGINT)
+```
+
+### 内容
+
+```sql
+-- 笔记
+memos (id UUID, user_id UUID, content TEXT, tags JSONB, is_archived BOOLEAN, is_deleted BOOLEAN, diary_date DATE, created_at BIGINT, updated_at BIGINT, revision_count INT)
+
+-- 版本历史
+memo_revisions (id UUID, memo_id UUID, user_id UUID, revision_number INT, content TEXT, tags JSONB, ai_summary TEXT, is_deleted BOOLEAN, created_at BIGINT)
+
+-- 文件附件
+resources (id UUID, memo_id UUID REFERENCES memos, filename VARCHAR, resource_type VARCHAR, mime_type VARCHAR, file_size BIGINT, storage_type VARCHAR, storage_path VARCHAR, metadata JSONB, is_deleted BOOLEAN, created_at BIGINT, updated_at BIGINT)
+```
+
+### 日记
+
+```sql
+-- 每日心情摘要
+diaries (date DATE, user_id UUID, summary TEXT, mood_key VARCHAR, mood_score INT, generation_source VARCHAR, auto_generation_locked BOOLEAN, generated_from_memo_ids JSONB, is_deleted BOOLEAN, created_at BIGINT, updated_at BIGINT)
+```
+
+### AI 系统
+
+```sql
+-- 向量嵌入，用于语义搜索（需要 pgvector）
+memo_embeddings (memo_id UUID PRIMARY KEY REFERENCES memos, source_text TEXT, provider VARCHAR, model VARCHAR, embedding vector(1536), updated_at BIGINT)
+
+-- AI 提供者配置
+server_ai_configs (key VARCHAR PRIMARY KEY, provider VARCHAR, base_url VARCHAR, api_key TEXT, model VARCHAR, temperature FLOAT, max_tokens INT, timeout_seconds INT, updated_at BIGINT)
+
+-- 定时日记生成任务
+ai_diary_jobs (user_id UUID, target_date DATE, run_after_ms BIGINT, status VARCHAR, last_error TEXT, created_at BIGINT, updated_at BIGINT)
+```
+
+### 机器人
+
+```sql
+-- AI 机器人定义
+bots (id UUID, user_id UUID, name VARCHAR, avatar_url VARCHAR, description TEXT, tags JSONB, auto_reply BOOLEAN, sort_order INT, is_deleted BOOLEAN, created_at BIGINT, updated_at BIGINT)
+
+-- 机器人回复
+bot_replies (id UUID, memo_id UUID REFERENCES memos, bot_id UUID REFERENCES bots, content TEXT, parent_reply_id UUID, user_question TEXT, revision_id UUID, created_at BIGINT)
+
+-- 机器人回复附件
+bot_reply_resources (reply_id UUID, resource_id UUID, sort_order INT, created_at BIGINT)
+```
+
+### 同步
+
+```sql
+-- 各设备同步状态
+sync_cursors (client_id VARCHAR, user_id UUID, entity_type VARCHAR, last_sync_at BIGINT, created_at BIGINT, updated_at BIGINT)
+```
+
+### 设置
+
+```sql
+-- 应用全局设置
+app_settings (key VARCHAR PRIMARY KEY, value TEXT, updated_at BIGINT)
+```
+
+## 迁移
+
+迁移文件位于 `server/migrations/`，服务端启动时自动执行。
+
+**主要迁移**（按时间顺序）：
+
+| 迁移 | 说明 |
+|------|------|
+| `init_tables` | 用户、笔记、资源、日记、刷新令牌 |
+| `add_bot_system` | 机器人和机器人回复表 |
+| `add_sync_support` | sync_cursors + 软删除列 |
+| `add_bot_memory_core` | memo_embeddings（pgvector） |
+| `add_ai_config_to_bots` | AI 配置分配 |
+| `add_server_ai_config` | server_ai_configs 表 |
+| `app_settings` | 应用全局设置 |
+| `create_memo_revisions` | 笔记版本历史 |
+
+### 添加新迁移
+
+```bash
+touch server/migrations/$(date -u +"%Y%m%d%H%M%S")_description.sql
+```
+
+编写 SQL 后重启服务端即可自动执行。
+
+> 修改迁移后，运行 `cargo sqlx prepare` 更新离线查询缓存以确保编译通过。

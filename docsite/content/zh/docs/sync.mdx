@@ -1,0 +1,99 @@
+---
+title: 同步机制
+description: Mosaic 多设备同步的工作原理
+---
+
+# 同步机制
+
+Mosaic 使用基于拉取的同步协议，让移动端应用与服务器保持同步。
+
+## 概述
+
+同步系统面向 **离线优先** 的移动端使用场景：
+
+- 移动端在本地 SQLite 中存储数据
+- 按需与服务器同步变更
+- 冲突采用"最后写入者胜出"策略
+- 每种实体类型独立跟踪同步状态
+
+## 协议
+
+同步采用**基于时间戳的游标**方式。
+
+### 拉取请求
+
+客户端发送各实体类型的当前游标（时间戳）：
+
+```json
+POST /sync/pull
+{
+  "clientId": "unique-device-id",
+  "cursors": {
+    "memo": 1715000000000,
+    "diary": 1715000000000,
+    "resource": 1715000000000,
+    "bot": 1715000000000
+  }
+}
+```
+
+### 拉取响应
+
+服务端返回每个游标之后的变更：
+
+```json
+{
+  "cursors": {
+    "memo": 1715080000000,
+    "diary": 1715080000000,
+    "resource": 1715080000000,
+    "bot": 1715080000000
+  },
+  "changes": {
+    "memo": {
+      "updated": [ { "id": "...", "content": "...", ... } ],
+      "deletedIds": [ "deleted-memo-uuid" ]
+    },
+    "diary": { "updated": [...], "deletedIds": [...] },
+    "resource": { "updated": [...], "deletedIds": [...] },
+    "bot": { "updated": [...], "deletedIds": [...] }
+  }
+}
+```
+
+### 推送
+
+客户端在拉取前，通过标准 CRUD API 端点将本地变更推送到服务端。
+
+## 实体类型
+
+| 实体 | 说明 | 删除方式 |
+|------|------|---------|
+| **Memo** | 笔记（内容、标签、AI 摘要） | 软删除（`is_deleted`） |
+| **Diary** | 每日心情摘要 | 软删除（`is_deleted`） |
+| **Resource** | 文件附件（图片、视频） | 软删除（`is_deleted`） |
+| **Bot** | AI 机器人配置 | 软删除（`is_deleted`） |
+
+## 冲突解决
+
+Mosaic 基于 `updated_at` 时间戳（毫秒）采用**最后写入者胜出**。保留最近的更改。
+
+## 批量大小
+
+每次同步拉取每个实体类型最多返回 **200 条记录**。如果还有更多变更，客户端应从响应中更新游标后再次拉取。
+
+## 同步游标
+
+同步状态存储在 `sync_cursors` 表中：
+
+```sql
+CREATE TABLE sync_cursors (
+    client_id VARCHAR(64) NOT NULL,
+    user_id UUID NOT NULL,
+    entity_type VARCHAR(32) NOT NULL,
+    last_sync_at BIGINT NOT NULL,
+    PRIMARY KEY (client_id, user_id, entity_type)
+);
+```
+
+每个设备拥有独立的游标状态，支持多设备独立同步。

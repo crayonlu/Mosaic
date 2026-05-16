@@ -1,0 +1,109 @@
+---
+title: Database
+description: Mosaic database schema and migration guide
+---
+
+# Database
+
+Mosaic uses **PostgreSQL 15+** with the **pgvector** extension for semantic search.
+
+## Schema Overview
+
+The database has the following core tables:
+
+### Users & Auth
+
+```sql
+-- User accounts
+users (id UUID, username VARCHAR, password_hash VARCHAR, avatar_url VARCHAR, created_at BIGINT, updated_at BIGINT)
+
+-- Authentication tokens
+refresh_tokens (id UUID, user_id UUID REFERENCES users, token VARCHAR, expires_at BIGINT, created_at BIGINT)
+```
+
+### Content
+
+```sql
+-- Notes
+memos (id UUID, user_id UUID, content TEXT, tags JSONB, is_archived BOOLEAN, is_deleted BOOLEAN, diary_date DATE, created_at BIGINT, updated_at BIGINT, revision_count INT)
+
+-- Revision history
+memo_revisions (id UUID, memo_id UUID, user_id UUID, revision_number INT, content TEXT, tags JSONB, ai_summary TEXT, is_deleted BOOLEAN, created_at BIGINT)
+
+-- File attachments
+resources (id UUID, memo_id UUID REFERENCES memos, filename VARCHAR, resource_type VARCHAR, mime_type VARCHAR, file_size BIGINT, storage_type VARCHAR, storage_path VARCHAR, metadata JSONB, is_deleted BOOLEAN, created_at BIGINT, updated_at BIGINT)
+```
+
+### Diaries
+
+```sql
+-- Daily mood summaries
+diaries (date DATE, user_id UUID, summary TEXT, mood_key VARCHAR, mood_score INT, generation_source VARCHAR, auto_generation_locked BOOLEAN, generated_from_memo_ids JSONB, is_deleted BOOLEAN, created_at BIGINT, updated_at BIGINT)
+```
+
+### AI System
+
+```sql
+-- Vector embeddings for semantic search (requires pgvector)
+memo_embeddings (memo_id UUID PRIMARY KEY REFERENCES memos, source_text TEXT, provider VARCHAR, model VARCHAR, embedding vector(1536), updated_at BIGINT)
+
+-- AI provider configurations
+server_ai_configs (key VARCHAR PRIMARY KEY, provider VARCHAR, base_url VARCHAR, api_key TEXT, model VARCHAR, temperature FLOAT, max_tokens INT, timeout_seconds INT, updated_at BIGINT)
+
+-- Scheduled diary generation
+ai_diary_jobs (user_id UUID, target_date DATE, run_after_ms BIGINT, status VARCHAR, last_error TEXT, created_at BIGINT, updated_at BIGINT)
+```
+
+### Bots
+
+```sql
+-- AI bot definitions
+bots (id UUID, user_id UUID, name VARCHAR, avatar_url VARCHAR, description TEXT, tags JSONB, auto_reply BOOLEAN, sort_order INT, is_deleted BOOLEAN, created_at BIGINT, updated_at BIGINT)
+
+-- Bot replies
+bot_replies (id UUID, memo_id UUID REFERENCES memos, bot_id UUID REFERENCES bots, content TEXT, parent_reply_id UUID, user_question TEXT, revision_id UUID, created_at BIGINT)
+
+-- Bot reply attachments
+bot_reply_resources (reply_id UUID, resource_id UUID, sort_order INT, created_at BIGINT)
+```
+
+### Sync
+
+```sql
+-- Per-device sync state
+sync_cursors (client_id VARCHAR, user_id UUID, entity_type VARCHAR, last_sync_at BIGINT, created_at BIGINT, updated_at BIGINT)
+```
+
+### Settings
+
+```sql
+-- App-wide settings
+app_settings (key VARCHAR PRIMARY KEY, value TEXT, updated_at BIGINT)
+```
+
+## Migrations
+
+Migrations are located in `server/migrations/` and run automatically on server startup.
+
+**Key migrations** (chronological):
+
+| Migration | Description |
+|-----------|-------------|
+| `init_tables` | Users, memos, resources, diaries, refresh_tokens |
+| `add_bot_system` | Bot and bot_replies tables |
+| `add_sync_support` | sync_cursors + soft-delete columns |
+| `add_bot_memory_core` | memo_embeddings (pgvector) |
+| `add_ai_config_to_bots` | AI config assignment |
+| `add_server_ai_config` | server_ai_configs table |
+| `app_settings` | App-wide settings |
+| `create_memo_revisions` | Version history for memos |
+
+### Adding a new migration
+
+```bash
+touch server/migrations/$(date -u +"%Y%m%d%H%M%S")_description.sql
+```
+
+Write SQL in the file. It will run automatically on next server restart.
+
+> After changing migrations, run `cargo sqlx prepare` to update the offline query cache for compilation.

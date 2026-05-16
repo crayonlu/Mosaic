@@ -1,0 +1,122 @@
+---
+title: 故障排除
+description: 使用 Mosaic 时的常见问题与解决方案
+---
+
+# 故障排除
+
+## 服务端问题
+
+### 服务端无法启动
+
+**现象**：Docker 容器启动即退出，或 `cargo run` 失败。
+
+**解决方案**：
+
+1. **数据库无法连接**：检查 PostgreSQL 是否运行且 `DATABASE_URL` 正确
+   ```bash
+   psql $DATABASE_URL -c "SELECT 1"
+   ```
+
+2. **端口被占用**：修改 `PORT` 环境变量，或停止占用端口的进程
+   ```bash
+   lsof -i :8080  # 查看谁在使用 8080 端口
+   ```
+
+3. **缺少 pgvector 扩展**：确保 PostgreSQL 安装了 `vector` 扩展
+   ```bash
+   psql -d mosaic -c "CREATE EXTENSION IF NOT EXISTS vector;"
+   ```
+
+4. **存储目录权限不足**：确保 `LOCAL_STORAGE_PATH` 目录可写
+   ```bash
+   mkdir -p ./storage && chmod 755 ./storage
+   ```
+
+### Docker Compose 失败
+
+```bash
+# 重建并重启
+docker compose down -v
+docker compose up -d
+
+# 查看日志
+docker compose logs mosaic-server
+
+# 检查 PostgreSQL 是否健康
+docker compose logs postgres
+```
+
+### 服务端响应慢
+
+- 检查服务器资源：`docker stats`
+- AI API 调用可能增加延迟——检查 `auto_diary_enabled` 或机器人自动回复是否导致延迟
+- 确保 PostgreSQL 有足够内存用于索引
+
+## 移动端问题
+
+### 无法连接服务端
+
+1. **地址格式**：使用 `http://你的服务器IP:8080`（包含 `http://` 前缀）
+2. **网络**：确保两个设备在同一网络，或服务端端口已暴露
+3. **防火墙**：检查服务端的防火墙是否允许该端口
+4. **HTTPS**：生产环境建议通过反向代理（Nginx/Caddy）配置 HTTPS
+
+### 同步失败
+
+1. 检查网络连接
+2. 确认服务端运行并可访问
+3. 尝试重新连接：设置 → 服务器 → 重新连接
+4. 检查服务端日志中的同步错误：`docker compose logs mosaic-server | grep sync`
+
+### 应用启动闪退
+
+1. 清除应用缓存：设置 → 应用 → Mosaic → 清除缓存
+2. 重新安装 APK
+3. 确保 Android 版本不低于 8.0
+
+## AI 功能
+
+### AI 标签/摘要不工作
+
+1. **AI 未配置**：前往管理面板 → AI 配置设置提供者
+2. **API 密钥无效**：验证你的 OpenAI/Anthropic API 密钥
+3. **超出频率限制**：检查你的 AI 提供者的速率限制
+4. **功能未启用**：管理设置中 `auto_tag_enabled` 和 `auto_summary_enabled` 必须开启
+
+### 机器人不回复
+
+1. 检查机器人设置中 `auto_reply` 是否开启
+2. 确保管理面板中已配置 AI 配置的"bot"提供者
+3. 机器人回复在创建笔记时触发——确认你在创建新笔记
+
+## 数据库问题
+
+### 迁移失败
+
+```bash
+# 查看当前迁移状态
+psql -d mosaic -c "SELECT * FROM _sqlx_migrations ORDER BY version;"
+
+# 如需手动执行迁移
+psql -d mosaic -f server/migrations/20260119083515_init_tables.sql
+```
+
+### 重置数据库
+
+```bash
+# 删除并重建
+psql -c "DROP DATABASE mosaic;"
+psql -c "CREATE DATABASE mosaic;"
+psql -d mosaic -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+# 重启服务端以重新执行迁移
+```
+
+## 获取帮助
+
+如果以上方案未能解决你的问题：
+
+- 提交 [GitHub Issue](https://github.com/crayonlu/Mosaic/issues)
+- 查看[服务端日志](/zh/docs/server-deployment#日志)中的错误信息
+- 提供你的服务端版本和部署方式（Docker / 裸机）
