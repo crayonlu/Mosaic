@@ -6,8 +6,12 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts",
-    "lint": "echo 'no lint'"
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
   },
   "dependencies": {
     "@mosaic/api": "workspace:*"
@@ -16,6 +20,8 @@
     "@tanstack/react-query": "^5.0.0"
   },
   "devDependencies": {
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.0.0"
   }

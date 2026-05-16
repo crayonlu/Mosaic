@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'packages/**'
+      - 'mobile/**'
+      - 'server/admin-ui/**'
+      - '.github/workflows/**'
+      - 'turbo.json'
+      - 'package.json'
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/**'
+      - 'mobile/**'
+      - 'server/admin-ui/**'
+      - '.github/workflows/**'
+      - 'turbo.json'
+      - 'package.json'
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Type check
+        run: bun run typecheck
+
+      - name: Build
+        run: bun run build
