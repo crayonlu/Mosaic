@@ -4,12 +4,10 @@ import {
   DocsPage,
   DocsTitle,
   MarkdownCopyButton,
-  ViewOptionsPopover,
 } from 'fumadocs-ui/layouts/docs/page';
 import { getMDXComponents } from '@/components/mdx';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { getPageMarkdownUrl } from '@/lib/source';
-import { gitConfig } from '@/lib/shared';
 import type { TOCItemType } from 'fumadocs-core/toc';
 import type { ReactNode } from 'react';
 import React from 'react';
@@ -29,7 +27,6 @@ export function SharedDocsPageContent({
   sourceLoader,
   page,
   pageData,
-  contentDir,
   children,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,7 +34,6 @@ export function SharedDocsPageContent({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   page: any;
   pageData: PageData;
-  contentDir: string;
   children?: ReactNode;
 }) {
   const MDX = pageData.body;
@@ -49,10 +45,6 @@ export function SharedDocsPageContent({
       <DocsDescription className="mb-0">{pageData.description}</DocsDescription>
       <div className="flex flex-row gap-2 items-center border-b pb-6">
         <MarkdownCopyButton markdownUrl={markdownUrl} />
-        <ViewOptionsPopover
-          markdownUrl={markdownUrl}
-          githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/${contentDir}/${page.path}`}
-        />
       </div>
       <DocsBody>
         <MDX
