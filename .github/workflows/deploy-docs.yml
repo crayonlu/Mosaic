@@ -39,8 +39,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docsite/out
           force_orphan: true
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docsite/out
-          force_orphan: true
-          working-directory: ./docsite
