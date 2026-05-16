@@ -12,12 +12,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      deployments: write
-
-    defaults:
-      run:
-        working-directory: docsite
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -29,15 +24,21 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
+        working-directory: docsite
         run: npm ci
 
       - name: Build
+        working-directory: docsite
         run: npm run build
         env:
           STATIC_EXPORT: 'true'
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docsite/out
+          force_orphan: true
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docsite/out
