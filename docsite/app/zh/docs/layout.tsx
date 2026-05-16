@@ -1,11 +1,6 @@
-import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import { sourceZh } from '@/lib/source';
-import { baseOptions } from '@/lib/layout.shared';
+import { SharedDocsLayout } from '@/components/shared-layouts';
 
 export default function ZhDocsLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <DocsLayout tree={sourceZh.getPageTree()} {...baseOptions()}>
-      {children}
-    </DocsLayout>
-  );
+  return <SharedDocsLayout tree={sourceZh.getPageTree()}>{children}</SharedDocsLayout>;
 }
