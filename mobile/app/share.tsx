@@ -1,3 +1,4 @@
+import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
 import { toast } from '@/components/ui'
 import { useCreateMemo } from '@/lib/query/mutations/memoMutations'
 import { useThemeStore } from '@/stores/themeStore'
@@ -268,9 +269,7 @@ export default function ShareScreen() {
 
               <Text style={[styles.body_, { color: theme.text }]}>{clipResult.content}</Text>
 
-              <Text style={[styles.summary, { color: theme.textSecondary }]}>
-                {clipResult.aiSummary}
-              </Text>
+              <MarkdownRenderer content={clipResult.aiSummary} />
 
               <View style={styles.tagsRow}>
                 {selectedTags.map(tag => (
@@ -376,12 +375,6 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 28,
     letterSpacing: 0.1,
-  },
-  summary: {
-    fontSize: 13,
-    lineHeight: 20,
-    marginBottom: 28,
-    fontStyle: 'italic',
   },
   tagsRow: {
     flexDirection: 'row',

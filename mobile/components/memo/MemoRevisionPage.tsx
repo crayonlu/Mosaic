@@ -79,7 +79,7 @@ export function MemoRevisionPage({ memo, revision, isLatest, onBotReply }: MemoR
           ]}
         >
           <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
-          <Text style={[styles.aiSummaryText, { color: theme.textSecondary }]}>{aiSummary}</Text>
+          <MarkdownRenderer content={aiSummary} />
         </View>
       )}
 
@@ -135,10 +135,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 4,
-  },
-  aiSummaryText: {
-    fontSize: 14,
-    lineHeight: 20,
   },
   contentPad: {
     padding: 16,
