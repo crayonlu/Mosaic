@@ -8,7 +8,7 @@ import { useThemeStore } from '@/stores/themeStore'
 import type { Memo } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
 import { Pencil, Trash2 } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 interface MemoCardProps {
@@ -45,13 +45,17 @@ export function MemoCard({
 
   const displayContent = normalizeContent(memo.content || '')
   const formattedTime = stringUtils.formatRelativeTime(memo.createdAt)
-  const mediaItems: MediaGridItem[] = (memo.resources ?? []).map(resource => ({
-    key: resource.id,
-    uri: resourcesApi.getDownloadUrl(resource.id),
-    type: resource.resourceType,
-    thumbnailUri:
-      resource.resourceType === 'video' ? resourcesApi.getThumbnailUrl(resource.id) : undefined,
-  }))
+  const mediaItems: MediaGridItem[] = useMemo(
+    () =>
+      (memo.resources ?? []).map(resource => ({
+        key: resource.id,
+        uri: resourcesApi.getDownloadUrl(resource.id),
+        type: resource.resourceType,
+        thumbnailUri:
+          resource.resourceType === 'video' ? resourcesApi.getThumbnailUrl(resource.id) : undefined,
+      })),
+    [memo.resources]
+  )
 
   const handleDelete = () => {
     onDelete?.(memo.id)

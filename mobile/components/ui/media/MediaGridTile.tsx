@@ -2,7 +2,7 @@ import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
 import { ImageOff, Play, VideoOff, X } from 'lucide-react-native'
 import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { withAlpha } from './mediaPreviewUtils'
 import type { MediaGridItem } from './types'
@@ -34,6 +34,12 @@ export function MediaGridTile({
 }: MediaGridTileProps) {
   const { theme } = useThemeStore()
   const [imageError, setImageError] = useState(false)
+
+  // Reset error state when previewUri or previewHeaders change (e.g., auth headers loaded asynchronously)
+  useEffect(() => {
+    setImageError(false)
+  }, [previewUri, previewHeaders])
+
   const uploadOverlayColor = withAlpha(theme.background, 0.14)
   const progressTrackColor = withAlpha(theme.surface, 0.9)
   const videoBadgeColor = withAlpha(theme.background, 0.7)
