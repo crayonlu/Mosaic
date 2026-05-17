@@ -1,4 +1,4 @@
-import { Button, DatePickerSheet, Input } from '@/components/ui'
+import { Button, DatePickerSheet, Input, ScreenHeader } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
 import {
   useCustomPushList,
@@ -7,8 +7,7 @@ import {
 } from '@/lib/query/hooks/useCustomPush'
 import { CustomPushData } from '@/lib/services/local-push/custom'
 import { useThemeStore } from '@/stores/themeStore'
-import { router } from 'expo-router'
-import { ArrowLeft, Bell, Clock, Trash2 } from 'lucide-react-native'
+import { Bell, Clock, Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
 import {
   Modal,
@@ -130,15 +129,15 @@ export default function CustomPushScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack}>
-          <ArrowLeft size={24} color={theme.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>自定义提醒</Text>
-        <TouchableOpacity onPress={() => setShowAddForm(true)} style={styles.headerAdd}>
-          <Bell size={24} color={theme.primary} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        showBack
+        title="自定义提醒"
+        right={
+          <TouchableOpacity onPress={() => setShowAddForm(true)} style={{ padding: 4 }}>
+            <Bell size={24} color={theme.primary} />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView style={styles.content}>
         {showAddForm && (
@@ -323,24 +322,6 @@ export default function CustomPushScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerBack: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '500',
-  },
-  headerAdd: {
-    padding: 4,
   },
   content: {
     flex: 1,

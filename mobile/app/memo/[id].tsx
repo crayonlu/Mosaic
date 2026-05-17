@@ -1,6 +1,7 @@
 import { BotThreadSheet } from '@/components/bot/BotThreadSheet'
 import { FullScreenEditor } from '@/components/editor/FullScreenEditor'
 import { MemoRevisionPage } from '@/components/memo/MemoRevisionPage'
+import { ScreenHeader } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
 import { useDeleteRevision, useMemo, useRevisions } from '@/lib/query/hooks/useMemos'
@@ -8,7 +9,7 @@ import { useDeleteMemo, useUpdateMemo } from '@/lib/query/mutations/memoMutation
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type BotReply, type MemoWithResources, type UpdateMemoRequest } from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
-import { ArrowLeft, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react-native'
+import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useMemo as useRNMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import PagerView from 'react-native-pager-view'
@@ -127,69 +128,60 @@ export default function MemoDetailScreen() {
   }, [])
 
   const renderHeader = () => (
-    <View
-      style={[
-        styles.header,
-        { backgroundColor: theme.background, borderBottomColor: theme.border },
-      ]}
-    >
-      <Pressable
-        onPress={() => router.back()}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        style={styles.headerBtn}
-      >
-        <ArrowLeft size={22} color={theme.text} strokeWidth={2} />
-      </Pressable>
-
-      {totalPages > 1 && (
-        <View style={styles.headerTitle}>
+    <ScreenHeader
+      showBack
+      center={
+        totalPages > 1 ? (
+          <View style={styles.pageNav}>
+            <Pressable
+              onPress={goToPrev}
+              disabled={currentPage === 0}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <ChevronLeft
+                size={20}
+                color={currentPage === 0 ? theme.textSecondary : theme.text}
+                strokeWidth={2}
+              />
+            </Pressable>
+            <Text style={[styles.headerPageLabel, { color: theme.textSecondary }]}>
+              {currentPage + 1} / {totalPages}
+            </Text>
+            <Pressable
+              onPress={goToNext}
+              disabled={currentPage === totalPages - 1}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <ChevronRight
+                size={20}
+                color={currentPage === totalPages - 1 ? theme.textSecondary : theme.text}
+                strokeWidth={2}
+              />
+            </Pressable>
+          </View>
+        ) : undefined
+      }
+      right={
+        <View style={styles.headerRight}>
+          {isOnLatest && (
+            <Pressable
+              onPress={handleEdit}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={{ padding: 4 }}
+            >
+              <Pencil size={18} color={theme.text} strokeWidth={2} />
+            </Pressable>
+          )}
           <Pressable
-            onPress={goToPrev}
-            disabled={currentPage === 0}
+            onPress={handleDelete}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={{ padding: 4 }}
           >
-            <ChevronLeft
-              size={20}
-              color={currentPage === 0 ? theme.textSecondary : theme.text}
-              strokeWidth={2}
-            />
-          </Pressable>
-          <Text style={[styles.headerPageLabel, { color: theme.textSecondary }]}>
-            {currentPage + 1} / {totalPages}
-          </Text>
-          <Pressable
-            onPress={goToNext}
-            disabled={currentPage === totalPages - 1}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <ChevronRight
-              size={20}
-              color={currentPage === totalPages - 1 ? theme.textSecondary : theme.text}
-              strokeWidth={2}
-            />
+            <Trash2 size={18} color={theme.text} strokeWidth={2} />
           </Pressable>
         </View>
-      )}
-
-      <View style={styles.headerRight}>
-        {isOnLatest && (
-          <Pressable
-            onPress={handleEdit}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={styles.headerBtn}
-          >
-            <Pencil size={18} color={theme.text} strokeWidth={2} />
-          </Pressable>
-        )}
-        <Pressable
-          onPress={handleDelete}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={styles.headerBtn}
-        >
-          <Trash2 size={18} color={theme.text} strokeWidth={2} />
-        </Pressable>
-      </View>
-    </View>
+      }
+    />
   )
 
   if (memoLoading) {
@@ -352,13 +344,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+  pageNav: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 8,
   },
   content: {
     flex: 1,
@@ -369,23 +358,10 @@ const styles = StyleSheet.create({
   page: {
     flex: 1,
   },
-  headerBtn: {
-    padding: 4,
-  },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  headerTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    pointerEvents: 'box-none',
   },
   headerPageLabel: {
     fontSize: 14,
