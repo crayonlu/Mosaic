@@ -30,7 +30,7 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
       case 'solid':
         return 'transparent'
       case 'outline':
-        return theme.borderStrong
+        return theme.border
       case 'soft':
         return theme.border
       default:
@@ -58,7 +58,7 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
   }
 
   const getFontSize = () => {
-    return size === 'small' ? 11 : theme.typography.caption
+    return size === 'small' ? 10 : theme.typography.label.fontSize
   }
 
   const badgeContent = (

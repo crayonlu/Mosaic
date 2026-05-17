@@ -14,7 +14,7 @@ interface LoadingProps {
 
 export function Loading({ size = 'large', text, fullScreen = false }: LoadingProps) {
   const { theme } = useThemeStore()
-  const textSize = theme.typography?.body ?? 14
+  const textSize = theme.typography?.body?.fontSize ?? 15
   const textMarginTop = theme.spacingScale?.medium ?? 12
 
   return (

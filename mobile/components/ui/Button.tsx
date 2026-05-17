@@ -1,14 +1,12 @@
 import { useTheme } from '@/hooks/useTheme'
 import React, { JSX } from 'react'
-import {
-  ActivityIndicator,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native'
+import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native'
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 
 export interface ButtonProps {
   title?: string
@@ -37,6 +35,21 @@ export function Button({
 }: ButtonProps) {
   const { theme } = useTheme()
   const isInactive = disabled || loading
+  const scale = useSharedValue(1)
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
+  const handlePressIn = () => {
+    if (!isInactive) {
+      scale.value = withTiming(0.98, { duration: 80, easing: Easing.out(Easing.cubic) })
+    }
+  }
+
+  const handlePressOut = () => {
+    scale.value = withTiming(1, { duration: 80, easing: Easing.out(Easing.cubic) })
+  }
 
   const getBackgroundColor = () => {
     if (isInactive) {
@@ -103,67 +116,79 @@ export function Button({
   const getFontSize = () => {
     switch (size) {
       case 'small':
-        return theme.typography.caption
+        return theme.typography.caption.fontSize
       case 'medium':
-        return theme.typography.body
+        return theme.typography.body.fontSize
       case 'large':
-        return theme.typography.bodyLarge
+        return theme.typography.bodyLarge.fontSize
       default:
-        return theme.typography.body
+        return theme.typography.body.fontSize
     }
   }
 
   const getBorderColor = () => {
+    if (isInactive) return 'transparent'
+    if (variant === 'secondary') return theme.borderStrong
     return 'transparent'
   }
 
   const getBorderWidth = () => {
+    if (variant === 'secondary') return 1
     return 0
   }
 
+  const getShadow = () => {
+    if (isInactive || variant !== 'primary') return {}
+    return theme.shadows.subtle
+  }
+
   return (
-    <TouchableOpacity
-      style={[
-        styles.button,
-        {
-          backgroundColor: getBackgroundColor(),
-          paddingVertical: getPaddingVertical(),
-          paddingHorizontal: getPaddingHorizontal(),
-          width: fullWidth ? '100%' : undefined,
-          borderRadius: theme.radius.medium,
-          borderColor: getBorderColor(),
-          borderWidth: getBorderWidth(),
-          opacity: isInactive ? theme.state.disabledOpacity : 1,
-        },
-        style,
-      ]}
-      onPress={onPress}
-      disabled={isInactive}
-      activeOpacity={theme.state.pressedOpacity}
-    >
-      {loading ? (
-        <ActivityIndicator color={getTextColor()} size="small" />
-      ) : (
-        <View style={styles.contentContainer}>
-          {leftIcon}
-          {title && (
-            <Text
-              style={[
-                styles.text,
-                {
-                  color: getTextColor(),
-                  fontSize: getFontSize(),
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {title}
-            </Text>
-          )}
-          {rightIcon}
-        </View>
-      )}
-    </TouchableOpacity>
+    <Animated.View style={[fullWidth && { width: '100%' }, animatedStyle]}>
+      <Pressable
+        style={[
+          styles.button,
+          {
+            backgroundColor: getBackgroundColor(),
+            paddingVertical: getPaddingVertical(),
+            paddingHorizontal: getPaddingHorizontal(),
+            width: fullWidth ? '100%' : undefined,
+            borderRadius: theme.radius.medium,
+            borderColor: getBorderColor(),
+            borderWidth: getBorderWidth(),
+            opacity: isInactive ? theme.state.disabledOpacity : 1,
+            ...getShadow(),
+          },
+          style,
+        ]}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={isInactive}
+      >
+        {loading ? (
+          <ActivityIndicator color={getTextColor()} size="small" />
+        ) : (
+          <View style={styles.contentContainer}>
+            {leftIcon}
+            {title && (
+              <Text
+                style={[
+                  styles.text,
+                  {
+                    color: getTextColor(),
+                    fontSize: getFontSize(),
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {title}
+              </Text>
+            )}
+            {rightIcon}
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
   )
 }
 
@@ -181,7 +206,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   text: {
-    fontWeight: '500',
+    fontWeight: '600',
     textAlign: 'center',
   },
 })

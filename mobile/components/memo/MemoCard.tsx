@@ -10,6 +10,12 @@ import { resourcesApi } from '@mosaic/api'
 import { Pencil, Trash2 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 
 interface MemoCardProps {
   memo: Memo
@@ -34,6 +40,19 @@ export function MemoCard({
 }: MemoCardProps) {
   const { theme } = useThemeStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
+  const scale = useSharedValue(1)
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
+  const handlePressIn = () => {
+    scale.value = withTiming(0.99, { duration: 100, easing: Easing.out(Easing.cubic) })
+  }
+
+  const handlePressOut = () => {
+    scale.value = withTiming(1, { duration: 100, easing: Easing.out(Easing.cubic) })
+  }
 
   useEffect(() => {
     const loadAuthHeaders = async () => {
@@ -58,8 +77,11 @@ export function MemoCard({
   }
 
   return (
+    <Animated.View style={onPress ? animatedStyle : undefined}>
     <Pressable
       onPress={onPress}
+      onPressIn={onPress ? handlePressIn : undefined}
+      onPressOut={onPress ? handlePressOut : undefined}
       disabled={!onPress}
       style={({ pressed }) => [
         styles.container,
@@ -70,6 +92,11 @@ export function MemoCard({
               ? theme.surfaceMuted
               : 'transparent',
           borderRadius: theme.radius.medium,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: pressed && showPressFeedback ? 'transparent' : theme.border,
+          ...(pressed && showPressFeedback
+            ? { shadowOpacity: 0, elevation: 0 }
+            : theme.shadows.subtle),
         },
       ]}
     >
@@ -98,7 +125,7 @@ export function MemoCard({
       </View>
 
       {(memo.tags.length > 0 || showActions || showTimestamp) && (
-        <View style={styles.metadataContainer}>
+        <View style={[styles.metadataContainer, { borderTopColor: theme.border }]}>
           {memo.tags.length > 0 && (
             <View style={styles.tagsRow}>
               {memo.tags.slice(0, 3).map(tag => (
@@ -141,17 +168,18 @@ export function MemoCard({
         </View>
       )}
     </Pressable>
+    </Animated.View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 6,
-    marginHorizontal: 8,
-    marginBottom: 6,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 4,
+    marginHorizontal: 4,
+    marginBottom: 8,
   },
   contentContainer: {
     flexDirection: 'column',
@@ -166,6 +194,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 8,
     paddingBottom: 2,
+    marginTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   tagsRow: {
     flexDirection: 'row',
@@ -176,6 +206,7 @@ const styles = StyleSheet.create({
   },
   moreTags: {
     fontSize: 12,
+    fontWeight: '400',
     marginLeft: 4,
   },
   rightSection: {

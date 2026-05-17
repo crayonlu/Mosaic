@@ -50,7 +50,7 @@ export function Select({
   }
 
   const getFontSize = () => {
-    return size === 'small' ? theme.typography.caption : theme.typography.body
+    return size === 'small' ? theme.typography.caption.fontSize : theme.typography.body.fontSize
   }
 
   return (
@@ -103,6 +103,7 @@ export function Select({
                     backgroundColor: theme.surface,
                     borderColor: 'transparent',
                     borderRadius: theme.radius.large,
+                    ...theme.shadows.medium,
                   },
                 ]}
               >

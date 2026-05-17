@@ -195,11 +195,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '500',
+    fontWeight: '700',
+    letterSpacing: -0.3,
     marginBottom: 2,
   },
   headerSubTitle: {
     fontSize: 12,
+    fontWeight: '400',
   },
   archiveActionButton: {
     minHeight: 40,
@@ -211,6 +213,6 @@ const styles = StyleSheet.create({
   },
   archiveActionText: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 })

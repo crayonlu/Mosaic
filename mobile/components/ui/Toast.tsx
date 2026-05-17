@@ -98,24 +98,7 @@ function Toast({
 }: {
   toast: ToastMessage
   onHide: () => void
-  theme: {
-    background: string
-    surface: string
-    text: string
-    textSecondary: string
-    success: string
-    error: string
-    warning: string
-    info: string
-    border: string
-    borderStrong: string
-    semantic: {
-      successSoft: string
-      errorSoft: string
-      warningSoft: string
-      infoSoft: string
-    }
-  }
+  theme: import('@/constants/theme').Theme
 }) {
   const fadeAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.8)).current
@@ -217,8 +200,11 @@ function Toast({
         {
           backgroundColor: palette.containerBackground,
           borderColor: palette.containerBorder,
+          borderLeftColor: semanticColor,
+          borderLeftWidth: 3,
           opacity: fadeAnim,
           transform: [{ scale: scaleAnim }],
+          ...theme.shadows.medium,
         },
       ]}
     >
@@ -321,12 +307,13 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   title: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     textAlign: 'left',
   },
   message: {
     fontSize: 12,
+    fontWeight: '400',
     lineHeight: 18,
     textAlign: 'left',
     marginTop: 2,

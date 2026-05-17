@@ -16,6 +16,37 @@ export interface ThemeScale {
   overlay: string
 }
 
+export interface ShadowToken {
+  shadowColor: string
+  shadowOffset: { width: number; height: number }
+  shadowOpacity: number
+  shadowRadius: number
+  elevation: number
+}
+
+export interface TypographyToken {
+  fontSize: number
+  fontWeight: '400' | '500' | '600' | '700'
+  lineHeight: number
+  letterSpacing: number
+}
+
+export interface ThemeShadowSet {
+  subtle: ShadowToken
+  medium: ShadowToken
+  strong: ShadowToken
+}
+
+export interface ThemeTypographySet {
+  display: TypographyToken
+  titleLarge: TypographyToken
+  title: TypographyToken
+  bodyLarge: TypographyToken
+  body: TypographyToken
+  label: TypographyToken
+  caption: TypographyToken
+}
+
 export const QUIET_PAPER_LIGHT: ThemeScale = {
   background: '#F8F5EF',
   surface: '#F2ECE2',
@@ -101,3 +132,96 @@ export const MOOD_COLORS = {
 
 /** @deprecated use MOOD_COLORS */
 export const QUIET_PAPER_MOOD_COLORS = MOOD_COLORS
+
+export const SHADOWS_LIGHT: ThemeShadowSet = {
+  subtle: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  medium: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  strong: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+}
+
+export const SHADOWS_DARK: ThemeShadowSet = {
+  subtle: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  medium: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  strong: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+}
+
+export const TYPOGRAPHY: ThemeTypographySet = {
+  display: {
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 33.6,
+    letterSpacing: -0.4,
+  },
+  titleLarge: {
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 25,
+    letterSpacing: -0.3,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: '600',
+    lineHeight: 22.1,
+    letterSpacing: -0.2,
+  },
+  bodyLarge: {
+    fontSize: 17,
+    fontWeight: '400',
+    lineHeight: 26.4,
+    letterSpacing: 0.15,
+  },
+  body: {
+    fontSize: 15,
+    fontWeight: '400',
+    lineHeight: 23.3,
+    letterSpacing: 0.15,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 18.2,
+    letterSpacing: 0.1,
+  },
+  caption: {
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 16.8,
+    letterSpacing: 0.1,
+  },
+}

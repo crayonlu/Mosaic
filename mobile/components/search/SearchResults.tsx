@@ -142,12 +142,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '500',
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.3,
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '400',
     textAlign: 'center',
     opacity: 0.7,
   },

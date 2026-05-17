@@ -17,6 +17,9 @@ export function Input({ label, error, showPasswordToggle, style, ...props }: Inp
   const borderColor = error ? theme.error : isFocused ? theme.primary : 'transparent'
   const borderWidth = error || isFocused ? 1 : 0
   const backgroundColor = isFocused ? theme.surface : theme.surfaceMuted
+  const focusShadow = isFocused && !error
+    ? { shadowColor: theme.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 1 }
+    : {}
 
   return (
     <View style={styles.container}>
@@ -32,12 +35,13 @@ export function Input({ label, error, showPasswordToggle, style, ...props }: Inp
               borderWidth,
               borderRadius: theme.radius.medium,
               paddingHorizontal: theme.spacing,
-              fontSize: theme.typography.bodyLarge,
+              fontSize: theme.typography.bodyLarge.fontSize,
               flex: 1,
+              ...focusShadow,
             },
             style,
           ]}
-          placeholderTextColor={theme.textSecondary}
+          placeholderTextColor={theme.textTertiary}
           secureTextEntry={showPasswordToggle && !passwordVisible}
           onFocus={e => {
             setIsFocused(true)

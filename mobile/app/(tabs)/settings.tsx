@@ -758,7 +758,7 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
     marginBottom: 2,
   },
   serverUrl: {

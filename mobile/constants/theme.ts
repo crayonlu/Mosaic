@@ -3,6 +3,11 @@ import {
   CLEAN_SLATE_LIGHT,
   QUIET_PAPER_DARK,
   QUIET_PAPER_LIGHT,
+  SHADOWS_DARK,
+  SHADOWS_LIGHT,
+  TYPOGRAPHY,
+  type ThemeShadowSet,
+  type ThemeTypographySet,
 } from '@mosaic/utils'
 import { Platform } from 'react-native'
 
@@ -51,13 +56,8 @@ export interface Theme {
     xxlarge: number
     xxxlarge: number
   }
-  typography: {
-    caption: number
-    body: number
-    bodyLarge: number
-    title: number
-    titleLarge: number
-  }
+  shadows: ThemeShadowSet
+  typography: ThemeTypographySet
   state: {
     disabledOpacity: number
     pressedOpacity: number
@@ -129,13 +129,8 @@ export const LightTheme: Theme = {
     xxlarge: 24,
     xxxlarge: 32,
   },
-  typography: {
-    caption: 12,
-    body: 14,
-    bodyLarge: 16,
-    title: 17,
-    titleLarge: 20,
-  },
+  shadows: SHADOWS_LIGHT,
+  typography: TYPOGRAPHY,
   state: {
     disabledOpacity: 0.42,
     pressedOpacity: 0.86,
@@ -192,13 +187,8 @@ export const DarkTheme: Theme = {
     xxlarge: 24,
     xxxlarge: 32,
   },
-  typography: {
-    caption: 12,
-    body: 14,
-    bodyLarge: 16,
-    title: 17,
-    titleLarge: 20,
-  },
+  shadows: SHADOWS_DARK,
+  typography: TYPOGRAPHY,
   state: {
     disabledOpacity: 0.46,
     pressedOpacity: 0.88,
@@ -255,13 +245,8 @@ export const CleanSlateLightTheme: Theme = {
     xxlarge: 24,
     xxxlarge: 32,
   },
-  typography: {
-    caption: 12,
-    body: 14,
-    bodyLarge: 16,
-    title: 17,
-    titleLarge: 20,
-  },
+  shadows: SHADOWS_LIGHT,
+  typography: TYPOGRAPHY,
   state: {
     disabledOpacity: 0.38,
     pressedOpacity: 0.82,
@@ -318,13 +303,8 @@ export const CleanSlateDarkTheme: Theme = {
     xxlarge: 24,
     xxxlarge: 32,
   },
-  typography: {
-    caption: 12,
-    body: 14,
-    bodyLarge: 16,
-    title: 17,
-    titleLarge: 20,
-  },
+  shadows: SHADOWS_DARK,
+  typography: TYPOGRAPHY,
   state: {
     disabledOpacity: 0.38,
     pressedOpacity: 0.82,

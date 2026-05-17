@@ -4,8 +4,9 @@ import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
 import { FileX } from 'lucide-react-native'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import Animated, { Easing, FadeInDown } from 'react-native-reanimated'
 import { MemoCard } from './MemoCard'
 
 interface MemoListProps {
@@ -19,6 +20,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
   const { theme } = useThemeStore()
   const flatListRef = useRef<FlatList>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const hasInitiallyLoaded = useRef(false)
 
   const { data: memosByDate, isLoading: loadingByDate } = useMemosByDate(date || '', {
     archived: undefined,
@@ -43,6 +45,12 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
 
   const isLoading = date ? loadingByDate : loadingList
   const hasMore = date ? false : hasNextPage
+
+  useEffect(() => {
+    if (!isLoading && memos.length > 0 && !hasInitiallyLoaded.current) {
+      hasInitiallyLoaded.current = true
+    }
+  }, [isLoading, memos.length])
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -136,25 +144,50 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
     </View>
   )
 
+  const shouldAnimate = !hasInitiallyLoaded.current
+
+  // Global counter across groups for stagger timing
+  const staggerCounter = useRef(0)
+
   const renderGroup = ({
     item: group,
     index,
   }: {
     item: { date: string; displayDate: string; memos: MemoWithResources[] }
     index: number
-  }) => (
-    <View key={group.date}>
-      {renderDateHeader(group.displayDate, group.memos.length, index === 0)}
-      {group.memos.map(memo => (
-        <MemoCard
-          key={memo.id}
-          memo={memo}
-          onPress={() => onMemoPress(memo)}
-          onDelete={handleDelete}
-        />
-      ))}
-    </View>
-  )
+  }) => {
+    if (index === 0) staggerCounter.current = 0
+
+    return (
+      <View key={group.date}>
+        {renderDateHeader(group.displayDate, group.memos.length, index === 0)}
+        {group.memos.map(memo => {
+          const delay = staggerCounter.current * 40
+          staggerCounter.current += 1
+
+          const card = (
+            <MemoCard
+              key={memo.id}
+              memo={memo}
+              onPress={() => onMemoPress(memo)}
+              onDelete={handleDelete}
+            />
+          )
+
+          if (!shouldAnimate) return card
+
+          return (
+            <Animated.View
+              key={`anim-${memo.id}`}
+              entering={FadeInDown.delay(delay).duration(250).easing(Easing.out(Easing.cubic))}
+            >
+              {card}
+            </Animated.View>
+          )
+        })}
+      </View>
+    )
+  }
 
   const renderFooter = () => {
     if (memos.length === 0) return null
@@ -215,30 +248,32 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
 
 const styles = StyleSheet.create({
   listContent: {
-    paddingBottom: 8,
+    paddingBottom: 16,
   },
   dateHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 14,
+    paddingTop: 20,
     paddingBottom: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     marginTop: 4,
   },
   dateHeaderText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   dateHeaderCount: {
     fontSize: 12,
+    fontWeight: '400',
     opacity: 0.7,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: 80,
   },
   emptyIcon: {
     width: 80,
@@ -249,12 +284,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '500',
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.3,
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '400',
     textAlign: 'center',
     opacity: 0.7,
   },

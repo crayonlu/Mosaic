@@ -13,7 +13,7 @@ import { Stack, useRouter, useSegments } from 'expo-router'
 import { ShareIntentProvider, useShareIntentContext } from 'expo-share-intent'
 import { StatusBar } from 'expo-status-bar'
 import { type ReactNode, useCallback, useEffect, useRef } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { LayoutAnimation, Platform, StyleSheet, Text, UIManager, View } from 'react-native'
 import BootSplash from 'react-native-bootsplash'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
@@ -70,6 +70,11 @@ function ShareIntentHandler({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+// Enable LayoutAnimation on Android (module-level, runs once)
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true)
+}
+
 export default function RootLayout() {
   const { theme, themeName } = useThemeStore()
   const { currentMood, currentMoodIntensity } = useMoodStore()
@@ -79,6 +84,17 @@ export default function RootLayout() {
   const router = useRouter()
 
   useThemeInit()
+
+  // Animate theme transitions
+  const prevThemeBg = useRef(theme.background)
+  useEffect(() => {
+    if (prevThemeBg.current !== theme.background) {
+      LayoutAnimation.configureNext(
+        LayoutAnimation.create(300, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity)
+      )
+      prevThemeBg.current = theme.background
+    }
+  }, [theme.background])
 
   const hideNativeSplash = useCallback(() => {
     BootSplash.hide({ fade: false }).catch(() => {

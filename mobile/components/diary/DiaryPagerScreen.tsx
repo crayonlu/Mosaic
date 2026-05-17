@@ -327,7 +327,8 @@ const styles = StyleSheet.create({
   },
   currentDate: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   pager: {
     flex: 1,

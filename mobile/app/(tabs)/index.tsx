@@ -113,9 +113,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   inputContainer: {
-    paddingHorizontal: 8,
-    paddingTop: 6,
-    paddingBottom: 8,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
 })

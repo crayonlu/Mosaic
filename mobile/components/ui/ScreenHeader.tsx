@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     minHeight: 28,
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     letterSpacing: -0.2,
   },
