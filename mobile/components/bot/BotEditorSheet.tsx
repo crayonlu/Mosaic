@@ -1,6 +1,7 @@
 import { SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
+import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
 import { useCreateBot, useDeleteBot, useUpdateBot } from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
@@ -9,16 +10,15 @@ import { Image } from 'expo-image'
 import { Camera, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import {
-  ActivityIndicator,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native'
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 interface BotEditorSheetProps {
@@ -161,7 +161,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
           </TouchableOpacity>
         </View>
 
-        <KeyboardAvoidingView style={styles.bodyKeyboard} behavior="padding">
+        <SafeKeyboardAvoidingView style={styles.bodyKeyboard} behavior="padding">
           <ScrollView
             style={styles.bodyScroll}
             contentContainerStyle={[styles.body, { paddingBottom: bottomInset }]}
@@ -282,7 +282,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
               </View>
             )}
           </ScrollView>
-        </KeyboardAvoidingView>
+        </SafeKeyboardAvoidingView>
       </View>
     </Modal>
   )

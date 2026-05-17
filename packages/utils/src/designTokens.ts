@@ -137,7 +137,7 @@ export const SHADOWS_LIGHT: ThemeShadowSet = {
   subtle: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.08,
     shadowRadius: 3,
     elevation: 1,
   },

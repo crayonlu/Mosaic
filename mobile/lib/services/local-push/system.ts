@@ -1,7 +1,22 @@
-import { SchedulableTriggerInputTypes } from 'expo-notifications'
 import { LocalPushService, type RigsterSchedule } from '.'
 import { diariesApi, memosApi } from '@mosaic/api'
 import dayjs from 'dayjs'
+
+// Lazy-load SchedulableTriggerInputTypes (not available in Expo Go SDK 53+)
+let _dailyType: string | undefined
+
+function getDailyType(): string {
+  if (!_dailyType) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const notifications = require('expo-notifications') as typeof import('expo-notifications')
+      _dailyType = notifications.SchedulableTriggerInputTypes.DAILY
+    } catch {
+      _dailyType = 'daily'
+    }
+  }
+  return _dailyType
+}
 
 const systemPushSchedule: Record<string, RigsterSchedule> = {
   'archive-reminder': {
@@ -12,7 +27,7 @@ const systemPushSchedule: Record<string, RigsterSchedule> = {
     trigger: {
       hour: 21,
       minute: 0,
-      type: SchedulableTriggerInputTypes.DAILY,
+      type: getDailyType() as any,
     },
   },
   'memo-reminder': {
@@ -23,7 +38,7 @@ const systemPushSchedule: Record<string, RigsterSchedule> = {
     trigger: {
       hour: 21,
       minute: 0,
-      type: SchedulableTriggerInputTypes.DAILY,
+      type: getDailyType() as any,
     },
   },
 }

@@ -90,7 +90,7 @@ export function MemoCard({
             ? theme.surface
             : pressed && showPressFeedback
               ? theme.surfaceMuted
-              : 'transparent',
+              : theme.background,
           borderRadius: theme.radius.medium,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: pressed && showPressFeedback ? 'transparent' : theme.border,

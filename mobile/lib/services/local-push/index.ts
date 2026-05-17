@@ -1,9 +1,36 @@
 import { mmkv } from '@/lib/storage/mmkv'
 import type {
-  NotificationContentInput,
-  SchedulableNotificationTriggerInput,
+    NotificationContentInput,
+    SchedulableNotificationTriggerInput,
 } from 'expo-notifications'
-import * as Notifications from 'expo-notifications'
+
+/** Lazy-loader for expo-notifications (not available in Expo Go SDK 53+). */
+let notificationsModule: typeof import('expo-notifications') | undefined
+let notificationsWarned = false
+
+function getNotifications(): typeof import('expo-notifications') {
+  if (!notificationsModule) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      notificationsModule = require('expo-notifications') as typeof import('expo-notifications')
+    } catch {
+      if (!notificationsWarned) {
+        console.warn(
+          '[Notifications] expo-notifications not available in Expo Go, push notifications disabled.'
+        )
+        notificationsWarned = true
+      }
+      // Return a proxy that no-ops all method calls
+      notificationsModule = new Proxy(
+        {},
+        {
+          get: () => async () => {},
+        }
+      ) as typeof import('expo-notifications')
+    }
+  }
+  return notificationsModule
+}
 
 export type RigsterSchedule = {
   content: NotificationContentInput
@@ -17,7 +44,7 @@ export class LocalPushService {
   private static instance: LocalPushService
 
   private constructor() {
-    Notifications.setNotificationHandler({
+    getNotifications().setNotificationHandler({
       handleNotification: async () => ({
         shouldPlaySound: false,
         shouldSetBadge: false,
@@ -40,7 +67,7 @@ export class LocalPushService {
    * @returns Boolean
    */
   getNotificationPermissionStatus = async () => {
-    const { status } = await Notifications.getPermissionsAsync()
+    const { status } = await getNotifications().getPermissionsAsync()
     return status === 'granted'
   }
 
@@ -51,7 +78,7 @@ export class LocalPushService {
   requestNotificationPermission = async () => {
     const isGranted = await this.getNotificationPermissionStatus()
     if (isGranted) return true
-    const { status: newStatus } = await Notifications.requestPermissionsAsync()
+    const { status: newStatus } = await getNotifications().requestPermissionsAsync()
     return newStatus === 'granted'
   }
 
@@ -69,7 +96,7 @@ export class LocalPushService {
     }
 
     mmkv.set(STORAGE_KEY, DISABLED_VALUE)
-    await Notifications.cancelAllScheduledNotificationsAsync()
+    await getNotifications().cancelAllScheduledNotificationsAsync()
   }
 
   /**
@@ -91,7 +118,7 @@ export class LocalPushService {
       if (!isGranted) throw new Error('Notification permission not granted')
     }
 
-    await Notifications.scheduleNotificationAsync({
+    await getNotifications().scheduleNotificationAsync({
       content,
       trigger,
     })
@@ -102,14 +129,14 @@ export class LocalPushService {
    * @param identifier The notification identifier to cancel.
    */
   cancelNotification = async (identifier: string) => {
-    await Notifications.cancelScheduledNotificationAsync(identifier)
+    await getNotifications().cancelScheduledNotificationAsync(identifier)
   }
 
   /**
    * @brief Cancels all scheduled notifications.
    */
   cancelAllNotifications = async () => {
-    await Notifications.cancelAllScheduledNotificationsAsync()
+    await getNotifications().cancelAllScheduledNotificationsAsync()
   }
 
   async registerAll() {
