@@ -1,5 +1,6 @@
 export { Badge } from './Badge'
 export { Button } from './Button'
+export { ScreenHeader } from './ScreenHeader'
 export { DatePickerSheet } from './DatePickerSheet'
 export { DraggableImageGrid } from './DraggableImageGrid'
 export { Input } from './Input'

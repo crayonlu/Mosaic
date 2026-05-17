@@ -81,6 +81,7 @@ plans/*
 .trae/
 .windsurf/
 docs/internal/*
+docs/superpowers/*
 .superpowers/*
 
 .turbo/*

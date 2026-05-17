@@ -1,5 +1,5 @@
 import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
-import { toast } from '@/components/ui'
+import { toast, ScreenHeader } from '@/components/ui'
 import { useCreateMemo } from '@/lib/query/mutations/memoMutations'
 import { useThemeStore } from '@/stores/themeStore'
 import { apiClient, resourcesApi } from '@mosaic/api'
@@ -153,20 +153,25 @@ export default function ShareScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView style={styles.flex} behavior="padding">
-        <View style={styles.header}>
-          <Pressable onPress={handleCancel} hitSlop={12} style={styles.headerBtn}>
-            <X size={20} color={theme.textTertiary} strokeWidth={1.5} />
-          </Pressable>
-          <Pressable onPress={handleSave} disabled={!canSave} style={styles.headerBtn}>
-            {isSaving ? (
-              <ActivityIndicator size="small" color={theme.primary} />
-            ) : (
-              <Text style={[styles.saveText, { color: theme.primary, opacity: canSave ? 1 : 0.3 }]}>
-                保存
-              </Text>
-            )}
-          </Pressable>
-        </View>
+        <ScreenHeader
+          showBorder={false}
+          left={
+            <Pressable onPress={handleCancel} hitSlop={12} style={{ padding: 4 }}>
+              <X size={20} color={theme.textTertiary} strokeWidth={1.5} />
+            </Pressable>
+          }
+          right={
+            <Pressable onPress={handleSave} disabled={!canSave} style={{ padding: 4 }}>
+              {isSaving ? (
+                <ActivityIndicator size="small" color={theme.primary} />
+              ) : (
+                <Text style={[styles.saveText, { color: theme.primary, opacity: canSave ? 1 : 0.3 }]}>
+                  保存
+                </Text>
+              )}
+            </Pressable>
+          }
+        />
 
         <ScrollView
           style={styles.body}
@@ -314,16 +319,6 @@ export default function ShareScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  headerBtn: {
-    padding: 4,
-  },
   saveText: {
     fontSize: 15,
     fontWeight: '500',
