@@ -1,9 +1,9 @@
 import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
-import { toast, ScreenHeader } from '@/components/ui'
+import { ScreenHeader, toast } from '@/components/ui'
+import { SafeKeyboardAvoidingView, useSafeShareIntent } from '@/lib/native/safeProviders'
 import { useCreateMemo } from '@/lib/query/mutations/memoMutations'
 import { useThemeStore } from '@/stores/themeStore'
 import { apiClient, resourcesApi } from '@mosaic/api'
-import { useShareIntentContext } from 'expo-share-intent'
 import { router } from 'expo-router'
 import { X } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -16,7 +16,6 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 
 interface ClipResult {
   title: string
@@ -32,7 +31,7 @@ type ClipState = 'loading' | 'ready' | 'error'
 
 export default function ShareScreen() {
   const { theme } = useThemeStore()
-  const { shareIntent, resetShareIntent, hasShareIntent } = useShareIntentContext()
+  const { shareIntent, resetShareIntent, hasShareIntent } = useSafeShareIntent()
   const { mutateAsync: createMemo } = useCreateMemo()
 
   const [clipState, setClipState] = useState<ClipState>('loading')
@@ -152,7 +151,7 @@ export default function ShareScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+      <SafeKeyboardAvoidingView style={styles.flex} behavior="padding">
         <ScreenHeader
           showBorder={false}
           left={
@@ -311,7 +310,7 @@ export default function ShareScreen() {
             </View>
           )}
         </ScrollView>
-      </KeyboardAvoidingView>
+      </SafeKeyboardAvoidingView>
     </View>
   )
 }
