@@ -5,12 +5,12 @@ import { toast } from '@/components/ui'
 import { useConnection } from '@/hooks/useConnection'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
+import { SafeKeyboardStickyView } from '@/lib/native/safeProviders'
 import { useCreateMemo, useDeleteMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
 import { router } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
-import { KeyboardStickyView } from 'react-native-keyboard-controller'
 
 const TAB_BAR_HEIGHT = 54
 
@@ -83,7 +83,7 @@ export default function HomeScreen() {
         />
       </View>
 
-      <KeyboardStickyView offset={{ closed: 0, opened: TAB_BAR_HEIGHT }}>
+      <SafeKeyboardStickyView offset={{ closed: 0, opened: TAB_BAR_HEIGHT }}>
         <View
           style={[
             styles.inputContainer,
@@ -92,7 +92,7 @@ export default function HomeScreen() {
         >
           <MemoInput onSubmit={handleSubmit} disabled={!canUseNetwork || isPending} />
         </View>
-      </KeyboardStickyView>
+      </SafeKeyboardStickyView>
     </View>
   )
 }
