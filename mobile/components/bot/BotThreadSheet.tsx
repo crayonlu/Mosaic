@@ -5,6 +5,7 @@ import {
   uploadSelectedMedia,
   type SelectedMediaItem,
 } from '@/lib/media/upload'
+import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
 import { useBotThread, useReplyToBot } from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
@@ -21,7 +22,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 interface PendingMessage {
@@ -214,7 +214,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       onRequestClose={onClose}
     >
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <KeyboardAvoidingView style={styles.content} behavior="padding">
+        <SafeKeyboardAvoidingView style={styles.content} behavior="padding">
           <View
             style={[
               styles.header,
@@ -441,7 +441,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
               </View>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </SafeKeyboardAvoidingView>
       </View>
     </Modal>
   )

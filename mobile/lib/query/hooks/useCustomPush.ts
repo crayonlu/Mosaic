@@ -1,7 +1,6 @@
 import { LocalPushService } from '@/lib/services/local-push'
 import { customPushStorage, type CustomPushData } from '@/lib/services/local-push/custom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { SchedulableTriggerInputTypes } from 'expo-notifications'
 
 export const CUSTOM_PUSH_KEY = ['customPush']
 export const CUSTOM_PUSH_COUNT_KEY = ['customPush', 'count']
@@ -31,11 +30,21 @@ export function useSaveCustomPush() {
     mutationFn: async (data: CustomPushData) => {
       await customPushStorage.saveCustomPush(data)
 
+      // Lazy-load SchedulableTriggerInputTypes (not available in Expo Go)
+      let calendarType: string
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const notifications = require('expo-notifications') as typeof import('expo-notifications')
+        calendarType = notifications.SchedulableTriggerInputTypes.CALENDAR
+      } catch {
+        calendarType = 'calendar'
+      }
+
       const triggerDateObj = new Date(data.trigger)
       await localPush.registerNotification(
         { title: data.title, body: data.body },
         {
-          type: SchedulableTriggerInputTypes.CALENDAR,
+          type: calendarType as any,
           year: triggerDateObj.getFullYear(),
           month: triggerDateObj.getMonth() + 1,
           day: triggerDateObj.getDate(),
