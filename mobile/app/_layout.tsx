@@ -1,6 +1,12 @@
 import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
+import {
+  hideBootSplash,
+  SafeKeyboardProvider,
+  SafeShareIntentProvider,
+  useSafeShareIntent,
+} from '@/lib/native/safeProviders'
 import { useAuthStore } from '@/stores/authStore'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useMoodStore } from '@/stores/moodStore'
@@ -10,13 +16,10 @@ import { getMoodColorWithIntensity } from '@mosaic/utils'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
-import { ShareIntentProvider, useShareIntentContext } from 'expo-share-intent'
 import { StatusBar } from 'expo-status-bar'
 import { type ReactNode, useCallback, useEffect, useRef } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import BootSplash from 'react-native-bootsplash'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { KeyboardProvider } from 'react-native-keyboard-controller'
 import Animated, {
   cancelAnimation,
   Easing,
@@ -53,7 +56,7 @@ function SafeAreaContainer({
 }
 
 function ShareIntentHandler({ children }: { children: ReactNode }) {
-  const { hasShareIntent, resetShareIntent } = useShareIntentContext()
+  const { hasShareIntent, resetShareIntent } = useSafeShareIntent()
   const router = useRouter()
   const handled = useRef(false)
 
@@ -81,9 +84,7 @@ export default function RootLayout() {
   useThemeInit()
 
   const hideNativeSplash = useCallback(() => {
-    BootSplash.hide({ fade: false }).catch(() => {
-      // Ignore hide races during startup.
-    })
+    hideBootSplash({ fade: false })
   }, [])
 
   useEffect(() => {
@@ -174,9 +175,9 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ShareIntentProvider>
+      <SafeShareIntentProvider>
         <ShareIntentHandler>
-          <KeyboardProvider>
+          <SafeKeyboardProvider>
             <SafeAreaProvider>
               <View style={{ flex: 1, backgroundColor: theme.background }}>
                 {!isAppReady && <ThemeAwareSplash />}
@@ -252,9 +253,9 @@ export default function RootLayout() {
                 </SafeAreaContainer>
               </View>
             </SafeAreaProvider>
-          </KeyboardProvider>
+          </SafeKeyboardProvider>
         </ShareIntentHandler>
-      </ShareIntentProvider>
+      </SafeShareIntentProvider>
     </GestureHandlerRootView>
   )
 }
