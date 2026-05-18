@@ -103,13 +103,13 @@ export function Button({
   const getFontSize = () => {
     switch (size) {
       case 'small':
-        return theme.typography.caption
+        return theme.typography.caption.fontSize
       case 'medium':
-        return theme.typography.body
+        return theme.typography.body.fontSize
       case 'large':
-        return theme.typography.bodyLarge
+        return theme.typography.bodyLarge.fontSize
       default:
-        return theme.typography.body
+        return theme.typography.body.fontSize
     }
   }
 

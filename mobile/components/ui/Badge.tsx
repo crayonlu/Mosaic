@@ -58,7 +58,7 @@ export function Badge({ text, variant = 'outline', size = 'medium', style, onPre
   }
 
   const getFontSize = () => {
-    return size === 'small' ? 11 : theme.typography.caption
+    return size === 'small' ? 11 : theme.typography.caption.fontSize
   }
 
   const badgeContent = (

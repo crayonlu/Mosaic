@@ -1,4 +1,4 @@
-export { DarkTheme, LightTheme, type Theme, type ThemeMode } from './theme'
+export { CleanSlateTheme, QuietPaperTheme, type Theme, type ThemeName } from './theme'
 
 export { MOOD_INTENSITY_LEVELS, MOODS, type MoodKey } from '@mosaic/utils'
 
@@ -61,7 +61,7 @@ export const StorageKeys = {
 
 // Default values
 export const Defaults = {
-  THEME: 'light',
+  THEME: 'quietPaper',
   ITEMS_PER_PAGE: 20,
   EDITOR_HEIGHT: 120,
 } as const

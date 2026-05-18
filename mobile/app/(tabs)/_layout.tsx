@@ -11,6 +11,27 @@ import dayjs from 'dayjs'
 import { Tabs } from 'expo-router'
 import { Book, Calendar, Files, Search, Settings } from 'lucide-react-native'
 import { useEffect } from 'react'
+import { StyleSheet, View } from 'react-native'
+
+function TabIconWithDot({ focused, children }: { focused: boolean; children: React.ReactNode }) {
+  const { theme } = useThemeStore()
+  return (
+    <View style={{ alignItems: 'center' }}>
+      {children}
+      {focused && (
+        <View
+          style={{
+            width: 4,
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: theme.primary,
+            marginTop: 2,
+          }}
+        />
+      )}
+    </View>
+  )
+}
 
 export default function TabLayout() {
   const { theme } = useThemeStore()
@@ -35,11 +56,13 @@ export default function TabLayout() {
         tabBarInactiveTintColor: inactiveTabColor,
         tabBarStyle: {
           backgroundColor: theme.background,
-          borderTopWidth: 0,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: theme.border,
           height: 54,
           paddingBottom: 2,
           paddingTop: 2,
-          shadowColor: 'transparent',
+          ...theme.shadows.subtle,
+          shadowOffset: { width: 0, height: -1 },
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -58,7 +81,9 @@ export default function TabLayout() {
         options={{
           title: TabItems.items[0].label,
           tabBarIcon: ({ focused, color }) => (
-            <Book size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+            <TabIconWithDot focused={focused}>
+              <Book size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+            </TabIconWithDot>
           ),
         }}
       />
@@ -67,7 +92,9 @@ export default function TabLayout() {
         options={{
           title: TabItems.items[1].label,
           tabBarIcon: ({ focused, color }) => (
-            <Files size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+            <TabIconWithDot focused={focused}>
+              <Files size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+            </TabIconWithDot>
           ),
         }}
       />
@@ -80,7 +107,9 @@ export default function TabLayout() {
             backgroundColor: 'transparent',
           },
           tabBarIcon: ({ focused, color }) => (
-            <Calendar size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+            <TabIconWithDot focused={focused}>
+              <Calendar size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+            </TabIconWithDot>
           ),
         }}
       />
@@ -89,7 +118,9 @@ export default function TabLayout() {
         options={{
           title: TabItems.items[3].label,
           tabBarIcon: ({ focused, color }) => (
-            <Search size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+            <TabIconWithDot focused={focused}>
+              <Search size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+            </TabIconWithDot>
           ),
         }}
       />
@@ -98,7 +129,9 @@ export default function TabLayout() {
         options={{
           title: TabItems.items[4].label,
           tabBarIcon: ({ focused, color }) => (
-            <Settings size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+            <TabIconWithDot focused={focused}>
+              <Settings size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+            </TabIconWithDot>
           ),
         }}
       />

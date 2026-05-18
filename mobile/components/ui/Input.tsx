@@ -32,7 +32,7 @@ export function Input({ label, error, showPasswordToggle, style, ...props }: Inp
               borderWidth,
               borderRadius: theme.radius.medium,
               paddingHorizontal: theme.spacing,
-              fontSize: theme.typography.bodyLarge,
+              fontSize: theme.typography.bodyLarge.fontSize,
               flex: 1,
             },
             style,
