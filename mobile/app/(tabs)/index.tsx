@@ -10,6 +10,7 @@ import { useCreateMemo, useDeleteMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
 import { router } from 'expo-router'
+import { useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 
 const TAB_BAR_HEIGHT = 54
@@ -21,6 +22,7 @@ export default function HomeScreen() {
   const { confirm } = useToastConfirm()
   const { mutateAsync: createMemo, isPending: isCreating } = useCreateMemo()
   const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
+  const [inputFocused, setInputFocused] = useState(false)
 
   const isPending = isCreating || isDeleting
 
@@ -87,10 +89,20 @@ export default function HomeScreen() {
         <View
           style={[
             styles.inputContainer,
-            { backgroundColor: theme.background, borderColor: theme.border },
+            {
+              backgroundColor: theme.background,
+              borderColor: inputFocused ? theme.border : 'transparent',
+              borderTopLeftRadius: inputFocused ? 12 : 0,
+              borderTopRightRadius: inputFocused ? 12 : 0,
+              paddingVertical: inputFocused ? 12 : 8,
+            },
           ]}
         >
-          <MemoInput onSubmit={handleSubmit} disabled={!canUseNetwork || isPending} />
+          <MemoInput
+            onSubmit={handleSubmit}
+            onFocusChange={setInputFocused}
+            disabled={!canUseNetwork || isPending}
+          />
         </View>
       </SafeKeyboardStickyView>
     </View>
@@ -113,9 +125,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   inputContainer: {
-    paddingHorizontal: 8,
-    paddingTop: 6,
-    paddingBottom: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    borderWidth: 1,
   },
 })
