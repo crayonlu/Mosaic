@@ -18,6 +18,7 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+  StatusBar,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -140,8 +141,10 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
+      statusBarTranslucent
       onRequestClose={onClose}
     >
+      <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View
           style={[styles.header, { borderBottomColor: theme.border, paddingTop: insets.top + 14 }]}

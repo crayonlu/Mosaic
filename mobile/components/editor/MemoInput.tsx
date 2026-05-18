@@ -1,12 +1,22 @@
-import { Button } from '@/components/ui'
 import { useThemeStore } from '@/stores/themeStore'
-import { Maximize2 } from 'lucide-react-native'
+import { ArrowUp, Maximize2 } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
-import { Keyboard, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
+import { Keyboard, Pressable, StyleSheet, TextInput, View } from 'react-native'
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { FullScreenEditor } from './FullScreenEditor'
+
+const COLLAPSED_HEIGHT = 48
+const EXPANDED_HEIGHT = 130
+const ANIM_DURATION = 200
 
 interface MemoInputProps {
   onSubmit?: (content: string, tags: string[], resources: string[], aiSummary?: string) => void
+  onFocusChange?: (focused: boolean) => void
   placeholder?: string
   availableTags?: string[]
   disabled?: boolean
@@ -14,6 +24,7 @@ interface MemoInputProps {
 
 export function MemoInput({
   onSubmit,
+  onFocusChange,
   placeholder = '记录你的想法...',
   availableTags = [],
   disabled = false,
@@ -24,6 +35,9 @@ export function MemoInput({
   const [text, setText] = useState('')
   const [isFocused, setIsFocused] = useState(false)
 
+  const wrapperHeight = useSharedValue(COLLAPSED_HEIGHT)
+  const expandProgress = useSharedValue(0)
+
   useEffect(() => {
     const sub = Keyboard.addListener('keyboardDidHide', () => {
       inputRef.current?.blur()
@@ -31,10 +45,47 @@ export function MemoInput({
     return () => sub.remove()
   }, [])
 
+  const handleFocus = () => {
+    setIsFocused(true)
+    onFocusChange?.(true)
+    wrapperHeight.value = withTiming(EXPANDED_HEIGHT, {
+      duration: ANIM_DURATION,
+      easing: Easing.out(Easing.cubic),
+    })
+    expandProgress.value = withTiming(1, {
+      duration: ANIM_DURATION,
+      easing: Easing.out(Easing.cubic),
+    })
+  }
+
+  const handleBlur = () => {
+    setIsFocused(false)
+    onFocusChange?.(false)
+    wrapperHeight.value = withTiming(COLLAPSED_HEIGHT, {
+      duration: ANIM_DURATION,
+      easing: Easing.out(Easing.cubic),
+    })
+    expandProgress.value = withTiming(0, {
+      duration: ANIM_DURATION,
+      easing: Easing.out(Easing.cubic),
+    })
+  }
+
+  const wrapperAnimStyle = useAnimatedStyle(() => ({
+    height: wrapperHeight.value,
+  }))
+
+  const toolbarAnimStyle = useAnimatedStyle(() => ({
+    opacity: expandProgress.value,
+    height: expandProgress.value * 40,
+    overflow: 'hidden' as const,
+  }))
+
   const handleSubmit = () => {
     if (!text.trim() || disabled) return
     onSubmit?.(text, [], [])
     setText('')
+    inputRef.current?.blur()
   }
 
   const handleFullScreenSubmit = (
@@ -48,55 +99,89 @@ export function MemoInput({
     setText('')
   }
 
+  const hasText = text.trim().length > 0
+
   return (
     <>
-      <View style={styles.container}>
-        <View
-          style={[
-            styles.inputWrapper,
-            {
-              backgroundColor: theme.surfaceMuted,
-              borderColor: isFocused ? theme.primary : 'transparent',
-              borderWidth: 1,
-              borderRadius: theme.radius.medium,
-              paddingHorizontal: theme.spacingScale.medium,
-              height: 48,
-              opacity: disabled ? theme.state.disabledOpacity : 1,
-            },
-          ]}
-        >
+      <Animated.View
+        style={[
+          styles.wrapper,
+          {
+            backgroundColor: theme.surfaceMuted,
+            borderColor: isFocused ? theme.border : 'transparent',
+            borderRadius: theme.radius.medium,
+            opacity: disabled ? theme.state.disabledOpacity : 1,
+            paddingTop: 12,
+            paddingBottom: isFocused ? 4 : 12,
+          },
+          wrapperAnimStyle,
+        ]}
+      >
+        {/* Input area: single-line collapsed, multiline expanded */}
+        <View style={[styles.inputRow, isFocused && styles.inputRowExpanded]}>
           <TextInput
             ref={inputRef}
-            style={[styles.input, { color: theme.text, fontSize: theme.typography.bodyLarge }]}
+            style={[
+              styles.input,
+              {
+                color: theme.text,
+                fontSize: theme.typography.bodyLarge.fontSize,
+              },
+              !isFocused && styles.inputCollapsed,
+            ]}
             placeholder={placeholder}
             placeholderTextColor={theme.textSecondary}
             value={text}
             onChangeText={setText}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
             editable={!disabled}
-            multiline={false}
-            numberOfLines={1}
+            multiline={isFocused}
+            textAlignVertical={isFocused ? 'top' : 'center'}
           />
 
-          <TouchableOpacity
+          {/* Inline expand icon — only visible in collapsed state */}
+          {!isFocused && (
+            <Pressable
+              onPress={() => setIsFullScreenVisible(true)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              disabled={disabled}
+              style={styles.inlineExpandButton}
+            >
+              <Maximize2 size={18} color={theme.textSecondary} strokeWidth={1.8} />
+            </Pressable>
+          )}
+        </View>
+
+        {/* Toolbar — only visible when expanded, animated height */}
+        <Animated.View style={[styles.toolbar, toolbarAnimStyle]}>
+          <Pressable
             onPress={() => setIsFullScreenVisible(true)}
-            style={styles.expandButton}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             disabled={disabled}
+            style={styles.toolbarButton}
           >
-            <Maximize2 size={18} color={theme.textSecondary} />
-          </TouchableOpacity>
-        </View>
+            <Maximize2 size={18} color={theme.textSecondary} strokeWidth={1.8} />
+          </Pressable>
 
-        <View style={styles.buttonContainer}>
-          <Button
-            title="创建"
-            variant={text ? 'primary' : 'secondary'}
+          <Pressable
             onPress={handleSubmit}
-            disabled={disabled || !text}
-          />
-        </View>
-      </View>
+            disabled={disabled || !hasText}
+            style={[
+              styles.sendButton,
+              {
+                backgroundColor: hasText ? theme.primary : theme.surfaceMuted,
+              },
+            ]}
+          >
+            <ArrowUp
+              size={18}
+              color={hasText ? theme.onPrimary : theme.textSecondary}
+              strokeWidth={2.5}
+            />
+          </Pressable>
+        </Animated.View>
+      </Animated.View>
 
       <FullScreenEditor
         visible={isFullScreenVisible}
@@ -112,27 +197,48 @@ export function MemoInput({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: 8,
-    flexDirection: 'row',
+  wrapper: {
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
   },
-  inputWrapper: {
+  inputRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+  },
+  inputRowExpanded: {
+    alignItems: 'flex-start',
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    height: '100%',
     paddingVertical: 0,
+    paddingHorizontal: 0,
+    includeFontPadding: false,
   },
-  expandButton: {
-    padding: 8,
-    marginLeft: 4,
+  inputCollapsed: {
+    height: 28,
   },
-  buttonContainer: {
+  inlineExpandButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  toolbar: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  toolbarButton: {
+    padding: 4,
+  },
+  sendButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 })

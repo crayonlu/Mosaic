@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from '@/stores/authStore'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useMoodStore } from '@/stores/moodStore'
-import { useThemeInit, useThemeStore } from '@/stores/themeStore'
+import { useThemeStore } from '@/stores/themeStore'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { getMoodColorWithIntensity } from '@mosaic/utils'
 import { Image } from 'expo-image'
@@ -81,8 +81,6 @@ export default function RootLayout() {
   const segments = useSegments()
   const router = useRouter()
 
-  useThemeInit()
-
   const hideNativeSplash = useCallback(() => {
     hideBootSplash({ fade: false })
   }, [])
@@ -128,10 +126,11 @@ export default function RootLayout() {
     if (!isInitialized) return
 
     const inSetup = (segments[0] as string) === 'setup'
+    const inThemePicker = (segments[0] as string) === 'theme-picker'
 
-    if (!isAuthenticated && !inSetup) {
-      router.replace('/setup')
-    } else if (isAuthenticated && inSetup) {
+    if (!isAuthenticated && !inSetup && !inThemePicker) {
+      router.replace('/theme-picker')
+    } else if (isAuthenticated && (inSetup || inThemePicker)) {
       router.replace('/')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -219,6 +218,7 @@ export default function RootLayout() {
                           },
                         }}
                       >
+                        <Stack.Screen name="theme-picker" options={{ headerShown: false }} />
                         <Stack.Screen name="setup" options={{ headerShown: false }} />
                         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                         <Stack.Screen
@@ -230,7 +230,7 @@ export default function RootLayout() {
                           }}
                         />
                       </Stack>
-                      {themeName !== 'cleanSlate' && (
+                      {themeName !== 'cleanSlate' && (segments[0] as string) !== 'theme-picker' && (
                         <View
                           pointerEvents="none"
                           style={[StyleSheet.absoluteFill, styles.noiseOverlay]}

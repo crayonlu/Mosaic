@@ -7,9 +7,12 @@ import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
 import type { Memo } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Pencil, Trash2 } from 'lucide-react-native'
-import { useEffect, useMemo, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native'
+
+const TEXT_MAX_HEIGHT = 160
 
 interface MemoCardProps {
   memo: Memo
@@ -34,6 +37,7 @@ export function MemoCard({
 }: MemoCardProps) {
   const { theme } = useThemeStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
+  const [isOverflowing, setIsOverflowing] = useState(false)
 
   useEffect(() => {
     const loadAuthHeaders = async () => {
@@ -41,6 +45,11 @@ export function MemoCard({
       setAuthHeaders(headers)
     }
     loadAuthHeaders()
+  }, [])
+
+  const handleTextLayout = useCallback((e: LayoutChangeEvent) => {
+    const { height } = e.nativeEvent.layout
+    setIsOverflowing(height > TEXT_MAX_HEIGHT)
   }, [])
 
   const displayContent = normalizeContent(memo.content || '')
@@ -60,6 +69,9 @@ export function MemoCard({
   const handleDelete = () => {
     onDelete?.(memo.id)
   }
+
+  // Use the page background for the fade target since card is transparent by default
+  const fadeTo = isSelected ? theme.surface : theme.background
 
   return (
     <Pressable
@@ -89,8 +101,17 @@ export function MemoCard({
       )}
       <View style={styles.contentContainer}>
         {displayContent && (
-          <View style={styles.textContent}>
-            <MarkdownRenderer content={displayContent} />
+          <View style={[styles.textContentOuter, { maxHeight: TEXT_MAX_HEIGHT }]}>
+            <View onLayout={handleTextLayout}>
+              <MarkdownRenderer content={displayContent} />
+            </View>
+            {isOverflowing && (
+              <LinearGradient
+                colors={[`${fadeTo}00`, `${fadeTo}CC`, fadeTo]}
+                style={styles.fadeGradient}
+                pointerEvents="none"
+              />
+            )}
           </View>
         )}
 
@@ -160,8 +181,16 @@ const styles = StyleSheet.create({
   contentContainer: {
     flexDirection: 'column',
   },
-  textContent: {
-    flex: 1,
+  textContentOuter: {
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  fadeGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 40,
   },
   imageGridContainer: {},
   metadataContainer: {

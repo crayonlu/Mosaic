@@ -11,6 +11,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  StatusBar,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -95,8 +96,10 @@ export function ModelCombobox({
         visible={open}
         animationType="slide"
         presentationStyle="pageSheet"
+        statusBarTranslucent
         onRequestClose={() => setOpen(false)}
       >
+        <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
         <View
           style={[styles.sheet, { backgroundColor: theme.background, paddingTop: insets.top + 12 }]}
         >
