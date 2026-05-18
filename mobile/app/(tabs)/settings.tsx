@@ -64,7 +64,7 @@ function BotAvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
 }
 
 export default function SettingsScreen() {
-  const { theme, themeMode, themeName, setThemeMode, setThemeName } = useThemeStore()
+  const { theme, themeName, setThemeName } = useThemeStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
   // const { data: customPushCount = 0 } = useCustomPushCount()
   const [showBotSettings, setShowBotSettings] = useState(false)
@@ -366,7 +366,7 @@ export default function SettingsScreen() {
     </View>
   )
 
-  const appearanceSummary = `${themeName === 'quietPaper' ? '暖纸' : '清冷'} · ${themeMode === 'light' ? '浅色' : '深色'}`
+  const appearanceSummary = themeName === 'quietPaper' ? '暖纸' : '清素'
 
   const renderAppearanceSection = () => (
     <View style={[styles.section]}>
@@ -395,29 +395,6 @@ export default function SettingsScreen() {
                   ]}
                   value={themeName}
                   onChange={v => setThemeName(v as 'quietPaper' | 'cleanSlate')}
-                  surfaceMuted={theme.surfaceMuted}
-                  surface={theme.surface}
-                  textColor={theme.text}
-                  textMuted={theme.textSecondary}
-                  radius={theme.radius.small}
-                />
-              </View>
-            </View>
-            <View
-              style={[
-                styles.appearanceRow,
-                { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border },
-              ]}
-            >
-              <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>明暗模式</Text>
-              <View style={styles.appearanceControl}>
-                <SlidingSegmentedControl
-                  options={[
-                    { label: '浅色', value: 'light' },
-                    { label: '深色', value: 'dark' },
-                  ]}
-                  value={themeMode ?? 'light'}
-                  onChange={v => setThemeMode(v as 'light' | 'dark')}
                   surfaceMuted={theme.surfaceMuted}
                   surface={theme.surface}
                   textColor={theme.text}
@@ -758,7 +735,7 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
     marginBottom: 2,
   },
   serverUrl: {

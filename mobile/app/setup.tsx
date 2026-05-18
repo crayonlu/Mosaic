@@ -11,12 +11,14 @@ import { Image } from 'expo-image'
 import { CheckCircle, XCircle } from 'lucide-react-native'
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useKeyboardHandler } from 'react-native-keyboard-controller'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error'
 
 export default function SetupScreen() {
-  const { theme, themeMode } = useThemeStore()
+  const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
   const { login, isLoading } = useAuthStore()
 
@@ -106,6 +108,25 @@ export default function SetupScreen() {
   const isFormValid = serverUrl && username && password
   const canLogin = isFormValid && connectionStatus === 'success'
 
+  const LOGO_SECTION_HEIGHT = 140
+  const logoOpacity = useSharedValue(1)
+  const logoHeight = useSharedValue(LOGO_SECTION_HEIGHT)
+
+  useKeyboardHandler({
+    onStart: (e) => {
+      'worklet'
+      const isOpening = e.height > 0
+      logoOpacity.value = withTiming(isOpening ? 0 : 1, { duration: isOpening ? 150 : 200 })
+      logoHeight.value = withTiming(isOpening ? 0 : LOGO_SECTION_HEIGHT, { duration: isOpening ? 150 : 200 })
+    },
+  })
+
+  const logoAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: logoOpacity.value,
+    height: logoHeight.value,
+    overflow: 'hidden' as const,
+  }))
+
   return (
     <View
       style={[
@@ -127,20 +148,16 @@ export default function SetupScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
+          <Animated.View style={[styles.header, logoAnimatedStyle]}>
             <Image
-              source={
-                themeMode === 'dark'
-                  ? require('@/assets/images/mosaic-dark.svg')
-                  : require('@/assets/images/mosaic-light.svg')
-              }
+              source={require('@/assets/images/mosaic-light.svg')}
               style={styles.logo}
               contentFit="contain"
             />
             <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
               完成初始化配置，开始您的智能笔记之旅
             </Text>
-          </View>
+          </Animated.View>
 
           <View style={[styles.card, { backgroundColor: theme.surface }]}>
             <Text style={[styles.cardTitle, { color: theme.text }]}>服务器配置</Text>

@@ -67,7 +67,7 @@ export function MemoInput({
         >
           <TextInput
             ref={inputRef}
-            style={[styles.input, { color: theme.text, fontSize: theme.typography.bodyLarge }]}
+            style={[styles.input, { color: theme.text, fontSize: theme.typography.bodyLarge.fontSize }]}
             placeholder={placeholder}
             placeholderTextColor={theme.textSecondary}
             value={text}

@@ -16,7 +16,38 @@ export interface ThemeScale {
   overlay: string
 }
 
-export const QUIET_PAPER_LIGHT: ThemeScale = {
+export interface ShadowToken {
+  shadowColor: string
+  shadowOffset: { width: number; height: number }
+  shadowOpacity: number
+  shadowRadius: number
+  elevation: number
+}
+
+export interface TypographyToken {
+  fontSize: number
+  fontWeight: '400' | '500' | '600' | '700'
+  lineHeight: number
+  letterSpacing: number
+}
+
+export interface ThemeShadowSet {
+  subtle: ShadowToken
+  medium: ShadowToken
+  strong: ShadowToken
+}
+
+export interface ThemeTypographySet {
+  display: TypographyToken
+  titleLarge: TypographyToken
+  title: TypographyToken
+  bodyLarge: TypographyToken
+  body: TypographyToken
+  label: TypographyToken
+  caption: TypographyToken
+}
+
+export const QUIET_PAPER: ThemeScale = {
   background: '#F8F5EF',
   surface: '#F2ECE2',
   text: '#1F2430',
@@ -34,25 +65,7 @@ export const QUIET_PAPER_LIGHT: ThemeScale = {
   overlay: 'rgba(31, 36, 48, 0.45)',
 }
 
-export const QUIET_PAPER_DARK: ThemeScale = {
-  background: '#171719',
-  surface: '#1F1F22',
-  text: '#F4EFE7',
-  textSecondary: '#B8B0A3',
-  border: '#3A352D',
-  primary: '#C08A58',
-  primaryAccent: '#D39B66',
-  onPrimary: '#1F1F22',
-  link: '#7FA9D8',
-  mark: '#D9A441',
-  success: '#52B58F',
-  error: '#E07A7A',
-  warning: '#D2A35A',
-  info: '#7FA9D8',
-  overlay: 'rgba(18, 18, 20, 0.65)',
-}
-
-export const CLEAN_SLATE_LIGHT: ThemeScale = {
+export const CLEAN_SLATE: ThemeScale = {
   background: '#F2F2F2',
   surface: '#FFFFFF',
   text: '#0A0A0A',
@@ -70,23 +83,10 @@ export const CLEAN_SLATE_LIGHT: ThemeScale = {
   overlay: 'rgba(10, 10, 10, 0.45)',
 }
 
-export const CLEAN_SLATE_DARK: ThemeScale = {
-  background: '#0A0A0A',
-  surface: '#141414',
-  text: '#F5F5F5',
-  textSecondary: '#A3A3A3',
-  border: '#262626',
-  primary: '#a8f099',
-  primaryAccent: '#c6f6be',
-  onPrimary: '#0A0A0A',
-  link: '#60A5FA',
-  mark: '#a8f099',
-  success: '#86efac',
-  error: '#fca5a5',
-  warning: '#fcd34d',
-  info: '#93c5fd',
-  overlay: 'rgba(0, 0, 0, 0.6)',
-}
+/** @deprecated use QUIET_PAPER */
+export const QUIET_PAPER_LIGHT = QUIET_PAPER
+/** @deprecated use CLEAN_SLATE */
+export const CLEAN_SLATE_LIGHT = CLEAN_SLATE
 
 export const MOOD_COLORS = {
   joy: '#E2C9B3',
@@ -101,3 +101,35 @@ export const MOOD_COLORS = {
 
 /** @deprecated use MOOD_COLORS */
 export const QUIET_PAPER_MOOD_COLORS = MOOD_COLORS
+
+export const QUIET_PAPER_TYPOGRAPHY: ThemeTypographySet = {
+  display: { fontSize: 28, fontWeight: '700', lineHeight: 36, letterSpacing: -0.5 },
+  titleLarge: { fontSize: 20, fontWeight: '700', lineHeight: 28, letterSpacing: -0.3 },
+  title: { fontSize: 17, fontWeight: '600', lineHeight: 24, letterSpacing: -0.2 },
+  bodyLarge: { fontSize: 17, fontWeight: '400', lineHeight: 28, letterSpacing: 0.1 },
+  body: { fontSize: 15, fontWeight: '400', lineHeight: 24, letterSpacing: 0.1 },
+  label: { fontSize: 13, fontWeight: '500', lineHeight: 18, letterSpacing: 0.05 },
+  caption: { fontSize: 12, fontWeight: '400', lineHeight: 17, letterSpacing: 0.05 },
+}
+
+export const CLEAN_SLATE_TYPOGRAPHY: ThemeTypographySet = {
+  display: { fontSize: 28, fontWeight: '700', lineHeight: 33, letterSpacing: -0.8 },
+  titleLarge: { fontSize: 20, fontWeight: '600', lineHeight: 25, letterSpacing: -0.5 },
+  title: { fontSize: 17, fontWeight: '600', lineHeight: 22, letterSpacing: -0.3 },
+  bodyLarge: { fontSize: 17, fontWeight: '400', lineHeight: 25, letterSpacing: 0 },
+  body: { fontSize: 15, fontWeight: '400', lineHeight: 22, letterSpacing: 0 },
+  label: { fontSize: 13, fontWeight: '500', lineHeight: 18, letterSpacing: 0 },
+  caption: { fontSize: 11, fontWeight: '400', lineHeight: 16, letterSpacing: 0.2 },
+}
+
+export const QUIET_PAPER_SHADOWS: ThemeShadowSet = {
+  subtle: { shadowColor: '#8B7355', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 2 },
+  medium: { shadowColor: '#8B7355', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.09, shadowRadius: 16, elevation: 6 },
+  strong: { shadowColor: '#8B7355', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.12, shadowRadius: 28, elevation: 12 },
+}
+
+export const CLEAN_SLATE_SHADOWS: ThemeShadowSet = {
+  subtle: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2, elevation: 1 },
+  medium: { shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 4 },
+  strong: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 20, elevation: 8 },
+}
