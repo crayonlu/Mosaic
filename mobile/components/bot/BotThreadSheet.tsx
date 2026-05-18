@@ -21,6 +21,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  StatusBar,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -211,8 +212,10 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
+      statusBarTranslucent
       onRequestClose={onClose}
     >
+      <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <SafeKeyboardAvoidingView style={styles.content} behavior="padding">
           <View

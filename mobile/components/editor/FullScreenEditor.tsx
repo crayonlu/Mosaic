@@ -225,7 +225,7 @@ export function FullScreenEditor({
       statusBarTranslucent
       onRequestClose={handleClose}
     >
-      <StatusBar backgroundColor={theme.background} barStyle="dark-content" />
+      <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <KeyboardAvoidingView
           style={[
