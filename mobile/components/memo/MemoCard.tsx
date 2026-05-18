@@ -7,6 +7,7 @@ import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
 import type { Memo } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
+import MaskedView from '@react-native-masked-view/masked-view'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Pencil, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -70,9 +71,9 @@ export function MemoCard({
     onDelete?.(memo.id)
   }
 
-  // Use the page background for the fade target since card is transparent by default
-  const fadeTo = isSelected ? theme.surface : theme.background
-
+  // Card is transparent by default — uses MaskedView with alpha gradient
+  // so text fades to truly transparent, never clashing with page-level
+  // gradients (e.g., mood-based diary background).
   return (
     <Pressable
       onPress={onPress}
@@ -101,16 +102,26 @@ export function MemoCard({
       )}
       <View style={styles.contentContainer}>
         {displayContent && (
-          <View style={[styles.textContentOuter, { maxHeight: TEXT_MAX_HEIGHT }]}>
-            <View onLayout={handleTextLayout}>
-              <MarkdownRenderer content={displayContent} />
-            </View>
-            {isOverflowing && (
-              <LinearGradient
-                colors={[`${fadeTo}00`, `${fadeTo}CC`, fadeTo]}
-                style={styles.fadeGradient}
-                pointerEvents="none"
-              />
+          <View style={styles.textContentOuter}>
+            {isOverflowing ? (
+              <MaskedView
+                style={{ maxHeight: TEXT_MAX_HEIGHT }}
+                maskElement={
+                  <LinearGradient
+                    colors={['white', 'transparent']}
+                    locations={[0.7, 1]}
+                    style={{ flex: 1 }}
+                  />
+                }
+              >
+                <View onLayout={handleTextLayout}>
+                  <MarkdownRenderer content={displayContent} />
+                </View>
+              </MaskedView>
+            ) : (
+              <View onLayout={handleTextLayout}>
+                <MarkdownRenderer content={displayContent} />
+              </View>
             )}
           </View>
         )}
@@ -181,17 +192,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flexDirection: 'column',
   },
-  textContentOuter: {
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  fadeGradient: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 40,
-  },
+  textContentOuter: {},
   imageGridContainer: {},
   metadataContainer: {
     flexDirection: 'row',
