@@ -17,7 +17,7 @@ interface MemoListProps {
 }
 
 export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: MemoListProps) {
-  const { theme } = useThemeStore()
+  const { theme, themeName } = useThemeStore()
   const flatListRef = useRef<FlatList>(null)
   const [refreshing, setRefreshing] = useState(false)
   const hasInitiallyLoaded = useRef(false)
@@ -115,18 +115,52 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
       .sort((a, b) => b.date.localeCompare(a.date))
   }, [memos, date])
 
-  const renderDateHeader = (displayDate: string, count: number, isFirst: boolean) => (
+  const renderDateHeader = (displayDate: string, memoCount: number, isFirst: boolean) => (
     <View
       style={[
         styles.dateHeader,
-        { borderTopColor: theme.border, borderTopWidth: isFirst ? 0 : StyleSheet.hairlineWidth },
-        isFirst && { marginTop: 0 },
+        {
+          paddingTop: isFirst ? 8 : themeName === 'quietPaper' ? 20 : 16,
+          paddingHorizontal: themeName === 'quietPaper' ? 16 : 14,
+        },
       ]}
     >
-      <Text style={[styles.dateHeaderText, { color: theme.text }]}>{displayDate}</Text>
-      {count > 0 && (
-        <Text style={[styles.dateHeaderCount, { color: theme.textSecondary }]}>{count} 条Memo</Text>
-      )}
+      <View style={styles.dateHeaderLeft}>
+        {themeName === 'quietPaper' && (
+          <View
+            style={{
+              width: 3,
+              height: 14,
+              borderRadius: 1.5,
+              backgroundColor: theme.primary,
+              marginRight: 8,
+            }}
+          />
+        )}
+        <Text
+          style={
+            themeName === 'quietPaper'
+              ? {
+                  fontSize: 17,
+                  fontWeight: '700',
+                  letterSpacing: -0.2,
+                  color: theme.text,
+                }
+              : {
+                  fontSize: 12,
+                  fontWeight: '500',
+                  letterSpacing: 0.8,
+                  color: theme.textSecondary,
+                  textTransform: 'uppercase',
+                }
+          }
+        >
+          {displayDate}
+        </Text>
+      </View>
+      <Text style={[styles.dateHeaderCount, { color: theme.textSecondary }]}>
+        {memoCount}
+      </Text>
     </View>
   )
 
@@ -162,7 +196,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
       <View key={group.date}>
         {renderDateHeader(group.displayDate, group.memos.length, index === 0)}
         {group.memos.map(memo => {
-          const delay = staggerCounter.current * 40
+          const delay = Math.min(staggerCounter.current * 30, 240)
           staggerCounter.current += 1
 
           const card = (
@@ -179,7 +213,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
           return (
             <Animated.View
               key={`anim-${memo.id}`}
-              entering={FadeInDown.delay(delay).duration(250).easing(Easing.out(Easing.cubic))}
+              entering={FadeInDown.delay(delay).duration(180).easing(Easing.bezier(0.25, 1, 0.5, 1)).withInitialValues({ transform: [{ translateY: 10 }] })}
             >
               {card}
             </Animated.View>
@@ -259,10 +293,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 4,
   },
-  dateHeaderText: {
-    fontSize: 17,
-    fontWeight: '600',
-    letterSpacing: -0.2,
+  dateHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   dateHeaderCount: {
     fontSize: 12,

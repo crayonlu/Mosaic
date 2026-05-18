@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from '@/stores/authStore'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useMoodStore } from '@/stores/moodStore'
-import { useThemeInit, useThemeStore } from '@/stores/themeStore'
+import { useThemeStore } from '@/stores/themeStore'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { getMoodColorWithIntensity } from '@mosaic/utils'
 import { Image } from 'expo-image'
@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { type ReactNode, useCallback, useEffect, useRef } from 'react'
-import { LayoutAnimation, Platform, StyleSheet, Text, UIManager, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, {
   cancelAnimation,
@@ -73,11 +73,6 @@ function ShareIntentHandler({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
-// Enable LayoutAnimation on Android (module-level, runs once)
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true)
-}
-
 export default function RootLayout() {
   const { theme, themeName } = useThemeStore()
   const { currentMood, currentMoodIntensity } = useMoodStore()
@@ -85,19 +80,6 @@ export default function RootLayout() {
   const { isAuthenticated, isInitialized, isLoading, initialize: initAuth } = useAuthStore()
   const segments = useSegments()
   const router = useRouter()
-
-  useThemeInit()
-
-  // Animate theme transitions
-  const prevThemeBg = useRef(theme.background)
-  useEffect(() => {
-    if (prevThemeBg.current !== theme.background) {
-      LayoutAnimation.configureNext(
-        LayoutAnimation.create(300, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity)
-      )
-      prevThemeBg.current = theme.background
-    }
-  }, [theme.background])
 
   const hideNativeSplash = useCallback(() => {
     hideBootSplash({ fade: false })
@@ -144,10 +126,11 @@ export default function RootLayout() {
     if (!isInitialized) return
 
     const inSetup = (segments[0] as string) === 'setup'
+    const inThemePicker = (segments[0] as string) === 'theme-picker'
 
-    if (!isAuthenticated && !inSetup) {
-      router.replace('/setup')
-    } else if (isAuthenticated && inSetup) {
+    if (!isAuthenticated && !inSetup && !inThemePicker) {
+      router.replace('/theme-picker')
+    } else if (isAuthenticated && (inSetup || inThemePicker)) {
       router.replace('/')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -235,6 +218,7 @@ export default function RootLayout() {
                           },
                         }}
                       >
+                        <Stack.Screen name="theme-picker" options={{ headerShown: false }} />
                         <Stack.Screen name="setup" options={{ headerShown: false }} />
                         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                         <Stack.Screen
@@ -246,7 +230,7 @@ export default function RootLayout() {
                           }}
                         />
                       </Stack>
-                      {themeName !== 'cleanSlate' && (
+                      {themeName !== 'cleanSlate' && (segments[0] as string) !== 'theme-picker' && (
                         <View
                           pointerEvents="none"
                           style={[StyleSheet.absoluteFill, styles.noiseOverlay]}

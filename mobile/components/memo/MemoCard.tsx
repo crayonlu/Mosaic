@@ -14,6 +14,7 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated'
 
@@ -38,7 +39,7 @@ export function MemoCard({
   showPressFeedback = true,
   showSemanticBadge = false,
 }: MemoCardProps) {
-  const { theme } = useThemeStore()
+  const { theme, themeName } = useThemeStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
   const scale = useSharedValue(1)
 
@@ -47,11 +48,15 @@ export function MemoCard({
   }))
 
   const handlePressIn = () => {
-    scale.value = withTiming(0.99, { duration: 100, easing: Easing.out(Easing.cubic) })
+    if (themeName === 'quietPaper') {
+      scale.value = withTiming(0.985, { duration: 150, easing: Easing.out(Easing.cubic) })
+    }
   }
 
   const handlePressOut = () => {
-    scale.value = withTiming(1, { duration: 100, easing: Easing.out(Easing.cubic) })
+    if (themeName === 'quietPaper') {
+      scale.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) })
+    }
   }
 
   useEffect(() => {
@@ -77,7 +82,10 @@ export function MemoCard({
   }
 
   return (
-    <Animated.View style={onPress ? animatedStyle : undefined}>
+    <Animated.View style={[
+      { marginHorizontal: 16, marginBottom: themeName === 'quietPaper' ? 14 : 1 },
+      onPress ? animatedStyle : undefined,
+    ]}>
     <Pressable
       onPress={onPress}
       onPressIn={onPress ? handlePressIn : undefined}
@@ -85,19 +93,30 @@ export function MemoCard({
       disabled={!onPress}
       style={({ pressed }) => [
         styles.container,
-        {
-          backgroundColor: isSelected
-            ? theme.surface
-            : pressed && showPressFeedback
-              ? theme.surfaceMuted
-              : theme.background,
-          borderRadius: theme.radius.medium,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: pressed && showPressFeedback ? 'transparent' : theme.border,
-          ...(pressed && showPressFeedback
-            ? { shadowOpacity: 0, elevation: 0 }
-            : theme.shadows.subtle),
-        },
+        themeName === 'quietPaper'
+          ? {
+              backgroundColor: isSelected ? theme.surface : theme.surface,
+              borderRadius: 14,
+              borderWidth: StyleSheet.hairlineWidth,
+              borderColor: theme.border,
+              paddingHorizontal: 16,
+              paddingTop: 16,
+              paddingBottom: 8,
+              ...(pressed && showPressFeedback
+                ? theme.shadows.medium
+                : theme.shadows.subtle),
+            }
+          : {
+              backgroundColor: pressed && showPressFeedback
+                ? theme.surfaceMuted
+                : theme.surface,
+              borderRadius: 8,
+              borderWidth: StyleSheet.hairlineWidth,
+              borderColor: theme.border,
+              paddingHorizontal: 14,
+              paddingTop: 12,
+              paddingBottom: 6,
+            },
       ]}
     >
       {showSemanticBadge && (
@@ -175,11 +194,6 @@ export function MemoCard({
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 4,
-    marginHorizontal: 4,
-    marginBottom: 8,
   },
   contentContainer: {
     flexDirection: 'column',
