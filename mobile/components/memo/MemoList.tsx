@@ -195,6 +195,10 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
       renderItem={renderGroup}
       keyExtractor={item => item.date}
       contentContainerStyle={styles.listContent}
+      maxToRenderPerBatch={10}
+      removeClippedSubviews={true}
+      updateCellsBatchingPeriod={50}
+      windowSize={10}
       ListHeaderComponent={headerComponent}
       ListEmptyComponent={renderEmptyState}
       refreshControl={

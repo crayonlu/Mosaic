@@ -14,6 +14,7 @@ import { Image } from 'expo-image'
 import { ChevronDown, ChevronUp, ImagePlus, Lightbulb, Send, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Animated,
   Modal,
   ScrollView,
   StyleSheet,
@@ -55,6 +56,54 @@ function ThinkingContentBlock({ content, theme }: { content: string; theme: any 
           <Text style={[styles.thinkingContent, { color: theme.textSecondary }]}>{content}</Text>
         </View>
       )}
+    </View>
+  )
+}
+
+function SkeletonBubbles() {
+  const { theme } = useThemeStore()
+  const opacity = useRef(new Animated.Value(0.4)).current
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+      ])
+    )
+    animation.start()
+    return () => animation.stop()
+  }, [opacity])
+
+  return (
+    <View style={styles.skeletonContainer}>
+      <View style={[styles.messageRow, styles.userMessageRow]}>
+        <Animated.View
+          style={[
+            styles.skeletonBubble,
+            styles.skeletonShort,
+            { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium, opacity },
+          ]}
+        />
+      </View>
+      <View style={styles.messageRow}>
+        <Animated.View
+          style={[
+            styles.skeletonBubble,
+            styles.skeletonTall,
+            { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium, opacity },
+          ]}
+        />
+      </View>
+      <View style={[styles.messageRow, styles.userMessageRow]}>
+        <Animated.View
+          style={[
+            styles.skeletonBubble,
+            styles.skeletonMedium,
+            { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium, opacity },
+          ]}
+        />
+      </View>
     </View>
   )
 }
@@ -242,35 +291,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
             keyboardShouldPersistTaps="handled"
           >
             {isLoading ? (
-              <View style={styles.skeletonContainer}>
-                <View style={[styles.messageRow, styles.userMessageRow]}>
-                  <View
-                    style={[
-                      styles.skeletonBubble,
-                      styles.skeletonShort,
-                      { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium },
-                    ]}
-                  />
-                </View>
-                <View style={styles.messageRow}>
-                  <View
-                    style={[
-                      styles.skeletonBubble,
-                      styles.skeletonTall,
-                      { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium },
-                    ]}
-                  />
-                </View>
-                <View style={[styles.messageRow, styles.userMessageRow]}>
-                  <View
-                    style={[
-                      styles.skeletonBubble,
-                      styles.skeletonMedium,
-                      { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium },
-                    ]}
-                  />
-                </View>
-              </View>
+              <SkeletonBubbles />
             ) : (
               <>
                 {messages.map((message, index) => {

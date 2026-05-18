@@ -149,6 +149,10 @@ export function MemoFeed({
       renderItem={renderMemoCard}
       keyExtractor={item => item.id}
       contentContainerStyle={styles.listContent}
+      maxToRenderPerBatch={10}
+      removeClippedSubviews={true}
+      updateCellsBatchingPeriod={50}
+      windowSize={10}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
