@@ -38,8 +38,8 @@ function ThemePreviewCard({
           styles.card,
           {
             backgroundColor: theme.surface,
-            borderColor: selected ? theme.primary : theme.border,
-            borderWidth: selected ? 2 : StyleSheet.hairlineWidth,
+            borderColor: selected ? theme.primary : 'transparent',
+            borderWidth: 2,
             borderRadius: 16,
           },
         ]}
