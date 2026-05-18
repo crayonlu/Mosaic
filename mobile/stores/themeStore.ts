@@ -33,7 +33,7 @@ interface ThemeState {
 
 export const useThemeStore = create<ThemeState>()(
   persist(
-    (set) => ({
+    set => ({
       themeName: initialThemeName,
       theme: THEME_MAP[initialThemeName],
       setThemeName: (name: ThemeName) => {

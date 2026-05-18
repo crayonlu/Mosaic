@@ -7,7 +7,12 @@ import { useToastConfirm } from '@/hooks/useToastConfirm'
 import { useDeleteRevision, useMemo, useRevisions } from '@/lib/query/hooks/useMemos'
 import { useDeleteMemo, useUpdateMemo } from '@/lib/query/mutations/memoMutations'
 import { useThemeStore } from '@/stores/themeStore'
-import { resourcesApi, type BotReply, type MemoWithResources, type UpdateMemoRequest } from '@mosaic/api'
+import {
+  resourcesApi,
+  type BotReply,
+  type MemoWithResources,
+  type UpdateMemoRequest,
+} from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useMemo as useRNMemo, useState } from 'react'
@@ -258,11 +263,11 @@ export default function MemoDetailScreen() {
           isLatest
           onBotReply={handleBotReply}
         />
-      <BotThreadSheet
-        visible={threadVisible}
-        reply={botReply}
-        onClose={() => setThreadVisible(false)}
-      />
+        <BotThreadSheet
+          visible={threadVisible}
+          reply={botReply}
+          onClose={() => setThreadVisible(false)}
+        />
       </View>
     )
   }

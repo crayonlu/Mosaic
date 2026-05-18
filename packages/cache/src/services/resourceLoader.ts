@@ -1,136 +1,136 @@
-import { getCacheManager, getPlatformAdapter, type PlatformAdapter } from '../platform/adapter';
-import type { CacheEntry, ICacheManager, LoadedResource } from '../types';
-import { parseMaxAge } from '../utils/policy';
+import { getCacheManager, getPlatformAdapter, type PlatformAdapter } from '../platform/adapter'
+import type { CacheEntry, ICacheManager, LoadedResource } from '../types'
+import { parseMaxAge } from '../utils/policy'
 
 export interface ResourceLoaderOptions {
-  forceRefresh?: boolean;
-  allowOffline?: boolean;
-  allowCache?: boolean;
+  forceRefresh?: boolean
+  allowOffline?: boolean
+  allowCache?: boolean
 }
 
 export class ResourceLoader {
-  private cacheManager: ICacheManager | null = null;
-  private platformAdapter: PlatformAdapter | null = null;
+  private cacheManager: ICacheManager | null = null
+  private platformAdapter: PlatformAdapter | null = null
 
   constructor(cacheManager?: ICacheManager, platformAdapter?: PlatformAdapter) {
     if (cacheManager) {
-      this.cacheManager = cacheManager;
+      this.cacheManager = cacheManager
     }
     if (platformAdapter) {
-      this.platformAdapter = platformAdapter;
+      this.platformAdapter = platformAdapter
     }
   }
 
   async initialize(): Promise<void> {
     if (!this.cacheManager) {
-      this.cacheManager = await getCacheManager();
+      this.cacheManager = await getCacheManager()
     }
     if (!this.platformAdapter) {
-      this.platformAdapter = getPlatformAdapter();
+      this.platformAdapter = getPlatformAdapter()
     }
   }
 
   async load(url: string, options?: ResourceLoaderOptions): Promise<LoadedResource> {
-    const { forceRefresh = false, allowOffline = true, allowCache = true } = options ?? {};
+    const { forceRefresh = false, allowOffline = true, allowCache = true } = options ?? {}
 
     if (allowCache && !forceRefresh && this.cacheManager) {
-      const cachedPath = await this.cacheManager.get(url);
+      const cachedPath = await this.cacheManager.get(url)
       if (cachedPath) {
-        await this.cacheManager.touch(url);
-        return { source: 'cache', path: cachedPath };
+        await this.cacheManager.touch(url)
+        return { source: 'cache', path: cachedPath }
       }
     }
 
     if (!this.platformAdapter) {
-      throw new Error('Platform adapter not initialized');
+      throw new Error('Platform adapter not initialized')
     }
 
-    const httpClient = this.platformAdapter.getHttpClient();
+    const httpClient = this.platformAdapter.getHttpClient()
 
     try {
-      const metadata = allowCache ? await this.cacheManager?.getMetadata(url) : null;
-      const headers: Record<string, string> = {};
+      const metadata = allowCache ? await this.cacheManager?.getMetadata(url) : null
+      const headers: Record<string, string> = {}
 
       if (metadata?.etag) {
-        headers['If-None-Match'] = metadata.etag;
+        headers['If-None-Match'] = metadata.etag
       }
 
-      const response = await httpClient.get(url, { headers });
+      const response = await httpClient.get(url, { headers })
 
       if (response.status === 304 && allowCache) {
-        await this.cacheManager?.touch(url);
-        const cachedPath = await this.cacheManager?.get(url);
+        await this.cacheManager?.touch(url)
+        const cachedPath = await this.cacheManager?.get(url)
         if (cachedPath) {
-          return { source: 'cache', path: cachedPath };
+          return { source: 'cache', path: cachedPath }
         }
         // 304 response but cache entry is missing - re-request without If-None-Match
-        const freshResponse = await httpClient.get(url);
+        const freshResponse = await httpClient.get(url)
         if (!freshResponse.ok) {
-          throw new Error(`HTTP error: ${freshResponse.status}`);
+          throw new Error(`HTTP error: ${freshResponse.status}`)
         }
-        const data = await freshResponse.arrayBuffer();
-        const mimeType = freshResponse.headers.get('Content-Type') ?? 'application/octet-stream';
-        const cacheControl = freshResponse.headers.get('Cache-Control');
-        const etag = freshResponse.headers.get('ETag');
-        const maxAge = parseMaxAge(cacheControl);
+        const data = await freshResponse.arrayBuffer()
+        const mimeType = freshResponse.headers.get('Content-Type') ?? 'application/octet-stream'
+        const cacheControl = freshResponse.headers.get('Cache-Control')
+        const etag = freshResponse.headers.get('ETag')
+        const maxAge = parseMaxAge(cacheControl)
 
-        let localPath: string | null = null;
+        let localPath: string | null = null
         if (this.cacheManager) {
           localPath = await this.cacheManager.set(url, data, {
             mimeType,
             etag: etag ?? undefined,
             maxAge: maxAge ?? undefined,
-          });
+          })
         }
         if (localPath) {
-          return { source: 'network', data, path: localPath };
+          return { source: 'network', data, path: localPath }
         }
-        return { source: 'network', data, path: '' };
+        return { source: 'network', data, path: '' }
       }
 
       if (!response.ok) {
-        throw new Error(`HTTP error: ${response.status}`);
+        throw new Error(`HTTP error: ${response.status}`)
       }
 
-      const data = await response.arrayBuffer();
-      const mimeType = response.headers.get('Content-Type') ?? 'application/octet-stream';
-      const cacheControl = response.headers.get('Cache-Control');
-      const etag = response.headers.get('ETag');
-      const maxAge = parseMaxAge(cacheControl);
+      const data = await response.arrayBuffer()
+      const mimeType = response.headers.get('Content-Type') ?? 'application/octet-stream'
+      const cacheControl = response.headers.get('Cache-Control')
+      const etag = response.headers.get('ETag')
+      const maxAge = parseMaxAge(cacheControl)
 
-      let localPath: string | null = null;
+      let localPath: string | null = null
 
       if (allowCache && this.cacheManager) {
         localPath = await this.cacheManager.set(url, data, {
           mimeType,
           etag: etag ?? undefined,
           maxAge: maxAge ?? undefined,
-        });
+        })
       }
 
       if (localPath) {
-        return { source: 'network', data, path: localPath };
+        return { source: 'network', data, path: localPath }
       }
 
       if (this.platformAdapter) {
-        const cacheDir = await this.platformAdapter.getCacheDir();
-        const fileName = this.getFileNameFromUrl(url);
-        const fallbackPath = `${cacheDir}/${fileName}`;
+        const cacheDir = await this.platformAdapter.getCacheDir()
+        const fileName = this.getFileNameFromUrl(url)
+        const fallbackPath = `${cacheDir}/${fileName}`
 
-        await this.platformAdapter.writeFile(fallbackPath, new Uint8Array(data));
+        await this.platformAdapter.writeFile(fallbackPath, new Uint8Array(data))
 
-        return { source: 'network', data, path: fallbackPath };
+        return { source: 'network', data, path: fallbackPath }
       }
 
-      return { source: 'network', data };
+      return { source: 'network', data }
     } catch (error) {
       if (allowOffline) {
-        const cachedPath = await this.cacheManager?.get(url);
+        const cachedPath = await this.cacheManager?.get(url)
         if (cachedPath) {
-          return { source: 'offline', path: cachedPath };
+          return { source: 'offline', path: cachedPath }
         }
       }
-      throw error;
+      throw error
     }
   }
 
@@ -138,97 +138,97 @@ export class ResourceLoader {
     urls: string[],
     options?: { concurrency?: number; delayMs?: number }
   ): Promise<void> {
-    const { concurrency = 3, delayMs = 1000 } = options ?? {};
-    const queue = [...urls];
+    const { concurrency = 3, delayMs = 1000 } = options ?? {}
+    const queue = [...urls]
 
     const processNext = async (): Promise<void> => {
       while (queue.length > 0) {
-        const url = queue.shift();
-        if (!url) break;
+        const url = queue.shift()
+        if (!url) break
 
         try {
-          await this.load(url, { allowCache: true });
+          await this.load(url, { allowCache: true })
         } catch {
           // Ignore individual prefetch failures
         }
 
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        await new Promise(resolve => setTimeout(resolve, delayMs))
       }
-    };
+    }
 
-    const workers = Array.from({ length: Math.min(concurrency, urls.length) }, () => processNext());
+    const workers = Array.from({ length: Math.min(concurrency, urls.length) }, () => processNext())
 
-    await Promise.all(workers);
+    await Promise.all(workers)
   }
 
   async clearCache(): Promise<void> {
-    await this.cacheManager?.clear();
+    await this.cacheManager?.clear()
   }
 
   async getCacheUsage() {
-    return this.cacheManager?.getUsage();
+    return this.cacheManager?.getUsage()
   }
 
   async getCachedMetadata(url: string): Promise<CacheEntry | null> {
-    return this.cacheManager?.getMetadata(url) ?? null;
+    return this.cacheManager?.getMetadata(url) ?? null
   }
 
   async isCached(url: string): Promise<boolean> {
-    return this.cacheManager?.has(url) ?? false;
+    return this.cacheManager?.has(url) ?? false
   }
 
   private getFileNameFromUrl(url: string): string {
     try {
-      const urlObj = new URL(url);
-      const pathParts = urlObj.pathname.split('/');
-      const fileName = pathParts[pathParts.length - 1];
+      const urlObj = new URL(url)
+      const pathParts = urlObj.pathname.split('/')
+      const fileName = pathParts[pathParts.length - 1]
       if (fileName && fileName.includes('.')) {
-        return fileName;
+        return fileName
       }
     } catch {
       // Fallback
     }
-    const hash = this.hashCode(url);
-    const ext = this.getExtension(url);
-    return `${hash}.${ext}`;
+    const hash = this.hashCode(url)
+    const ext = this.getExtension(url)
+    return `${hash}.${ext}`
   }
 
   private hashCode(str: string): string {
-    let hash = 0;
+    let hash = 0
     for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash;
+      const char = str.charCodeAt(i)
+      hash = (hash << 5) - hash + char
+      hash = hash & hash
     }
-    return Math.abs(hash).toString(36);
+    return Math.abs(hash).toString(36)
   }
 
   private getExtension(url: string): string {
-    const match = url.match(/\.([^./?#]+)(?:[?#]|$)/);
-    return match ? match[1]!.toLowerCase() : 'bin';
+    const match = url.match(/\.([^./?#]+)(?:[?#]|$)/)
+    return match ? match[1]!.toLowerCase() : 'bin'
   }
 }
 
-let resourceLoader: ResourceLoader | null = null;
+let resourceLoader: ResourceLoader | null = null
 
 export const getResourceLoader = async (): Promise<ResourceLoader | null> => {
   if (!resourceLoader) {
-    resourceLoader = new ResourceLoader();
+    resourceLoader = new ResourceLoader()
     try {
-      await resourceLoader.initialize();
+      await resourceLoader.initialize()
     } catch (error) {
-      console.warn('[getResourceLoader] Failed to initialize:', error);
-      resourceLoader = null;
-      return null;
+      console.warn('[getResourceLoader] Failed to initialize:', error)
+      resourceLoader = null
+      return null
     }
   }
-  return resourceLoader;
-};
+  return resourceLoader
+}
 
 export const setResourceLoader = (loader: ResourceLoader): void => {
-  resourceLoader = loader;
-};
+  resourceLoader = loader
+}
 
 export const resetResourceLoader = (): void => {
-  resourceLoader = null;
-};
+  resourceLoader = null
+}

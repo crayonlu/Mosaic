@@ -1,8 +1,8 @@
 import { useThemeStore } from '@/stores/themeStore'
-import { StyleSheet, View, type ViewStyle } from 'react-native'
+import { StyleSheet, View, type DimensionValue, type ViewStyle } from 'react-native'
 
 interface SkeletonLineProps {
-  width?: string | number
+  width?: DimensionValue
   height?: number
   borderRadius?: number
   style?: ViewStyle

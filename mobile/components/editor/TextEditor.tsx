@@ -43,7 +43,9 @@ export function TextEditor({
             borderColor: theme.border,
             borderRadius: isPlain ? 0 : theme.radius.medium,
             borderWidth: isPlain ? 0 : 1,
-            fontSize: isPlain ? theme.typography.title.fontSize : theme.typography.bodyLarge.fontSize,
+            fontSize: isPlain
+              ? theme.typography.title.fontSize
+              : theme.typography.bodyLarge.fontSize,
             minHeight,
             height: computedHeight,
           },

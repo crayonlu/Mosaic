@@ -1,7 +1,7 @@
 import { mmkv } from '@/lib/storage/mmkv'
 import type {
-    NotificationContentInput,
-    SchedulableNotificationTriggerInput,
+  NotificationContentInput,
+  SchedulableNotificationTriggerInput,
 } from 'expo-notifications'
 
 let notificationsModule: typeof import('expo-notifications') | undefined

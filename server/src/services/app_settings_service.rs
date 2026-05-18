@@ -43,15 +43,6 @@ impl AppSettingsService {
             .unwrap_or(default)
     }
 
-    pub async fn get_all(&self) -> Result<Vec<(String, String)>, AppError> {
-        let rows: Vec<(String, String)> =
-            sqlx::query_as("SELECT key, value FROM app_settings ORDER BY key ASC")
-                .fetch_all(&self.pool)
-                .await
-                .map_err(AppError::Database)?;
-        Ok(rows)
-    }
-
     pub async fn get_tz(&self) -> Tz {
         let raw = self.get_str("app_timezone", "Asia/Shanghai").await;
         raw.parse::<Tz>().unwrap_or(chrono_tz::Asia::Shanghai)

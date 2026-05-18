@@ -164,7 +164,9 @@ export default function ShareScreen() {
               {isSaving ? (
                 <ActivityIndicator size="small" color={theme.primary} />
               ) : (
-                <Text style={[styles.saveText, { color: theme.primary, opacity: canSave ? 1 : 0.3 }]}>
+                <Text
+                  style={[styles.saveText, { color: theme.primary, opacity: canSave ? 1 : 0.3 }]}
+                >
                   保存
                 </Text>
               )}

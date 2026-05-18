@@ -43,6 +43,7 @@ enum DiaryJobOutcome {
 #[derive(Clone)]
 pub struct AiDiaryService {
     pool: PgPool,
+    #[allow(dead_code)]
     storage: Arc<dyn Storage>,
     server_ai_config_service: ServerAiConfigService,
     ai_client: AiClient,

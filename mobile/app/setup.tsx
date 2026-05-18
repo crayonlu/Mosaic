@@ -113,11 +113,13 @@ export default function SetupScreen() {
   const logoHeight = useSharedValue(LOGO_SECTION_HEIGHT)
 
   useKeyboardHandler({
-    onStart: (e) => {
+    onStart: e => {
       'worklet'
       const isOpening = e.height > 0
       logoOpacity.value = withTiming(isOpening ? 0 : 1, { duration: isOpening ? 150 : 200 })
-      logoHeight.value = withTiming(isOpening ? 0 : LOGO_SECTION_HEIGHT, { duration: isOpening ? 150 : 200 })
+      logoHeight.value = withTiming(isOpening ? 0 : LOGO_SECTION_HEIGHT, {
+        duration: isOpening ? 150 : 200,
+      })
     },
   })
 

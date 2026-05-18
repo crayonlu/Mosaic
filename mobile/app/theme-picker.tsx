@@ -30,7 +30,9 @@ function ThemePreviewCard({
   return (
     <Animated.View
       style={{ flex: 1 }}
-      entering={FadeInUp.delay(enterDelay).duration(300).easing(Easing.bezier(0.25, 1, 0.5, 1))}
+      entering={FadeInUp.delay(enterDelay)
+        .duration(300)
+        .easing(Easing.bezier(0.25, 1, 0.5, 1))}
     >
       <Pressable
         onPress={onSelect}
@@ -45,7 +47,10 @@ function ThemePreviewCard({
         ]}
       >
         {name === 'quietPaper' && (
-          <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: 16, overflow: 'hidden' }]}>
+          <View
+            pointerEvents="none"
+            style={[StyleSheet.absoluteFill, { borderRadius: 16, overflow: 'hidden' }]}
+          >
             <Image
               source={require('@/assets/images/noise.png')}
               contentFit="cover"

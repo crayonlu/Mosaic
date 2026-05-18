@@ -63,10 +63,7 @@ export function ScreenHeader({
     if (center) return center
     if (title) {
       return (
-        <Text
-          style={[styles.title, { color: theme.text }]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
           {title}
         </Text>
       )

@@ -11,6 +11,7 @@ impl TimelineMemoryService {
         Self
     }
 
+    #[allow(dead_code)]
     pub fn build_summary(&self, related_memos: &[RelatedMemoContext], tz: Tz) -> Option<String> {
         if related_memos.is_empty() {
             return None;

@@ -11,9 +11,7 @@ try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   bootSplashModule = require('react-native-bootsplash') as BootSplashModuleType
 } catch {
-  console.warn(
-    '[BootSplash] react-native-bootsplash not available in Expo Go, skip splash hiding.'
-  )
+  console.warn('[BootSplash] react-native-bootsplash not available in Expo Go, skip splash hiding.')
 }
 
 /** Safe wrapper that no-ops when react-native-bootsplash is unavailable. */
@@ -34,7 +32,8 @@ let keyboardControllerModule: KeyboardControllerModuleType | undefined
 
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  keyboardControllerModule = require('react-native-keyboard-controller') as KeyboardControllerModuleType
+  keyboardControllerModule =
+    require('react-native-keyboard-controller') as KeyboardControllerModuleType
 } catch {
   console.warn(
     '[KeyboardController] react-native-keyboard-controller not available in Expo Go, keyboard features disabled.'
@@ -45,7 +44,11 @@ export function SafeKeyboardProvider({ children }: { children: ReactNode }) {
   if (!keyboardControllerModule) {
     return <>{children}</>
   }
-  return <keyboardControllerModule.KeyboardProvider>{children}</keyboardControllerModule.KeyboardProvider>
+  return (
+    <keyboardControllerModule.KeyboardProvider>
+      {children}
+    </keyboardControllerModule.KeyboardProvider>
+  )
 }
 
 // ─── Safe KeyboardAvoidingView ───────────────────────────────────
@@ -64,7 +67,11 @@ export function SafeKeyboardAvoidingView({
     return <View style={style}>{children}</View>
   }
   const KAV = keyboardControllerModule.KeyboardAvoidingView
-  return <KAV style={style} {...props}>{children}</KAV>
+  return (
+    <KAV style={style} {...props}>
+      {children}
+    </KAV>
+  )
 }
 
 // ─── Safe ShareIntentProvider ────────────────────────────────────
@@ -79,9 +86,7 @@ try {
   shareIntentModule = require('expo-share-intent') as ShareIntentModuleType
 } catch {
   if (!hasWarnedShareIntent) {
-    console.warn(
-      '[ShareIntent] expo-share-intent not available in Expo Go, share-to-app disabled.'
-    )
+    console.warn('[ShareIntent] expo-share-intent not available in Expo Go, share-to-app disabled.')
     hasWarnedShareIntent = true
   }
 }
@@ -130,5 +135,9 @@ export function SafeKeyboardStickyView({
     return <View style={style}>{children}</View>
   }
   const KSV = keyboardControllerModule.KeyboardStickyView
-  return <KSV style={style} {...props}>{children}</KSV>
+  return (
+    <KSV style={style} {...props}>
+      {children}
+    </KSV>
+  )
 }

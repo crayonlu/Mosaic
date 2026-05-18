@@ -21,9 +21,6 @@ config.resolver.extraNodeModules = {
 config.resolver.unstable_enableSymlinks = true
 config.resolver.unstable_enablePackageExports = true
 
-config.resolver.blockList = [
-  /[/\\]server[/\\]target[/\\]/,
-  /[/\\]\.git[/\\]/,
-]
+config.resolver.blockList = [/[/\\]server[/\\]target[/\\]/, /[/\\]\.git[/\\]/]
 
 module.exports = config

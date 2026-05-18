@@ -336,7 +336,7 @@ impl MemoService {
         for (i, rev) in selected.iter().enumerate() {
             // Special-case the omit placeholder (revision_number = -1, created_at = 0)
             let is_placeholder = rev.revision_number == -1;
-            
+
             let ts = if is_placeholder {
                 String::new()
             } else {
