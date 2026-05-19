@@ -1,7 +1,7 @@
-import { Brain, Loader, RefreshCw, Zap } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
-import { adminApi, api } from '../api'
-import { useToast } from '../hooks/useToast'
+import { Brain, Loader, RefreshCw, Zap } from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
+import { adminApi, api } from "../api"
+import { useToast } from "../hooks/useToast"
 
 interface MemoryStats {
   totalMemos: number
@@ -17,7 +17,7 @@ export default function MemoryPanel() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setStats((await api('/memory/stats')) as MemoryStats)
+      setStats((await api("/memory/stats")) as MemoryStats)
     } catch {
       /* ignore */
     } finally {
@@ -33,11 +33,11 @@ export default function MemoryPanel() {
   const handleBackfill = async () => {
     setBackfilling(true)
     try {
-      await adminApi('/backfill-memory', { method: 'POST' })
-      toast.success('索引回填已启动，后台处理中')
+      await adminApi("/backfill-memory", { method: "POST" })
+      toast.success("索引回填已启动，后台处理中")
       setTimeout(() => void load(), 3000)
     } catch {
-      toast.error('启动失败，请检查 Embedding 模型配置')
+      toast.error("启动失败，请检查 Embedding 模型配置")
     } finally {
       setBackfilling(false)
     }
@@ -47,25 +47,27 @@ export default function MemoryPanel() {
     stats && stats.totalMemos > 0
       ? Math.round((stats.indexedMemos / stats.totalMemos) * 100)
       : 0
-  const isFullyIndexed = stats && stats.indexedMemos >= stats.totalMemos && stats.totalMemos > 0
-  const hasUnindexed = stats && stats.totalMemos > 0 && stats.indexedMemos < stats.totalMemos
+  const isFullyIndexed =
+    stats && stats.indexedMemos >= stats.totalMemos && stats.totalMemos > 0
+  const hasUnindexed =
+    stats && stats.totalMemos > 0 && stats.indexedMemos < stats.totalMemos
 
   return (
-    <div className="rounded-lg border border-border bg-card">
+    <div className="rounded-lg border border-border">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
           <Brain size={16} />
           记忆 / RAG 索引
         </h3>
         <button
-          className="border-none bg-transparent text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+          className="cursor-pointer border-none bg-transparent text-xs text-muted-foreground transition-colors hover:text-foreground"
           onClick={load}
         >
           刷新
         </button>
       </div>
 
-      <div className="px-4 py-3 space-y-3">
+      <div className="space-y-3 px-4 py-3">
         {loading ? (
           <div className="skeleton h-[80px]" />
         ) : (
@@ -95,17 +97,17 @@ export default function MemoryPanel() {
                       ) : (
                         <RefreshCw size={10} />
                       )}
-                      {backfilling ? '处理中...' : '补充索引'}
+                      {backfilling ? "处理中..." : "补充索引"}
                     </button>
                   )}
                 </div>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
                     width: `${indexPercent}%`,
-                    background: isFullyIndexed ? '#10B981' : 'var(--primary)',
+                    background: isFullyIndexed ? "#10B981" : "var(--primary)",
                   }}
                 />
               </div>
@@ -116,11 +118,11 @@ export default function MemoryPanel() {
               )}
               {hasUnindexed && (
                 <p className="text-[11px] text-muted-foreground">
-                  {stats!.totalMemos - stats!.indexedMemos} 条历史 Memo 未索引，可手动触发回填
+                  {stats!.totalMemos - stats!.indexedMemos} 条历史 Memo
+                  未索引，可手动触发回填
                 </p>
               )}
             </div>
-
           </>
         )}
       </div>

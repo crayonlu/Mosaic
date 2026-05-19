@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
-import { RouterProvider } from 'react-router-dom'
-import ToastProvider from './components/ToastProvider'
-import { router } from './router'
-import { useAuthStore } from './stores/authStore'
-import { useThemeStore } from './stores/themeStore'
+import { useEffect } from "react"
+import { RouterProvider } from "react-router-dom"
+import ToastProvider from "./components/ToastProvider"
+import { router } from "./router"
+import { useAuthStore } from "./stores/authStore"
+import { useThemeStore } from "./stores/themeStore"
 
 export default function App() {
   const authInit = useAuthStore((s) => s.init)

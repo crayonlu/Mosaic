@@ -1,6 +1,6 @@
-import { Loader } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { getToken } from '../api'
+import { Loader } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { getToken } from "../api"
 
 interface AdminImageProps {
   src: string
@@ -9,7 +9,12 @@ interface AdminImageProps {
   showPlaceholder?: boolean
 }
 
-export default function AdminImage({ src, alt = '', className = '', showPlaceholder }: AdminImageProps) {
+export default function AdminImage({
+  src,
+  alt = "",
+  className = "",
+  showPlaceholder,
+}: AdminImageProps) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
   const mountedRef = useRef(true)
 
@@ -17,7 +22,6 @@ export default function AdminImage({ src, alt = '', className = '', showPlacehol
     mountedRef.current = true
 
     if (!src) return
-
     ;(async () => {
       try {
         const token = getToken()

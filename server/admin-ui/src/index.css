@@ -1,10 +1,14 @@
+/* ==========================================================================
+   Imports
+   ========================================================================== */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
-@custom-variant dark (&:is(.dark *));
-
+/* ==========================================================================
+   Tailwind Theme (inline)
+   ========================================================================== */
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans:
@@ -43,105 +47,111 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-  --color-success: var(--semantic-success);
-  --color-warning: var(--semantic-warning);
-  --color-error: var(--semantic-error);
-  --color-info: var(--semantic-info);
-  --color-link: var(--link);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-error: var(--color-error);
+  --color-info: var(--color-info);
+  --color-link: var(--color-link);
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.625rem;
 }
 
+/* ==========================================================================
+   Default Theme: Quiet Paper (warm)
+   ========================================================================== */
 :root {
-  --link: #2563eb;
-  --semantic-success: #22c55e;
-  --semantic-warning: #f59e0b;
-  --semantic-error: #ef4444;
-  --semantic-info: #3b82f6;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-  --radius: 0.5rem;
+  --background: #F8F5EF;
+  --foreground: #1F2430;
+  --primary: #9A6B3F;
+  --primary-foreground: #F8F5EF;
+  --card: #F8F5EF;
+  --card-foreground: #1F2430;
+  --border: #D9D2C6;
+  --muted: #F2ECE2;
+  --muted-foreground: #667085;
+  --accent: #C08A58;
+  --accent-foreground: #1F2430;
+  --destructive: #C94F4F;
+  --ring: #9A6B3F;
+  --input: #D9D2C6;
+  --secondary: #F2ECE2;
+  --secondary-foreground: #1F2430;
+  --popover: #F8F5EF;
+  --popover-foreground: #1F2430;
+
+  --color-success: #2F8F6A;
+  --color-warning: #A06D22;
+  --color-error: #C94F4F;
+  --color-info: #3D6FA6;
+  --color-link: #3D6FA6;
+
+  --chart-1: #9A6B3F;
+  --chart-2: #2F8F6A;
+  --chart-3: #667085;
+  --chart-4: #A06D22;
+  --chart-5: #C08A58;
+  --sidebar: #F8F5EF;
+  --sidebar-foreground: #1F2430;
+  --sidebar-primary: #9A6B3F;
+  --sidebar-primary-foreground: #F8F5EF;
+  --sidebar-accent: #F2ECE2;
+  --sidebar-accent-foreground: #1F2430;
+  --sidebar-border: #D9D2C6;
+  --sidebar-ring: #9A6B3F;
+
   --transition-fast: 150ms ease-in-out;
   --transition-normal: 250ms ease-out;
-
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: rgba(37, 99, 235, 0.08);
-  --accent-foreground: #2563eb;
-  --destructive: #ef4444;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #2563eb;
-  --chart-1: #2563eb;
-  --chart-2: #16a34a;
-  --chart-3: #64748b;
-  --chart-4: #f59e0b;
-  --chart-5: #94a3b8;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #2563eb;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(37, 99, 235, 0.08);
-  --sidebar-accent-foreground: #2563eb;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #2563eb;
 }
 
-.dark {
-  --link: #93c5fd;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+/* ==========================================================================
+   Alternate Theme: Clean Slate
+   ========================================================================== */
+:root[data-theme="cleanSlate"] {
+  --background: #F2F2F2;
+  --foreground: #0A0A0A;
+  --primary: #16a34a;
+  --primary-foreground: #FFFFFF;
+  --card: #F2F2F2;
+  --card-foreground: #0A0A0A;
+  --border: #E5E5E5;
+  --muted: #FFFFFF;
+  --muted-foreground: #525252;
+  --accent: #15803d;
+  --accent-foreground: #0A0A0A;
+  --destructive: #EF4444;
+  --ring: #16a34a;
+  --input: #E5E5E5;
+  --secondary: #FFFFFF;
+  --secondary-foreground: #0A0A0A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0A0A0A;
 
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --card: #1e293b;
-  --card-foreground: #f8fafc;
-  --popover: #1e293b;
-  --popover-foreground: #f8fafc;
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-  --secondary: #334155;
-  --secondary-foreground: #f8fafc;
-  --muted: #334155;
-  --muted-foreground: #94a3b8;
-  --accent: rgba(59, 130, 246, 0.15);
-  --accent-foreground: #93c5fd;
-  --destructive: #f87171;
-  --border: #334155;
-  --input: #334155;
-  --ring: #3b82f6;
-  --chart-1: #60a5fa;
-  --chart-2: #4ade80;
-  --chart-3: #94a3b8;
-  --chart-4: #fbbf24;
-  --chart-5: #64748b;
-  --sidebar: #1e293b;
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #3b82f6;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(59, 130, 246, 0.15);
-  --sidebar-accent-foreground: #93c5fd;
-  --sidebar-border: #334155;
-  --sidebar-ring: #3b82f6;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+  --color-link: #2563EB;
+
+  --chart-1: #16a34a;
+  --chart-2: #3B82F6;
+  --chart-3: #525252;
+  --chart-4: #F59E0B;
+  --chart-5: #15803d;
+  --sidebar: #F2F2F2;
+  --sidebar-foreground: #0A0A0A;
+  --sidebar-primary: #16a34a;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #FFFFFF;
+  --sidebar-accent-foreground: #0A0A0A;
+  --sidebar-border: #E5E5E5;
+  --sidebar-ring: #16a34a;
 }
 
+/* ==========================================================================
+   Base Styles
+   ========================================================================== */
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -157,7 +167,7 @@
   }
   html {
     @apply font-sans;
-    font-size: 14px;
+    font-size: 13px;
   }
   :focus-visible {
     outline: 2px solid var(--ring);
@@ -184,6 +194,9 @@
   }
 }
 
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -196,6 +209,9 @@
   border: 0;
 }
 
+/* ==========================================================================
+   Animations
+   ========================================================================== */
 @keyframes skeleton-pulse {
   0% { opacity: 1; }
   50% { opacity: 0.4; }

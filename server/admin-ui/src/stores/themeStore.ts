@@ -1,71 +1,26 @@
-import { create } from "zustand/react"
+import { create } from "zustand"
 
-export type ThemeMode = "light" | "dark"
-
-const STORAGE_KEY_MODE = "mosaic_admin_mode"
-
-function getStoredMode(): ThemeMode | "system" {
-  const v = localStorage.getItem(STORAGE_KEY_MODE)
-  if (v === "light" || v === "dark") return v
-  return "system"
-}
-
-function getSystemMode(): ThemeMode {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-}
-
-function applyMode(mode: ThemeMode) {
-  const root = document.documentElement
-  if (mode === "dark") {
-    root.classList.add("dark")
-  } else {
-    root.classList.remove("dark")
-  }
-}
+export type ThemeName = "quietPaper" | "cleanSlate"
 
 interface ThemeState {
-  modePreference: ThemeMode | "system"
-  resolvedMode: ThemeMode
-  initialized: boolean
-  setMode: (mode: ThemeMode | "system") => void
+  themeName: ThemeName
+  setThemeName: (name: ThemeName) => void
   init: () => void
 }
 
-export const useThemeStore = create<ThemeState>((set, get) => {
-  const storedMode = getStoredMode()
-  const initialMode: ThemeMode = storedMode === "system" ? getSystemMode() : storedMode
+const STORAGE_KEY = "mosaic_admin_theme"
 
-  return {
-    modePreference: storedMode,
-    resolvedMode: initialMode,
-    initialized: false,
-
-    setMode: (mode: ThemeMode | "system") => {
-      if (mode === "system") {
-        localStorage.removeItem(STORAGE_KEY_MODE)
-        const sysMode = getSystemMode()
-        set({ modePreference: "system", resolvedMode: sysMode })
-        applyMode(sysMode)
-      } else {
-        localStorage.setItem(STORAGE_KEY_MODE, mode)
-        set({ modePreference: mode, resolvedMode: mode })
-        applyMode(mode)
-      }
-    },
-
-    init: () => {
-      if (get().initialized) return
-      set({ initialized: true })
-      const mq = window.matchMedia("(prefers-color-scheme: dark)")
-      mq.addEventListener("change", (e) => {
-        const state = get()
-        if (state.modePreference === "system") {
-          const newMode = e.matches ? "dark" : "light"
-          set({ resolvedMode: newMode })
-          applyMode(newMode)
-        }
-      })
-      applyMode(get().resolvedMode)
-    },
-  }
-})
+export const useThemeStore = create<ThemeState>((set) => ({
+  themeName: "quietPaper",
+  setThemeName: (name) => {
+    document.documentElement.setAttribute("data-theme", name)
+    localStorage.setItem(STORAGE_KEY, name)
+    set({ themeName: name })
+  },
+  init: () => {
+    const saved = localStorage.getItem(STORAGE_KEY) as ThemeName | null
+    const name: ThemeName = saved === "cleanSlate" ? "cleanSlate" : "quietPaper"
+    document.documentElement.setAttribute("data-theme", name)
+    set({ themeName: name })
+  },
+}))

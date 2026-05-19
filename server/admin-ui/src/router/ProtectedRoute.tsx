@@ -1,5 +1,5 @@
-import { Navigate } from 'react-router-dom'
-import { getToken } from '../api'
+import { Navigate } from "react-router-dom"
+import { getToken } from "../api"
 
 interface ProtectedRouteProps {
   children: React.ReactNode

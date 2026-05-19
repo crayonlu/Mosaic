@@ -1,13 +1,13 @@
-import { Check, Eye, EyeOff, Loader, Sparkles } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { adminApi } from '../api'
-import { useToast } from '../hooks/useToast'
+import { Check, Eye, EyeOff, Loader, Sparkles } from "lucide-react"
+import { useEffect, useState } from "react"
+import { adminApi } from "../api"
+import { useToast } from "../hooks/useToast"
 
-type ConfigKey = 'bot' | 'embedding'
-const providers = ['openai', 'anthropic'] as const
+type ConfigKey = "bot" | "embedding"
+const providers = ["openai", "anthropic"] as const
 const providerUrls: Record<string, string> = {
-  openai: 'https://api.openai.com',
-  anthropic: 'https://api.anthropic.com',
+  openai: "https://api.openai.com",
+  anthropic: "https://api.anthropic.com",
 }
 
 interface ConfigForm {
@@ -47,12 +47,40 @@ export default function AIConfigPanel() {
 
   const [showKeys, setShowKeys] = useState({ bot: false, embedding: false })
   const [saving, setSaving] = useState({ bot: false, embedding: false })
-  const [modelsLoading, setModelsLoading] = useState({ bot: false, embedding: false })
-  const [modelErrors, setModelErrors] = useState({ bot: '', embedding: '' })
-  const [modelLists, setModelLists] = useState({ bot: [] as string[], embedding: [] as string[] })
+  const [modelsLoading, setModelsLoading] = useState({
+    bot: false,
+    embedding: false,
+  })
+  const [modelErrors, setModelErrors] = useState({ bot: "", embedding: "" })
+  const [modelLists, setModelLists] = useState({
+    bot: [] as string[],
+    embedding: [] as string[],
+  })
+  const [detectingCaps, setDetectingCaps] = useState({
+    bot: false,
+    embedding: false,
+  })
   const [form, setForm] = useState({
-    bot: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '', embeddingDim: undefined as number | undefined, maxTokens: undefined as number | undefined, supportsVision: false, supportsThinking: false },
-    embedding: { provider: 'openai', baseUrl: 'https://api.openai.com', apiKey: '', model: '', embeddingDim: undefined as number | undefined, maxTokens: undefined as number | undefined, supportsVision: false, supportsThinking: false },
+    bot: {
+      provider: "openai",
+      baseUrl: "https://api.openai.com",
+      apiKey: "",
+      model: "",
+      embeddingDim: undefined as number | undefined,
+      maxTokens: undefined as number | undefined,
+      supportsVision: false,
+      supportsThinking: false,
+    },
+    embedding: {
+      provider: "openai",
+      baseUrl: "https://api.openai.com",
+      apiKey: "",
+      model: "",
+      embeddingDim: undefined as number | undefined,
+      maxTokens: undefined as number | undefined,
+      supportsVision: false,
+      supportsThinking: false,
+    },
   })
 
   function setFormField(key: ConfigKey, field: Partial<ConfigForm>) {
@@ -60,7 +88,7 @@ export default function AIConfigPanel() {
   }
 
   function setProvider(key: ConfigKey, provider: string) {
-    setFormField(key, { provider, baseUrl: providerUrls[provider] || '' })
+    setFormField(key, { provider, baseUrl: providerUrls[provider] || "" })
   }
 
   function filteredModels(key: ConfigKey) {
@@ -72,18 +100,18 @@ export default function AIConfigPanel() {
   async function loadConfig() {
     setLoading(true)
     try {
-      const data = (await adminApi('/ai-config')) as ConfigResponse
-      for (const k of ['bot', 'embedding'] as ConfigKey[]) {
+      const data = (await adminApi("/ai-config")) as ConfigResponse
+      for (const k of ["bot", "embedding"] as ConfigKey[]) {
         const item = data[k]
         if (!item) continue
         setForm((f) => ({
           ...f,
           [k]: {
             ...f[k],
-            provider: item.provider || 'openai',
-            baseUrl: item.baseUrl || '',
-            apiKey: item.apiKey || '',
-            model: item.model || '',
+            provider: item.provider || "openai",
+            baseUrl: item.baseUrl || "",
+            apiKey: item.apiKey || "",
+            model: item.model || "",
             embeddingDim: item.embeddingDim ?? undefined,
             maxTokens: item.maxTokens ?? undefined,
             supportsVision: item.supportsVision || false,
@@ -103,7 +131,7 @@ export default function AIConfigPanel() {
     if (!f.baseUrl.trim()) return
     setModelsLoading((l) => ({ ...l, [key]: true }))
     try {
-      const url = `${f.baseUrl.replace(/\/+$/, '')}/models`
+      const url = `${f.baseUrl.replace(/\/+$/, "")}/models`
       const res = await fetch(url, {
         headers: f.apiKey ? { Authorization: `Bearer ${f.apiKey}` } : {},
       })
@@ -111,15 +139,49 @@ export default function AIConfigPanel() {
       const body = (await res.json()) as ModelListResponse
       setModelLists((l) => ({
         ...l,
-        [key]: Array.isArray(body.data) ? body.data.map((m) => m.id).sort() : [],
+        [key]: Array.isArray(body.data)
+          ? body.data.map((m) => m.id).sort()
+          : [],
       }))
-      setModelErrors((e) => ({ ...e, [key]: '' }))
+      setModelErrors((e) => ({ ...e, [key]: "" }))
     } catch (error: unknown) {
       setModelLists((l) => ({ ...l, [key]: [] }))
-      const message = error instanceof Error ? error.message : '未知错误'
+      const message = error instanceof Error ? error.message : "未知错误"
       setModelErrors((e2) => ({ ...e2, [key]: `获取失败: ${message}` }))
     } finally {
       setModelsLoading((l) => ({ ...l, [key]: false }))
+    }
+  }
+
+  async function selectModel(key: ConfigKey, model: string) {
+    setFormField(key, { model })
+    // Auto-detect capabilities for bot models
+    if (key !== "bot") return
+    const f = form[key]
+    if (!f.baseUrl || !f.apiKey || !model) return
+    setDetectingCaps((d) => ({ ...d, [key]: true }))
+    try {
+      const url = `${f.baseUrl.replace(/\/+$/, "")}/models`
+      const res = await fetch(url, {
+        headers: f.apiKey ? { Authorization: `Bearer ${f.apiKey}` } : {},
+      })
+      if (!res.ok) return
+      const body = await res.json()
+      if (!Array.isArray(body.data)) return
+      const info = body.data.find((m: { id: string }) => m.id === model)
+      if (!info) return
+      const inputModalities: string[] = info.input_modalities ?? []
+      const features: string[] = info.features ?? []
+      setFormField(key, {
+        supportsVision:
+          inputModalities.includes("image") ||
+          inputModalities.includes("video"),
+        supportsThinking: features.includes("reasoning"),
+      })
+    } catch {
+      // Detection failed silently — user can still set manually
+    } finally {
+      setDetectingCaps((d) => ({ ...d, [key]: false }))
     }
   }
 
@@ -128,12 +190,21 @@ export default function AIConfigPanel() {
     try {
       const f = form[key]
       await adminApi(`/ai-config/${key}`, {
-        method: 'PUT',
-        body: { provider: f.provider, baseUrl: f.baseUrl, apiKey: f.apiKey, model: f.model, embeddingDim: f.embeddingDim, maxTokens: f.maxTokens, supportsVision: f.supportsVision, supportsThinking: f.supportsThinking },
+        method: "PUT",
+        body: {
+          provider: f.provider,
+          baseUrl: f.baseUrl,
+          apiKey: f.apiKey,
+          model: f.model,
+          embeddingDim: f.embeddingDim,
+          maxTokens: f.maxTokens,
+          supportsVision: f.supportsVision,
+          supportsThinking: f.supportsThinking,
+        },
       })
-      toast.success(`${key === 'bot' ? 'Bot' : 'Embedding'} 配置已保存`)
+      toast.success(`${key === "bot" ? "Bot" : "Embedding"} 配置已保存`)
     } catch {
-      toast.error('保存失败')
+      toast.error("保存失败")
     } finally {
       setSaving((s) => ({ ...s, [key]: false }))
     }
@@ -145,20 +216,20 @@ export default function AIConfigPanel() {
     void (async () => {
       setLoading(true)
       try {
-        const data = (await adminApi('/ai-config')) as ConfigResponse
+        const data = (await adminApi("/ai-config")) as ConfigResponse
         if (!active) return
 
-        for (const k of ['bot', 'embedding'] as ConfigKey[]) {
+        for (const k of ["bot", "embedding"] as ConfigKey[]) {
           const item = data[k]
           if (!item) continue
           setForm((f) => ({
             ...f,
             [k]: {
               ...f[k],
-              provider: item.provider || 'openai',
-              baseUrl: item.baseUrl || '',
-              apiKey: item.apiKey || '',
-              model: item.model || '',
+              provider: item.provider || "openai",
+              baseUrl: item.baseUrl || "",
+              apiKey: item.apiKey || "",
+              model: item.model || "",
               embeddingDim: item.embeddingDim ?? undefined,
               maxTokens: item.maxTokens ?? undefined,
               supportsVision: item.supportsVision || false,
@@ -181,28 +252,32 @@ export default function AIConfigPanel() {
   function renderCard(key: ConfigKey, title: string) {
     const f = form[key]
     return (
-      <div key={key} className="flex flex-col gap-3 rounded-md border border-border bg-muted p-3 sm:p-4">
+      <div key={key} className="flex flex-col gap-3 p-3 sm:p-4">
         <h4 className="text-[13px] font-semibold text-foreground">{title}</h4>
 
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-muted-foreground">API 规范</label>
+          <label className="text-[11px] font-medium text-muted-foreground">
+            API 规范
+          </label>
           <div className="flex gap-0">
             {providers.map((p) => (
               <button
                 key={p}
-                className={`flex-1 border px-3 py-1 text-[11px] font-medium font-sans transition-colors cursor-pointer first:rounded-l last:rounded-r ${f.provider === p ? 'bg-accent text-accent-foreground border-primary' : 'bg-card text-muted-foreground border-border'}`}
+                className={`flex-1 cursor-pointer border px-3 py-1 font-sans text-[11px] font-medium transition-colors first:rounded-l last:rounded-r ${f.provider === p ? "border-primary bg-accent text-accent-foreground" : "border-border bg-card text-muted-foreground"}`}
                 onClick={() => setProvider(key, p)}
               >
-                {p === 'openai' ? 'OpenAI' : 'Anthropic'}
+                {p === "openai" ? "OpenAI" : "Anthropic"}
               </button>
             ))}
           </div>
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-muted-foreground">Base URL</label>
+          <label className="text-[11px] font-medium text-muted-foreground">
+            Base URL
+          </label>
           <input
-            className="w-full rounded-md border border-border bg-card px-3 py-2 text-[13px] text-foreground font-sans outline-none transition-colors focus:border-ring"
+            className="w-full rounded-md border border-border bg-card px-3 py-2 font-sans text-[13px] text-foreground transition-colors outline-none focus:border-ring"
             placeholder="https://api.openai.com"
             value={f.baseUrl}
             onChange={(e) => setFormField(key, { baseUrl: e.target.value })}
@@ -210,17 +285,19 @@ export default function AIConfigPanel() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-muted-foreground">API Key</label>
-          <div className="flex gap-1 items-center">
+          <label className="text-[11px] font-medium text-muted-foreground">
+            API Key
+          </label>
+          <div className="flex items-center gap-1">
             <input
-              className="min-w-0 flex-1 rounded-md border border-border bg-card px-3 py-2 text-[13px] text-foreground font-sans outline-none transition-colors focus:border-ring"
-              type={showKeys[key] ? 'text' : 'password'}
+              className="min-w-0 flex-1 rounded-md border border-border bg-card px-3 py-2 font-sans text-[13px] text-foreground transition-colors outline-none focus:border-ring"
+              type={showKeys[key] ? "text" : "password"}
               placeholder="sk-..."
               value={f.apiKey}
               onChange={(e) => setFormField(key, { apiKey: e.target.value })}
             />
             <button
-              className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors cursor-pointer hover:bg-muted"
+              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-muted"
               onClick={() => setShowKeys((s) => ({ ...s, [key]: !s[key] }))}
             >
               {showKeys[key] ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -229,33 +306,51 @@ export default function AIConfigPanel() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-muted-foreground">模型</label>
+          <label className="text-[11px] font-medium text-muted-foreground">
+            模型
+          </label>
           <div className="flex flex-col gap-1.5 sm:flex-row">
             <input
-              className="min-w-0 flex-1 rounded-md border border-border bg-card px-3 py-2 text-[13px] text-foreground font-sans outline-none transition-colors focus:border-ring"
-              placeholder={key === 'bot' ? (f.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514') : 'text-embedding-3-small'}
+              className="min-w-0 flex-1 rounded-md border border-border bg-card px-3 py-2 font-sans text-[13px] text-foreground transition-colors outline-none focus:border-ring"
+              placeholder={
+                key === "bot"
+                  ? f.provider === "openai"
+                    ? "gpt-4o"
+                    : "claude-sonnet-4-20250514"
+                  : "text-embedding-3-small"
+              }
               value={f.model}
               onChange={(e) => setFormField(key, { model: e.target.value })}
               onFocus={() => fetchModels(key)}
             />
             <button
-              className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground transition-colors cursor-pointer hover:bg-secondary/80 disabled:opacity-50 sm:w-auto"
+              className="inline-flex w-full shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary/80 disabled:opacity-50 sm:w-auto"
               disabled={modelsLoading[key]}
               onClick={() => fetchModels(key)}
             >
-              {modelsLoading[key] ? <Loader size={13} className="spin" /> : <span>获取</span>}
+              {modelsLoading[key] ? (
+                <Loader size={13} className="spin" />
+              ) : (
+                <span>获取</span>
+              )}
             </button>
           </div>
-          {modelErrors[key] && <p className="m-0 text-[11px] text-destructive">{modelErrors[key]}</p>}
+          {modelErrors[key] && (
+            <p className="m-0 text-[11px] text-destructive">
+              {modelErrors[key]}
+            </p>
+          )}
           {modelLists[key].length > 0 && (
             <div className="max-h-40 overflow-y-auto rounded-md border border-border">
               {filteredModels(key).map((m) => (
                 <button
                   key={m}
-                  className={`flex w-full items-center justify-between border-none bg-transparent px-3 py-2 text-[12px] text-foreground font-sans transition-colors cursor-pointer hover:bg-muted ${m === f.model ? 'bg-accent' : ''}`}
-                  onClick={() => setFormField(key, { model: m })}
+                  className={`flex w-full cursor-pointer items-center justify-between border-none bg-transparent px-3 py-2 font-sans text-[12px] text-foreground transition-colors hover:bg-muted ${m === f.model ? "bg-accent" : ""}`}
+                  onClick={() => selectModel(key, m)}
                 >
-                  <span className="overflow-hidden text-ellipsis whitespace-nowrap">{m}</span>
+                  <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                    {m}
+                  </span>
                   {m === f.model && <Check size={14} />}
                 </button>
               ))}
@@ -263,54 +358,87 @@ export default function AIConfigPanel() {
           )}
         </div>
 
-        {key === 'bot' && (
+        {key === "bot" && (
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-medium text-muted-foreground">Max Tokens</label>
+            <label className="text-[11px] font-medium text-muted-foreground">
+              Max Tokens
+            </label>
             <input
               type="number"
-              className="w-full rounded-md border border-border bg-card px-3 py-2 text-[13px] text-foreground font-sans outline-none transition-colors focus:border-ring"
+              className="w-full rounded-md border border-border bg-card px-3 py-2 font-sans text-[13px] text-foreground transition-colors outline-none focus:border-ring"
               placeholder="512"
               min={1}
               max={128000}
-              value={f.maxTokens ?? ''}
-              onChange={(e) => setFormField(key, { maxTokens: e.target.value ? Number(e.target.value) : undefined })}
+              value={f.maxTokens ?? ""}
+              onChange={(e) =>
+                setFormField(key, {
+                  maxTokens: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                })
+              }
             />
-            <p className="m-0 text-[11px] text-muted-foreground">每次回复的最大 token 数。留空则使用默认值 512。</p>
+            <p className="m-0 text-[11px] text-muted-foreground">
+              每次回复的最大 token 数。留空则使用默认值 512。
+            </p>
           </div>
         )}
 
-        {key === 'embedding' && (
+        {key === "embedding" && (
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-medium text-muted-foreground">向量维度</label>
+            <label className="text-[11px] font-medium text-muted-foreground">
+              向量维度
+            </label>
             <input
               type="number"
-              className="w-full rounded-md border border-border bg-card px-3 py-2 text-[13px] text-foreground font-sans outline-none transition-colors focus:border-ring"
+              className="w-full rounded-md border border-border bg-card px-3 py-2 font-sans text-[13px] text-foreground transition-colors outline-none focus:border-ring"
               placeholder="1536"
-              value={f.embeddingDim ?? ''}
-              onChange={(e) => setFormField(key, { embeddingDim: e.target.value ? Number(e.target.value) : undefined })}
+              value={f.embeddingDim ?? ""}
+              onChange={(e) =>
+                setFormField(key, {
+                  embeddingDim: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                })
+              }
             />
-            <p className="m-0 text-[11px] text-muted-foreground">首次使用会自动检测，也可手动指定。换模型时需更新并重新生成向量。</p>
+            <p className="m-0 text-[11px] text-muted-foreground">
+              首次使用会自动检测，也可手动指定。换模型时需更新并重新生成向量。
+            </p>
           </div>
         )}
 
-        {key === 'bot' && (
+        {key === "bot" && (
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-medium text-muted-foreground">模型能力</label>
-            <p className="m-0 text-[10px] text-muted-foreground">保存时会自动检测，也可手动覆盖。</p>
+            <div className="flex items-center gap-1.5">
+              <label className="text-[11px] font-medium text-muted-foreground">
+                模型能力
+              </label>
+              {detectingCaps[key] && (
+                <Loader size={10} className="spin text-muted-foreground" />
+              )}
+            </div>
+            <p className="m-0 text-[10px] text-muted-foreground">
+              选择模型后自动检测，也可手动覆盖。
+            </p>
             <div className="flex gap-4">
-              <label className="flex items-center gap-1.5 text-[12px] text-foreground cursor-pointer">
+              <label className="flex cursor-pointer items-center gap-1.5 text-[12px] text-foreground">
                 <input
                   type="checkbox"
                   checked={f.supportsVision}
-                  onChange={(e) => setFormField(key, { supportsVision: e.target.checked })}
+                  onChange={(e) =>
+                    setFormField(key, { supportsVision: e.target.checked })
+                  }
                 />
                 图片输入
               </label>
-              <label className="flex items-center gap-1.5 text-[12px] text-foreground cursor-pointer">
+              <label className="flex cursor-pointer items-center gap-1.5 text-[12px] text-foreground">
                 <input
                   type="checkbox"
                   checked={f.supportsThinking}
-                  onChange={(e) => setFormField(key, { supportsThinking: e.target.checked })}
+                  onChange={(e) =>
+                    setFormField(key, { supportsThinking: e.target.checked })
+                  }
                 />
                 心路历程
               </label>
@@ -319,30 +447,41 @@ export default function AIConfigPanel() {
         )}
 
         <button
-          className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors cursor-pointer hover:bg-primary/80 disabled:opacity-50"
+          className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-50"
           disabled={saving[key]}
           onClick={() => save(key)}
         >
-          {saving[key] ? <Loader size={14} className="spin" /> : <span>保存{key === 'bot' ? ' Bot' : ' Embedding'} 配置</span>}
+          {saving[key] ? (
+            <Loader size={14} className="spin" />
+          ) : (
+            <span>保存{key === "bot" ? " Bot" : " Embedding"} 配置</span>
+          )}
         </button>
       </div>
     )
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card">
+    <div className="border-b border-border">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
           <Sparkles size={16} />
           AI 模型配置
         </h3>
-        <button className="border-none bg-transparent text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors" onClick={loadConfig}>刷新</button>
+        <button
+          className="cursor-pointer border-none bg-transparent text-xs text-muted-foreground transition-colors hover:text-foreground"
+          onClick={loadConfig}
+        >
+          刷新
+        </button>
       </div>
       <div className="px-3 py-3 sm:px-4">
-        {loading ? <div className="skeleton h-30" /> : (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {renderCard('bot', 'Bot 模型')}
-            {renderCard('embedding', 'Embedding 模型')}
+        {loading ? (
+          <div className="skeleton h-30" />
+        ) : (
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {renderCard("bot", "Bot 模型")}
+            {renderCard("embedding", "Embedding 模型")}
           </div>
         )}
       </div>
