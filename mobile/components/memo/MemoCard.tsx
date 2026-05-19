@@ -30,7 +30,7 @@ export function MemoCard({
   memo,
   onPress,
   onDelete,
-  showActions = true,
+  showActions = false,
   showTimestamp = true,
   isSelected = false,
   showPressFeedback = true,
