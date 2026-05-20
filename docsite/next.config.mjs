@@ -12,6 +12,9 @@ const config = {
     },
     basePath: '/Mosaic',
   }),
+  env: {
+    NEXT_PUBLIC_BASE_PATH: process.env.STATIC_EXPORT === 'true' ? '/Mosaic' : '',
+  },
   turbopack: {
     root: process.cwd(),
   },
