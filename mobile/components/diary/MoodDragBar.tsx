@@ -1,7 +1,9 @@
 import { MOOD_INTENSITY_LEVELS } from '@/constants/common'
 import { useThemeStore } from '@/stores/themeStore'
-import { useRef } from 'react'
-import { LayoutChangeEvent, PanResponder, StyleSheet, View } from 'react-native'
+import { useEffect } from 'react'
+import { StyleSheet, View } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
 
 interface MoodDragBarProps {
   value: number
@@ -14,75 +16,85 @@ interface MoodDragBarProps {
 export function MoodDragBar({
   value,
   onChange,
-  disabled,
+  disabled = false,
   min = 1,
   max = MOOD_INTENSITY_LEVELS,
 }: MoodDragBarProps) {
   const { theme } = useThemeStore()
 
-  const trackWidthRef = useRef(0)
-  const valueRef = useRef(value)
-  const startValueRef = useRef(value)
-
-  valueRef.current = value
   const range = max - min
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => !disabled,
-      onMoveShouldSetPanResponder: () => !disabled,
-      onPanResponderTerminationRequest: () => false,
+  const positionRatio = useSharedValue(range > 0 ? (value - min) / range : 0)
+  const startRatio = useSharedValue(0)
+  const trackWidth = useSharedValue(0)
+  const valueRef = useSharedValue(value)
 
-      onPanResponderGrant: () => {
-        startValueRef.current = valueRef.current
-      },
+  // Sync external value changes
+  useEffect(() => {
+    positionRatio.value = range > 0 ? (value - min) / range : 0
+    valueRef.value = value
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, min, range])
 
-      onPanResponderMove: (_, gestureState) => {
-        if (trackWidthRef.current === 0) return
-
-        const deltaRatio = gestureState.dx / trackWidthRef.current
-        const deltaValue = deltaRatio * range
-
-        const newValue = Math.round(startValueRef.current + deltaValue)
-        const clampedValue = Math.max(min, Math.min(max, newValue))
-
-        if (clampedValue !== valueRef.current) {
-          onChange(clampedValue)
-        }
-      },
+  const panGesture = Gesture.Pan()
+    .enabled(!disabled)
+    .onBegin(() => {
+      'worklet'
+      startRatio.value = positionRatio.value
     })
-  ).current
+    .onUpdate(e => {
+      'worklet'
+      if (trackWidth.value === 0) return
+      const delta = e.translationX / trackWidth.value
+      const newRatio = Math.max(0, Math.min(1, startRatio.value + delta))
+      positionRatio.value = newRatio
+      const newValue = Math.round(min + newRatio * range)
+      const clampedValue = Math.max(min, Math.min(max, newValue))
+      if (clampedValue !== valueRef.value) {
+        valueRef.value = clampedValue
+        runOnJS(onChange)(clampedValue)
+      }
+    })
 
-  const handleLayout = (e: LayoutChangeEvent) => {
-    trackWidthRef.current = e.nativeEvent.layout.width
-  }
+  const fillStyle = useAnimatedStyle(() => ({
+    width: `${positionRatio.value * 100}%`,
+  }))
 
-  const percentage = range > 0 ? ((value - min) / range) * 100 : 0
+  const thumbStyle = useAnimatedStyle(() => ({
+    left: `${positionRatio.value * 100}%`,
+  }))
 
   return (
-    <View style={styles.container} onLayout={handleLayout} {...panResponder.panHandlers}>
-      <View style={[styles.track, { backgroundColor: theme.border }]} />
-
+    <GestureDetector gesture={panGesture}>
       <View
-        style={[
-          styles.fill,
-          {
-            backgroundColor: theme.primary,
-            width: `${percentage}%`,
-          },
-        ]}
-      />
+        style={styles.container}
+        onLayout={e => {
+          trackWidth.value = e.nativeEvent.layout.width
+        }}
+      >
+        <View style={[styles.track, { backgroundColor: theme.border }]} />
 
-      <View
-        style={[
-          styles.thumb,
-          {
-            backgroundColor: theme.primary,
-            left: `${percentage}%`,
-          },
-        ]}
-      />
-    </View>
+        <Animated.View
+          style={[
+            styles.fill,
+            {
+              backgroundColor: theme.primary,
+            },
+            fillStyle,
+          ]}
+        />
+
+        <Animated.View
+          style={[
+            styles.thumb,
+            {
+              backgroundColor: theme.primary,
+            },
+            thumbStyle,
+          ]}
+        />
+      </View>
+    </GestureDetector>
   )
 }
 

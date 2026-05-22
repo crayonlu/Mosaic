@@ -12,6 +12,7 @@ export function useCustomPushCount() {
       const pushes = await customPushStorage.getAllPushes()
       return pushes.length
     },
+    staleTime: Infinity,
   })
 }
 
@@ -19,6 +20,7 @@ export function useCustomPushList() {
   return useQuery({
     queryKey: CUSTOM_PUSH_KEY,
     queryFn: () => customPushStorage.getAllPushes(),
+    staleTime: Infinity,
   })
 }
 
@@ -55,7 +57,6 @@ export function useSaveCustomPush() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CUSTOM_PUSH_KEY })
-      queryClient.invalidateQueries({ queryKey: CUSTOM_PUSH_COUNT_KEY })
     },
   })
 }
@@ -71,7 +72,6 @@ export function useDeleteCustomPush() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CUSTOM_PUSH_KEY })
-      queryClient.invalidateQueries({ queryKey: CUSTOM_PUSH_COUNT_KEY })
     },
   })
 }

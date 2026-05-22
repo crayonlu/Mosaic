@@ -61,12 +61,14 @@ export function useUnarchiveMemo() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => memosApi.unarchive(id),
-    onSuccess: (_, id) => {
+    mutationFn: ({ id, diaryDate }: { id: string; diaryDate?: string }) => memosApi.unarchive(id),
+    onSuccess: (_, { id, diaryDate }) => {
       queryClient.invalidateQueries({ queryKey: ['memo', id] })
       queryClient.invalidateQueries({ queryKey: ['memos'] })
       queryClient.invalidateQueries({ queryKey: ['diaries'] })
-      queryClient.invalidateQueries({ queryKey: ['diary'] })
+      if (diaryDate) {
+        queryClient.invalidateQueries({ queryKey: ['diary', diaryDate] })
+      }
     },
   })
 }

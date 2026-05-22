@@ -2,7 +2,7 @@ import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
 import { ImageOff, Play, VideoOff, X } from 'lucide-react-native'
 import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { withAlpha } from './mediaPreviewUtils'
 import type { MediaGridItem } from './types'
@@ -40,11 +40,11 @@ export function MediaGridTile({
     setImageError(false)
   }, [previewUri, previewHeaders])
 
-  const uploadOverlayColor = withAlpha(theme.background, 0.14)
-  const progressTrackColor = withAlpha(theme.surface, 0.9)
-  const videoBadgeColor = withAlpha(theme.background, 0.7)
-  const videoBadgeIconColor = withAlpha(theme.text, 0.98)
-  const loadingBgColor = withAlpha(theme.surface, 0.9)
+  const uploadOverlayColor = useMemo(() => withAlpha(theme.background, 0.14), [theme.background])
+  const progressTrackColor = useMemo(() => withAlpha(theme.surface, 0.9), [theme.surface])
+  const videoBadgeColor = useMemo(() => withAlpha(theme.background, 0.7), [theme.background])
+  const videoBadgeIconColor = useMemo(() => withAlpha(theme.text, 0.98), [theme.text])
+  const loadingBgColor = useMemo(() => withAlpha(theme.surface, 0.9), [theme.surface])
   const isUploading = typeof uploadProgress === 'number'
 
   const content = (
@@ -60,6 +60,8 @@ export function MediaGridTile({
           source={{ uri: previewUri, headers: previewHeaders }}
           style={styles.image}
           contentFit="cover"
+          transition={150}
+          cachePolicy="memory-disk"
           onError={() => setImageError(true)}
         />
       ) : (

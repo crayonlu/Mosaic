@@ -1,8 +1,8 @@
 import { mmkvZustandStorage } from '@/lib/storage/mmkv'
 import { useThemeStore } from '@/stores/themeStore'
 import { X } from 'lucide-react-native'
-import { useEffect, useRef } from 'react'
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import Animated, { FadeOut, ZoomIn } from 'react-native-reanimated'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
@@ -117,43 +117,6 @@ function Toast({
     }
   }
 }) {
-  const fadeAnim = useRef(new Animated.Value(0)).current
-  const scaleAnim = useRef(new Animated.Value(0.8)).current
-
-  useEffect(() => {
-    // Parallel animations: fade in and scale up
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-    ]).start()
-
-    return () => {
-      // Fade out and scale down
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.8,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast.id])
-
   const getSemanticColor = () => {
     switch (toast.type) {
       case 'success':
@@ -212,13 +175,13 @@ function Toast({
 
   return (
     <Animated.View
+      entering={ZoomIn.springify().damping(12).stiffness(100)}
+      exiting={FadeOut.duration(200)}
       style={[
         styles.toastContainer,
         {
           backgroundColor: palette.containerBackground,
           borderColor: palette.containerBorder,
-          opacity: fadeAnim,
-          transform: [{ scale: scaleAnim }],
         },
       ]}
     >

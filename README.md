@@ -2,6 +2,8 @@
 
 [简体中文](./README.zh.md) | English
 
+[![wakatime](https://wakatime.com/badge/user/493754fa-a87a-40a4-afc6-62a4b8f68adf/project/710ea744-a133-41a8-aa19-785c3c6a1355.svg)](https://wakatime.com/badge/user/493754fa-a87a-40a4-afc6-62a4b8f68adf/project/710ea744-a133-41a8-aa19-785c3c6a1355)
+
 > "Reintegrate the scattered fragments of oneself"
 
 A digital second brain that combines note-taking with emotional visualization, helping you record thoughts, track moods, and integrate the scattered fragments of daily life.

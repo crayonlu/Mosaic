@@ -1,13 +1,25 @@
 import type { Theme } from '@/constants/theme'
 import { useThemeStore } from '@/stores/themeStore'
-import { common, createLowlight } from 'lowlight'
+import bash from 'highlight.js/lib/languages/bash'
+import css from 'highlight.js/lib/languages/css'
+import javascript from 'highlight.js/lib/languages/javascript'
+import json from 'highlight.js/lib/languages/json'
+import python from 'highlight.js/lib/languages/python'
+import sql from 'highlight.js/lib/languages/sql'
+import typescript from 'highlight.js/lib/languages/typescript'
+import xml from 'highlight.js/lib/languages/xml'
+import { createLowlight } from 'lowlight'
 import taskLists from 'markdown-it-task-lists'
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import Markdown, { MarkdownIt } from 'react-native-markdown-display'
 
 const lowlight = createLowlight()
-lowlight.register(common)
+lowlight.register({ javascript, typescript, python, bash, json, sql, css, xml })
+
+const sharedMarkdownIt = MarkdownIt({ html: false, typographer: true, breaks: true, linkify: true })
+sharedMarkdownIt.use(taskLists, { enabled: true, label: true, labelAfter: false })
+sharedMarkdownIt.enable(['table'])
 
 type CodeSegment = {
   text: string
@@ -45,10 +57,11 @@ function collectSegments(node: any, activeToken: string | undefined, segments: C
 
 function getCodeSegments(code: string, language: string): CodeSegment[] {
   const normalizedLanguage = language.trim().toLowerCase()
-  const canHighlight = normalizedLanguage && lowlight.registered(normalizedLanguage)
-  const tree = canHighlight
-    ? lowlight.highlight(normalizedLanguage, code)
-    : lowlight.highlightAuto(code)
+  if (!normalizedLanguage || !lowlight.registered(normalizedLanguage)) {
+    return [{ text: code }]  // no auto-scan
+  }
+
+  const tree = lowlight.highlight(normalizedLanguage, code)
 
   const segments: CodeSegment[] = []
   for (const child of tree.children ?? []) {
@@ -175,7 +188,7 @@ interface MarkdownRendererProps {
   style?: object
 }
 
-export function MarkdownRenderer({ content, style }: MarkdownRendererProps) {
+export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, style }: MarkdownRendererProps) {
   const { theme } = useThemeStore()
 
   if (!content || content.trim().length === 0) {
@@ -183,9 +196,9 @@ export function MarkdownRenderer({ content, style }: MarkdownRendererProps) {
   }
 
   return <MarkdownContent content={content} theme={theme} style={style} />
-}
+})
 
-function MarkdownContent({
+const MarkdownContent = React.memo(function MarkdownContent({
   content,
   theme,
   style,
@@ -194,19 +207,6 @@ function MarkdownContent({
   theme: Theme
   style?: object
 }) {
-  const markdownIt = useMemo(() => {
-    const parser = MarkdownIt({
-      html: false,
-      typographer: true,
-      breaks: true,
-      linkify: true,
-    })
-
-    parser.use(taskLists, { enabled: true, label: true, labelAfter: false })
-    parser.enable(['table'])
-    return parser
-  }, [])
-
   const markdownText = useMemo(
     () =>
       normalizeMarkdownForRender(content)
@@ -277,90 +277,95 @@ function MarkdownContent({
     [theme]
   )
 
+  const rules = useMemo(
+    () => ({
+      hr: (node: any) => (
+        <View key={node.key} style={[styles.hr, { backgroundColor: theme.border }]} />
+      ),
+      blockquote: (node: any, children: any) => (
+        <View key={node.key} style={styles.blockquoteContainer}>
+          <View style={[styles.blockquoteBar, { backgroundColor: theme.border }]} />
+          <View style={styles.blockquoteContent}>{children}</View>
+        </View>
+      ),
+      table: (node: any, children: any) => (
+        <ScrollView
+          key={node.key}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.tableScroll}
+        >
+          <View style={[styles.tableContainer, { borderColor: theme.border }]}>{children}</View>
+        </ScrollView>
+      ),
+      thead: (node: any, children: any) => <View key={node.key}>{children}</View>,
+      tbody: (node: any, children: any) => <View key={node.key}>{children}</View>,
+      tr: (node: any, children: any) => (
+        <View key={node.key} style={[styles.tableRow, { borderBottomColor: theme.border }]}>
+          {children}
+        </View>
+      ),
+      th: (node: any, children: any) => (
+        <View
+          key={node.key}
+          style={[
+            styles.tableCell,
+            styles.tableHeaderCell,
+            { borderRightColor: theme.border, backgroundColor: theme.surfaceMuted },
+          ]}
+        >
+          <Text style={[styles.tableHeaderText, { color: theme.text }]}>{children}</Text>
+        </View>
+      ),
+      td: (node: any, children: any) => (
+        <View key={node.key} style={[styles.tableCell, { borderRightColor: theme.border }]}>
+          <Text style={[styles.tableCellText, { color: theme.text }]}>{children}</Text>
+        </View>
+      ),
+      code_inline: (node: any) => {
+        const value = String((node as any).content ?? '')
+        return (
+          <Text
+            key={node.key}
+            style={[
+              styles.inlineCode,
+              {
+                backgroundColor: theme.textSecondary + '20',
+                color: theme.text,
+                fontFamily: theme.fontFamilyMono,
+              },
+            ]}
+          >
+            {'\u00A0'}
+            {value}
+            {'\u00A0'}
+          </Text>
+        )
+      },
+      fence: (node: any, _children: any, _parent: any, _styles: any) => {
+        const language = (node as any).sourceInfo?.trim()?.split(/\s+/)[0] || 'text'
+        const code = node.content || ''
+        return <CodeBlock key={node.key} language={language} code={code} theme={theme} />
+      },
+      code_block: (node: any, _children: any, _parent: any, _styles: any) => (
+        <CodeBlock key={node.key} language="text" code={node.content || ''} theme={theme} />
+      ),
+    }),
+    [theme]
+  )
+
   return (
     <View style={[styles.container, style]}>
       <Markdown
-        markdownit={markdownIt}
+        markdownit={sharedMarkdownIt}
         style={markdownStyles as any}
-        rules={{
-          hr: node => (
-            <View key={node.key} style={[styles.hr, { backgroundColor: theme.border }]} />
-          ),
-          blockquote: (node, children) => (
-            <View key={node.key} style={styles.blockquoteContainer}>
-              <View style={[styles.blockquoteBar, { backgroundColor: theme.border }]} />
-              <View style={styles.blockquoteContent}>{children}</View>
-            </View>
-          ),
-          table: (node, children) => (
-            <ScrollView
-              key={node.key}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.tableScroll}
-            >
-              <View style={[styles.tableContainer, { borderColor: theme.border }]}>{children}</View>
-            </ScrollView>
-          ),
-          thead: (node, children) => <View key={node.key}>{children}</View>,
-          tbody: (node, children) => <View key={node.key}>{children}</View>,
-          tr: (node, children) => (
-            <View key={node.key} style={[styles.tableRow, { borderBottomColor: theme.border }]}>
-              {children}
-            </View>
-          ),
-          th: (node, children) => (
-            <View
-              key={node.key}
-              style={[
-                styles.tableCell,
-                styles.tableHeaderCell,
-                { borderRightColor: theme.border, backgroundColor: theme.surfaceMuted },
-              ]}
-            >
-              <Text style={[styles.tableHeaderText, { color: theme.text }]}>{children}</Text>
-            </View>
-          ),
-          td: (node, children) => (
-            <View key={node.key} style={[styles.tableCell, { borderRightColor: theme.border }]}>
-              <Text style={[styles.tableCellText, { color: theme.text }]}>{children}</Text>
-            </View>
-          ),
-          code_inline: node => {
-            const value = String((node as any).content ?? '')
-            return (
-              <Text
-                key={node.key}
-                style={[
-                  styles.inlineCode,
-                  {
-                    backgroundColor: theme.textSecondary + '20',
-                    color: theme.text,
-                    fontFamily: theme.fontFamilyMono,
-                  },
-                ]}
-              >
-                {'\u00A0'}
-                {value}
-                {'\u00A0'}
-              </Text>
-            )
-          },
-          fence: (node, _children, _parent, _styles) => {
-            const language = (node as any).sourceInfo?.trim()?.split(/\s+/)[0] || 'text'
-            const code = node.content || ''
-            return <CodeBlock key={node.key} language={language} code={code} theme={theme} />
-          },
-          code_block: (node, _children, _parent, _styles) => (
-            <CodeBlock key={node.key} language="text" code={node.content || ''} theme={theme} />
-          ),
-        }}
+        rules={rules}
       >
         {markdownText}
       </Markdown>
     </View>
   )
-}
+})
 
 const styles = StyleSheet.create({
   container: {

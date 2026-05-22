@@ -27,9 +27,9 @@ export function MediaPreviewModal({ items, initialIndex, onRequestClose }: Media
   const pagerRef = useRef<PagerView>(null)
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const [isImageZoomActive, setIsImageZoomActive] = useState(false)
-  const debugSetZoomActive = (val: boolean) => {
+  const handleZoomActiveChange = useCallback((val: boolean) => {
     setIsImageZoomActive(val)
-  }
+  }, [])
   const overlayColor = useMemo(() => withAlpha(theme.background, 0.96), [theme.background])
   const closeButtonColor = useMemo(() => withAlpha(theme.surface, 0.82), [theme.surface])
   const closeButtonPressedColor = useMemo(() => withAlpha(theme.surface, 0.96), [theme.surface])
@@ -64,28 +64,35 @@ export function MediaPreviewModal({ items, initialIndex, onRequestClose }: Media
             scrollEnabled={items.length > 1 && !isImageZoomActive}
             onPageSelected={handlePageSelected}
           >
-            {items.map((item, index) => (
-              <View key={item.item.key} style={styles.page}>
-                {item.item.type === 'image' ? (
-                  <ImagePreviewContent
-                    uri={item.previewUri}
-                    headers={item.previewHeaders}
-                    lowQualityUri={item.previewLowQualityUri}
-                    lowQualityHeaders={item.previewLowQualityHeaders}
-                    isActive={index === currentIndex}
-                    onZoomActiveChange={index === currentIndex ? debugSetZoomActive : undefined}
-                  />
-                ) : (
-                  <VideoPreviewContent
-                    uri={item.previewUri}
-                    headers={item.previewHeaders}
-                    thumbnailUri={item.previewThumbnailUri}
-                    thumbnailHeaders={item.previewThumbnailHeaders}
-                    isActive={index === currentIndex}
-                  />
-                )}
-              </View>
-            ))}
+            {items.map((item, index) => {
+              const isNearby = Math.abs(index - currentIndex) <= 1
+              return (
+                <View key={item.item.key} style={styles.page}>
+                  {isNearby ? (
+                    item.item.type === 'image' ? (
+                      <ImagePreviewContent
+                        uri={item.previewUri}
+                        headers={item.previewHeaders}
+                        lowQualityUri={item.previewLowQualityUri}
+                        lowQualityHeaders={item.previewLowQualityHeaders}
+                        isActive={index === currentIndex}
+                        onZoomActiveChange={index === currentIndex ? handleZoomActiveChange : undefined}
+                      />
+                    ) : (
+                      <VideoPreviewContent
+                        uri={item.previewUri}
+                        headers={item.previewHeaders}
+                        thumbnailUri={item.previewThumbnailUri}
+                        thumbnailHeaders={item.previewThumbnailHeaders}
+                        isActive={index === currentIndex}
+                      />
+                    )
+                  ) : (
+                    <View style={styles.page} />
+                  )}
+                </View>
+              )
+            })}
           </PagerView>
 
           <View style={styles.chromeLayer} pointerEvents="box-none">

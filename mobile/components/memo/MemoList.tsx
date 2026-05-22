@@ -4,9 +4,14 @@ import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
 import { FileX } from 'lucide-react-native'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { MemoCard } from './MemoCard'
+
+const ListMemoCard = React.memo(function ListMemoCard({ memo, onPress, onDelete }: { memo: MemoWithResources; onPress: (memo: MemoWithResources) => void; onDelete: (id: string) => void }) {
+  const handlePress = useCallback(() => onPress(memo), [memo, onPress])
+  return <MemoCard memo={memo} onPress={handlePress} onDelete={onDelete} />
+})
 
 interface MemoListProps {
   date?: string
@@ -107,7 +112,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
       .sort((a, b) => b.date.localeCompare(a.date))
   }, [memos, date])
 
-  const renderDateHeader = (displayDate: string, count: number, isFirst: boolean) => (
+  const renderDateHeader = useCallback((displayDate: string, count: number, isFirst: boolean) => (
     <View
       style={[
         styles.dateHeader,
@@ -120,9 +125,9 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
         <Text style={[styles.dateHeaderCount, { color: theme.textSecondary }]}>{count} 条Memo</Text>
       )}
     </View>
-  )
+  ), [theme.border, theme.text, theme.textSecondary])
 
-  const renderEmptyState = () => (
+  const renderEmptyState = useMemo(() => (
     <View style={styles.emptyContainer}>
       <View style={[styles.emptyIcon, { backgroundColor: theme.semantic.infoSoft }]}>
         <FileX size={48} color={theme.primary} strokeWidth={1.5} />
@@ -134,9 +139,9 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
         {date ? '点击下方按钮创建你的第一条Memo' : '开始记录你的想法和灵感'}
       </Text>
     </View>
-  )
+  ), [date, theme.semantic.infoSoft, theme.primary, theme.text, theme.textSecondary])
 
-  const renderGroup = ({
+  const renderGroup = useCallback(({
     item: group,
     index,
   }: {
@@ -146,17 +151,17 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
     <View key={group.date}>
       {renderDateHeader(group.displayDate, group.memos.length, index === 0)}
       {group.memos.map(memo => (
-        <MemoCard
+        <ListMemoCard
           key={memo.id}
           memo={memo}
-          onPress={() => onMemoPress(memo)}
+          onPress={onMemoPress}
           onDelete={handleDelete}
         />
       ))}
     </View>
-  )
+  ), [renderDateHeader, onMemoPress, handleDelete])
 
-  const renderFooter = () => {
+  const renderFooter = useMemo(() => {
     if (memos.length === 0) return null
     if (!hasMore) {
       return (
@@ -175,7 +180,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
     }
 
     return null
-  }
+  }, [memos.length, hasMore, isFetchingNextPage, theme.textSecondary, theme.primary])
 
   if (isLoading) {
     const HeaderComponent = headerComponent

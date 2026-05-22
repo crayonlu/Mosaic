@@ -1,27 +1,26 @@
 import { getAIConfig, type AIConfig } from '@/lib/ai'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 export function useAIConfig() {
   const [config, setConfig] = useState<AIConfig | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isAIEnabled, setIsAIEnabled] = useState(false)
 
-  useEffect(() => {
-    loadAIConfig()
-  }, [])
-
-  const loadAIConfig = async () => {
+  const loadAIConfig = useCallback(async () => {
     try {
-      const config = await getAIConfig()
-      setConfig(config)
-      setIsAIEnabled(!!config.apiKey?.trim())
+      const loaded = await getAIConfig()
+      setConfig(loaded)
     } catch (error) {
       console.error('Failed to load AI config:', error)
-      setIsAIEnabled(false)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadAIConfig()
+  }, [loadAIConfig])
+
+  const isAIEnabled = useMemo(() => !!config?.apiKey?.trim(), [config])
 
   return {
     config,

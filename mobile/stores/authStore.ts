@@ -75,7 +75,10 @@ export const useAuthStore = create<AuthStore>()(
           apiClient.setBaseUrl(serverUrl)
 
           try {
-            const user = await authApi.me()
+            const timeoutPromise = new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('Auth timeout')), 8000)
+            )
+            const user = await Promise.race([authApi.me(), timeoutPromise])
             set({
               isAuthenticated: true,
               isInitialized: true,
@@ -100,7 +103,7 @@ export const useAuthStore = create<AuthStore>()(
               return
             }
 
-            // Keep session state during transient startup failures (network/race),
+            // Keep session state during transient startup failures (network/race/timeout),
             // so users are not incorrectly redirected to setup.
             set({
               isAuthenticated: true,

@@ -1,12 +1,15 @@
 import { statsApi } from '@mosaic/api'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
+import { useMemo } from 'react'
 
 export function useStats() {
-  const now = new Date()
+  const year = useMemo(() => new Date().getFullYear(), [])
+  const month = useMemo(() => new Date().getMonth() + 1, [])
   return useQuery({
-    queryKey: ['stats', now.getFullYear(), now.getMonth() + 1],
-    queryFn: () => statsApi.getSummary({ year: now.getFullYear(), month: now.getMonth() + 1 }),
+    queryKey: ['stats', year, month],
+    queryFn: () => statsApi.getSummary({ year, month }),
+    staleTime: 5 * 60 * 1000,
   })
 }
 

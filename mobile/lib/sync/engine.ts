@@ -1,4 +1,5 @@
 import { createSyncEngine, type SyncStatus } from '@mosaic/sync'
+import { mmkv } from '@/lib/storage/mmkv'
 import { createMobileSyncApiAdapter } from './apiAdapter'
 import { createMobileSyncStoreAdapter } from './storeAdapter'
 
@@ -13,14 +14,14 @@ function generateClientId(): string {
 function getOrCreateClientId(): string {
   if (cachedClientId) return cachedClientId
 
-  const stored = globalThis.localStorage?.getItem(CLIENT_ID_KEY)
+  const stored = mmkv.getString(CLIENT_ID_KEY)
   if (stored) {
     cachedClientId = stored
     return stored
   }
 
   const id = generateClientId()
-  globalThis.localStorage?.setItem(CLIENT_ID_KEY, id)
+  mmkv.set(CLIENT_ID_KEY, id)
   cachedClientId = id
   return id
 }

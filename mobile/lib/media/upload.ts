@@ -7,6 +7,7 @@ import {
   type UploadProgress,
 } from '@mosaic/api'
 import * as FileSystem from 'expo-file-system/legacy'
+import * as ImageManipulator from 'expo-image-manipulator'
 import type { ImagePickerAsset } from 'expo-image-picker'
 import { getThumbnailAsync } from 'expo-video-thumbnails'
 
@@ -63,8 +64,21 @@ async function resolveUploadUri(item: SelectedMediaItem): Promise<string> {
   return destinationUri
 }
 
+async function compressImageForUpload(uri: string): Promise<string> {
+  const result = await ImageManipulator.manipulateAsync(
+    uri,
+    [{ resize: { width: 2048 } }],
+    { compress: 0.82, format: ImageManipulator.SaveFormat.JPEG }
+  )
+  return result.uri
+}
+
 async function createNativeUploadFile(item: SelectedMediaItem): Promise<NativeUploadFile> {
-  const uri = await resolveUploadUri(item)
+  let uri = await resolveUploadUri(item)
+
+  if (item.type === 'image') {
+    uri = await compressImageForUpload(uri)
+  }
 
   return {
     uri,
@@ -115,32 +129,33 @@ async function getVideoThumbnailUri(
 export async function createSelectedMediaItems(
   assets: ImagePickerAsset[]
 ): Promise<SelectedMediaItem[]> {
-  return Promise.all(
-    assets.map(async asset => {
-      const type = getAssetType(asset)
-      const filename = buildFilename(asset, type)
-      const mimeType = buildMimeType(asset, type)
-      const durationMs = asset.duration ?? undefined
-      const thumbnailUri =
-        type === 'video' ? await getVideoThumbnailUri(asset, durationMs) : undefined
+  // Process sequentially to avoid OOM from simultaneous video decoding
+  const results: SelectedMediaItem[] = []
+  for (const asset of assets) {
+    const type = getAssetType(asset)
+    const filename = buildFilename(asset, type)
+    const mimeType = buildMimeType(asset, type)
+    const durationMs = asset.duration ?? undefined
+    const thumbnailUri =
+      type === 'video' ? await getVideoThumbnailUri(asset, durationMs) : undefined
 
-      return {
-        key: asset.assetId ?? `${filename}-${asset.uri}`,
-        uri: asset.uri,
-        type,
-        thumbnailUri,
-        filename,
-        mimeType,
-        fileSize: asset.fileSize ?? undefined,
-        metadata: {
-          width: asset.width,
-          height: asset.height,
-          durationMs,
-          thumbnailTimeMs: durationMs ? Math.min(Math.max(durationMs / 2, 250), 1500) : undefined,
-        },
-      }
+    results.push({
+      key: asset.assetId ?? `${filename}-${asset.uri}`,
+      uri: asset.uri,
+      type,
+      thumbnailUri,
+      filename,
+      mimeType,
+      fileSize: asset.fileSize ?? undefined,
+      metadata: {
+        width: asset.width,
+        height: asset.height,
+        durationMs,
+        thumbnailTimeMs: durationMs ? Math.min(Math.max(durationMs / 2, 250), 1500) : undefined,
+      },
     })
-  )
+  }
+  return results
 }
 
 export async function uploadSelectedMedia(
@@ -162,32 +177,44 @@ export async function uploadSelectedMedia(
     }))
   )
 
-  return uploadResourceFiles(entries, {
-    memoId: options.memoId,
-    resolveMetadata: (_file, entry) => metadataById.get(entry.id),
-    onFileStart: entry => {
-      const item = itemsById.get(entry.id)
-      if (item) {
-        options.onFileStart?.(item)
-      }
-    },
-    onFileProgress: (entry, progress) => {
-      const item = itemsById.get(entry.id)
-      if (item) {
-        options.onFileProgress?.(item, progress)
-      }
-    },
-    onFileComplete: (entry, resource) => {
-      const item = itemsById.get(entry.id)
-      if (item) {
-        options.onFileComplete?.(item, resource)
-      }
-    },
-    onFileError: (entry, error) => {
-      const item = itemsById.get(entry.id)
-      if (item) {
-        options.onFileError?.(item, error)
-      }
-    },
-  })
+  // Track temp URIs for cleanup
+  const tempUris = entries
+    .map(entry => entry.file.uri)
+    .filter(uri => uri.includes('mosaic-upload-cache/'))
+
+  try {
+    return await uploadResourceFiles(entries, {
+      memoId: options.memoId,
+      resolveMetadata: (_file, entry) => metadataById.get(entry.id),
+      onFileStart: entry => {
+        const item = itemsById.get(entry.id)
+        if (item) {
+          options.onFileStart?.(item)
+        }
+      },
+      onFileProgress: (entry, progress) => {
+        const item = itemsById.get(entry.id)
+        if (item) {
+          options.onFileProgress?.(item, progress)
+        }
+      },
+      onFileComplete: (entry, resource) => {
+        const item = itemsById.get(entry.id)
+        if (item) {
+          options.onFileComplete?.(item, resource)
+        }
+      },
+      onFileError: (entry, error) => {
+        const item = itemsById.get(entry.id)
+        if (item) {
+          options.onFileError?.(item, error)
+        }
+      },
+    })
+  } finally {
+    // Clean up temp files from mosaic-upload-cache
+    for (const tempUri of tempUris) {
+      FileSystem.deleteAsync(tempUri, { idempotent: true }).catch(() => {})
+    }
+  }
 }

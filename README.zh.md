@@ -2,6 +2,8 @@
 
 [English](./README.md) | 简体中文
 
+[![wakatime](https://wakatime.com/badge/user/493754fa-a87a-40a4-afc6-62a4b8f68adf/project/710ea744-a133-41a8-aa19-785c3c6a1355.svg)](https://wakatime.com/badge/user/493754fa-a87a-40a4-afc6-62a4b8f68adf/project/710ea744-a133-41a8-aa19-785c3c6a1355)
+
 > "整合自己散落的碎片"
 
 一款结合笔记与情感可视化的数字第二大脑，帮助你记录思绪、追踪情绪、整合琐碎的生活碎片

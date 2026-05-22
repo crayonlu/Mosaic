@@ -3,7 +3,22 @@ import { MemoListSkeleton } from '@/components/ui'
 import { useThemeStore } from '@/stores/themeStore'
 import type { Memo } from '@mosaic/api'
 import { FileX, Search } from 'lucide-react-native'
+import React, { useCallback, useMemo } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
+
+const SearchMemoCard = React.memo(function SearchMemoCard({ item, onPress, onDelete, semanticEnabled }: { item: Memo; onPress: (memo: Memo) => void; onDelete?: (id: string) => void; semanticEnabled: boolean }) {
+  const handlePress = useCallback(() => onPress(item), [item, onPress])
+  return (
+    <MemoCard
+      memo={item}
+      onPress={handlePress}
+      onDelete={onDelete}
+      showSemanticBadge={
+        semanticEnabled && (item.matchType === 'semantic' || item.matchType === 'hybrid')
+      }
+    />
+  )
+})
 
 interface SearchResultsProps {
   results: Memo[]
@@ -34,7 +49,11 @@ export function SearchResults({
 }: SearchResultsProps) {
   const { theme } = useThemeStore()
 
-  const renderEmptyState = () => {
+  const renderItem = useCallback(({ item }: { item: Memo }) => (
+    <SearchMemoCard item={item} onPress={onMemoPress} onDelete={onMemoDelete} semanticEnabled={semanticEnabled} />
+  ), [onMemoPress, onMemoDelete, semanticEnabled])
+
+  const renderEmptyState = useMemo(() => {
     if (emptyQuery) {
       return (
         <View style={styles.emptyContainer}>
@@ -60,9 +79,9 @@ export function SearchResults({
         </Text>
       </View>
     )
-  }
+  }, [emptyQuery, theme.semantic.infoSoft, theme.semantic.warningSoft, theme.primary, theme.text, theme.textSecondary])
 
-  const renderFooter = () => {
+  const renderFooter = useMemo(() => {
     if (!hasMore && results.length > 0) {
       return (
         <View style={styles.footer}>
@@ -82,31 +101,27 @@ export function SearchResults({
     }
 
     return null
-  }
+  }, [hasMore, results.length, refreshing, theme.textSecondary, theme.primary])
 
   if (loading && results.length === 0) {
     return <MemoListSkeleton count={6} />
   }
 
   if (results.length === 0) {
-    return renderEmptyState()
+    return renderEmptyState
   }
 
   return (
     <FlatList
       data={results}
-      renderItem={({ item }) => (
-        <MemoCard
-          memo={item}
-          onPress={() => onMemoPress(item)}
-          onDelete={onMemoDelete}
-          showSemanticBadge={
-            semanticEnabled && (item.matchType === 'semantic' || item.matchType === 'hybrid')
-          }
-        />
-      )}
+      renderItem={renderItem}
       keyExtractor={item => item.id}
       contentContainerStyle={styles.listContent}
+      maxToRenderPerBatch={8}
+      initialNumToRender={8}
+      windowSize={7}
+      removeClippedSubviews={true}
+      updateCellsBatchingPeriod={50}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

@@ -1,7 +1,7 @@
 import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
 import { Badge, DraggableImageGrid } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
-import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
+import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { normalizeContent } from '@/lib/utils/content'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
@@ -10,7 +10,7 @@ import { resourcesApi } from '@mosaic/api'
 import MaskedView from '@react-native-masked-view/masked-view'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Pencil, Trash2 } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native'
 
 const TEXT_MAX_HEIGHT = 160
@@ -26,7 +26,7 @@ interface MemoCardProps {
   showSemanticBadge?: boolean
 }
 
-export function MemoCard({
+export const MemoCard = React.memo(function MemoCard({
   memo,
   onPress,
   onDelete,
@@ -37,24 +37,16 @@ export function MemoCard({
   showSemanticBadge = false,
 }: MemoCardProps) {
   const { theme } = useThemeStore()
-  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
+  const authHeaders = useAuthHeaders()
   const [isOverflowing, setIsOverflowing] = useState(false)
-
-  useEffect(() => {
-    const loadAuthHeaders = async () => {
-      const headers = await getBearerAuthHeaders()
-      setAuthHeaders(headers)
-    }
-    loadAuthHeaders()
-  }, [])
 
   const handleTextLayout = useCallback((e: LayoutChangeEvent) => {
     const { height } = e.nativeEvent.layout
     setIsOverflowing(height > TEXT_MAX_HEIGHT)
   }, [])
 
-  const displayContent = normalizeContent(memo.content || '')
-  const formattedTime = stringUtils.formatRelativeTime(memo.createdAt)
+  const displayContent = useMemo(() => normalizeContent(memo.content || ''), [memo.content])
+  const formattedTime = useMemo(() => stringUtils.formatRelativeTime(memo.createdAt), [memo.createdAt])
   const mediaItems: MediaGridItem[] = useMemo(
     () =>
       (memo.resources ?? []).map(resource => ({
@@ -67,9 +59,9 @@ export function MemoCard({
     [memo.resources]
   )
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     onDelete?.(memo.id)
-  }
+  }, [onDelete, memo.id])
 
   // Card is transparent by default — uses MaskedView with alpha gradient
   // so text fades to truly transparent, never clashing with page-level
@@ -178,7 +170,23 @@ export function MemoCard({
       )}
     </Pressable>
   )
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.memo.id === nextProps.memo.id &&
+    prevProps.memo.content === nextProps.memo.content &&
+    prevProps.memo.createdAt === nextProps.memo.createdAt &&
+    prevProps.memo.revisionCount === nextProps.memo.revisionCount &&
+    prevProps.memo.resources === nextProps.memo.resources &&
+    prevProps.memo.tags === nextProps.memo.tags &&
+    prevProps.onPress === nextProps.onPress &&
+    prevProps.onDelete === nextProps.onDelete &&
+    prevProps.showActions === nextProps.showActions &&
+    prevProps.showTimestamp === nextProps.showTimestamp &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.showPressFeedback === nextProps.showPressFeedback &&
+    prevProps.showSemanticBadge === nextProps.showSemanticBadge
+  )
+})
 
 const styles = StyleSheet.create({
   container: {

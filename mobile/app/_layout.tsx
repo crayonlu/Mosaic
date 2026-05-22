@@ -74,10 +74,17 @@ function ShareIntentHandler({ children }: { children: ReactNode }) {
 }
 
 export default function RootLayout() {
-  const { theme, themeName } = useThemeStore()
-  const { currentMood, currentMoodIntensity } = useMoodStore()
-  const { isServerReachable, initialize, lastError } = useConnectionStore()
-  const { isAuthenticated, isInitialized, isLoading, initialize: initAuth } = useAuthStore()
+  const theme = useThemeStore(s => s.theme)
+  const themeName = useThemeStore(s => s.themeName)
+  const currentMood = useMoodStore(s => s.currentMood)
+  const currentMoodIntensity = useMoodStore(s => s.currentMoodIntensity)
+  const isServerReachable = useConnectionStore(s => s.isServerReachable)
+  const lastError = useConnectionStore(s => s.lastError)
+  const initialize = useConnectionStore(s => s.initialize)
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated)
+  const isInitialized = useAuthStore(s => s.isInitialized)
+  const isLoading = useAuthStore(s => s.isLoading)
+  const initAuth = useAuthStore(s => s.initialize)
   const segments = useSegments()
   const router = useRouter()
 
@@ -179,7 +186,6 @@ export default function RootLayout() {
           <SafeKeyboardProvider>
             <SafeAreaProvider>
               <View style={{ flex: 1, backgroundColor: theme.background }}>
-                {!isAppReady && <ThemeAwareSplash />}
                 <SafeAreaContainer
                   backgroundColor={isDiariesTab ? 'transparent' : theme.background}
                 >

@@ -84,19 +84,25 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
         );
       `)
 
-      // Migrations — ALTER TABLE ignores "duplicate column" errors so re-runs are safe.
-      const migrations: string[] = [
-        `ALTER TABLE diaries ADD COLUMN generation_source TEXT`,
-        `ALTER TABLE diaries ADD COLUMN auto_generation_locked INTEGER NOT NULL DEFAULT 0`,
-        `ALTER TABLE diaries ADD COLUMN generated_from_memo_ids TEXT`,
-        `ALTER TABLE diaries ADD COLUMN last_auto_generated_at INTEGER`,
-      ]
-      for (const sql of migrations) {
-        try {
-          await database.execAsync(sql)
-        } catch {
-          // Column already exists — safe to ignore.
+      // Version-gated migrations — only run ALTER TABLE on first upgrade.
+      const versionResult = await database.getFirstAsync<{ user_version: number }>('PRAGMA user_version')
+      const dbVersion = versionResult?.user_version ?? 0
+
+      if (dbVersion < 1) {
+        const migrations: string[] = [
+          `ALTER TABLE diaries ADD COLUMN generation_source TEXT`,
+          `ALTER TABLE diaries ADD COLUMN auto_generation_locked INTEGER NOT NULL DEFAULT 0`,
+          `ALTER TABLE diaries ADD COLUMN generated_from_memo_ids TEXT`,
+          `ALTER TABLE diaries ADD COLUMN last_auto_generated_at INTEGER`,
+        ]
+        for (const sql of migrations) {
+          try {
+            await database.execAsync(sql)
+          } catch {
+            // Column already exists — safe to ignore.
+          }
         }
+        await database.execAsync('PRAGMA user_version = 1')
       }
 
       db = database

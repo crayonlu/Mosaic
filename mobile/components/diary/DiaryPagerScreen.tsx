@@ -16,8 +16,8 @@ interface DiaryPagerScreenProps {
 }
 
 export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
-  const { theme } = useThemeStore()
-  const { setCurrentMood } = useMoodStore()
+  const theme = useThemeStore(s => s.theme)
+  const setCurrentMood = useMoodStore(s => s.setCurrentMood)
   const pagerRef = useRef<PagerView>(null)
   const dayPageRef = useRef<DayPageViewRef>(null)
   const currentPageRef = useRef(PREFETCH_DAYS)
@@ -25,7 +25,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
   const handledRouteDateRef = useRef<string | null>(null)
   const pendingRouteDateRef = useRef<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
-  const [editTick, setEditTick] = useState(0)
+  const [, setEditTick] = useState(0)
 
   const { currentDate, setCurrentDate, diaryQuery } = useDiaryPager({
     prefetchDays: PREFETCH_DAYS,
@@ -200,7 +200,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
       )
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [handleMemoPress, isEditing, currentDate, editTick]
+    [handleMemoPress, isEditing, currentDate]
   )
 
   return (

@@ -5,7 +5,7 @@ import { toast } from '@/components/ui/Toast'
 import { useDiary, useUpdateDiary } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { MOODS, type MoodKey } from '@mosaic/utils'
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react'
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import type { MemoWithResources } from '@mosaic/api'
 
@@ -24,11 +24,11 @@ interface DayPageViewProps {
   onEditStateChange?: () => void
 }
 
-export const DayPageView = forwardRef<DayPageViewRef, DayPageViewProps>(function DayPageView(
+export const DayPageView = React.memo(forwardRef<DayPageViewRef, DayPageViewProps>(function DayPageView(
   { date, onMemoPress, isEditing, onEditStateChange },
   ref
 ) {
-  const { theme } = useThemeStore()
+  const theme = useThemeStore(s => s.theme)
   const [summaryDraft, setSummaryDraft] = useState('')
   const [moodKeyDraft, setMoodKeyDraft] = useState<MoodKey | undefined>(undefined)
   const [moodScoreDraft, setMoodScoreDraft] = useState(5)
@@ -52,10 +52,11 @@ export const DayPageView = forwardRef<DayPageViewRef, DayPageViewProps>(function
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date])
 
-  const hasChanges =
+  const hasChanges = useMemo(() =>
     summaryDraft.trim() !== (diary?.summary ?? '').trim() ||
     moodKeyDraft !== (diary?.moodKey as MoodKey | undefined) ||
-    moodScoreDraft !== (diary?.moodScore ?? 5)
+    moodScoreDraft !== (diary?.moodScore ?? 5),
+  [summaryDraft, diary?.summary, moodKeyDraft, diary?.moodKey, moodScoreDraft, diary?.moodScore])
 
   const handleSave = useCallback(async () => {
     if (!diary) return
@@ -195,7 +196,7 @@ export const DayPageView = forwardRef<DayPageViewRef, DayPageViewProps>(function
       </View>
     </ScrollView>
   )
-})
+}))
 
 const styles = StyleSheet.create({
   container: {

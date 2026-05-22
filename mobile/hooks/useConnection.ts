@@ -2,7 +2,10 @@ import { useEffect } from 'react'
 import { useConnectionStore } from '../stores/connectionStore'
 
 export function useConnection() {
-  const { isConnected, isServerReachable, initialize, cleanup } = useConnectionStore()
+  const isConnected = useConnectionStore(s => s.isConnected)
+  const isServerReachable = useConnectionStore(s => s.isServerReachable)
+  const initialize = useConnectionStore(s => s.initialize)
+  const cleanup = useConnectionStore(s => s.cleanup)
 
   useEffect(() => {
     initialize()

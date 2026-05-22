@@ -36,31 +36,24 @@ export function DraggableImageGrid({
   const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null)
   const [gridWidth, setGridWidth] = useState(0)
 
-  const resolvedItems: MediaGridItem[] = useMemo(() => {
-    return items
-  }, [items])
+  const gridData: GridItem[] = useMemo(() => items, [items])
 
-  const gridData: GridItem[] = useMemo(
-    () =>
-      resolvedItems.map(item => ({
-        ...item,
-      })),
-    [resolvedItems]
+  const mediaTileSize = useMemo(
+    () => getMediaTileSize(items.length, gridWidth),
+    [items.length, gridWidth]
   )
-
-  const mediaTileSize = getMediaTileSize(resolvedItems.length, gridWidth)
   const originalImageKeys = useMediaPreviewStore(state => state.originalImageKeys)
 
   const resolvedMediaSources = useMemo(
     () =>
-      resolvedItems.map(item => {
+      items.map(item => {
         const source = resolveMediaSource(item, authHeaders)
         if (item.type === 'image' && originalImageKeys[source.previewUri]) {
           return { ...source, gridUri: source.previewUri, gridHeaders: source.previewHeaders }
         }
         return source
       }),
-    [authHeaders, resolvedItems, originalImageKeys]
+    [authHeaders, items, originalImageKeys]
   )
   const showRemoveButton = Boolean(onItemsChange)
 
@@ -76,10 +69,10 @@ export function DraggableImageGrid({
   const handleRemove = useCallback(
     (index: number) => {
       if (onItemsChange) {
-        onItemsChange(resolvedItems.filter((_, itemIndex) => itemIndex !== index))
+        onItemsChange(items.filter((_, itemIndex) => itemIndex !== index))
       }
     },
-    [onItemsChange, resolvedItems]
+    [onItemsChange, items]
   )
 
   const handleItemPress = useCallback(
@@ -138,8 +131,8 @@ export function DraggableImageGrid({
     <View style={styles.container} onLayout={handleGridLayout}>
       {draggable ? (
         <DraggableGrid
-          key={resolvedItems.length <= 2 ? Math.max(1, resolvedItems.length) : 3}
-          numColumns={resolvedItems.length <= 2 ? Math.max(1, resolvedItems.length) : 3}
+          key={items.length <= 2 ? Math.max(1, items.length) : 3}
+          numColumns={items.length <= 2 ? Math.max(1, items.length) : 3}
           data={gridData}
           renderItem={(item: GridItem, order: number) => renderGridItem(item, order, false)}
           delayLongPress={220}
@@ -150,7 +143,7 @@ export function DraggableImageGrid({
             onDragStart?.()
           }}
           onItemPress={(item: GridItem) => {
-            const index = resolvedItems.findIndex(candidate => candidate.key === item.key)
+            const index = items.findIndex(candidate => candidate.key === item.key)
             if (index >= 0) {
               handleItemPress(index)
             }
@@ -163,7 +156,7 @@ export function DraggableImageGrid({
         />
       ) : (
         <View style={styles.grid}>
-          {resolvedItems.map((item, index) => renderGridItem(item, index, true))}
+          {items.map((item, index) => renderGridItem(item, index, true))}
         </View>
       )}
 

@@ -2,9 +2,14 @@ import { MemoListSkeleton } from '@/components/ui'
 import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { MemoCard } from '../memo/MemoCard'
+
+const FeedMemoCard = React.memo(function FeedMemoCard({ memo, onPress, isSelected }: { memo: MemoWithResources; onPress: (memo: MemoWithResources) => void; isSelected: boolean }) {
+  const handlePress = useCallback(() => onPress(memo), [memo, onPress])
+  return <MemoCard memo={memo} onPress={handlePress} isSelected={isSelected} />
+})
 
 interface MemoFeedProps {
   targetDate?: string
@@ -75,31 +80,29 @@ export function MemoFeed({
     }
   }, [isLoading, hasMore, targetDate, fetchNextPage])
 
-  const handleSelectionChange = (id: string) => {
+  const handleSelectionChange = useCallback((id: string) => {
     onSelectionChange?.(id)
-  }
+  }, [onSelectionChange])
 
-  const isSelected = (id: string) => selectedIds.includes(id)
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
 
-  const renderMemoCard = ({ item }: { item: MemoWithResources }) => {
-    const handleCardPress = () => {
-      if (isSelectionMode) {
-        handleSelectionChange(item.id)
-      } else {
-        onMemoPress?.(item)
-      }
+  const handleCardPress = useCallback((memo: MemoWithResources) => {
+    if (isSelectionMode) {
+      handleSelectionChange(memo.id)
+    } else {
+      onMemoPress?.(memo)
     }
+  }, [isSelectionMode, handleSelectionChange, onMemoPress])
 
-    return (
-      <MemoCard
-        memo={item}
-        onPress={handleCardPress}
-        isSelected={isSelectionMode && isSelected(item.id)}
-      />
-    )
-  }
+  const renderMemoCard = useCallback(({ item }: { item: MemoWithResources }) => (
+    <FeedMemoCard
+      memo={item}
+      onPress={handleCardPress}
+      isSelected={isSelectionMode && selectedSet.has(item.id)}
+    />
+  ), [handleCardPress, isSelectionMode, selectedSet])
 
-  const renderEmptyState = () => (
+  const renderEmptyState = useMemo(() => (
     <View style={styles.emptyContainer}>
       <Text style={[styles.emptyTitle, { color: theme.text }]}>
         {targetDate ? '今天还没有记录' : '暂无Memo'}
@@ -108,9 +111,9 @@ export function MemoFeed({
         {targetDate ? '点击下方按钮创建你的第一条Memo' : '开始记录你的想法和灵感'}
       </Text>
     </View>
-  )
+  ), [targetDate, theme.text, theme.textSecondary])
 
-  const renderFooter = () => {
+  const renderFooter = useMemo(() => {
     if (isFetchingNextPage) {
       return (
         <View style={styles.footer}>
@@ -128,7 +131,7 @@ export function MemoFeed({
     }
 
     return null
-  }
+  }, [isFetchingNextPage, hasMore, memos.length, theme.primary, theme.textSecondary])
 
   if (isLoading) {
     return (
@@ -140,7 +143,7 @@ export function MemoFeed({
   }
 
   if (memos.length === 0) {
-    return renderEmptyState()
+    return renderEmptyState
   }
 
   return (
@@ -164,7 +167,7 @@ export function MemoFeed({
       onEndReached={handleLoadMore}
       onEndReachedThreshold={0.3}
       ListFooterComponent={renderFooter}
-      ListHeaderComponent={headerComponent}
+      ListHeaderComponent={headerComponent as React.ReactElement | null}
       showsVerticalScrollIndicator={false}
     />
   )

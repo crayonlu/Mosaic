@@ -142,20 +142,25 @@ export async function listMemos(query?: LocalMemoQuery): Promise<Memo[]> {
     params.push(query.diaryDate)
   }
   if (query?.tag) {
-    conditions.push('EXISTS (SELECT 1 FROM memo_tags mt WHERE mt.memo_id = m.id AND mt.tag = ?)')
+    conditions.push('EXISTS (SELECT 1 FROM memo_tags mt2 WHERE mt2.memo_id = m.id AND mt2.tag = ?)')
     params.push(query.tag)
   }
 
   const where = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : ''
 
   const rows = await db.getAllAsync<any>(
-    `SELECT m.* FROM memos m${where} ORDER BY m.created_at DESC LIMIT ? OFFSET ?`,
+    `SELECT m.*, GROUP_CONCAT(mt.tag) AS tag_list
+     FROM memos m
+     LEFT JOIN memo_tags mt ON mt.memo_id = m.id
+     ${where}
+     GROUP BY m.id
+     ORDER BY m.created_at DESC LIMIT ? OFFSET ?`,
     ...params,
     pageSize,
     offset
   )
 
-  return Promise.all(rows.map(row => rowToMemo(db, row)))
+  return rows.map(row => rowToMemoFromJoin(row))
 }
 
 export async function searchMemos(query: LocalMemoSearchQuery): Promise<Memo[]> {
@@ -174,7 +179,7 @@ export async function searchMemos(query: LocalMemoSearchQuery): Promise<Memo[]> 
   if (query.tags && query.tags.length > 0) {
     const placeholders = query.tags.map(() => '?').join(', ')
     conditions.push(
-      `EXISTS (SELECT 1 FROM memo_tags mt WHERE mt.memo_id = m.id AND mt.tag IN (${placeholders}))`
+      `EXISTS (SELECT 1 FROM memo_tags mt2 WHERE mt2.memo_id = m.id AND mt2.tag IN (${placeholders}))`
     )
     params.push(...query.tags)
   }
@@ -194,13 +199,18 @@ export async function searchMemos(query: LocalMemoSearchQuery): Promise<Memo[]> 
   const where = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : ''
 
   const rows = await db.getAllAsync<any>(
-    `SELECT m.* FROM memos m${where} ORDER BY m.created_at DESC LIMIT ? OFFSET ?`,
+    `SELECT m.*, GROUP_CONCAT(mt.tag) AS tag_list
+     FROM memos m
+     LEFT JOIN memo_tags mt ON mt.memo_id = m.id
+     ${where}
+     GROUP BY m.id
+     ORDER BY m.created_at DESC LIMIT ? OFFSET ?`,
     ...params,
     pageSize,
     offset
   )
 
-  return Promise.all(rows.map(row => rowToMemo(db, row)))
+  return rows.map(row => rowToMemoFromJoin(row))
 }
 
 export async function deleteMemo(id: string): Promise<void> {
@@ -480,6 +490,19 @@ export async function getDailyStats(
 }
 
 // ─── Row mappers ───
+
+function rowToMemoFromJoin(row: any): Memo {
+  return {
+    id: row.id,
+    content: row.content ?? '',
+    tags: row.tag_list ? row.tag_list.split(',') : [],
+    isArchived: row.is_archived === 1,
+    diaryDate: row.diary_date ?? undefined,
+    revisionCount: row.revision_count ?? 0,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
 
 async function rowToMemo(db: any, row: any): Promise<Memo> {
   const tagRows = (await db.getAllAsync('SELECT tag FROM memo_tags WHERE memo_id = ?', row.id)) as {

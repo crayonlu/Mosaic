@@ -10,31 +10,39 @@ import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { Tabs } from 'expo-router'
 import { Book, Calendar, Files, Search, Settings } from 'lucide-react-native'
-import { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { StyleSheet, View } from 'react-native'
 
-function TabIconWithDot({ focused, children }: { focused: boolean; children: React.ReactNode }) {
-  const { theme } = useThemeStore()
+const TabIconWithDot = React.memo(function TabIconWithDot({
+  focused,
+  children,
+}: {
+  focused: boolean
+  children: React.ReactNode
+}) {
+  const theme = useThemeStore(s => s.theme)
   return (
-    <View style={{ alignItems: 'center' }}>
+    <View style={tabIconStyles.container}>
       {children}
-      {focused && (
-        <View
-          style={{
-            width: 4,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: theme.primary,
-            marginTop: 2,
-          }}
-        />
-      )}
+      {focused && <View style={[tabIconStyles.dot, { backgroundColor: theme.primary }]} />}
     </View>
   )
-}
+})
+
+const tabIconStyles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 2,
+  },
+})
 
 export default function TabLayout() {
-  const { theme } = useThemeStore()
+  const theme = useThemeStore(s => s.theme)
   const queryClient = useQueryClient()
   const inactiveTabColor = `${theme.primary}90`
 
@@ -102,7 +110,6 @@ export default function TabLayout() {
         name="diaries"
         options={{
           title: TabItems.items[2].label,
-          lazy: false,
           sceneStyle: {
             backgroundColor: 'transparent',
           },

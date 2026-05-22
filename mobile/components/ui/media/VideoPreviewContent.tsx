@@ -3,7 +3,7 @@ import { useEvent } from 'expo'
 import { Image } from 'expo-image'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { Pause, Play } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -15,6 +15,76 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { formatPlaybackTime, safelyControlPlayer, withAlpha } from './mediaPreviewUtils'
+
+interface VideoProgressBarProps {
+  player: any
+  duration: number
+  theme: any
+  progressBackgroundColor: string
+  progressBufferedColor: string
+  onSeek: (pressX: number) => void
+  onProgressLayout: (event: LayoutChangeEvent) => void
+}
+
+const VideoProgressBar = React.memo(function VideoProgressBar({
+  player,
+  duration,
+  theme,
+  progressBackgroundColor,
+  progressBufferedColor,
+  onSeek,
+  onProgressLayout,
+}: VideoProgressBarProps) {
+  const { currentTime = 0, bufferedPosition = 0 } = useEvent(player, 'timeUpdate', {
+    currentTime: 0,
+    bufferedPosition: 0,
+    currentLiveTimestamp: null,
+    currentOffsetFromLive: null,
+  })
+
+  const playedRatio = duration > 0 ? Math.min(currentTime / duration, 1) : 0
+  const bufferedRatio = duration > 0 ? Math.min(bufferedPosition / duration, 1) : 0
+
+  return (
+    <View style={styles.progressSection}>
+      <View style={styles.timeRow}>
+        <Text style={[styles.timeText, { color: theme.textSecondary }]}>
+          {formatPlaybackTime(currentTime)}
+        </Text>
+        <Text style={[styles.timeText, { color: theme.textSecondary }]}>
+          {formatPlaybackTime(duration)}
+        </Text>
+      </View>
+
+      <Pressable
+        onLayout={onProgressLayout}
+        onPress={event => onSeek(event.nativeEvent.locationX)}
+        style={[styles.progressTrack, { backgroundColor: progressBackgroundColor }]}
+      >
+        <View
+          pointerEvents="none"
+          style={[
+            styles.progressBuffered,
+            {
+              width: `${bufferedRatio * 100}%`,
+              backgroundColor: progressBufferedColor,
+            },
+          ]}
+        />
+        <View
+          pointerEvents="none"
+          style={[
+            styles.progressPlayed,
+            {
+              width: `${playedRatio * 100}%`,
+              backgroundColor: theme.primary,
+            },
+          ]}
+        />
+      </Pressable>
+    </View>
+  )
+})
 
 interface VideoPreviewContentProps {
   uri: string
@@ -64,17 +134,8 @@ export function VideoPreviewContent({
       videoPlayer.timeUpdateEventInterval = 0.25
     }
   )
-  const { currentTime = 0, bufferedPosition = 0 } = useEvent(player, 'timeUpdate', {
-    currentTime: 0,
-    bufferedPosition: 0,
-    currentLiveTimestamp: null,
-    currentOffsetFromLive: null,
-  })
-  const { status } = useEvent(player, 'statusChange', { status: player.status })
   const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing })
   const duration = Number.isFinite(player.duration) && player.duration > 0 ? player.duration : 0
-  const playedRatio = duration > 0 ? Math.min(currentTime / duration, 1) : 0
-  const bufferedRatio = duration > 0 ? Math.min(bufferedPosition / duration, 1) : 0
   const shouldShowControls = isActive && (controlsVisible || !isReady || !isPlaying)
 
   useEffect(() => {
@@ -115,7 +176,7 @@ export function VideoPreviewContent({
       return
     }
 
-    const isAtEnd = currentTime >= duration - 0.15
+    const isAtEnd = player.currentTime >= duration - 0.15
     if (isAtEnd && !isPlaying) {
       setHasEnded(true)
       setControlsVisible(true)
@@ -125,7 +186,7 @@ export function VideoPreviewContent({
     if (!isAtEnd && hasEnded) {
       setHasEnded(false)
     }
-  }, [currentTime, duration, hasEnded, isPlaying])
+  }, [player.currentTime, duration, hasEnded, isPlaying])
 
   const handleTogglePlayback = useCallback(() => {
     if (isPlaying) {
@@ -136,14 +197,14 @@ export function VideoPreviewContent({
     }
 
     safelyControlPlayer(() => {
-      if (hasEnded || (duration > 0 && currentTime >= duration - 0.15)) {
+      if (hasEnded || (duration > 0 && player.currentTime >= duration - 0.15)) {
         player.currentTime = 0
       }
       player.play()
     })
     setHasEnded(false)
     setControlsVisible(true)
-  }, [currentTime, duration, hasEnded, isPlaying, player])
+  }, [duration, hasEnded, isPlaying, player])
 
   const handleToggleControls = useCallback(() => {
     if (!isActive || !isReady) {
@@ -241,41 +302,15 @@ export function VideoPreviewContent({
                     },
                   ]}
                 >
-                  <View style={styles.timeRow}>
-                    <Text style={[styles.timeText, { color: theme.textSecondary }]}>
-                      {formatPlaybackTime(currentTime)}
-                    </Text>
-                    <Text style={[styles.timeText, { color: theme.textSecondary }]}>
-                      {status === 'loading' ? '加载中' : formatPlaybackTime(duration)}
-                    </Text>
-                  </View>
-
-                  <Pressable
-                    onLayout={handleProgressLayout}
-                    onPress={event => handleSeek(event.nativeEvent.locationX)}
-                    style={[styles.progressTrack, { backgroundColor: progressBackgroundColor }]}
-                  >
-                    <View
-                      pointerEvents="none"
-                      style={[
-                        styles.progressBuffered,
-                        {
-                          width: `${bufferedRatio * 100}%`,
-                          backgroundColor: progressBufferedColor,
-                        },
-                      ]}
-                    />
-                    <View
-                      pointerEvents="none"
-                      style={[
-                        styles.progressPlayed,
-                        {
-                          width: `${playedRatio * 100}%`,
-                          backgroundColor: theme.primary,
-                        },
-                      ]}
-                    />
-                  </Pressable>
+                  <VideoProgressBar
+                    player={player}
+                    duration={duration}
+                    theme={theme}
+                    progressBackgroundColor={progressBackgroundColor}
+                    progressBufferedColor={progressBufferedColor}
+                    onSeek={handleSeek}
+                    onProgressLayout={handleProgressLayout}
+                  />
                 </View>
               ) : null}
             </>
@@ -336,6 +371,9 @@ const styles = StyleSheet.create({
   bottomControls: {
     paddingHorizontal: 24,
     paddingTop: 12,
+    gap: 10,
+  },
+  progressSection: {
     gap: 10,
   },
   timeRow: {
