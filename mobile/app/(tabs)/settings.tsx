@@ -337,7 +337,7 @@ export default function SettingsScreen() {
                     borderTopColor: theme.border,
                   },
                 ]}
-                activeOpacity={0.82}
+                activeOpacity={1}
                 onPress={() => {
                   setEditingBot(bot)
                   setBotEditorVisible(true)

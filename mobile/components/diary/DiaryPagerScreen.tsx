@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Pencil } from '
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import PagerView from 'react-native-pager-view'
+import Animated, { Easing, FadeIn, FadeOut } from 'react-native-reanimated'
 import { type DayPageViewRef, DayPageView } from './DayPageView'
 
 const PREFETCH_DAYS = 2
@@ -208,18 +209,30 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
       {/* Header in normal flow — readable over mood gradient */}
       <View style={styles.header}>
         {isEditing ? (
-          <TouchableOpacity style={styles.headerAction} onPress={handleCancelEdit}>
-            <Text style={[styles.headerActionText, { color: theme.textSecondary }]}>取消</Text>
-          </TouchableOpacity>
+          <Animated.View
+            key="header-left-cancel"
+            entering={FadeIn.duration(150).easing(Easing.out(Easing.cubic))}
+            exiting={FadeOut.duration(100).easing(Easing.out(Easing.cubic))}
+          >
+            <TouchableOpacity style={styles.headerAction} onPress={handleCancelEdit}>
+              <Text style={[styles.headerActionText, { color: theme.textSecondary }]}>取消</Text>
+            </TouchableOpacity>
+          </Animated.View>
         ) : (
-          <View style={styles.headerNavGroup}>
-            <TouchableOpacity style={styles.navButton} onPress={handlePreviousYear} hitSlop={8}>
-              <ChevronsLeft size={22} color={theme.text} strokeWidth={2.2} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.navButton} onPress={handlePreviousMonth} hitSlop={8}>
-              <ChevronLeft size={22} color={theme.text} strokeWidth={2.2} />
-            </TouchableOpacity>
-          </View>
+          <Animated.View
+            key="header-left-nav"
+            entering={FadeIn.duration(150).easing(Easing.out(Easing.cubic))}
+            exiting={FadeOut.duration(100).easing(Easing.out(Easing.cubic))}
+          >
+            <View style={styles.headerNavGroup}>
+              <TouchableOpacity style={styles.navButton} onPress={handlePreviousYear} hitSlop={8}>
+                <ChevronsLeft size={22} color={theme.text} strokeWidth={2.2} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.navButton} onPress={handlePreviousMonth} hitSlop={8}>
+                <ChevronLeft size={22} color={theme.text} strokeWidth={2.2} />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
         )}
 
         <Text style={[styles.currentDate, { color: theme.text }]}>
@@ -227,55 +240,67 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
         </Text>
 
         {isEditing ? (
-          <TouchableOpacity
-            style={styles.headerAction}
-            onPress={() => {
-              refreshEditState()
-              void handleSave()
-            }}
-            disabled={!hasChanges || isSaving}
+          <Animated.View
+            key="header-right-save"
+            entering={FadeIn.duration(150).easing(Easing.out(Easing.cubic))}
+            exiting={FadeOut.duration(100).easing(Easing.out(Easing.cubic))}
           >
-            <Text
-              style={[
-                styles.headerActionText,
-                { color: hasChanges && !isSaving ? theme.primary : theme.textSecondary },
-              ]}
+            <TouchableOpacity
+              style={styles.headerAction}
+              onPress={() => {
+                refreshEditState()
+                void handleSave()
+              }}
+              disabled={!hasChanges || isSaving}
             >
-              {isSaving ? '保存中...' : '保存'}
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.headerActionText,
+                  { color: hasChanges && !isSaving ? theme.primary : theme.textSecondary },
+                ]}
+              >
+                {isSaving ? '保存中...' : '保存'}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         ) : (
-          <View style={styles.headerNavGroup}>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={handleNextMonth}
-              disabled={isToday}
-              hitSlop={8}
-            >
-              <ChevronRight
-                size={22}
-                color={isToday ? theme.textSecondary : theme.text}
-                strokeWidth={2.2}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={handleNextYear}
-              disabled={isToday}
-              hitSlop={8}
-            >
-              <ChevronsRight
-                size={22}
-                color={isToday ? theme.textSecondary : theme.text}
-                strokeWidth={2.2}
-              />
-            </TouchableOpacity>
-            {hasDiary && (
-              <TouchableOpacity style={styles.navButton} onPress={handleStartEdit} hitSlop={8}>
-                <Pencil size={18} color={theme.textSecondary} strokeWidth={2} />
+          <Animated.View
+            key="header-right-nav"
+            entering={FadeIn.duration(150).easing(Easing.out(Easing.cubic))}
+            exiting={FadeOut.duration(100).easing(Easing.out(Easing.cubic))}
+          >
+            <View style={styles.headerNavGroup}>
+              <TouchableOpacity
+                style={styles.navButton}
+                onPress={handleNextMonth}
+                disabled={isToday}
+                hitSlop={8}
+              >
+                <ChevronRight
+                  size={22}
+                  color={isToday ? theme.textSecondary : theme.text}
+                  strokeWidth={2.2}
+                />
               </TouchableOpacity>
-            )}
-          </View>
+              <TouchableOpacity
+                style={styles.navButton}
+                onPress={handleNextYear}
+                disabled={isToday}
+                hitSlop={8}
+              >
+                <ChevronsRight
+                  size={22}
+                  color={isToday ? theme.textSecondary : theme.text}
+                  strokeWidth={2.2}
+                />
+              </TouchableOpacity>
+              {hasDiary && (
+                <TouchableOpacity style={styles.navButton} onPress={handleStartEdit} hitSlop={8}>
+                  <Pencil size={18} color={theme.textSecondary} strokeWidth={2} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </Animated.View>
         )}
       </View>
 

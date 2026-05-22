@@ -3,8 +3,9 @@ import { useHeatmap } from '@/lib/query'
 import { MOODS, getMoodColor } from '@mosaic/utils'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -90,6 +91,49 @@ function HeatMapSkeleton() {
         </View>
       </View>
     </View>
+  )
+}
+
+function AnimatedDayCell({
+  cell,
+  borderColor,
+  onPress,
+}: {
+  cell: HeatMapCell
+  borderColor: string
+  onPress: () => void
+}) {
+  const scale = useSharedValue(1)
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
+  const handlePressIn = () => {
+    scale.value = withTiming(0.92, { duration: 100, easing: Easing.out(Easing.cubic) })
+  }
+
+  const handlePressOut = () => {
+    scale.value = withTiming(1, { duration: 160, easing: Easing.out(Easing.cubic) })
+  }
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+    >
+      <Animated.View
+        style={[
+          styles.cell,
+          {
+            backgroundColor: cell.color === 'transparent' ? 'transparent' : cell.color,
+            borderColor,
+          },
+          animStyle,
+        ]}
+      />
+    </Pressable>
   )
 }
 
@@ -237,20 +281,27 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
         <View style={styles.heatMapGrid}>
           {weeks.map((week, weekIndex) => (
             <View key={weekIndex} style={styles.weekRow}>
-              {week.map((cell, dayIndex) => (
-                <TouchableOpacity
-                  key={dayIndex}
-                  style={[
-                    styles.cell,
-                    {
-                      backgroundColor: cell.color === 'transparent' ? 'transparent' : cell.color,
-                      borderColor: theme.border,
-                    },
-                  ]}
-                  onPress={() => handleDateClick(cell)}
-                  hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-                />
-              ))}
+              {week.map((cell, dayIndex) =>
+                cell.date ? (
+                  <AnimatedDayCell
+                    key={dayIndex}
+                    cell={cell}
+                    borderColor={theme.border}
+                    onPress={() => handleDateClick(cell)}
+                  />
+                ) : (
+                  <View
+                    key={dayIndex}
+                    style={[
+                      styles.cell,
+                      {
+                        backgroundColor: 'transparent',
+                        borderColor: theme.border,
+                      },
+                    ]}
+                  />
+                )
+              )}
             </View>
           ))}
         </View>

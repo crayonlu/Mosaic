@@ -23,6 +23,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TagInput } from '../tag/TagInput'
 import { PostPreview } from './PostPreview'
@@ -379,7 +380,8 @@ export function FullScreenEditor({
             </View>
 
             {summary && (
-              <View
+              <Animated.View
+                entering={FadeIn.duration(200).easing(Easing.out(Easing.cubic))}
                 style={[
                   styles.summaryContainer,
                   {
@@ -403,7 +405,7 @@ export function FullScreenEditor({
                   </View>
                 </View>
                 <Text style={[styles.summaryText, { color: theme.textSecondary }]}>{summary}</Text>
-              </View>
+              </Animated.View>
             )}
 
             {summaryError && (

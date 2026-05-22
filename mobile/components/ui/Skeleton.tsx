@@ -2,10 +2,11 @@ import { useThemeStore } from '@/stores/themeStore'
 import { useEffect } from 'react'
 import { StyleSheet, View, type DimensionValue, type ViewStyle } from 'react-native'
 import Animated, {
+  Easing,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withSequence,
   withTiming,
 } from 'react-native-reanimated'
 
@@ -21,25 +22,25 @@ function SkeletonLineInner({
   height = 14,
   borderRadius = 7,
   style,
-  pulseStyle,
-}: SkeletonLineProps & { pulseStyle: ReturnType<typeof useAnimatedStyle> }) {
+  shimmerStyle,
+}: SkeletonLineProps & { shimmerStyle: ReturnType<typeof useAnimatedStyle> }) {
   const { theme } = useThemeStore()
 
   return (
-    <Animated.View
-      style={[{ width, height, borderRadius, backgroundColor: theme.surfaceMuted }, pulseStyle, style]}
-    />
+    <View style={[{ width, height, borderRadius, backgroundColor: theme.surfaceMuted, overflow: 'hidden' }, style]}>
+      <Animated.View style={[StyleSheet.absoluteFill, shimmerStyle]} />
+    </View>
   )
 }
 
-/** Standalone skeleton line with its own pulse animation */
+/** Standalone skeleton line with its own shimmer animation */
 export function SkeletonLine({
   width = '100%',
   height = 14,
   borderRadius = 7,
   style,
 }: SkeletonLineProps) {
-  const pulseStyle = usePulseAnimation()
+  const shimmerStyle = useShimmerAnimation()
 
   return (
     <SkeletonLineInner
@@ -47,59 +48,69 @@ export function SkeletonLine({
       height={height}
       borderRadius={borderRadius}
       style={style}
-      pulseStyle={pulseStyle}
+      shimmerStyle={shimmerStyle}
     />
   )
 }
 
-function usePulseAnimation() {
-  const opacity = useSharedValue(1)
+function useShimmerAnimation() {
+  const progress = useSharedValue(0)
 
   useEffect(() => {
-    opacity.value = withRepeat(
-      withSequence(withTiming(0.4, { duration: 800 }), withTiming(1, { duration: 800 })),
+    progress.value = withRepeat(
+      withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
       -1,
       false
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const pulseStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }))
+  const shimmerStyle = useAnimatedStyle(() => {
+    const translateX = interpolate(progress.value, [0, 1], [-100, 100])
+    const opacity = interpolate(
+      progress.value,
+      [0, 0.3, 0.5, 0.7, 1],
+      [0, 0.12, 0.24, 0.12, 0]
+    )
+    return {
+      transform: [{ translateX: `${translateX}%` as unknown as number }],
+      opacity,
+      backgroundColor: '#ffffff',
+    }
+  })
 
-  return pulseStyle
+  return shimmerStyle
 }
 
-export function MemoCardSkeleton({ pulseStyle }: { pulseStyle?: ReturnType<typeof useAnimatedStyle> }) {
+export function MemoCardSkeleton({ shimmerStyle }: { shimmerStyle?: ReturnType<typeof useAnimatedStyle> }) {
   const { theme } = useThemeStore()
-  const fallbackPulse = usePulseAnimation()
-  const animStyle = pulseStyle ?? fallbackPulse
+  const fallbackShimmer = useShimmerAnimation()
+  const animStyle = shimmerStyle ?? fallbackShimmer
 
   return (
     <View style={[styles.card, { borderBottomColor: theme.border }]}>
       <View style={styles.header}>
-        <SkeletonLineInner width={60} height={12} pulseStyle={animStyle} />
-        <SkeletonLineInner width={40} height={10} pulseStyle={animStyle} />
+        <SkeletonLineInner width={60} height={12} shimmerStyle={animStyle} />
+        <SkeletonLineInner width={40} height={10} shimmerStyle={animStyle} />
       </View>
-      <SkeletonLineInner width="90%" height={16} style={{ marginBottom: 8 }} pulseStyle={animStyle} />
-      <SkeletonLineInner width="100%" height={12} style={{ marginBottom: 6 }} pulseStyle={animStyle} />
-      <SkeletonLineInner width="75%" height={12} style={{ marginBottom: 12 }} pulseStyle={animStyle} />
+      <SkeletonLineInner width="90%" height={16} style={{ marginBottom: 8 }} shimmerStyle={animStyle} />
+      <SkeletonLineInner width="100%" height={12} style={{ marginBottom: 6 }} shimmerStyle={animStyle} />
+      <SkeletonLineInner width="75%" height={12} style={{ marginBottom: 12 }} shimmerStyle={animStyle} />
       <View style={styles.tagsRow}>
-        <SkeletonLineInner width={48} height={22} borderRadius={11} pulseStyle={animStyle} />
-        <SkeletonLineInner width={64} height={22} borderRadius={11} pulseStyle={animStyle} />
+        <SkeletonLineInner width={48} height={22} borderRadius={11} shimmerStyle={animStyle} />
+        <SkeletonLineInner width={64} height={22} borderRadius={11} shimmerStyle={animStyle} />
       </View>
     </View>
   )
 }
 
 export function MemoListSkeleton({ count = 5 }: { count?: number }) {
-  const pulseStyle = usePulseAnimation()
+  const shimmerStyle = useShimmerAnimation()
 
   return (
     <View>
       {Array.from({ length: count }).map((_, i) => (
-        <MemoCardSkeleton key={i} pulseStyle={pulseStyle} />
+        <MemoCardSkeleton key={i} shimmerStyle={shimmerStyle} />
       ))}
     </View>
   )

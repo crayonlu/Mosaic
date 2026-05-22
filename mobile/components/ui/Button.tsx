@@ -2,13 +2,14 @@ import { useTheme } from '@/hooks/useTheme'
 import React, { JSX } from 'react'
 import {
   ActivityIndicator,
+  Pressable,
   StyleProp,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native'
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 export interface ButtonProps {
   title?: string
@@ -37,6 +38,19 @@ export function Button({
 }: ButtonProps) {
   const { theme } = useTheme()
   const isInactive = disabled || loading
+  const scale = useSharedValue(1)
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
+  const handlePressIn = () => {
+    scale.value = withTiming(0.97, { duration: 100, easing: Easing.out(Easing.cubic) })
+  }
+
+  const handlePressOut = () => {
+    scale.value = withTiming(1, { duration: 160, easing: Easing.out(Easing.cubic) })
+  }
 
   const getBackgroundColor = () => {
     if (isInactive) {
@@ -122,48 +136,53 @@ export function Button({
   }
 
   return (
-    <TouchableOpacity
-      style={[
-        styles.button,
-        {
-          backgroundColor: getBackgroundColor(),
-          paddingVertical: getPaddingVertical(),
-          paddingHorizontal: getPaddingHorizontal(),
-          width: fullWidth ? '100%' : undefined,
-          borderRadius: theme.radius.medium,
-          borderColor: getBorderColor(),
-          borderWidth: getBorderWidth(),
-          opacity: isInactive ? theme.state.disabledOpacity : 1,
-        },
-        style,
-      ]}
+    <Pressable
       onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       disabled={isInactive}
-      activeOpacity={theme.state.pressedOpacity}
     >
-      {loading ? (
-        <ActivityIndicator color={getTextColor()} size="small" />
-      ) : (
-        <View style={styles.contentContainer}>
-          {leftIcon}
-          {title && (
-            <Text
-              style={[
-                styles.text,
-                {
-                  color: getTextColor(),
-                  fontSize: getFontSize(),
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {title}
-            </Text>
-          )}
-          {rightIcon}
-        </View>
-      )}
-    </TouchableOpacity>
+      <Animated.View
+        style={[
+          styles.button,
+          {
+            backgroundColor: getBackgroundColor(),
+            paddingVertical: getPaddingVertical(),
+            paddingHorizontal: getPaddingHorizontal(),
+            width: fullWidth ? '100%' : undefined,
+            borderRadius: theme.radius.medium,
+            borderColor: getBorderColor(),
+            borderWidth: getBorderWidth(),
+            opacity: isInactive ? theme.state.disabledOpacity : 1,
+          },
+          animatedStyle,
+          style,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color={getTextColor()} size="small" />
+        ) : (
+          <View style={styles.contentContainer}>
+            {leftIcon}
+            {title && (
+              <Text
+                style={[
+                  styles.text,
+                  {
+                    color: getTextColor(),
+                    fontSize: getFontSize(),
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {title}
+              </Text>
+            )}
+            {rightIcon}
+          </View>
+        )}
+      </Animated.View>
+    </Pressable>
   )
 }
 

@@ -273,7 +273,7 @@ export default function ShareScreen() {
                 multiline
               />
 
-              <Text style={[styles.body_, { color: theme.text }]}>{clipResult.content}</Text>
+              <MarkdownRenderer content={clipResult.content} />
 
               <MarkdownRenderer content={clipResult.aiSummary} />
 

@@ -3,6 +3,7 @@ import dayjs, { Dayjs } from 'dayjs'
 import { ChevronLeft, ChevronRight } from 'lucide-react-native'
 import { useEffect, useMemo, useState } from 'react'
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 
 interface DatePickerSheetProps {
   visible: boolean
@@ -111,6 +112,11 @@ export function DatePickerSheet({
           </View>
 
           <View style={styles.grid}>
+            <Animated.View
+              key={monthCursor.format('YYYY-MM')}
+              entering={FadeIn.duration(150).easing(Easing.out(Easing.cubic))}
+              style={styles.gridInner}
+            >
             {calendarCells.map((cell, index) => {
               if (!cell) {
                 return <View key={`blank-${index}`} style={styles.cell} />
@@ -154,6 +160,7 @@ export function DatePickerSheet({
                 </TouchableOpacity>
               )
             })}
+            </Animated.View>
           </View>
 
           <View style={styles.quickRow}>
@@ -241,6 +248,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginBottom: 12,
+  },
+  gridInner: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: '100%',
   },
   cell: {
     width: '14.2857%',

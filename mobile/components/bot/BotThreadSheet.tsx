@@ -14,7 +14,6 @@ import { Image } from 'expo-image'
 import { ChevronDown, ChevronUp, ImagePlus, Lightbulb, Send, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Animated,
   Modal,
   ScrollView,
   StyleSheet,
@@ -24,6 +23,14 @@ import {
   View,
   StatusBar,
 } from 'react-native'
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 interface PendingMessage {
@@ -62,18 +69,20 @@ function ThinkingContentBlock({ content, theme }: { content: string; theme: any 
 
 function SkeletonBubbles() {
   const { theme } = useThemeStore()
-  const opacity = useRef(new Animated.Value(0.4)).current
+  const opacity = useSharedValue(0.4)
 
   useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.4, duration: 800, useNativeDriver: true }),
-      ])
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) }),
+        withTiming(0.4, { duration: 800, easing: Easing.out(Easing.cubic) })
+      ),
+      -1,
+      false
     )
-    animation.start()
-    return () => animation.stop()
   }, [opacity])
+
+  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
 
   return (
     <View style={styles.skeletonContainer}>
@@ -82,7 +91,8 @@ function SkeletonBubbles() {
           style={[
             styles.skeletonBubble,
             styles.skeletonShort,
-            { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium, opacity },
+            { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium },
+            animStyle,
           ]}
         />
       </View>
@@ -91,7 +101,8 @@ function SkeletonBubbles() {
           style={[
             styles.skeletonBubble,
             styles.skeletonTall,
-            { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium, opacity },
+            { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium },
+            animStyle,
           ]}
         />
       </View>
@@ -100,7 +111,8 @@ function SkeletonBubbles() {
           style={[
             styles.skeletonBubble,
             styles.skeletonMedium,
-            { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium, opacity },
+            { backgroundColor: theme.surfaceMuted, borderRadius: theme.radius.medium },
+            animStyle,
           ]}
         />
       </View>
