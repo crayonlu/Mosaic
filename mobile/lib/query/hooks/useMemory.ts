@@ -16,3 +16,12 @@ export function useMemoryActivity(limit = 20) {
     staleTime: 30_000,
   })
 }
+
+export function useMemoryContext(memoId: string, botId: string) {
+  return useQuery({
+    queryKey: ['memory-context', memoId, botId],
+    queryFn: () => memoryApi.getContext(memoId, botId),
+    staleTime: 5 * 60_000,
+    enabled: !!memoId && !!botId,
+  })
+}

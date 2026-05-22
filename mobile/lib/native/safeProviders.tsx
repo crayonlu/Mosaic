@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 
 // ─── Safe BootSplash ─────────────────────────────────────────────
 
@@ -139,5 +139,36 @@ export function SafeKeyboardStickyView({
     <KSV style={style} {...props}>
       {children}
     </KSV>
+  )
+}
+
+// ─── Safe KeyboardAwareScrollView ────────────────────────────────
+
+type KeyboardAwareScrollViewProps = {
+  children: ReactNode
+  style?: object
+  contentContainerStyle?: object
+  keyboardShouldPersistTaps?: 'always' | 'never' | 'handled'
+  bottomOffset?: number
+  ref?: React.Ref<any>
+}
+
+export function SafeKeyboardAwareScrollView({
+  children,
+  style,
+  ...props
+}: KeyboardAwareScrollViewProps) {
+  if (!keyboardControllerModule) {
+    return (
+      <ScrollView style={style} {...(props as any)}>
+        {children}
+      </ScrollView>
+    )
+  }
+  const KASV = keyboardControllerModule.KeyboardAwareScrollView
+  return (
+    <KASV style={style} {...(props as any)}>
+      {children}
+    </KASV>
   )
 }

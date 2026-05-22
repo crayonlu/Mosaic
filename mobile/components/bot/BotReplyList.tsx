@@ -1,6 +1,8 @@
 import { useBotReplies } from '@/lib/query'
+import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
 import type { BotReply } from '@mosaic/api'
+import { useEffect, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 import { SkeletonLine } from '@/components/ui/Skeleton'
@@ -21,6 +23,11 @@ export function BotReplyList({
 }: BotReplyListProps) {
   const { theme } = useThemeStore()
   const { data: allReplies, isLoading } = useBotReplies(memoId)
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    getBearerAuthHeaders().then(setAuthHeaders)
+  }, [])
 
   const replies =
     revisionNumber != null
@@ -57,7 +64,12 @@ export function BotReplyList({
             index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border },
           ]}
         >
-          <BotReplyCard reply={reply} onReply={onReply} onMemoNavigate={onMemoNavigate} />
+          <BotReplyCard
+            reply={reply}
+            onReply={onReply}
+            onMemoNavigate={onMemoNavigate}
+            authHeaders={authHeaders}
+          />
         </View>
       ))}
     </Animated.View>

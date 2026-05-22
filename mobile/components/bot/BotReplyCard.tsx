@@ -1,17 +1,14 @@
-import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
+import { useMemoryContext } from '@/lib/query'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/themeStore'
-import type { BotReply, MemoryContext } from '@mosaic/api'
-import { memoryApi } from '@mosaic/api'
+import type { BotReply } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { Image } from 'expo-image'
 import { ArrowRight, ChevronDown, ChevronUp, FileText, Lightbulb } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Animated, {
   Easing,
-  FadeIn,
-  LinearTransition,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -22,6 +19,7 @@ interface BotReplyCardProps {
   onReply: (reply: BotReply) => void
   onMemoNavigate?: (memoId: string) => void
   isThread?: boolean
+  authHeaders?: Record<string, string>
 }
 
 function MemoryContextPanel({
@@ -35,54 +33,56 @@ function MemoryContextPanel({
   onMemoNavigate?: (memoId: string) => void
   theme: any
 }) {
-  const [context, setContext] = useState<MemoryContext | null>(null)
+  const { data: context, isLoading } = useMemoryContext(memoId, botId)
   const [open, setOpen] = useState(false)
   const [contentHeight, setContentHeight] = useState(0)
   const animHeight = useSharedValue(0)
 
-  useEffect(() => {
-    memoryApi
-      .getContext(memoId, botId)
-      .then(setContext)
-      .catch(() => setContext({ retrievedMemos: [] }))
-  }, [memoId, botId])
+  const hasMemos = (context?.retrievedMemos.length ?? 0) > 0
+
+  const handleToggle = useCallback(() => {
+    if (!hasMemos) return
+    setOpen(prev => !prev)
+  }, [hasMemos])
 
   useEffect(() => {
-    animHeight.value = withTiming(open ? contentHeight : 0, {
-      duration: 220,
-      easing: Easing.out(Easing.cubic),
-    })
-  }, [open, contentHeight, animHeight])
+    if (open) {
+      if (contentHeight === 0) return
+      animHeight.value = withTiming(contentHeight, {
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+      })
+    } else {
+      animHeight.value = withTiming(0, {
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+      })
+    }
+  }, [open, contentHeight])
 
-  const clipStyle = useAnimatedStyle(() => ({
+  const expandStyle = useAnimatedStyle(() => ({
     height: animHeight.value,
     overflow: 'hidden' as const,
   }))
 
-  if (!context) return null
-
-  const hasMemos = context.retrievedMemos.length > 0
-
-  if (!hasMemos) return null
+  if (!isLoading && !hasMemos) return null
 
   return (
-    <Animated.View
-      entering={FadeIn.duration(200).easing(Easing.out(Easing.cubic))}
-      style={[memStyles.container, { borderTopColor: theme.border }]}
-    >
+    <View style={[memStyles.container, { borderTopColor: theme.border }]}>
       <TouchableOpacity
-        onPress={() => setOpen(v => !v)}
+        onPress={handleToggle}
         activeOpacity={0.7}
         style={memStyles.trigger}
+        disabled={!hasMemos}
       >
-        {hasMemos && (
-          <Text style={[memStyles.triggerText, { color: theme.textSecondary }]}>
-            参考了你 {context.retrievedMemos.length} 条以前的记录
-          </Text>
-        )}
+        <Text style={[memStyles.triggerText, { color: theme.textSecondary }]}>
+          {isLoading || !context
+            ? '正在加载参考记录...'
+            : `参考了你 ${context.retrievedMemos.length} 条以前的记录`}
+        </Text>
       </TouchableOpacity>
 
-      <Animated.View style={clipStyle}>
+      <Animated.View style={expandStyle}>
         <View
           onLayout={e => {
             const h = e.nativeEvent.layout.height
@@ -90,7 +90,7 @@ function MemoryContextPanel({
           }}
           style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
         >
-          {context.retrievedMemos.map(memo => (
+          {(context?.retrievedMemos ?? []).map(memo => (
             <TouchableOpacity
               key={memo.id}
               onPress={() => onMemoNavigate?.(memo.id)}
@@ -109,7 +109,7 @@ function MemoryContextPanel({
           ))}
         </View>
       </Animated.View>
-    </Animated.View>
+    </View>
   )
 }
 
@@ -167,14 +167,10 @@ export function BotReplyCard({
   onReply,
   onMemoNavigate,
   isThread = false,
+  authHeaders = {},
 }: BotReplyCardProps) {
   const { theme } = useThemeStore()
   const threadCount = Math.max(reply.threadCount - 1, 0)
-  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    void getBearerAuthHeaders().then(setAuthHeaders)
-  }, [])
 
   return (
     <View style={[styles.container, isThread && styles.threadContainer]}>

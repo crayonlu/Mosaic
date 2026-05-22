@@ -16,7 +16,7 @@ export {
   useSaveCustomPush,
 } from './useCustomPush'
 export { useDiaries, useDiary } from './useDiaries'
-export { useMemoryActivity, useMemoryStats } from './useMemory'
+export { useMemoryActivity, useMemoryContext, useMemoryStats } from './useMemory'
 export {
   useDeleteRevision,
   useInfiniteMemos,

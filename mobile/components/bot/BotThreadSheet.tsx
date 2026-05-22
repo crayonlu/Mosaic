@@ -5,7 +5,7 @@ import {
   uploadSelectedMedia,
   type SelectedMediaItem,
 } from '@/lib/media/upload'
-import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
+import { SafeKeyboardAwareScrollView, SafeKeyboardStickyView } from '@/lib/native/safeProviders'
 import { useBotThread, useReplyToBot } from '@/lib/query'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
@@ -131,7 +131,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
   const insets = useSafeAreaInsets()
   const { data: thread, isLoading } = useBotThread(reply?.latestReplyId ?? reply?.id)
   const { mutateAsync: replyToBot, isPending } = useReplyToBot()
-  const scrollViewRef = useRef<ScrollView>(null)
+  const scrollViewRef = useRef<any>(null)
   const [text, setText] = useState('')
   const [mediaItems, setMediaItems] = useState<MediaGridItem[]>([])
   const [uploadCandidates, setUploadCandidates] = useState<Record<string, SelectedMediaItem>>({})
@@ -140,7 +140,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
     { id: string; progress: number }[]
   >([])
   const [pendingMessage, setPendingMessage] = useState<PendingMessage | null>(null)
-  const [replyBarHeight, setReplyBarHeight] = useState(0)
+  const [isFocused, setIsFocused] = useState(false)
 
   useEffect(() => {
     if (!visible) {
@@ -166,7 +166,6 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
     () => Object.fromEntries(uploadProgressItems.map(item => [item.id, item.progress])),
     [uploadProgressItems]
   )
-  const messagesBottomInset = replyBarHeight + 12
 
   const scrollToLatest = useCallback((animated = true) => {
     requestAnimationFrame(() => {
@@ -278,7 +277,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
     >
       <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <SafeKeyboardAvoidingView style={styles.content} behavior="padding">
+        <View style={styles.content}>
           <View
             style={[
               styles.header,
@@ -296,10 +295,10 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
             </TouchableOpacity>
           </View>
 
-          <ScrollView
+          <SafeKeyboardAwareScrollView
             ref={scrollViewRef}
             style={styles.body}
-            contentContainerStyle={[styles.messages, { paddingBottom: messagesBottomInset }]}
+            contentContainerStyle={styles.messages}
             keyboardShouldPersistTaps="handled"
           >
             {isLoading ? (
@@ -385,21 +384,20 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                 )}
               </>
             )}
-          </ScrollView>
-          <View
-            style={[
-              styles.replyBar,
-              {
-                borderTopColor: theme.border,
-                backgroundColor: theme.surface,
-                paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-              },
-            ]}
-            onLayout={event => {
-              setReplyBarHeight(event.nativeEvent.layout.height)
-            }}
-          >
-            <View style={styles.inputArea}>
+          </SafeKeyboardAwareScrollView>
+          <SafeKeyboardStickyView>
+            <View
+              style={[
+                styles.replyBar,
+                {
+                  backgroundColor: theme.background,
+                  borderColor: theme.border,
+                  height: isFocused ? undefined : 48,
+                  paddingVertical: 28,
+                  borderWidth: 1,
+                },
+              ]}
+            >
               {mediaItems.length > 0 && (
                 <ScrollView
                   horizontal
@@ -434,7 +432,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
               )}
               <View style={styles.inputRow}>
                 <TouchableOpacity
-                  style={[styles.imageBtn, { backgroundColor: theme.surfaceMuted }]}
+                  style={styles.imageBtn}
                   onPress={handlePickImages}
                   disabled={isPending || mediaItems.length >= 4}
                 >
@@ -443,17 +441,17 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                 <TextInput
                   style={[
                     styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.surfaceMuted,
-                    },
+                    { color: theme.text, fontSize: theme.typography.bodyLarge.fontSize },
+                    !isFocused && styles.inputCollapsed,
                   ]}
                   value={text}
                   onChangeText={setText}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
                   placeholder="继续追问..."
                   placeholderTextColor={theme.textSecondary}
-                  multiline
+                  multiline={isFocused}
+                  textAlignVertical={isFocused ? 'top' : 'center'}
                   maxLength={500}
                 />
                 <TouchableOpacity
@@ -476,8 +474,8 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
-        </SafeKeyboardAvoidingView>
+          </SafeKeyboardStickyView>
+        </View>
       </View>
     </Modal>
   )
@@ -541,34 +539,28 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   replyBar: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 10,
-    paddingHorizontal: 12,
-  },
-  inputArea: {
-    gap: 8,
+    paddingHorizontal: 14,
+    overflow: 'hidden',
   },
   inputRow: {
+    flex: 1,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     gap: 8,
   },
   imageBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 4,
     flexShrink: 0,
   },
   input: {
     flex: 1,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    fontSize: 14,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    includeFontPadding: false,
     maxHeight: 100,
+  },
+  inputCollapsed: {
+    height: 28,
   },
   mediaStrip: {
     gap: 8,
@@ -606,9 +598,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sendBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
