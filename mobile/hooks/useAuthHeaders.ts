@@ -23,7 +23,7 @@ export function useAuthHeaders(): Record<string, string> {
   useEffect(() => {
     if (cachedHeaders) {
       // Already cached — ensure state is in sync
-      setHeaders(prev => prev === cachedHeaders ? prev : cachedHeaders!)
+      setHeaders(prev => (prev === cachedHeaders ? prev : cachedHeaders!))
       return
     }
     if (!pendingPromise) {

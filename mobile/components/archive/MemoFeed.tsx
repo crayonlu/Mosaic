@@ -6,7 +6,15 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { MemoCard } from '../memo/MemoCard'
 
-const FeedMemoCard = React.memo(function FeedMemoCard({ memo, onPress, isSelected }: { memo: MemoWithResources; onPress: (memo: MemoWithResources) => void; isSelected: boolean }) {
+const FeedMemoCard = React.memo(function FeedMemoCard({
+  memo,
+  onPress,
+  isSelected,
+}: {
+  memo: MemoWithResources
+  onPress: (memo: MemoWithResources) => void
+  isSelected: boolean
+}) {
   const handlePress = useCallback(() => onPress(memo), [memo, onPress])
   return <MemoCard memo={memo} onPress={handlePress} isSelected={isSelected} />
 })
@@ -80,38 +88,50 @@ export function MemoFeed({
     }
   }, [isLoading, hasMore, targetDate, fetchNextPage])
 
-  const handleSelectionChange = useCallback((id: string) => {
-    onSelectionChange?.(id)
-  }, [onSelectionChange])
+  const handleSelectionChange = useCallback(
+    (id: string) => {
+      onSelectionChange?.(id)
+    },
+    [onSelectionChange]
+  )
 
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
 
-  const handleCardPress = useCallback((memo: MemoWithResources) => {
-    if (isSelectionMode) {
-      handleSelectionChange(memo.id)
-    } else {
-      onMemoPress?.(memo)
-    }
-  }, [isSelectionMode, handleSelectionChange, onMemoPress])
+  const handleCardPress = useCallback(
+    (memo: MemoWithResources) => {
+      if (isSelectionMode) {
+        handleSelectionChange(memo.id)
+      } else {
+        onMemoPress?.(memo)
+      }
+    },
+    [isSelectionMode, handleSelectionChange, onMemoPress]
+  )
 
-  const renderMemoCard = useCallback(({ item }: { item: MemoWithResources }) => (
-    <FeedMemoCard
-      memo={item}
-      onPress={handleCardPress}
-      isSelected={isSelectionMode && selectedSet.has(item.id)}
-    />
-  ), [handleCardPress, isSelectionMode, selectedSet])
+  const renderMemoCard = useCallback(
+    ({ item }: { item: MemoWithResources }) => (
+      <FeedMemoCard
+        memo={item}
+        onPress={handleCardPress}
+        isSelected={isSelectionMode && selectedSet.has(item.id)}
+      />
+    ),
+    [handleCardPress, isSelectionMode, selectedSet]
+  )
 
-  const renderEmptyState = useMemo(() => (
-    <View style={styles.emptyContainer}>
-      <Text style={[styles.emptyTitle, { color: theme.text }]}>
-        {targetDate ? '今天还没有记录' : '暂无Memo'}
-      </Text>
-      <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-        {targetDate ? '点击下方按钮创建你的第一条Memo' : '开始记录你的想法和灵感'}
-      </Text>
-    </View>
-  ), [targetDate, theme.text, theme.textSecondary])
+  const renderEmptyState = useMemo(
+    () => (
+      <View style={styles.emptyContainer}>
+        <Text style={[styles.emptyTitle, { color: theme.text }]}>
+          {targetDate ? '今天还没有记录' : '暂无Memo'}
+        </Text>
+        <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
+          {targetDate ? '点击下方按钮创建你的第一条Memo' : '开始记录你的想法和灵感'}
+        </Text>
+      </View>
+    ),
+    [targetDate, theme.text, theme.textSecondary]
+  )
 
   const renderFooter = useMemo(() => {
     if (isFetchingNextPage) {

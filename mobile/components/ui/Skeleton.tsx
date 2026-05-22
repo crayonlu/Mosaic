@@ -27,7 +27,12 @@ function SkeletonLineInner({
   const { theme } = useThemeStore()
 
   return (
-    <View style={[{ width, height, borderRadius, backgroundColor: theme.surfaceMuted, overflow: 'hidden' }, style]}>
+    <View
+      style={[
+        { width, height, borderRadius, backgroundColor: theme.surfaceMuted, overflow: 'hidden' },
+        style,
+      ]}
+    >
       <Animated.View style={[StyleSheet.absoluteFill, shimmerStyle]} />
     </View>
   )
@@ -67,11 +72,7 @@ function useShimmerAnimation() {
 
   const shimmerStyle = useAnimatedStyle(() => {
     const translateX = interpolate(progress.value, [0, 1], [-100, 100])
-    const opacity = interpolate(
-      progress.value,
-      [0, 0.3, 0.5, 0.7, 1],
-      [0, 0.12, 0.24, 0.12, 0]
-    )
+    const opacity = interpolate(progress.value, [0, 0.3, 0.5, 0.7, 1], [0, 0.12, 0.24, 0.12, 0])
     return {
       transform: [{ translateX: `${translateX}%` as unknown as number }],
       opacity,
@@ -82,7 +83,11 @@ function useShimmerAnimation() {
   return shimmerStyle
 }
 
-export function MemoCardSkeleton({ shimmerStyle }: { shimmerStyle?: ReturnType<typeof useAnimatedStyle> }) {
+export function MemoCardSkeleton({
+  shimmerStyle,
+}: {
+  shimmerStyle?: ReturnType<typeof useAnimatedStyle>
+}) {
   const { theme } = useThemeStore()
   const fallbackShimmer = useShimmerAnimation()
   const animStyle = shimmerStyle ?? fallbackShimmer
@@ -93,9 +98,24 @@ export function MemoCardSkeleton({ shimmerStyle }: { shimmerStyle?: ReturnType<t
         <SkeletonLineInner width={60} height={12} shimmerStyle={animStyle} />
         <SkeletonLineInner width={40} height={10} shimmerStyle={animStyle} />
       </View>
-      <SkeletonLineInner width="90%" height={16} style={{ marginBottom: 8 }} shimmerStyle={animStyle} />
-      <SkeletonLineInner width="100%" height={12} style={{ marginBottom: 6 }} shimmerStyle={animStyle} />
-      <SkeletonLineInner width="75%" height={12} style={{ marginBottom: 12 }} shimmerStyle={animStyle} />
+      <SkeletonLineInner
+        width="90%"
+        height={16}
+        style={{ marginBottom: 8 }}
+        shimmerStyle={animStyle}
+      />
+      <SkeletonLineInner
+        width="100%"
+        height={12}
+        style={{ marginBottom: 6 }}
+        shimmerStyle={animStyle}
+      />
+      <SkeletonLineInner
+        width="75%"
+        height={12}
+        style={{ marginBottom: 12 }}
+        shimmerStyle={animStyle}
+      />
       <View style={styles.tagsRow}>
         <SkeletonLineInner width={48} height={22} borderRadius={11} shimmerStyle={animStyle} />
         <SkeletonLineInner width={64} height={22} borderRadius={11} shimmerStyle={animStyle} />

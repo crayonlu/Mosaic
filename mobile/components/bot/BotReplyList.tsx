@@ -24,7 +24,9 @@ export function BotReplyList({
 
   const replies =
     revisionNumber != null
-      ? (allReplies ?? []).filter(r => r.revisionNumber == null || r.revisionNumber === revisionNumber)
+      ? (allReplies ?? []).filter(
+          r => r.revisionNumber == null || r.revisionNumber === revisionNumber
+        )
       : (allReplies ?? [])
 
   // Loading state: show placeholder to reserve space

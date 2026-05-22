@@ -9,10 +9,24 @@ import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } f
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 import { MemoCard } from './MemoCard'
 
-const ListMemoCard = React.memo(function ListMemoCard({ memo, onPress, onDelete, index }: { memo: MemoWithResources; onPress: (memo: MemoWithResources) => void; onDelete: (id: string) => void; index: number }) {
+const ListMemoCard = React.memo(function ListMemoCard({
+  memo,
+  onPress,
+  onDelete,
+  index,
+}: {
+  memo: MemoWithResources
+  onPress: (memo: MemoWithResources) => void
+  onDelete: (id: string) => void
+  index: number
+}) {
   const handlePress = useCallback(() => onPress(memo), [memo, onPress])
   return (
-    <Animated.View entering={FadeIn.delay(index < 8 ? index * 30 : 0).duration(200).easing(Easing.out(Easing.cubic))}>
+    <Animated.View
+      entering={FadeIn.delay(index < 8 ? index * 30 : 0)
+        .duration(200)
+        .easing(Easing.out(Easing.cubic))}
+    >
       <MemoCard memo={memo} onPress={handlePress} onDelete={onDelete} />
     </Animated.View>
   )
@@ -117,55 +131,66 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
       .sort((a, b) => b.date.localeCompare(a.date))
   }, [memos, date])
 
-  const renderDateHeader = useCallback((displayDate: string, count: number, isFirst: boolean) => (
-    <View
-      style={[
-        styles.dateHeader,
-        { borderTopColor: theme.border, borderTopWidth: isFirst ? 0 : StyleSheet.hairlineWidth },
-        isFirst && { marginTop: 0 },
-      ]}
-    >
-      <Text style={[styles.dateHeaderText, { color: theme.text }]}>{displayDate}</Text>
-      {count > 0 && (
-        <Text style={[styles.dateHeaderCount, { color: theme.textSecondary }]}>{count} 条Memo</Text>
-      )}
-    </View>
-  ), [theme.border, theme.text, theme.textSecondary])
-
-  const renderEmptyState = useMemo(() => (
-    <View style={styles.emptyContainer}>
-      <View style={[styles.emptyIcon]}>
-        <FileX size={48} color={theme.primary} strokeWidth={1.5} />
+  const renderDateHeader = useCallback(
+    (displayDate: string, count: number, isFirst: boolean) => (
+      <View
+        style={[
+          styles.dateHeader,
+          { borderTopColor: theme.border, borderTopWidth: isFirst ? 0 : StyleSheet.hairlineWidth },
+          isFirst && { marginTop: 0 },
+        ]}
+      >
+        <Text style={[styles.dateHeaderText, { color: theme.text }]}>{displayDate}</Text>
+        {count > 0 && (
+          <Text style={[styles.dateHeaderCount, { color: theme.textSecondary }]}>
+            {count} 条Memo
+          </Text>
+        )}
       </View>
-      <Text style={[styles.emptyTitle, { color: theme.text }]}>
-        {date ? '今天还没有记录' : '暂无Memo'}
-      </Text>
-      <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-        {date ? '点击下方按钮创建你的第一条Memo' : '开始记录你的想法和灵感'}
-      </Text>
-    </View>
-  ), [date, theme.primary, theme.text, theme.textSecondary])
+    ),
+    [theme.border, theme.text, theme.textSecondary]
+  )
 
-  const renderGroup = useCallback(({
-    item: group,
-    index,
-  }: {
-    item: { date: string; displayDate: string; memos: MemoWithResources[] }
-    index: number
-  }) => (
-    <View key={group.date}>
-      {renderDateHeader(group.displayDate, group.memos.length, index === 0)}
-      {group.memos.map((memo, memoIndex) => (
-        <ListMemoCard
-          key={memo.id}
-          memo={memo}
-          onPress={onMemoPress}
-          onDelete={handleDelete}
-          index={memoIndex}
-        />
-      ))}
-    </View>
-  ), [renderDateHeader, onMemoPress, handleDelete])
+  const renderEmptyState = useMemo(
+    () => (
+      <View style={styles.emptyContainer}>
+        <View style={[styles.emptyIcon]}>
+          <FileX size={48} color={theme.primary} strokeWidth={1.5} />
+        </View>
+        <Text style={[styles.emptyTitle, { color: theme.text }]}>
+          {date ? '今天还没有记录' : '暂无Memo'}
+        </Text>
+        <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
+          {date ? '点击下方按钮创建你的第一条Memo' : '开始记录你的想法和灵感'}
+        </Text>
+      </View>
+    ),
+    [date, theme.primary, theme.text, theme.textSecondary]
+  )
+
+  const renderGroup = useCallback(
+    ({
+      item: group,
+      index,
+    }: {
+      item: { date: string; displayDate: string; memos: MemoWithResources[] }
+      index: number
+    }) => (
+      <View key={group.date}>
+        {renderDateHeader(group.displayDate, group.memos.length, index === 0)}
+        {group.memos.map((memo, memoIndex) => (
+          <ListMemoCard
+            key={memo.id}
+            memo={memo}
+            onPress={onMemoPress}
+            onDelete={handleDelete}
+            index={memoIndex}
+          />
+        ))}
+      </View>
+    ),
+    [renderDateHeader, onMemoPress, handleDelete]
+  )
 
   const renderFooter = useMemo(() => {
     if (memos.length === 0) return null

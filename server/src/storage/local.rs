@@ -12,8 +12,8 @@ pub struct LocalStorage {
 impl LocalStorage {
     pub async fn new(base_path: &str) -> anyhow::Result<Self> {
         tokio_fs::create_dir_all(base_path).await?;
-        let canonical_base = std::fs::canonicalize(base_path)
-            .unwrap_or_else(|_| PathBuf::from(base_path));
+        let canonical_base =
+            std::fs::canonicalize(base_path).unwrap_or_else(|_| PathBuf::from(base_path));
         Ok(Self {
             base_path: canonical_base,
         })
@@ -27,10 +27,18 @@ impl LocalStorage {
             let mut normalized = PathBuf::new();
             for component in full_path.components() {
                 match component {
-                    std::path::Component::ParentDir => { normalized.pop(); }
-                    std::path::Component::Normal(c) => { normalized.push(c); }
-                    std::path::Component::RootDir => { normalized.push("/"); }
-                    std::path::Component::Prefix(p) => { normalized.push(p.as_os_str()); }
+                    std::path::Component::ParentDir => {
+                        normalized.pop();
+                    }
+                    std::path::Component::Normal(c) => {
+                        normalized.push(c);
+                    }
+                    std::path::Component::RootDir => {
+                        normalized.push("/");
+                    }
+                    std::path::Component::Prefix(p) => {
+                        normalized.push(p.as_os_str());
+                    }
                     std::path::Component::CurDir => {}
                 }
             }

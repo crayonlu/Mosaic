@@ -4,7 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Pressable, StyleSheet, Text, View, type NativeSyntheticEvent } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import PagerView from 'react-native-pager-view'
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ImagePreviewContent } from './ImagePreviewContent'
@@ -91,7 +96,9 @@ export function MediaPreviewModal({ items, initialIndex, onRequestClose }: Media
                           lowQualityUri={item.previewLowQualityUri}
                           lowQualityHeaders={item.previewLowQualityHeaders}
                           isActive={index === currentIndex}
-                          onZoomActiveChange={index === currentIndex ? handleZoomActiveChange : undefined}
+                          onZoomActiveChange={
+                            index === currentIndex ? handleZoomActiveChange : undefined
+                          }
                         />
                       ) : (
                         <VideoPreviewContent

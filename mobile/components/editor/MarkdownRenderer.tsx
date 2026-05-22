@@ -28,7 +28,12 @@ function getLowlight() {
 
 function getSharedMarkdownIt() {
   if (!sharedMarkdownItInstance) {
-    sharedMarkdownItInstance = MarkdownIt({ html: false, typographer: true, breaks: true, linkify: true })
+    sharedMarkdownItInstance = MarkdownIt({
+      html: false,
+      typographer: true,
+      breaks: true,
+      linkify: true,
+    })
     sharedMarkdownItInstance.use(taskLists, { enabled: true, label: true, labelAfter: false })
     sharedMarkdownItInstance.enable(['table'])
   }
@@ -73,7 +78,7 @@ function getCodeSegments(code: string, language: string): CodeSegment[] {
   const normalizedLanguage = language.trim().toLowerCase()
   const ll = getLowlight()
   if (!normalizedLanguage || !ll.registered(normalizedLanguage)) {
-    return [{ text: code }]  // no auto-scan
+    return [{ text: code }] // no auto-scan
   }
 
   const tree = ll.highlight(normalizedLanguage, code)
@@ -203,7 +208,10 @@ interface MarkdownRendererProps {
   style?: object
 }
 
-export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, style }: MarkdownRendererProps) {
+export const MarkdownRenderer = React.memo(function MarkdownRenderer({
+  content,
+  style,
+}: MarkdownRendererProps) {
   const { theme } = useThemeStore()
 
   if (!content || content.trim().length === 0) {
@@ -371,11 +379,7 @@ const MarkdownContent = React.memo(function MarkdownContent({
 
   return (
     <View style={[styles.container, style]}>
-      <Markdown
-        markdownit={getSharedMarkdownIt()}
-        style={markdownStyles as any}
-        rules={rules}
-      >
+      <Markdown markdownit={getSharedMarkdownIt()} style={markdownStyles as any} rules={rules}>
         {markdownText}
       </Markdown>
     </View>

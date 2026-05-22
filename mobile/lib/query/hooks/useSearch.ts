@@ -3,13 +3,13 @@ import { memosApi } from '@mosaic/api'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { withOfflineFallback, syncMemosPage, fallbackSearchMemos } from '../offlineSync'
 
-export function useSearchMemos(
-  query: SearchMemosQuery,
-  options?: { enabled?: boolean }
-) {
+export function useSearchMemos(query: SearchMemosQuery, options?: { enabled?: boolean }) {
   const hasSearchCriteria = Boolean(
-    query.query?.trim() || query.tags?.length || query.isArchived !== undefined ||
-    query.startDate || query.endDate
+    query.query?.trim() ||
+    query.tags?.length ||
+    query.isArchived !== undefined ||
+    query.startDate ||
+    query.endDate
   )
 
   return useInfiniteQuery({

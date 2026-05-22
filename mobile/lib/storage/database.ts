@@ -85,7 +85,9 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
       `)
 
       // Version-gated migrations — only run ALTER TABLE on first upgrade.
-      const versionResult = await database.getFirstAsync<{ user_version: number }>('PRAGMA user_version')
+      const versionResult = await database.getFirstAsync<{ user_version: number }>(
+        'PRAGMA user_version'
+      )
       const dbVersion = versionResult?.user_version ?? 0
 
       if (dbVersion < 1) {

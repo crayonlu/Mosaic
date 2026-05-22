@@ -415,7 +415,7 @@ pub async fn upload_avatar(
                     // Check 10 MB avatar upload limit
                     if data.len() + bytes.len() > MAX_AVATAR_BYTES {
                         return HttpResponse::PayloadTooLarge().json(
-                            serde_json::json!({"error": "Avatar too large, maximum size is 10MB"})
+                            serde_json::json!({"error": "Avatar too large, maximum size is 10MB"}),
                         );
                     }
                     data.extend_from_slice(&bytes);

@@ -26,8 +26,22 @@ import {
   Trash,
 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity as RNTouchableOpacity, View } from 'react-native'
-import Animated, { Easing, FadeIn, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity as RNTouchableOpacity,
+  View,
+} from 'react-native'
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 
 const TouchableOpacity = (props: React.ComponentProps<typeof RNTouchableOpacity>) => (
   <RNTouchableOpacity activeOpacity={1} {...props} />
@@ -36,7 +50,15 @@ const TouchableOpacity = (props: React.ComponentProps<typeof RNTouchableOpacity>
 const appVersion = Constants.expoConfig?.version ?? 'unknown'
 const expandLayoutTransition = LinearTransition.duration(220)
 
-function CollapsibleContent({ expanded, children, style }: { expanded: boolean; children: React.ReactNode; style?: any }) {
+function CollapsibleContent({
+  expanded,
+  children,
+  style,
+}: {
+  expanded: boolean
+  children: React.ReactNode
+  style?: any
+}) {
   const [contentHeight, setContentHeight] = useState(0)
   const animHeight = useSharedValue(0)
 
@@ -326,64 +348,67 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </TouchableOpacity>
-        <CollapsibleContent expanded={showBotSettings} style={[styles.botSettings, { borderTopColor: theme.border }]}>
-            {bots.map((bot, index) => (
-              <TouchableOpacity
-                key={bot.id}
-                style={[
-                  styles.botItem,
-                  index > 0 && {
-                    borderTopWidth: StyleSheet.hairlineWidth,
-                    borderTopColor: theme.border,
-                  },
-                ]}
-                activeOpacity={1}
-                onPress={() => {
-                  setEditingBot(bot)
-                  setBotEditorVisible(true)
-                }}
-              >
-                <View style={[styles.botAvatar, { backgroundColor: theme.primary }]}>
-                  {bot.avatarUrl ? (
-                    <BotAvatarImageWithAuth avatarUrl={bot.avatarUrl} />
-                  ) : (
-                    <Text style={[styles.botAvatarText, { color: theme.onPrimary }]}>
-                      {bot.name.charAt(0).toUpperCase()}
-                    </Text>
-                  )}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.botName, { color: theme.text }]}>{bot.name}</Text>
-                  {bot.tags.length > 0 && (
-                    <Text style={[styles.botTags, { color: theme.textSecondary }]}>
-                      {bot.tags.map(t => `#${t}`).join(' ')}
-                    </Text>
-                  )}
-                </View>
-                <View onStartShouldSetResponder={() => true}>
-                  <SwitchBtn
-                    value={bot.autoReply}
-                    onValueChange={v => updateBot({ id: bot.id, data: { autoReply: v } })}
-                  />
-                </View>
-              </TouchableOpacity>
-            ))}
+        <CollapsibleContent
+          expanded={showBotSettings}
+          style={[styles.botSettings, { borderTopColor: theme.border }]}
+        >
+          {bots.map((bot, index) => (
             <TouchableOpacity
+              key={bot.id}
               style={[
-                styles.addBotBtn,
-                {
+                styles.botItem,
+                index > 0 && {
+                  borderTopWidth: StyleSheet.hairlineWidth,
                   borderTopColor: theme.border,
-                  borderTopWidth: bots.length > 0 ? StyleSheet.hairlineWidth : 0,
                 },
               ]}
+              activeOpacity={1}
               onPress={() => {
-                setEditingBot(undefined)
+                setEditingBot(bot)
                 setBotEditorVisible(true)
               }}
             >
-              <Plus size={16} color={theme.primary} />
-              <Text style={[styles.addBotText, { color: theme.primary }]}>添加 Bot</Text>
+              <View style={[styles.botAvatar, { backgroundColor: theme.primary }]}>
+                {bot.avatarUrl ? (
+                  <BotAvatarImageWithAuth avatarUrl={bot.avatarUrl} />
+                ) : (
+                  <Text style={[styles.botAvatarText, { color: theme.onPrimary }]}>
+                    {bot.name.charAt(0).toUpperCase()}
+                  </Text>
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.botName, { color: theme.text }]}>{bot.name}</Text>
+                {bot.tags.length > 0 && (
+                  <Text style={[styles.botTags, { color: theme.textSecondary }]}>
+                    {bot.tags.map(t => `#${t}`).join(' ')}
+                  </Text>
+                )}
+              </View>
+              <View onStartShouldSetResponder={() => true}>
+                <SwitchBtn
+                  value={bot.autoReply}
+                  onValueChange={v => updateBot({ id: bot.id, data: { autoReply: v } })}
+                />
+              </View>
             </TouchableOpacity>
+          ))}
+          <TouchableOpacity
+            style={[
+              styles.addBotBtn,
+              {
+                borderTopColor: theme.border,
+                borderTopWidth: bots.length > 0 ? StyleSheet.hairlineWidth : 0,
+              },
+            ]}
+            onPress={() => {
+              setEditingBot(undefined)
+              setBotEditorVisible(true)
+            }}
+          >
+            <Plus size={16} color={theme.primary} />
+            <Text style={[styles.addBotText, { color: theme.primary }]}>添加 Bot</Text>
+          </TouchableOpacity>
         </CollapsibleContent>
       </View>
       <BotEditorSheet
@@ -411,25 +436,28 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </TouchableOpacity>
-        <CollapsibleContent expanded={showAppearanceSettings} style={[styles.appearanceSettings, { borderTopColor: theme.border }]}>
-            <View style={styles.appearanceRow}>
-              <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>配色风格</Text>
-              <View style={styles.appearanceControl}>
-                <SlidingSegmentedControl
-                  options={[
-                    { label: '暖纸', value: 'quietPaper' },
-                    { label: '清冷', value: 'cleanSlate' },
-                  ]}
-                  value={themeName}
-                  onChange={v => setThemeName(v as 'quietPaper' | 'cleanSlate')}
-                  surfaceMuted={theme.surfaceMuted}
-                  surface={theme.surface}
-                  textColor={theme.text}
-                  textMuted={theme.textSecondary}
-                  radius={theme.radius.small}
-                />
-              </View>
+        <CollapsibleContent
+          expanded={showAppearanceSettings}
+          style={[styles.appearanceSettings, { borderTopColor: theme.border }]}
+        >
+          <View style={styles.appearanceRow}>
+            <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>配色风格</Text>
+            <View style={styles.appearanceControl}>
+              <SlidingSegmentedControl
+                options={[
+                  { label: '暖纸', value: 'quietPaper' },
+                  { label: '清冷', value: 'cleanSlate' },
+                ]}
+                value={themeName}
+                onChange={v => setThemeName(v as 'quietPaper' | 'cleanSlate')}
+                surfaceMuted={theme.surfaceMuted}
+                surface={theme.surface}
+                textColor={theme.text}
+                textMuted={theme.textSecondary}
+                radius={theme.radius.small}
+              />
             </View>
+          </View>
         </CollapsibleContent>
       </View>
     </View>
@@ -512,13 +540,16 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </TouchableOpacity>
-          <CollapsibleContent expanded={showAISettings} style={[styles.aiSettings, { borderTopColor: theme.border }]}>
-              {renderModelCard('BOT 模型', botConfig, botConfigured, [
-                { text: '图片输入', show: Boolean(botConfig?.supportsVision) },
-                { text: '心路历程', show: Boolean(botConfig?.supportsThinking) },
-              ])}
-              <View style={[styles.aiDivider, { backgroundColor: theme.border }]} />
-              {renderModelCard('EMBEDDING 模型', embConfig, embConfigured)}
+          <CollapsibleContent
+            expanded={showAISettings}
+            style={[styles.aiSettings, { borderTopColor: theme.border }]}
+          >
+            {renderModelCard('BOT 模型', botConfig, botConfigured, [
+              { text: '图片输入', show: Boolean(botConfig?.supportsVision) },
+              { text: '心路历程', show: Boolean(botConfig?.supportsThinking) },
+            ])}
+            <View style={[styles.aiDivider, { backgroundColor: theme.border }]} />
+            {renderModelCard('EMBEDDING 模型', embConfig, embConfigured)}
           </CollapsibleContent>
         </View>
       </View>
@@ -540,43 +571,46 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </TouchableOpacity>
-        <CollapsibleContent expanded={showPermissionSettings} style={[styles.permissionSettings, { borderTopColor: theme.border }]}>
-            <View>
-              <View
-                style={{
-                  display: 'flex',
-                  flex: 1,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <View>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      color: theme.text,
-                    }}
-                  >
-                    推送消息
-                  </Text>
-                  <Text
-                    style={{
-                      marginTop: 2,
-                      fontSize: 12,
-                      color: theme.textSecondary,
-                    }}
-                  >
-                    {pushPermissionGranted
-                      ? pushEnabled
-                        ? '已开启提醒'
-                        : '已关闭提醒'
-                      : '系统通知权限未开启'}
-                  </Text>
-                </View>
-                <SwitchBtn value={pushEnabled} onValueChange={handleTogglePush} />
+        <CollapsibleContent
+          expanded={showPermissionSettings}
+          style={[styles.permissionSettings, { borderTopColor: theme.border }]}
+        >
+          <View>
+            <View
+              style={{
+                display: 'flex',
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <View>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: theme.text,
+                  }}
+                >
+                  推送消息
+                </Text>
+                <Text
+                  style={{
+                    marginTop: 2,
+                    fontSize: 12,
+                    color: theme.textSecondary,
+                  }}
+                >
+                  {pushPermissionGranted
+                    ? pushEnabled
+                      ? '已开启提醒'
+                      : '已关闭提醒'
+                    : '系统通知权限未开启'}
+                </Text>
               </View>
+              <SwitchBtn value={pushEnabled} onValueChange={handleTogglePush} />
             </View>
+          </View>
         </CollapsibleContent>
       </View>
     </View>
@@ -618,41 +652,44 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </TouchableOpacity>
-        <CollapsibleContent expanded={showStorageSettings} style={[styles.storageSettings, { borderTopColor: theme.border }]}>
-            {storageItems.map(item => (
-              <View
-                key={item.id}
-                style={[
-                  styles.storageItem,
-                  item !== storageItems[0] && {
-                    borderTopWidth: StyleSheet.hairlineWidth,
-                    borderTopColor: theme.border,
-                  },
-                ]}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, color: theme.text, fontWeight: '500' }}>
-                    {item.label}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
-                    {item.description}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
-                    {item.size > 0 ? formatBytes(item.size) : '—'}
-                    {item.itemCount != null && item.itemCount > 0 ? ` · ${item.itemCount} 项` : ''}
-                  </Text>
-                </View>
-                {item.clearable && (
-                  <Button
-                    variant="ghost"
-                    size="small"
-                    onPress={() => handleClearStorage(item)}
-                    disabled={clearingId === item.id}
-                    title={clearingId === item.id ? '清除中...' : '清除'}
-                  />
-                )}
+        <CollapsibleContent
+          expanded={showStorageSettings}
+          style={[styles.storageSettings, { borderTopColor: theme.border }]}
+        >
+          {storageItems.map(item => (
+            <View
+              key={item.id}
+              style={[
+                styles.storageItem,
+                item !== storageItems[0] && {
+                  borderTopWidth: StyleSheet.hairlineWidth,
+                  borderTopColor: theme.border,
+                },
+              ]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, color: theme.text, fontWeight: '500' }}>
+                  {item.label}
+                </Text>
+                <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
+                  {item.description}
+                </Text>
+                <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
+                  {item.size > 0 ? formatBytes(item.size) : '—'}
+                  {item.itemCount != null && item.itemCount > 0 ? ` · ${item.itemCount} 项` : ''}
+                </Text>
               </View>
-            ))}
+              {item.clearable && (
+                <Button
+                  variant="ghost"
+                  size="small"
+                  onPress={() => handleClearStorage(item)}
+                  disabled={clearingId === item.id}
+                  title={clearingId === item.id ? '清除中...' : '清除'}
+                />
+              )}
+            </View>
+          ))}
         </CollapsibleContent>
       </View>
     </View>

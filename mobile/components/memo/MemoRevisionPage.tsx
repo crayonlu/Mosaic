@@ -21,7 +21,13 @@ interface MemoRevisionPageProps {
   onSaveAISummary?: (text: string) => Promise<void>
 }
 
-export function MemoRevisionPage({ memo, revision, isLatest, onBotReply, onSaveAISummary }: MemoRevisionPageProps) {
+export function MemoRevisionPage({
+  memo,
+  revision,
+  isLatest,
+  onBotReply,
+  onSaveAISummary,
+}: MemoRevisionPageProps) {
   const { theme } = useThemeStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 

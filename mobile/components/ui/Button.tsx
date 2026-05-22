@@ -9,7 +9,12 @@ import {
   View,
   ViewStyle,
 } from 'react-native'
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 
 export interface ButtonProps {
   title?: string

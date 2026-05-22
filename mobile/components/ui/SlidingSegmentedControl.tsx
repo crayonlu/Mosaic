@@ -47,11 +47,7 @@ function AnimatedLabel({
     fontWeight: active ? '600' : '400',
   }))
 
-  return (
-    <Animated.Text style={[styles.label, animStyle]}>
-      {label}
-    </Animated.Text>
-  )
+  return <Animated.Text style={[styles.label, animStyle]}>{label}</Animated.Text>
 }
 
 export function SlidingSegmentedControl({

@@ -117,49 +117,49 @@ export function DatePickerSheet({
               entering={FadeIn.duration(150).easing(Easing.out(Easing.cubic))}
               style={styles.gridInner}
             >
-            {calendarCells.map((cell, index) => {
-              if (!cell) {
-                return <View key={`blank-${index}`} style={styles.cell} />
-              }
+              {calendarCells.map((cell, index) => {
+                if (!cell) {
+                  return <View key={`blank-${index}`} style={styles.cell} />
+                }
 
-              const disabled = isDisabled(cell)
-              const selected = Boolean(selectedDate) && cell.format('YYYY-MM-DD') === selectedDate
+                const disabled = isDisabled(cell)
+                const selected = Boolean(selectedDate) && cell.format('YYYY-MM-DD') === selectedDate
 
-              return (
-                <TouchableOpacity
-                  key={cell.format('YYYY-MM-DD')}
-                  style={[
-                    styles.cell,
-                    styles.dateCell,
-                    {
-                      backgroundColor: selected ? theme.surfaceStrong : 'transparent',
-                      borderColor: selected ? theme.border : 'transparent',
-                      borderWidth: selected ? StyleSheet.hairlineWidth : 0,
-                      opacity: disabled ? theme.state.disabledOpacity : 1,
-                    },
-                  ]}
-                  onPress={() => {
-                    if (disabled) return
-                    onSelect(cell.format('YYYY-MM-DD'))
-                    onClose()
-                  }}
-                  activeOpacity={theme.state.pressedOpacity}
-                  disabled={disabled}
-                >
-                  <Text
+                return (
+                  <TouchableOpacity
+                    key={cell.format('YYYY-MM-DD')}
                     style={[
-                      styles.dateText,
+                      styles.cell,
+                      styles.dateCell,
                       {
-                        color: theme.text,
-                        fontWeight: selected ? '500' : '400',
+                        backgroundColor: selected ? theme.surfaceStrong : 'transparent',
+                        borderColor: selected ? theme.border : 'transparent',
+                        borderWidth: selected ? StyleSheet.hairlineWidth : 0,
+                        opacity: disabled ? theme.state.disabledOpacity : 1,
                       },
                     ]}
+                    onPress={() => {
+                      if (disabled) return
+                      onSelect(cell.format('YYYY-MM-DD'))
+                      onClose()
+                    }}
+                    activeOpacity={theme.state.pressedOpacity}
+                    disabled={disabled}
                   >
-                    {cell.date()}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
+                    <Text
+                      style={[
+                        styles.dateText,
+                        {
+                          color: theme.text,
+                          fontWeight: selected ? '500' : '400',
+                        },
+                      ]}
+                    >
+                      {cell.date()}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
             </Animated.View>
           </View>
 

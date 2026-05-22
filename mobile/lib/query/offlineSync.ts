@@ -1,9 +1,4 @@
-import type {
-  Diary,
-  MemoWithResources,
-  PaginatedResponse,
-  SearchMemosResponse,
-} from '@mosaic/api'
+import type { Diary, MemoWithResources, PaginatedResponse, SearchMemosResponse } from '@mosaic/api'
 import {
   upsertDiaries,
   upsertMemos,

@@ -12,7 +12,12 @@ import { Tabs } from 'expo-router'
 import { Book, Calendar, Files, Search, Settings } from 'lucide-react-native'
 import React, { useEffect } from 'react'
 import { StyleSheet, View } from 'react-native'
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 
 const TabIconWithDot = React.memo(function TabIconWithDot({
   focused,
@@ -26,8 +31,14 @@ const TabIconWithDot = React.memo(function TabIconWithDot({
   const dotScale = useSharedValue(focused ? 1 : 0.4)
 
   useEffect(() => {
-    dotOpacity.value = withTiming(focused ? 1 : 0, { duration: 160, easing: Easing.out(Easing.cubic) })
-    dotScale.value = withTiming(focused ? 1 : 0.4, { duration: 160, easing: Easing.out(Easing.cubic) })
+    dotOpacity.value = withTiming(focused ? 1 : 0, {
+      duration: 160,
+      easing: Easing.out(Easing.cubic),
+    })
+    dotScale.value = withTiming(focused ? 1 : 0.4, {
+      duration: 160,
+      easing: Easing.out(Easing.cubic),
+    })
   }, [focused, dotOpacity, dotScale])
 
   const dotAnimStyle = useAnimatedStyle(() => ({
@@ -38,7 +49,9 @@ const TabIconWithDot = React.memo(function TabIconWithDot({
   return (
     <View style={tabIconStyles.container}>
       {children}
-      <Animated.View style={[tabIconStyles.dot, { backgroundColor: theme.primary }, dotAnimStyle]} />
+      <Animated.View
+        style={[tabIconStyles.dot, { backgroundColor: theme.primary }, dotAnimStyle]}
+      />
     </View>
   )
 })

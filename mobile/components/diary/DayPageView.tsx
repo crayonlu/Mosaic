@@ -5,8 +5,20 @@ import { toast } from '@/components/ui/Toast'
 import { useDiary, useUpdateDiary } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { MOODS, type MoodKey } from '@mosaic/utils'
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react'
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from 'react'
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import type { MemoWithResources } from '@mosaic/api'
 
@@ -38,8 +50,14 @@ const MoodCircle = React.memo(function MoodCircle({
   const opacity = useSharedValue(selected ? 1 : 0.38)
 
   useEffect(() => {
-    scale.value = withTiming(selected ? 1.08 : 1, { duration: 180, easing: Easing.out(Easing.cubic) })
-    opacity.value = withTiming(selected ? 1 : 0.38, { duration: 180, easing: Easing.out(Easing.cubic) })
+    scale.value = withTiming(selected ? 1.08 : 1, {
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+    })
+    opacity.value = withTiming(selected ? 1 : 0.38, {
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+    })
   }, [selected, scale, opacity])
 
   const animStyle = useAnimatedStyle(() => ({
@@ -61,182 +79,186 @@ const MoodCircle = React.memo(function MoodCircle({
   )
 })
 
-export const DayPageView = React.memo(forwardRef<DayPageViewRef, DayPageViewProps>(function DayPageView(
-  { date, onMemoPress, isEditing, onEditStateChange },
-  ref
-) {
-  const theme = useThemeStore(s => s.theme)
-  const [summaryDraft, setSummaryDraft] = useState('')
-  const [moodKeyDraft, setMoodKeyDraft] = useState<MoodKey | undefined>(undefined)
-  const [moodScoreDraft, setMoodScoreDraft] = useState(5)
+export const DayPageView = React.memo(
+  forwardRef<DayPageViewRef, DayPageViewProps>(function DayPageView(
+    { date, onMemoPress, isEditing, onEditStateChange },
+    ref
+  ) {
+    const theme = useThemeStore(s => s.theme)
+    const [summaryDraft, setSummaryDraft] = useState('')
+    const [moodKeyDraft, setMoodKeyDraft] = useState<MoodKey | undefined>(undefined)
+    const [moodScoreDraft, setMoodScoreDraft] = useState(5)
 
-  const { data: diary, isLoading } = useDiary(date)
-  const updateDiary = useUpdateDiary()
-  const archivedMemos = useMemo<MemoWithResources[]>(() => diary?.memos ?? [], [diary?.memos])
+    const { data: diary, isLoading } = useDiary(date)
+    const updateDiary = useUpdateDiary()
+    const archivedMemos = useMemo<MemoWithResources[]>(() => diary?.memos ?? [], [diary?.memos])
 
-  useEffect(() => {
-    if (!isEditing) {
+    useEffect(() => {
+      if (!isEditing) {
+        setSummaryDraft(diary?.summary ?? '')
+        setMoodKeyDraft(diary?.moodKey as MoodKey | undefined)
+        setMoodScoreDraft(diary?.moodScore ?? 5)
+      }
+    }, [diary?.summary, diary?.moodKey, diary?.moodScore, isEditing])
+
+    useEffect(() => {
       setSummaryDraft(diary?.summary ?? '')
       setMoodKeyDraft(diary?.moodKey as MoodKey | undefined)
       setMoodScoreDraft(diary?.moodScore ?? 5)
-    }
-  }, [diary?.summary, diary?.moodKey, diary?.moodScore, isEditing])
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [date])
 
-  useEffect(() => {
-    setSummaryDraft(diary?.summary ?? '')
-    setMoodKeyDraft(diary?.moodKey as MoodKey | undefined)
-    setMoodScoreDraft(diary?.moodScore ?? 5)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date])
-
-  const hasChanges = useMemo(() =>
-    summaryDraft.trim() !== (diary?.summary ?? '').trim() ||
-    moodKeyDraft !== (diary?.moodKey as MoodKey | undefined) ||
-    moodScoreDraft !== (diary?.moodScore ?? 5),
-  [summaryDraft, diary?.summary, moodKeyDraft, diary?.moodKey, moodScoreDraft, diary?.moodScore])
-
-  const handleSave = useCallback(async () => {
-    if (!diary) return
-    try {
-      await updateDiary.mutateAsync({
-        date,
-        data: {
-          summary: summaryDraft.trim(),
-          moodKey: moodKeyDraft as any,
-          moodScore: moodScoreDraft,
-        },
-      })
-    } catch {
-      toast.error('保存失败')
-    }
-  }, [diary, date, summaryDraft, moodKeyDraft, moodScoreDraft, updateDiary])
-
-  const handleCancel = useCallback(() => {
-    setSummaryDraft(diary?.summary ?? '')
-    setMoodKeyDraft(diary?.moodKey as MoodKey | undefined)
-    setMoodScoreDraft(diary?.moodScore ?? 5)
-  }, [diary?.summary, diary?.moodKey, diary?.moodScore])
-
-  // Notify parent when hasChanges flips so the save button re-evaluates.
-  // useImperativeHandle runs before this effect, so the ref is already updated.
-  useEffect(() => {
-    if (isEditing) onEditStateChange?.()
-  }, [hasChanges, isEditing]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      hasChanges,
-      isPending: updateDiary.isPending,
-      hasDiary: !!diary,
-      save: handleSave,
-      cancel: handleCancel,
-    }),
-    [hasChanges, updateDiary.isPending, diary, handleSave, handleCancel]
-  )
-
-  const handleMemoPress = useCallback((memoId: string) => onMemoPress?.(memoId), [onMemoPress])
-
-  // Create stable press handler refs for each memo to avoid defeating MemoCard's React.memo
-  const memoPressHandlers = useMemo(() => {
-    const handlers: Record<string, () => void> = {}
-    for (const memo of archivedMemos) {
-      handlers[memo.id] = () => handleMemoPress(memo.id)
-    }
-    return handlers
-  }, [archivedMemos, handleMemoPress])
-
-  if (isLoading) {
-    return (
-      <View style={styles.centeredContainer}>
-        <Loading text="加载中..." />
-      </View>
+    const hasChanges = useMemo(
+      () =>
+        summaryDraft.trim() !== (diary?.summary ?? '').trim() ||
+        moodKeyDraft !== (diary?.moodKey as MoodKey | undefined) ||
+        moodScoreDraft !== (diary?.moodScore ?? 5),
+      [summaryDraft, diary?.summary, moodKeyDraft, diary?.moodKey, moodScoreDraft, diary?.moodScore]
     )
-  }
 
-  if (!diary) {
-    return (
-      <View style={styles.centeredContainer}>
-        <Text style={[styles.emptyText, { color: theme.textSecondary }]}>{date} 日记不存在</Text>
-      </View>
+    const handleSave = useCallback(async () => {
+      if (!diary) return
+      try {
+        await updateDiary.mutateAsync({
+          date,
+          data: {
+            summary: summaryDraft.trim(),
+            moodKey: moodKeyDraft as any,
+            moodScore: moodScoreDraft,
+          },
+        })
+      } catch {
+        toast.error('保存失败')
+      }
+    }, [diary, date, summaryDraft, moodKeyDraft, moodScoreDraft, updateDiary])
+
+    const handleCancel = useCallback(() => {
+      setSummaryDraft(diary?.summary ?? '')
+      setMoodKeyDraft(diary?.moodKey as MoodKey | undefined)
+      setMoodScoreDraft(diary?.moodScore ?? 5)
+    }, [diary?.summary, diary?.moodKey, diary?.moodScore])
+
+    // Notify parent when hasChanges flips so the save button re-evaluates.
+    // useImperativeHandle runs before this effect, so the ref is already updated.
+    useEffect(() => {
+      if (isEditing) onEditStateChange?.()
+    }, [hasChanges, isEditing]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        hasChanges,
+        isPending: updateDiary.isPending,
+        hasDiary: !!diary,
+        save: handleSave,
+        cancel: handleCancel,
+      }),
+      [hasChanges, updateDiary.isPending, diary, handleSave, handleCancel]
     )
-  }
 
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Summary */}
-      {(diary.summary || isEditing) && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>今日总结</Text>
-          {isEditing ? (
-            <TextInput
-              value={summaryDraft}
-              onChangeText={setSummaryDraft}
-              placeholder="写下今天的心情或总结..."
-              placeholderTextColor={theme.textSecondary}
-              multiline
-              textAlignVertical="top"
-              style={[styles.summaryInput, { color: theme.text }]}
-            />
-          ) : (
-            <Text style={[styles.summaryText, { color: theme.text }]}>{diary.summary}</Text>
-          )}
+    const handleMemoPress = useCallback((memoId: string) => onMemoPress?.(memoId), [onMemoPress])
+
+    // Create stable press handler refs for each memo to avoid defeating MemoCard's React.memo
+    const memoPressHandlers = useMemo(() => {
+      const handlers: Record<string, () => void> = {}
+      for (const memo of archivedMemos) {
+        handlers[memo.id] = () => handleMemoPress(memo.id)
+      }
+      return handlers
+    }, [archivedMemos, handleMemoPress])
+
+    if (isLoading) {
+      return (
+        <View style={styles.centeredContainer}>
+          <Loading text="加载中..." />
         </View>
-      )}
+      )
+    }
 
-      {/* Mood selector — only in edit mode, circles only */}
-      {isEditing && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>今日心情</Text>
-          <View style={styles.moodCircles}>
-            {MOODS.map(mood => {
-              const selected = moodKeyDraft === mood.key
-              return (
-                <MoodCircle
-                  key={mood.key}
-                  mood={mood}
-                  selected={selected}
-                  onPress={() => setMoodKeyDraft(mood.key)}
-                />
-              )
-            })}
+    if (!diary) {
+      return (
+        <View style={styles.centeredContainer}>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>{date} 日记不存在</Text>
+        </View>
+      )
+    }
+
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Summary */}
+        {(diary.summary || isEditing) && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>今日总结</Text>
+            {isEditing ? (
+              <TextInput
+                value={summaryDraft}
+                onChangeText={setSummaryDraft}
+                placeholder="写下今天的心情或总结..."
+                placeholderTextColor={theme.textSecondary}
+                multiline
+                textAlignVertical="top"
+                style={[styles.summaryInput, { color: theme.text }]}
+              />
+            ) : (
+              <Text style={[styles.summaryText, { color: theme.text }]}>{diary.summary}</Text>
+            )}
           </View>
-          {moodKeyDraft && (
-            <View style={styles.intensityRow}>
-              <MoodDragBar value={moodScoreDraft} onChange={setMoodScoreDraft} />
-              <Text style={[styles.intensityValue, { color: theme.textSecondary }]}>
-                {moodScoreDraft}/10
-              </Text>
+        )}
+
+        {/* Mood selector — only in edit mode, circles only */}
+        {isEditing && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>今日心情</Text>
+            <View style={styles.moodCircles}>
+              {MOODS.map(mood => {
+                const selected = moodKeyDraft === mood.key
+                return (
+                  <MoodCircle
+                    key={mood.key}
+                    mood={mood}
+                    selected={selected}
+                    onPress={() => setMoodKeyDraft(mood.key)}
+                  />
+                )
+              })}
             </View>
+            {moodKeyDraft && (
+              <View style={styles.intensityRow}>
+                <MoodDragBar value={moodScoreDraft} onChange={setMoodScoreDraft} />
+                <Text style={[styles.intensityValue, { color: theme.textSecondary }]}>
+                  {moodScoreDraft}/10
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Memo list */}
+        <View style={styles.memosSection}>
+          {archivedMemos.length > 0 ? (
+            archivedMemos.map(memo => (
+              <MemoCard
+                key={memo.id}
+                memo={memo}
+                onPress={isEditing ? undefined : memoPressHandlers[memo.id]}
+                showActions={false}
+                showPressFeedback={false}
+              />
+            ))
+          ) : (
+            <Text style={[styles.emptyArchiveText, { color: theme.textSecondary }]}>
+              当天暂无已归档 Memo
+            </Text>
           )}
         </View>
-      )}
-
-      {/* Memo list */}
-      <View style={styles.memosSection}>
-        {archivedMemos.length > 0 ? (
-          archivedMemos.map(memo => (
-            <MemoCard
-              key={memo.id}
-              memo={memo}
-              onPress={isEditing ? undefined : memoPressHandlers[memo.id]}
-              showActions={false}
-              showPressFeedback={false}
-            />
-          ))
-        ) : (
-          <Text style={[styles.emptyArchiveText, { color: theme.textSecondary }]}>
-            当天暂无已归档 Memo
-          </Text>
-        )}
-      </View>
-    </ScrollView>
-  )
-}))
+      </ScrollView>
+    )
+  })
+)
 
 const styles = StyleSheet.create({
   container: {

@@ -65,11 +65,10 @@ async function resolveUploadUri(item: SelectedMediaItem): Promise<string> {
 }
 
 async function compressImageForUpload(uri: string): Promise<string> {
-  const result = await ImageManipulator.manipulateAsync(
-    uri,
-    [{ resize: { width: 2048 } }],
-    { compress: 0.82, format: ImageManipulator.SaveFormat.JPEG }
-  )
+  const result = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: 2048 } }], {
+    compress: 0.82,
+    format: ImageManipulator.SaveFormat.JPEG,
+  })
   return result.uri
 }
 

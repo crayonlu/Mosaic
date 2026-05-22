@@ -18,10 +18,13 @@ export function SwitchBtn({ value, onValueChange, disabled }: SwitchBtnProps) {
     setLocalValue(value)
   }, [value])
 
-  const handleChange = useCallback((newValue: boolean) => {
-    setLocalValue(newValue)   // instant UI
-    onValueChange(newValue)   // notify parent (may be async)
-  }, [onValueChange])
+  const handleChange = useCallback(
+    (newValue: boolean) => {
+      setLocalValue(newValue) // instant UI
+      onValueChange(newValue) // notify parent (may be async)
+    },
+    [onValueChange]
+  )
 
   return (
     <Switch

@@ -6,7 +6,17 @@ import { FileX, Search } from 'lucide-react-native'
 import React, { useCallback, useMemo } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 
-const SearchMemoCard = React.memo(function SearchMemoCard({ item, onPress, onDelete, semanticEnabled }: { item: Memo; onPress: (memo: Memo) => void; onDelete?: (id: string) => void; semanticEnabled: boolean }) {
+const SearchMemoCard = React.memo(function SearchMemoCard({
+  item,
+  onPress,
+  onDelete,
+  semanticEnabled,
+}: {
+  item: Memo
+  onPress: (memo: Memo) => void
+  onDelete?: (id: string) => void
+  semanticEnabled: boolean
+}) {
   const handlePress = useCallback(() => onPress(item), [item, onPress])
   return (
     <MemoCard
@@ -49,9 +59,17 @@ export function SearchResults({
 }: SearchResultsProps) {
   const { theme } = useThemeStore()
 
-  const renderItem = useCallback(({ item }: { item: Memo }) => (
-    <SearchMemoCard item={item} onPress={onMemoPress} onDelete={onMemoDelete} semanticEnabled={semanticEnabled} />
-  ), [onMemoPress, onMemoDelete, semanticEnabled])
+  const renderItem = useCallback(
+    ({ item }: { item: Memo }) => (
+      <SearchMemoCard
+        item={item}
+        onPress={onMemoPress}
+        onDelete={onMemoDelete}
+        semanticEnabled={semanticEnabled}
+      />
+    ),
+    [onMemoPress, onMemoDelete, semanticEnabled]
+  )
 
   const renderEmptyState = useMemo(() => {
     if (emptyQuery) {
