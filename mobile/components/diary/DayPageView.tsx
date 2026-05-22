@@ -6,6 +6,7 @@ import { useDiary, useUpdateDiary } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { MOODS, type MoodKey } from '@mosaic/utils'
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react'
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import type { MemoWithResources } from '@mosaic/api'
 
@@ -23,6 +24,42 @@ interface DayPageViewProps {
   isEditing: boolean
   onEditStateChange?: () => void
 }
+
+const MoodCircle = React.memo(function MoodCircle({
+  mood,
+  selected,
+  onPress,
+}: {
+  mood: { key: string; color: string }
+  selected: boolean
+  onPress: () => void
+}) {
+  const scale = useSharedValue(selected ? 1.08 : 1)
+  const opacity = useSharedValue(selected ? 1 : 0.38)
+
+  useEffect(() => {
+    scale.value = withTiming(selected ? 1.08 : 1, { duration: 180, easing: Easing.out(Easing.cubic) })
+    opacity.value = withTiming(selected ? 1 : 0.38, { duration: 180, easing: Easing.out(Easing.cubic) })
+  }, [selected, scale, opacity])
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }))
+
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={{ flex: 1 }}>
+      <Animated.View
+        style={[
+          styles.moodCircle,
+          { backgroundColor: mood.color },
+          selected ? { borderWidth: 2.5, borderColor: mood.color } : styles.moodCircleUnselected,
+          animStyle,
+        ]}
+      />
+    </TouchableOpacity>
+  )
+})
 
 export const DayPageView = React.memo(forwardRef<DayPageViewRef, DayPageViewProps>(function DayPageView(
   { date, onMemoPress, isEditing, onEditStateChange },
@@ -150,17 +187,11 @@ export const DayPageView = React.memo(forwardRef<DayPageViewRef, DayPageViewProp
             {MOODS.map(mood => {
               const selected = moodKeyDraft === mood.key
               return (
-                <TouchableOpacity
+                <MoodCircle
                   key={mood.key}
-                  style={[
-                    styles.moodCircle,
-                    { backgroundColor: mood.color },
-                    selected
-                      ? [styles.moodCircleSelected, { borderColor: mood.color }]
-                      : styles.moodCircleUnselected,
-                  ]}
+                  mood={mood}
+                  selected={selected}
                   onPress={() => setMoodKeyDraft(mood.key)}
-                  activeOpacity={0.7}
                 />
               )
             })}
@@ -238,7 +269,8 @@ const styles = StyleSheet.create({
   // Mood: circles only, no labels
   moodCircles: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    gap: 10,
     marginBottom: 14,
   },
   moodCircle: {
@@ -249,18 +281,9 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   moodCircleSelected: {
-    transform: [{ scale: 1.12 }],
-    // White outer ring via outline-equivalent: shadow on iOS
-    shadowColor: '#fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 0,
-    // The borderColor is set inline to mood.color for the inner ring
     borderWidth: 2.5,
   },
   moodCircleUnselected: {
-    opacity: 0.38,
     borderColor: 'transparent',
   },
   intensityRow: {

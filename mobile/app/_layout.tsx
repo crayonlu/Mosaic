@@ -1,6 +1,7 @@
 import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
+import { preloadAuthHeaders } from '@/hooks/useAuthHeaders'
 import {
   hideBootSplash,
   SafeKeyboardProvider,
@@ -89,11 +90,13 @@ export default function RootLayout() {
   const router = useRouter()
 
   const hideNativeSplash = useCallback(() => {
-    hideBootSplash({ fade: false })
+    hideBootSplash({ fade: true })
   }, [])
 
   useEffect(() => {
     const bootstrap = async () => {
+      // Pre-warm auth headers so MemoCards have them immediately
+      preloadAuthHeaders()
       try {
         await initAuth()
       } catch (error) {

@@ -26,11 +26,46 @@ import {
   Trash,
 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated'
+import { ScrollView, StyleSheet, Text, TouchableOpacity as RNTouchableOpacity, View } from 'react-native'
+import Animated, { Easing, FadeIn, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+
+const TouchableOpacity = (props: React.ComponentProps<typeof RNTouchableOpacity>) => (
+  <RNTouchableOpacity activeOpacity={1} {...props} />
+)
 
 const appVersion = Constants.expoConfig?.version ?? 'unknown'
 const expandLayoutTransition = LinearTransition.duration(220)
+
+function CollapsibleContent({ expanded, children, style }: { expanded: boolean; children: React.ReactNode; style?: any }) {
+  const [contentHeight, setContentHeight] = useState(0)
+  const animHeight = useSharedValue(0)
+
+  useEffect(() => {
+    animHeight.value = withTiming(expanded ? contentHeight : 0, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    })
+  }, [expanded, contentHeight, animHeight])
+
+  const clipStyle = useAnimatedStyle(() => ({
+    height: animHeight.value,
+    overflow: 'hidden' as const,
+  }))
+
+  return (
+    <Animated.View style={clipStyle}>
+      <View
+        onLayout={e => {
+          const h = e.nativeEvent.layout.height
+          if (h > 0 && h !== contentHeight) setContentHeight(h)
+        }}
+        style={[{ position: 'absolute', top: 0, left: 0, right: 0 }, style]}
+      >
+        {children}
+      </View>
+    </Animated.View>
+  )
+}
 
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
@@ -291,13 +326,7 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </TouchableOpacity>
-        {showBotSettings && (
-          <Animated.View
-            entering={FadeIn.duration(400)}
-            exiting={FadeOut.duration(240)}
-            layout={expandLayoutTransition}
-            style={[styles.botSettings, { borderTopColor: theme.border }]}
-          >
+        <CollapsibleContent expanded={showBotSettings} style={[styles.botSettings, { borderTopColor: theme.border }]}>
             {bots.map((bot, index) => (
               <TouchableOpacity
                 key={bot.id}
@@ -355,8 +384,7 @@ export default function SettingsScreen() {
               <Plus size={16} color={theme.primary} />
               <Text style={[styles.addBotText, { color: theme.primary }]}>添加 Bot</Text>
             </TouchableOpacity>
-          </Animated.View>
-        )}
+        </CollapsibleContent>
       </View>
       <BotEditorSheet
         visible={botEditorVisible}
@@ -383,8 +411,7 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </TouchableOpacity>
-        {showAppearanceSettings && (
-          <View style={[styles.appearanceSettings, { borderTopColor: theme.border }]}>
+        <CollapsibleContent expanded={showAppearanceSettings} style={[styles.appearanceSettings, { borderTopColor: theme.border }]}>
             <View style={styles.appearanceRow}>
               <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>配色风格</Text>
               <View style={styles.appearanceControl}>
@@ -403,8 +430,7 @@ export default function SettingsScreen() {
                 />
               </View>
             </View>
-          </View>
-        )}
+        </CollapsibleContent>
       </View>
     </View>
   )
@@ -486,16 +512,14 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </TouchableOpacity>
-          {showAISettings && (
-            <View style={[styles.aiSettings, { borderTopColor: theme.border }]}>
+          <CollapsibleContent expanded={showAISettings} style={[styles.aiSettings, { borderTopColor: theme.border }]}>
               {renderModelCard('BOT 模型', botConfig, botConfigured, [
                 { text: '图片输入', show: Boolean(botConfig?.supportsVision) },
                 { text: '心路历程', show: Boolean(botConfig?.supportsThinking) },
               ])}
               <View style={[styles.aiDivider, { backgroundColor: theme.border }]} />
               {renderModelCard('EMBEDDING 模型', embConfig, embConfigured)}
-            </View>
-          )}
+          </CollapsibleContent>
         </View>
       </View>
     )
@@ -516,8 +540,7 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </TouchableOpacity>
-        {showPermissionSettings && (
-          <View style={[styles.permissionSettings, { borderTopColor: theme.border }]}>
+        <CollapsibleContent expanded={showPermissionSettings} style={[styles.permissionSettings, { borderTopColor: theme.border }]}>
             <View>
               <View
                 style={{
@@ -554,49 +577,7 @@ export default function SettingsScreen() {
                 <SwitchBtn value={pushEnabled} onValueChange={handleTogglePush} />
               </View>
             </View>
-            {/* <TouchableOpacity
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingTop: 12,
-                borderTopWidth: 1,
-                borderTopColor: theme.border,
-                marginTop: 12,
-              }}
-              onPress={() => router.push('/custom-push')}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Bell size={18} color={theme.text} />
-                <View>
-                  <Text style={{ fontSize: 14, color: theme.text }}>自定义提醒</Text>
-                  <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
-                    {customPushCount > 0
-                      ? `已设置 ${customPushCount} 条提醒`
-                      : '添加自定义推送提醒'}
-                  </Text>
-                </View>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                {customPushCount > 0 && (
-                  <View
-                    style={{
-                      backgroundColor: theme.primary,
-                      borderRadius: 10,
-                      paddingHorizontal: 6,
-                      paddingVertical: 2,
-                      marginRight: 4,
-                    }}
-                  >
-                    <Text style={{ fontSize: 10, color: theme.onPrimary }}>{customPushCount}</Text>
-                  </View>
-                )}
-                <Plus size={16} color={theme.textSecondary} />
-              </View>
-            </TouchableOpacity> */}
-          </View>
-        )}
+        </CollapsibleContent>
       </View>
     </View>
   )
@@ -637,8 +618,7 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </TouchableOpacity>
-        {showStorageSettings && (
-          <View style={[styles.storageSettings, { borderTopColor: theme.border }]}>
+        <CollapsibleContent expanded={showStorageSettings} style={[styles.storageSettings, { borderTopColor: theme.border }]}>
             {storageItems.map(item => (
               <View
                 key={item.id}
@@ -673,8 +653,7 @@ export default function SettingsScreen() {
                 )}
               </View>
             ))}
-          </View>
-        )}
+        </CollapsibleContent>
       </View>
     </View>
   )

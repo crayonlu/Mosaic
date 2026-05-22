@@ -8,6 +8,7 @@ import { Image } from 'expo-image'
 import { ArrowRight, ChevronDown, ChevronUp, FileText, Lightbulb } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import Animated, { Easing, LinearTransition, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 interface BotReplyCardProps {
   reply: BotReply
@@ -29,6 +30,8 @@ function MemoryContextPanel({
 }) {
   const [context, setContext] = useState<MemoryContext | null>(null)
   const [open, setOpen] = useState(false)
+  const [contentHeight, setContentHeight] = useState(0)
+  const animHeight = useSharedValue(0)
 
   useEffect(() => {
     memoryApi
@@ -36,6 +39,18 @@ function MemoryContextPanel({
       .then(setContext)
       .catch(() => setContext({ retrievedMemos: [] }))
   }, [memoId, botId])
+
+  useEffect(() => {
+    animHeight.value = withTiming(open ? contentHeight : 0, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    })
+  }, [open, contentHeight, animHeight])
+
+  const clipStyle = useAnimatedStyle(() => ({
+    height: animHeight.value,
+    overflow: 'hidden' as const,
+  }))
 
   if (!context) return null
 
@@ -57,8 +72,14 @@ function MemoryContextPanel({
         )}
       </TouchableOpacity>
 
-      {open && hasMemos && (
-        <View style={memStyles.memoList}>
+      <Animated.View style={clipStyle}>
+        <View
+          onLayout={e => {
+            const h = e.nativeEvent.layout.height
+            if (h > 0 && h !== contentHeight) setContentHeight(h)
+          }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
+        >
           {context.retrievedMemos.map(memo => (
             <TouchableOpacity
               key={memo.id}
@@ -77,13 +98,28 @@ function MemoryContextPanel({
             </TouchableOpacity>
           ))}
         </View>
-      )}
+      </Animated.View>
     </View>
   )
 }
 
 function ThinkingPanel({ content, theme }: { content?: string; theme: any }) {
   const [expanded, setExpanded] = useState(false)
+  const [contentHeight, setContentHeight] = useState(0)
+  const animHeight = useSharedValue(0)
+
+  useEffect(() => {
+    animHeight.value = withTiming(expanded ? contentHeight : 0, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    })
+  }, [expanded, contentHeight, animHeight])
+
+  const clipStyle = useAnimatedStyle(() => ({
+    height: animHeight.value,
+    overflow: 'hidden' as const,
+  }))
+
   if (!content) return null
   return (
     <View style={[styles.thinkingContainer, { backgroundColor: theme.surfaceMuted }]}>
@@ -101,11 +137,17 @@ function ThinkingPanel({ content, theme }: { content?: string; theme: any }) {
           <ChevronDown size={14} color={theme.textSecondary} style={{ marginLeft: 'auto' }} />
         )}
       </TouchableOpacity>
-      {expanded && (
-        <View accessibilityRole="text" accessibilityLabel="心路历程内容">
+      <Animated.View style={clipStyle}>
+        <View
+          onLayout={e => {
+            const h = e.nativeEvent.layout.height
+            if (h > 0 && h !== contentHeight) setContentHeight(h)
+          }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
+        >
           <Text style={[styles.thinkingContent, { color: theme.textSecondary }]}>{content}</Text>
         </View>
-      )}
+      </Animated.View>
     </View>
   )
 }

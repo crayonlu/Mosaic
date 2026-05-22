@@ -132,7 +132,7 @@ export default function ThemePickerScreen() {
       ]}
     >
       <View style={styles.header}>
-        <Text style={[styles.title, { color: pageTheme.text }]}>选择你的风格</Text>
+        <Text style={[styles.title, { color: pageTheme.text }]}>选择主题风格</Text>
         <Text style={[styles.subtitle, { color: pageTheme.textSecondary }]}>
           你可以随时在设置中更改
         </Text>

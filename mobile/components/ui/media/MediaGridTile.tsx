@@ -60,7 +60,6 @@ export function MediaGridTile({
           source={{ uri: previewUri, headers: previewHeaders }}
           style={styles.image}
           contentFit="cover"
-          transition={150}
           cachePolicy="memory-disk"
           onError={() => setImageError(true)}
         />

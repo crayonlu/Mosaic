@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { Pencil, Trash2 } from 'lucide-react-native'
 import React, { useCallback, useMemo, useState } from 'react'
 import { type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native'
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 const TEXT_MAX_HEIGHT = 160
 
@@ -40,10 +41,28 @@ export const MemoCard = React.memo(function MemoCard({
   const authHeaders = useAuthHeaders()
   const [isOverflowing, setIsOverflowing] = useState(false)
 
+  // Press scale animation
+  const scale = useSharedValue(1)
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
+  const handlePressIn = useCallback(() => {
+    if (showPressFeedback) {
+      scale.value = withTiming(0.975, { duration: 120, easing: Easing.out(Easing.cubic) })
+    }
+  }, [showPressFeedback, scale])
+
+  const handlePressOut = useCallback(() => {
+    scale.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) })
+  }, [scale])
+
   const handleTextLayout = useCallback((e: LayoutChangeEvent) => {
     const { height } = e.nativeEvent.layout
-    setIsOverflowing(height > TEXT_MAX_HEIGHT)
-  }, [])
+    if (!isOverflowing && height > TEXT_MAX_HEIGHT) {
+      setIsOverflowing(true)
+    }
+  }, [isOverflowing])
 
   const displayContent = useMemo(() => normalizeContent(memo.content || ''), [memo.content])
   const formattedTime = useMemo(() => stringUtils.formatRelativeTime(memo.createdAt), [memo.createdAt])
@@ -67,21 +86,24 @@ export const MemoCard = React.memo(function MemoCard({
   // so text fades to truly transparent, never clashing with page-level
   // gradients (e.g., mood-based diary background).
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={!onPress}
-      style={({ pressed }) => [
-        styles.container,
-        {
-          backgroundColor: isSelected
-            ? theme.surface
-            : pressed && showPressFeedback
-              ? theme.surfaceMuted
-              : 'transparent',
-          borderRadius: theme.radius.medium,
-        },
-      ]}
-    >
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={!onPress}
+        style={({ pressed }) => [
+          styles.container,
+          {
+            backgroundColor: isSelected
+              ? theme.surface
+              : pressed && showPressFeedback
+                ? theme.surfaceMuted
+                : 'transparent',
+            borderRadius: theme.radius.medium,
+          },
+        ]}
+      >
       {showSemanticBadge && (
         <View
           style={[
@@ -106,7 +128,7 @@ export const MemoCard = React.memo(function MemoCard({
                   />
                 }
               >
-                <View onLayout={handleTextLayout}>
+                <View>
                   <MarkdownRenderer content={displayContent} />
                 </View>
               </MaskedView>
@@ -169,6 +191,7 @@ export const MemoCard = React.memo(function MemoCard({
         </View>
       )}
     </Pressable>
+    </Animated.View>
   )
 }, (prevProps, nextProps) => {
   return (

@@ -1,6 +1,13 @@
-import { useRef } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
+import { useEffect, useRef } from 'react'
+import { StyleSheet, TouchableOpacity, View } from 'react-native'
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  interpolateColor,
+} from 'react-native-reanimated'
 
 export interface SegmentOption {
   label: string
@@ -16,6 +23,35 @@ interface SlidingSegmentedControlProps {
   textColor: string
   textMuted: string
   radius: number
+}
+
+function AnimatedLabel({
+  label,
+  active,
+  textColor,
+  textMuted,
+}: {
+  label: string
+  active: boolean
+  textColor: string
+  textMuted: string
+}) {
+  const progress = useSharedValue(active ? 1 : 0)
+
+  useEffect(() => {
+    progress.value = withTiming(active ? 1 : 0, { duration: 160, easing: Easing.out(Easing.cubic) })
+  }, [active, progress])
+
+  const animStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(progress.value, [0, 1], [textMuted, textColor]),
+    fontWeight: active ? '600' : '400',
+  }))
+
+  return (
+    <Animated.Text style={[styles.label, animStyle]}>
+      {label}
+    </Animated.Text>
+  )
 }
 
 export function SlidingSegmentedControl({
@@ -81,15 +117,12 @@ export function SlidingSegmentedControl({
           onPress={() => handlePress(i)}
           activeOpacity={0.7}
         >
-          <Text
-            style={[
-              styles.label,
-              { color: value === opt.value ? textColor : textMuted },
-              value === opt.value && styles.labelActive,
-            ]}
-          >
-            {opt.label}
-          </Text>
+          <AnimatedLabel
+            label={opt.label}
+            active={value === opt.value}
+            textColor={textColor}
+            textMuted={textMuted}
+          />
         </TouchableOpacity>
       ))}
     </View>
@@ -122,8 +155,5 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-  },
-  labelActive: {
-    fontWeight: '600',
   },
 })

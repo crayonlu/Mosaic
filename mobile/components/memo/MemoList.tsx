@@ -6,11 +6,16 @@ import { type MemoWithResources } from '@mosaic/api'
 import { FileX } from 'lucide-react-native'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 import { MemoCard } from './MemoCard'
 
-const ListMemoCard = React.memo(function ListMemoCard({ memo, onPress, onDelete }: { memo: MemoWithResources; onPress: (memo: MemoWithResources) => void; onDelete: (id: string) => void }) {
+const ListMemoCard = React.memo(function ListMemoCard({ memo, onPress, onDelete, index }: { memo: MemoWithResources; onPress: (memo: MemoWithResources) => void; onDelete: (id: string) => void; index: number }) {
   const handlePress = useCallback(() => onPress(memo), [memo, onPress])
-  return <MemoCard memo={memo} onPress={handlePress} onDelete={onDelete} />
+  return (
+    <Animated.View entering={FadeIn.delay(index < 8 ? index * 30 : 0).duration(200).easing(Easing.out(Easing.cubic))}>
+      <MemoCard memo={memo} onPress={handlePress} onDelete={onDelete} />
+    </Animated.View>
+  )
 })
 
 interface MemoListProps {
@@ -150,12 +155,13 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
   }) => (
     <View key={group.date}>
       {renderDateHeader(group.displayDate, group.memos.length, index === 0)}
-      {group.memos.map(memo => (
+      {group.memos.map((memo, memoIndex) => (
         <ListMemoCard
           key={memo.id}
           memo={memo}
           onPress={onMemoPress}
           onDelete={handleDelete}
+          index={memoIndex}
         />
       ))}
     </View>
