@@ -42,7 +42,14 @@ export function createSyncEngine(api: SyncApiAdapter, store: SyncStoreAdapter, c
     try {
       pullResponse = await api.pull({ clientId: config.clientId, cursors })
     } catch (e: any) {
-      console.error('[Sync] api.pull failed:', e?.message ?? e, 'status:', e?.status, 'stack:', e?.stack)
+      console.error(
+        '[Sync] api.pull failed:',
+        e?.message ?? e,
+        'status:',
+        e?.status,
+        'stack:',
+        e?.stack
+      )
       setStatus('offline')
       return { status: 'offline', pulledCount: 0 }
     }
