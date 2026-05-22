@@ -132,6 +132,14 @@ export default function MemoDetailScreen() {
     setThreadVisible(true)
   }, [])
 
+  const handleSaveAISummary = useCallback(
+    async (text: string) => {
+      if (!memo) return
+      await updateMemo({ id: memo.id, data: { aiSummary: text || null } })
+    },
+    [memo, updateMemo]
+  )
+
   const renderHeader = () => (
     <ScreenHeader
       showBack
@@ -262,6 +270,7 @@ export default function MemoDetailScreen() {
           revision={rev}
           isLatest
           onBotReply={handleBotReply}
+          onSaveAISummary={handleSaveAISummary}
         />
         <BotThreadSheet
           visible={threadVisible}
@@ -331,6 +340,7 @@ export default function MemoDetailScreen() {
                 revision={rev}
                 isLatest={isLatest}
                 onBotReply={handleBotReply}
+                onSaveAISummary={isLatest ? handleSaveAISummary : undefined}
               />
             </View>
           )

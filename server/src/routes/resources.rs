@@ -8,6 +8,11 @@ use futures_util::StreamExt;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
+/// Maximum upload size for resource files: 100 MB
+const MAX_UPLOAD_BYTES: usize = 100 * 1024 * 1024;
+/// Maximum upload size for avatars: 10 MB
+const MAX_AVATAR_BYTES: usize = 10 * 1024 * 1024;
+
 fn empty_metadata() -> Value {
     Value::Object(Map::new())
 }
@@ -81,9 +86,17 @@ pub async fn upload_resource(
             if let Some(content_type) = field.content_type() {
                 mime_type = content_type.to_string();
             }
+            // Check 100 MB upload limit
             while let Some(chunk_result) = field.next().await {
                 match chunk_result {
-                    Ok(bytes) => file_data.extend_from_slice(&bytes),
+                    Ok(bytes) => {
+                        if file_data.len() + bytes.len() > MAX_UPLOAD_BYTES {
+                            return HttpResponse::PayloadTooLarge().json(
+                                serde_json::json!({"error": "File too large, maximum size is 100MB"})
+                            );
+                        }
+                        file_data.extend_from_slice(&bytes);
+                    }
                     Err(_) => return HttpResponse::InternalServerError().finish(),
                 }
             }
@@ -398,7 +411,15 @@ pub async fn upload_avatar(
 
         while let Some(chunk_result) = field.next().await {
             match chunk_result {
-                Ok(bytes) => data.extend_from_slice(&bytes),
+                Ok(bytes) => {
+                    // Check 10 MB avatar upload limit
+                    if data.len() + bytes.len() > MAX_AVATAR_BYTES {
+                        return HttpResponse::PayloadTooLarge().json(
+                            serde_json::json!({"error": "Avatar too large, maximum size is 10MB"})
+                        );
+                    }
+                    data.extend_from_slice(&bytes);
+                }
                 Err(_) => return HttpResponse::InternalServerError().finish(),
             }
         }

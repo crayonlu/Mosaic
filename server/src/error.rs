@@ -76,9 +76,32 @@ impl ResponseError for AppError {
 
     fn error_response(&self) -> HttpResponse {
         let status = self.status_code();
+        let message = match self {
+            AppError::Database(e) => {
+                log::error!("Database error: {e}");
+                "Internal server error".to_string()
+            }
+            AppError::Io(e) => {
+                log::error!("IO error: {e}");
+                "Internal server error".to_string()
+            }
+            AppError::Internal(e) => {
+                log::error!("Internal error: {e}");
+                "Internal server error".to_string()
+            }
+            AppError::Processing(e) => {
+                log::error!("Processing error: {e}");
+                "Internal server error".to_string()
+            }
+            AppError::Storage(e) => {
+                log::error!("Storage error: {e}");
+                "Internal server error".to_string()
+            }
+            _ => self.to_string(),
+        };
         let error_response = ErrorResponse {
             error: status.to_string(),
-            message: self.to_string(),
+            message,
         };
 
         HttpResponse::build(status).json(error_response)

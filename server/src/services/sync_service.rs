@@ -151,26 +151,24 @@ impl SyncService {
 
         let mut updated = Vec::new();
         if !updated_dates.is_empty() {
-            for date_val in &updated_dates {
-                let diary: Option<DiaryRow> = sqlx::query_as::<_, DiaryRow>(
-                    "SELECT date, summary, mood_key, mood_score, created_at, updated_at
-                     FROM diaries WHERE user_id = $1 AND date = $2 AND is_deleted = FALSE",
-                )
-                .bind(user_uuid)
-                .bind(date_val)
-                .fetch_optional(&self.pool)
-                .await?;
+            let diaries: Vec<DiaryRow> = sqlx::query_as::<_, DiaryRow>(
+                "SELECT date, summary, mood_key, mood_score, created_at, updated_at
+                 FROM diaries WHERE user_id = $1 AND date = ANY($2) AND is_deleted = FALSE",
+            )
+            .bind(user_uuid)
+            .bind(&updated_dates)
+            .fetch_all(&self.pool)
+            .await?;
 
-                if let Some(d) = diary {
-                    updated.push(serde_json::json!({
-                        "date": d.date.to_string(),
-                        "summary": d.summary,
-                        "moodKey": d.mood_key,
-                        "moodScore": d.mood_score,
-                        "createdAt": d.created_at,
-                        "updatedAt": d.updated_at,
-                    }));
-                }
+            for d in diaries {
+                updated.push(serde_json::json!({
+                    "date": d.date.to_string(),
+                    "summary": d.summary,
+                    "moodKey": d.mood_key,
+                    "moodScore": d.mood_score,
+                    "createdAt": d.created_at,
+                    "updatedAt": d.updated_at,
+                }));
             }
         }
 

@@ -134,7 +134,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
 
   const renderEmptyState = useMemo(() => (
     <View style={styles.emptyContainer}>
-      <View style={[styles.emptyIcon, { backgroundColor: theme.semantic.infoSoft }]}>
+      <View style={[styles.emptyIcon]}>
         <FileX size={48} color={theme.primary} strokeWidth={1.5} />
       </View>
       <Text style={[styles.emptyTitle, { color: theme.text }]}>
@@ -144,7 +144,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
         {date ? '点击下方按钮创建你的第一条Memo' : '开始记录你的想法和灵感'}
       </Text>
     </View>
-  ), [date, theme.semantic.infoSoft, theme.primary, theme.text, theme.textSecondary])
+  ), [date, theme.primary, theme.text, theme.textSecondary])
 
   const renderGroup = useCallback(({
     item: group,

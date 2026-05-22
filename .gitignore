@@ -68,7 +68,6 @@ unused
 .shared/
 .github/prompts/
 
-__tests__
 .design/
 
 plans/*
@@ -84,4 +83,4 @@ docs/internal/*
 docs/superpowers/*
 .superpowers/*
 
-.turbo/*
+**/.turbo

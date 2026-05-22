@@ -8,7 +8,7 @@ import { Image } from 'expo-image'
 import { ArrowRight, ChevronDown, ChevronUp, FileText, Lightbulb } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Animated, { Easing, LinearTransition, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, { Easing, FadeIn, LinearTransition, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 
 interface BotReplyCardProps {
   reply: BotReply
@@ -59,7 +59,10 @@ function MemoryContextPanel({
   if (!hasMemos) return null
 
   return (
-    <View style={[memStyles.container, { borderTopColor: theme.border }]}>
+    <Animated.View
+      entering={FadeIn.duration(200).easing(Easing.out(Easing.cubic))}
+      style={[memStyles.container, { borderTopColor: theme.border }]}
+    >
       <TouchableOpacity
         onPress={() => setOpen(v => !v)}
         activeOpacity={0.7}
@@ -99,7 +102,7 @@ function MemoryContextPanel({
           ))}
         </View>
       </Animated.View>
-    </View>
+    </Animated.View>
   )
 }
 

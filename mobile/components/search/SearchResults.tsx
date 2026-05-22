@@ -57,7 +57,7 @@ export function SearchResults({
     if (emptyQuery) {
       return (
         <View style={styles.emptyContainer}>
-          <View style={[styles.emptyIcon, { backgroundColor: theme.semantic.infoSoft }]}>
+          <View style={[styles.emptyIcon]}>
             <Search size={48} color={theme.primary} strokeWidth={1.5} />
           </View>
           <Text style={[styles.emptyTitle, { color: theme.text }]}>开始搜索</Text>
@@ -70,7 +70,7 @@ export function SearchResults({
 
     return (
       <View style={styles.emptyContainer}>
-        <View style={[styles.emptyIcon, { backgroundColor: theme.semantic.warningSoft }]}>
+        <View style={[styles.emptyIcon]}>
           <FileX size={48} color={theme.primary} strokeWidth={1.5} />
         </View>
         <Text style={[styles.emptyTitle, { color: theme.text }]}>暂无搜索结果</Text>
@@ -79,7 +79,7 @@ export function SearchResults({
         </Text>
       </View>
     )
-  }, [emptyQuery, theme.semantic.infoSoft, theme.semantic.warningSoft, theme.primary, theme.text, theme.textSecondary])
+  }, [emptyQuery, theme.primary, theme.text, theme.textSecondary])
 
   const renderFooter = useMemo(() => {
     if (!hasMore && results.length > 0) {

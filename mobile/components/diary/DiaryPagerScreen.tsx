@@ -181,7 +181,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     [currentDate, navigateToDate]
   )
 
-  const hasDiary = dayPageRef.current?.hasDiary ?? false
+  const hasDiary = diaryQuery.status === 'success' && !!diaryQuery.data
   const hasChanges = dayPageRef.current?.hasChanges ?? false
   const isSaving = dayPageRef.current?.isPending ?? false
 

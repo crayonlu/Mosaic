@@ -286,6 +286,70 @@ impl MemoService {
             .collect())
     }
 
+    /// Batch-load resources for multiple memos in a single query, avoiding N+1.
+    async fn get_batch_memo_resources(
+        &self,
+        memo_ids: &[Uuid],
+    ) -> Result<std::collections::HashMap<Uuid, Vec<ResourceResponse>>, AppError> {
+        use std::collections::HashMap;
+
+        if memo_ids.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        let resources = sqlx::query_as::<_, Resource>(
+            "SELECT id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, is_deleted, created_at, updated_at
+             FROM resources WHERE memo_id = ANY($1) AND is_deleted = FALSE ORDER BY created_at ASC",
+        )
+        .bind(memo_ids)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut map: HashMap<Uuid, Vec<ResourceResponse>> = HashMap::new();
+        for r in resources {
+            let memo_id = r.memo_id.unwrap_or_default();
+            let url = format!("/api/resources/{}/download", r.id);
+            let is_video = r.mime_type.starts_with("video/");
+            let response = ResourceResponse {
+                id: r.id,
+                memo_id: r.memo_id,
+                filename: r.filename,
+                resource_type: r.resource_type,
+                mime_type: r.mime_type,
+                size: r.file_size,
+                storage_type: Some(r.storage_type),
+                storage_path: Some(r.storage_path),
+                url,
+                thumbnail_url: if is_video {
+                    Some(crate::models::build_thumbnail_route(r.id))
+                } else {
+                    None
+                },
+                metadata: r.metadata,
+                created_at: r.created_at,
+            };
+            map.entry(memo_id).or_default().push(response);
+        }
+
+        Ok(map)
+    }
+
+    /// Convert a list of memos into MemoWithResources using batch resource loading.
+    async fn attach_resources_batch(
+        &self,
+        memos: Vec<Memo>,
+    ) -> Result<Vec<MemoWithResources>, AppError> {
+        let memo_ids: Vec<Uuid> = memos.iter().map(|m| m.id).collect();
+        let mut resource_map = self.get_batch_memo_resources(&memo_ids).await?;
+        Ok(memos
+            .into_iter()
+            .map(|memo| {
+                let resources = resource_map.remove(&memo.id).unwrap_or_default();
+                MemoWithResources::from_memo(memo, resources)
+            })
+            .collect())
+    }
+
     async fn load_revisions(pool: &PgPool, memo_id: Uuid) -> Vec<MemoRevision> {
         match sqlx::query_as::<_, MemoRevision>(
             "SELECT id, memo_id, user_id, revision_number, content, tags, ai_summary, is_deleted, created_at
@@ -1036,11 +1100,7 @@ impl MemoService {
 
         let total_pages = ((total as f64) / (page_size as f64)).ceil() as u32;
 
-        let mut items = Vec::new();
-        for memo in memos {
-            let resources = self.get_memo_resources(memo.id).await?;
-            items.push(MemoWithResources::from_memo(memo, resources));
-        }
+        let items = self.attach_resources_batch(memos).await?;
 
         Ok(PaginatedResponse {
             items,
@@ -1087,13 +1147,7 @@ impl MemoService {
             .fetch_all(&self.pool)
             .await?;
 
-        let mut items = Vec::new();
-        for memo in memos {
-            let resources = self.get_memo_resources(memo.id).await?;
-            items.push(MemoWithResources::from_memo(memo, resources));
-        }
-
-        Ok(items)
+        self.attach_resources_batch(memos).await
     }
 
     pub async fn update_memo(
@@ -1485,11 +1539,7 @@ impl MemoService {
 
         let memos = query_builder.fetch_all(&self.pool).await?;
 
-        let mut items = Vec::new();
-        for memo in memos {
-            let resources = self.get_memo_resources(memo.id).await?;
-            items.push(MemoWithResources::from_memo(memo, resources));
-        }
+        let items = self.attach_resources_batch(memos).await?;
 
         let total_pages = ((total as f64) / (page_size as f64)).ceil() as u32;
 

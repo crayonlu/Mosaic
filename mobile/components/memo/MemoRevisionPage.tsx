@@ -1,5 +1,6 @@
 import { BotReplyList } from '@/components/bot/BotReplyList'
 import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
+import { EditableAISummary } from '@/components/memo/EditableAISummary'
 import { DraggableImageGrid } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
@@ -10,15 +11,17 @@ import { resourcesApi } from '@mosaic/api'
 import { router } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 
 interface MemoRevisionPageProps {
   memo: MemoWithResources
   revision: MemoRevision | null
   isLatest: boolean
   onBotReply: (reply: BotReply) => void
+  onSaveAISummary?: (text: string) => Promise<void>
 }
 
-export function MemoRevisionPage({ memo, revision, isLatest, onBotReply }: MemoRevisionPageProps) {
+export function MemoRevisionPage({ memo, revision, isLatest, onBotReply, onSaveAISummary }: MemoRevisionPageProps) {
   const { theme } = useThemeStore()
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
 
@@ -68,8 +71,11 @@ export function MemoRevisionPage({ memo, revision, isLatest, onBotReply }: MemoR
         )}
       </View>
 
-      {aiSummary && (
-        <View
+      {aiSummary && isLatest && onSaveAISummary ? (
+        <EditableAISummary summary={aiSummary} onSave={onSaveAISummary} />
+      ) : aiSummary ? (
+        <Animated.View
+          entering={FadeIn.duration(200).easing(Easing.out(Easing.cubic))}
           style={[
             styles.aiSummaryContainer,
             {
@@ -80,8 +86,8 @@ export function MemoRevisionPage({ memo, revision, isLatest, onBotReply }: MemoR
         >
           <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>AI 摘要</Text>
           <MarkdownRenderer content={aiSummary} />
-        </View>
-      )}
+        </Animated.View>
+      ) : null}
 
       <View style={styles.contentPad}>
         <MarkdownRenderer content={content} />

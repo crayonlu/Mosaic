@@ -2,7 +2,6 @@ import type {
   Diary,
   MemoWithResources,
   PaginatedResponse,
-  Resource,
   SearchMemosResponse,
 } from '@mosaic/api'
 import {
@@ -15,7 +14,7 @@ import {
   getDiaryWithMemos as localGetDiaryWithMemos,
   getMemo as localGetMemo,
   searchMemos as localSearchMemos,
-  getResourcesByMemoId,
+  getResourcesByMemoIds,
   type LocalMemoQuery,
   type LocalDiaryQuery,
   type LocalMemoSearchQuery,
@@ -108,12 +107,11 @@ export async function fallbackMemosList(
   const memos = await localListMemos(query)
   if (memos.length === 0) return undefined
 
-  const memosWithResources: MemoWithResources[] = await Promise.all(
-    memos.map(async m => {
-      const resources = await getResourcesByMemoId(m.id)
-      return { ...m, resources }
-    })
-  )
+  const resourcesByMemoId = await getResourcesByMemoIds(memos.map(m => m.id))
+  const memosWithResources: MemoWithResources[] = memos.map(m => ({
+    ...m,
+    resources: resourcesByMemoId.get(m.id) ?? [],
+  }))
 
   return {
     items: memosWithResources,
@@ -128,12 +126,11 @@ export async function fallbackMemosByDate(date: string): Promise<MemoWithResourc
   const memos = await localListMemos({ diaryDate: date, pageSize: 100 })
   if (memos.length === 0) return undefined
 
-  return Promise.all(
-    memos.map(async m => {
-      const resources = await getResourcesByMemoId(m.id)
-      return { ...m, resources }
-    })
-  )
+  const resourcesByMemoId = await getResourcesByMemoIds(memos.map(m => m.id))
+  return memos.map(m => ({
+    ...m,
+    resources: resourcesByMemoId.get(m.id) ?? [],
+  }))
 }
 
 export async function fallbackSingleMemo(id: string): Promise<MemoWithResources | undefined> {
@@ -166,12 +163,11 @@ export async function fallbackSearchMemos(
   const memos = await localSearchMemos(query)
   if (memos.length === 0) return undefined
 
-  const memosWithResources: MemoWithResources[] = await Promise.all(
-    memos.map(async m => {
-      const resources = await getResourcesByMemoId(m.id)
-      return { ...m, resources }
-    })
-  )
+  const resourcesByMemoId = await getResourcesByMemoIds(memos.map(m => m.id))
+  const memosWithResources: MemoWithResources[] = memos.map(m => ({
+    ...m,
+    resources: resourcesByMemoId.get(m.id) ?? [],
+  }))
 
   return {
     memos: memosWithResources,

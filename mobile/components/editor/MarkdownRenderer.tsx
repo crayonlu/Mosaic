@@ -1,25 +1,39 @@
 import type { Theme } from '@/constants/theme'
 import { useThemeStore } from '@/stores/themeStore'
-import bash from 'highlight.js/lib/languages/bash'
-import css from 'highlight.js/lib/languages/css'
-import javascript from 'highlight.js/lib/languages/javascript'
-import json from 'highlight.js/lib/languages/json'
-import python from 'highlight.js/lib/languages/python'
-import sql from 'highlight.js/lib/languages/sql'
-import typescript from 'highlight.js/lib/languages/typescript'
-import xml from 'highlight.js/lib/languages/xml'
 import { createLowlight } from 'lowlight'
 import taskLists from 'markdown-it-task-lists'
 import React, { useMemo } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import Markdown, { MarkdownIt } from 'react-native-markdown-display'
 
-const lowlight = createLowlight()
-lowlight.register({ javascript, typescript, python, bash, json, sql, css, xml })
+// Lazy-initialize lowlight and markdown-it to avoid blocking app startup
+let lowlightInstance: ReturnType<typeof createLowlight> | null = null
+let sharedMarkdownItInstance: ReturnType<typeof MarkdownIt> | null = null
 
-const sharedMarkdownIt = MarkdownIt({ html: false, typographer: true, breaks: true, linkify: true })
-sharedMarkdownIt.use(taskLists, { enabled: true, label: true, labelAfter: false })
-sharedMarkdownIt.enable(['table'])
+function getLowlight() {
+  if (!lowlightInstance) {
+    const javascript = require('highlight.js/lib/languages/javascript')
+    const typescript = require('highlight.js/lib/languages/typescript')
+    const python = require('highlight.js/lib/languages/python')
+    const bash = require('highlight.js/lib/languages/bash')
+    const json = require('highlight.js/lib/languages/json')
+    const sql = require('highlight.js/lib/languages/sql')
+    const css = require('highlight.js/lib/languages/css')
+    const xml = require('highlight.js/lib/languages/xml')
+    lowlightInstance = createLowlight()
+    lowlightInstance.register({ javascript, typescript, python, bash, json, sql, css, xml })
+  }
+  return lowlightInstance
+}
+
+function getSharedMarkdownIt() {
+  if (!sharedMarkdownItInstance) {
+    sharedMarkdownItInstance = MarkdownIt({ html: false, typographer: true, breaks: true, linkify: true })
+    sharedMarkdownItInstance.use(taskLists, { enabled: true, label: true, labelAfter: false })
+    sharedMarkdownItInstance.enable(['table'])
+  }
+  return sharedMarkdownItInstance
+}
 
 type CodeSegment = {
   text: string
@@ -57,11 +71,12 @@ function collectSegments(node: any, activeToken: string | undefined, segments: C
 
 function getCodeSegments(code: string, language: string): CodeSegment[] {
   const normalizedLanguage = language.trim().toLowerCase()
-  if (!normalizedLanguage || !lowlight.registered(normalizedLanguage)) {
+  const ll = getLowlight()
+  if (!normalizedLanguage || !ll.registered(normalizedLanguage)) {
     return [{ text: code }]  // no auto-scan
   }
 
-  const tree = lowlight.highlight(normalizedLanguage, code)
+  const tree = ll.highlight(normalizedLanguage, code)
 
   const segments: CodeSegment[] = []
   for (const child of tree.children ?? []) {
@@ -357,7 +372,7 @@ const MarkdownContent = React.memo(function MarkdownContent({
   return (
     <View style={[styles.container, style]}>
       <Markdown
-        markdownit={sharedMarkdownIt}
+        markdownit={getSharedMarkdownIt()}
         style={markdownStyles as any}
         rules={rules}
       >

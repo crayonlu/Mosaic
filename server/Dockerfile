@@ -7,12 +7,25 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY server/src ./src
-COPY server/migrations ./migrations
+# Copy only dependency manifests first
 COPY server/Cargo.toml ./Cargo.toml
 COPY server/Cargo.lock ./Cargo.lock
 
+# Create dummy source to allow dependency compilation
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+
+# Build dependencies only (cached as long as Cargo.toml/Cargo.lock don't change)
 RUN cargo fetch
+RUN cargo build --release --package server
+
+# Remove the dummy source and build artifacts for the app crate
+RUN rm -rf src target/release/deps/server* target/release/server*
+
+# Copy real source and migrations
+COPY server/src ./src
+COPY server/migrations ./migrations
+
+# Rebuild only the app code (dependencies are cached)
 RUN cargo build --release --package server
 
 FROM oven/bun:1 AS admin-ui-builder

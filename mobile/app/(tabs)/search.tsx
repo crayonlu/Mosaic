@@ -1,6 +1,7 @@
 import { SearchFilters } from '@/components/search/SearchFilters'
 import { SearchInput } from '@/components/search/SearchInput'
 import { SearchResults } from '@/components/search/SearchResults'
+import { useDebounce } from '@/hooks/useDebounce'
 import { useMemoTags, useSearchMemos } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { Memo } from '@mosaic/api'
@@ -16,26 +17,28 @@ export default function SearchScreen() {
   const [startDate, setStartDate] = useState<string | undefined>(undefined)
   const [endDate, setEndDate] = useState<string | undefined>(undefined)
 
+  const debouncedQuery = useDebounce(query, 300)
+
   const hasSearchCriteria = useMemo(() => {
     return (
-      query.trim() ||
+      debouncedQuery.trim() ||
       selectedTags.length > 0 ||
       isArchived !== undefined ||
       startDate !== undefined ||
       endDate !== undefined
     )
-  }, [query, selectedTags, isArchived, startDate, endDate])
+  }, [debouncedQuery, selectedTags, isArchived, startDate, endDate])
 
   const searchParams = useMemo(
     () => ({
-      query: query.trim(),
+      query: debouncedQuery.trim(),
       tags: selectedTags.length > 0 ? selectedTags : undefined,
       isArchived,
       startDate,
       endDate,
       pageSize: 20,
     }),
-    [query, selectedTags, isArchived, startDate, endDate]
+    [debouncedQuery, selectedTags, isArchived, startDate, endDate]
   )
 
   const {

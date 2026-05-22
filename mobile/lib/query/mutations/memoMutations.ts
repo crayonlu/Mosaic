@@ -8,8 +8,12 @@ export function useCreateMemo() {
   return useMutation({
     mutationFn: (data: CreateMemoRequest) => memosApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['memos'] })
+      // Only invalidate list views that would show the new memo
+      queryClient.invalidateQueries({ queryKey: ['memos', 'infinite'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', 'date'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', 'tags'] })
       queryClient.invalidateQueries({ queryKey: ['stats'] })
+      // Don't invalidate ['memos', 'search'] — new memo won't match existing search
     },
   })
 }
@@ -23,7 +27,9 @@ export function useUpdateMemo() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['memo', id] })
       queryClient.invalidateQueries({ queryKey: ['memo', id, 'revisions'] })
-      queryClient.invalidateQueries({ queryKey: ['memos'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', 'infinite'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', 'date'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', 'tags'] })
     },
   })
 }
@@ -34,7 +40,9 @@ export function useDeleteMemo() {
   return useMutation({
     mutationFn: (id: string) => memosApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['memos'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', 'infinite'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', 'date'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', 'search'] })
       queryClient.invalidateQueries({ queryKey: ['stats'] })
     },
   })
@@ -48,7 +56,8 @@ export function useArchiveMemo() {
       memosApi.archive(id, diaryDate),
     onSuccess: (_, { id, diaryDate }) => {
       queryClient.invalidateQueries({ queryKey: ['memo', id] })
-      queryClient.invalidateQueries({ queryKey: ['memos'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', 'infinite'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', 'date'] })
       queryClient.invalidateQueries({ queryKey: ['diaries'] })
       if (diaryDate) {
         queryClient.invalidateQueries({ queryKey: ['diary', diaryDate] })
@@ -64,7 +73,8 @@ export function useUnarchiveMemo() {
     mutationFn: ({ id, diaryDate }: { id: string; diaryDate?: string }) => memosApi.unarchive(id),
     onSuccess: (_, { id, diaryDate }) => {
       queryClient.invalidateQueries({ queryKey: ['memo', id] })
-      queryClient.invalidateQueries({ queryKey: ['memos'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', 'infinite'] })
+      queryClient.invalidateQueries({ queryKey: ['memos', 'date'] })
       queryClient.invalidateQueries({ queryKey: ['diaries'] })
       if (diaryDate) {
         queryClient.invalidateQueries({ queryKey: ['diary', diaryDate] })

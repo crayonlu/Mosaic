@@ -441,6 +441,32 @@ export async function getResourcesByMemoId(memoId: string): Promise<Resource[]> 
   return rows.map(rowToResource)
 }
 
+export async function getResourcesByMemoIds(memoIds: string[]): Promise<Map<string, Resource[]>> {
+  const result = new Map<string, Resource[]>()
+  if (memoIds.length === 0) return result
+
+  const db = await getDatabase()
+  const placeholders = memoIds.map(() => '?').join(', ')
+
+  const rows = await db.getAllAsync<any>(
+    `SELECT * FROM resources WHERE memo_id IN (${placeholders}) ORDER BY created_at ASC`,
+    ...memoIds
+  )
+
+  for (const row of rows) {
+    const resource = rowToResource(row)
+    const memoId = row.memo_id as string
+    const existing = result.get(memoId)
+    if (existing) {
+      existing.push(resource)
+    } else {
+      result.set(memoId, [resource])
+    }
+  }
+
+  return result
+}
+
 export async function deleteResource(id: string): Promise<void> {
   const db = await getDatabase()
   await db.runAsync('DELETE FROM resources WHERE id = ?', id)

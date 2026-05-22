@@ -1,3 +1,4 @@
+import { clearAuthHeadersCache } from '@/hooks/useAuthHeaders'
 import { tokenStorage } from '@/lib/services/tokenStorage'
 import { mmkvZustandStorage } from '@/lib/storage/mmkv'
 import type { ApiError, User } from '@mosaic/api'
@@ -37,9 +38,14 @@ const initialState: AuthState = {
 apiClient.setTokenStorage({
   getAccessToken: () => tokenStorage.getAccessToken(),
   getRefreshToken: () => tokenStorage.getRefreshToken(),
-  setTokens: (accessToken: string, refreshToken: string) =>
-    tokenStorage.setTokens(accessToken, refreshToken),
-  clearTokens: () => tokenStorage.clearTokens(),
+  setTokens: (accessToken: string, refreshToken: string) => {
+    clearAuthHeadersCache()
+    return tokenStorage.setTokens(accessToken, refreshToken)
+  },
+  clearTokens: () => {
+    clearAuthHeadersCache()
+    return tokenStorage.clearTokens()
+  },
 })
 
 const savedServerUrl = tokenStorage.getServerUrl()

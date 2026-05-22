@@ -59,7 +59,7 @@ impl Config {
             r2_access_key_id,
             r2_secret_access_key,
             admin_username: env::var("ADMIN_USERNAME").unwrap_or_else(|_| "admin".to_string()),
-            admin_password: env::var("ADMIN_PASSWORD").unwrap_or_else(|_| "admin123".to_string()),
+            admin_password: env::var("ADMIN_PASSWORD").expect("ADMIN_PASSWORD must be set"),
             html2llm_url: env::var("HTML2LLM_URL")
                 .unwrap_or_else(|_| "https://html2llm.cyncyn.xyz".to_string()),
         })

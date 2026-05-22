@@ -137,6 +137,15 @@ export const DayPageView = React.memo(forwardRef<DayPageViewRef, DayPageViewProp
 
   const handleMemoPress = useCallback((memoId: string) => onMemoPress?.(memoId), [onMemoPress])
 
+  // Create stable press handler refs for each memo to avoid defeating MemoCard's React.memo
+  const memoPressHandlers = useMemo(() => {
+    const handlers: Record<string, () => void> = {}
+    for (const memo of archivedMemos) {
+      handlers[memo.id] = () => handleMemoPress(memo.id)
+    }
+    return handlers
+  }, [archivedMemos, handleMemoPress])
+
   if (isLoading) {
     return (
       <View style={styles.centeredContainer}>
@@ -214,7 +223,7 @@ export const DayPageView = React.memo(forwardRef<DayPageViewRef, DayPageViewProp
             <MemoCard
               key={memo.id}
               memo={memo}
-              onPress={isEditing ? undefined : () => handleMemoPress(memo.id)}
+              onPress={isEditing ? undefined : memoPressHandlers[memo.id]}
               showActions={false}
               showPressFeedback={false}
             />

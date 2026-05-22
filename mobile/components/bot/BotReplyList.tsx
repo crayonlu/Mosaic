@@ -2,6 +2,8 @@ import { useBotReplies } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { BotReply } from '@mosaic/api'
 import { StyleSheet, View } from 'react-native'
+import Animated, { Easing, FadeIn } from 'react-native-reanimated'
+import { SkeletonLine } from '@/components/ui/Skeleton'
 import { BotReplyCard } from './BotReplyCard'
 
 interface BotReplyListProps {
@@ -18,17 +20,33 @@ export function BotReplyList({
   onMemoNavigate,
 }: BotReplyListProps) {
   const { theme } = useThemeStore()
-  const { data: allReplies = [] } = useBotReplies(memoId)
+  const { data: allReplies, isLoading } = useBotReplies(memoId)
 
   const replies =
     revisionNumber != null
-      ? allReplies.filter(r => r.revisionNumber == null || r.revisionNumber === revisionNumber)
-      : allReplies
+      ? (allReplies ?? []).filter(r => r.revisionNumber == null || r.revisionNumber === revisionNumber)
+      : (allReplies ?? [])
+
+  // Loading state: show placeholder to reserve space
+  if (isLoading) {
+    return (
+      <View style={[styles.section, { borderTopColor: theme.border }]}>
+        <View style={styles.loadingPlaceholder}>
+          <SkeletonLine width={120} height={12} />
+          <SkeletonLine width="90%" height={12} style={{ marginTop: 8 }} />
+          <SkeletonLine width="60%" height={12} style={{ marginTop: 6 }} />
+        </View>
+      </View>
+    )
+  }
 
   if (replies.length === 0) return null
 
   return (
-    <View style={[styles.section, { borderTopColor: theme.border }]}>
+    <Animated.View
+      entering={FadeIn.duration(200).easing(Easing.out(Easing.cubic))}
+      style={[styles.section, { borderTopColor: theme.border }]}
+    >
       {replies.map((reply, index) => (
         <View
           key={reply.id}
@@ -40,7 +58,7 @@ export function BotReplyList({
           <BotReplyCard reply={reply} onReply={onReply} onMemoNavigate={onMemoNavigate} />
         </View>
       ))}
-    </View>
+    </Animated.View>
   )
 }
 
@@ -52,5 +70,9 @@ const styles = StyleSheet.create({
   replyWrapper: {
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  loadingPlaceholder: {
+    paddingHorizontal: 12,
+    paddingVertical: 14,
   },
 })
