@@ -5,6 +5,55 @@ description: Release history
 
 # Changelog
 
+## v1.0.1 (2026-05-22)
+
+### 🎨 New Theme System
+
+- Replaced old light/dark toggle with a **theme picker** — choose between **Quiet Paper** and **Clean Slate**
+- New users pick a theme on first launch
+- Theme preference is persisted across sessions
+
+### 📖 Brand New Documentation Site
+
+- Completely redesigned homepage and documentation layout
+- **Bilingual support** (English / Chinese) with language switcher
+- Full-text search across all documentation
+- 18 new articles covering environment setup, FAQ, server deployment, troubleshooting, AI configuration, sync, admin panel, privacy, and database
+
+### 📱 Mobile App Improvements
+
+- Search now debounces input for smoother experience
+- AI summaries rendered with proper Markdown formatting (was plain text)
+- Added animated transitions for mood backgrounds and bot replies
+- Memo cards cleaned up — fewer action buttons, cleaner UI
+- **Expo Go compatibility** restored (lazy-loaded native modules)
+- Image loading reliability improved
+
+### 🔒 Security & Reliability
+
+- Stricter CORS policy configurable via `ALLOWED_ORIGINS` environment variable
+- Upload size limits enforced (files: 100MB, avatars: 10MB)
+- Internal error details no longer leaked in API responses
+- Path traversal protection for local file storage
+- Resource deletion now verifies user ownership
+- `ADMIN_PASSWORD` now required (no default fallback)
+- PostgreSQL port no longer exposed in docker-compose
+
+### ⚡ Performance
+
+- Optimized memo list loading — eliminated N+1 resource queries (server + offline)
+- Batch diary fetching in sync service
+- Lazy initialization of syntax highlighter (lowlight) and markdown parser
+- Docker build layer caching improved
+
+### 🛠 Other
+
+- CI pipeline streamlined (lint + typecheck + build → single check command)
+- Added `scripts/fmt.sh` for macOS formatting
+- Admin UI theme improvements
+
+---
+
 ## v1.0.0 (2026-05-16)
 
 - Initial release
