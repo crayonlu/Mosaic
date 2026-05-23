@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Strip AI attribution lines from commit messages
+# e.g. "Co-authored-by: Copilot", "Co-authored-by: GitHub Copilot", etc.
+#
+# Portable approach: grep inverse match to temp file, then replace.
+
+COMMIT_MSG_FILE="$1"
+TMP_FILE="${COMMIT_MSG_FILE}.tmp"
+
+# Remove common AI/assistant co-author attribution lines
+grep -v \
+  -e '^Co-authored-by:.*[Cc]opilot' \
+  -e '^Co-authored-by:.*[Aa][Ii]' \
+  -e '^Co-authored-by:.*[Aa]ssistant' \
+  -e '^Co-authored-by:.*[Bb]ot' \
+  -e '^Co-authored-by:.*[Gg]itHub' \
+  "$COMMIT_MSG_FILE" > "$TMP_FILE"
+
+# Only replace if content changed (avoids touching file unnecessarily)
+if ! cmp -s "$COMMIT_MSG_FILE" "$TMP_FILE"; then
+  mv "$TMP_FILE" "$COMMIT_MSG_FILE"
+else
+  rm "$TMP_FILE"
+fi

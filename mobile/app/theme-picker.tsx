@@ -150,7 +150,7 @@ export default function ThemePickerScreen() {
         />
         <ThemePreviewCard
           name="cleanSlate"
-          label="清素"
+          label="清冷"
           description="笔记极简，清晰克制"
           theme={CleanSlateTheme}
           selected={selected === 'cleanSlate'}

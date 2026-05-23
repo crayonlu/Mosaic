@@ -1098,7 +1098,7 @@ async fn call_ai_for_reply(
         .to_string();
 
     let system_prompt = format!(
-        "---IDENTITY START---\nYou are {}\n{}\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: {}\n---CONTEXT END---\n\n---THINKING GUIDE START---\nThink fully as yourself\nWhat do I feel reading this memo\nDoes anything from those memories genuinely surface  write only if yes  skip if nothing\nWhat do I want to say  how would I naturally say it\n---THINKING GUIDE END---\n\n---REPLY RULES START---\nBring up recalled memories only if they genuinely surfaced  say nothing about them otherwise\nReply in the same language as the memo content\nConcise and genuine  100-200 characters\n---REPLY RULES END---",
+        "---IDENTITY START---\nYou are {}\n{}\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: {}\n---CONTEXT END---\n\n---THINKING GUIDE START---\nLet your inner voice speak naturally  no lists  no analysis  no meta-commentary\nFeel the memo first  what emotion or memory does it stir in you\nIf a memory from before surfaces  let it come up organically  don't force it\nThen think what you want to say in your own words\n---THINKING GUIDE END---\n\n---REPLY RULES START---\nBring up recalled memories only if they genuinely surfaced  say nothing about them otherwise\nReply in the same language as the memo content\nConcise and genuine  100-200 characters\n---REPLY RULES END---",
         bot_name, bot_description, current_time
     );
 

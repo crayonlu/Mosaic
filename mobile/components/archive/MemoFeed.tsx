@@ -4,6 +4,7 @@ import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MemoCard } from '../memo/MemoCard'
 
 const FeedMemoCard = React.memo(function FeedMemoCard({
@@ -41,6 +42,7 @@ export function MemoFeed({
   onMemosChange,
 }: MemoFeedProps) {
   const { theme } = useThemeStore()
+  const insets = useSafeAreaInsets()
   const [refreshing, setRefreshing] = useState(false)
 
   const {
@@ -121,7 +123,7 @@ export function MemoFeed({
 
   const renderEmptyState = useMemo(
     () => (
-      <View style={styles.emptyContainer}>
+      <View style={[styles.emptyContainer, { paddingBottom: insets.bottom }]}>
         <Text style={[styles.emptyTitle, { color: theme.text }]}>
           {targetDate ? '今天还没有记录' : '暂无Memo'}
         </Text>
@@ -130,7 +132,7 @@ export function MemoFeed({
         </Text>
       </View>
     ),
-    [targetDate, theme.text, theme.textSecondary]
+    [targetDate, theme.text, theme.textSecondary, insets.bottom]
   )
 
   const renderFooter = useMemo(() => {
@@ -205,8 +207,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 72,
-    paddingHorizontal: 24,
   },
   emptyTitle: {
     fontSize: 18,

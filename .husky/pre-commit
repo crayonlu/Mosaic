@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+# Ensure cargo is in PATH (macOS/Linux: ~/.cargo/bin)
+export PATH="$HOME/.cargo/bin:$PATH"
+
+echo "🎨 Auto-formatting code..."
+
+# Format Rust (server)
+if [ -f server/Cargo.toml ]; then
+  (cd server && cargo fmt) || exit 1
+fi
+
+# Format TypeScript via turbo
+bun run format || exit 1
+
+echo "🔍 Running code checks..."
+
+# Check Rust (server)
+if [ -f server/Cargo.toml ]; then
+  (cd server && cargo check) || exit 1
+fi
+
+# Check TypeScript via turbo (lint + typecheck + format:check)
+bun run check || exit 1
+
+echo "✅ All checks and formatting passed!"

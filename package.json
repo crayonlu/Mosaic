@@ -21,7 +21,8 @@
     "build": "turbo run build",
     "format": "turbo run format",
     "format:check": "turbo run format:check",
-    "check": "turbo run lint typecheck format:check"
+    "check": "turbo run lint typecheck format:check",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "globals": "^17.6.0",
+    "husky": "^9.1.7",
     "turbo": "^2.9.14"
   }
 }

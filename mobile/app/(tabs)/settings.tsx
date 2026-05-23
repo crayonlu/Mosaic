@@ -407,7 +407,7 @@ export default function SettingsScreen() {
     </View>
   )
 
-  const appearanceSummary = themeName === 'quietPaper' ? '暖纸' : '清素'
+  const appearanceSummary = themeName === 'quietPaper' ? '暖纸' : '清冷'
 
   const renderAppearanceSection = () => (
     <View style={[styles.section]}>

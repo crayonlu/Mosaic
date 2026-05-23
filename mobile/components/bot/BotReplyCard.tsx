@@ -92,11 +92,7 @@ function MemoryContextPanel({
 
       {hasOpenedRef.current && hasMemos && (
         <Animated.View style={expandStyle}>
-          <ScrollView
-            style={{ maxHeight: 160 }}
-            showsVerticalScrollIndicator
-            nestedScrollEnabled
-          >
+          <ScrollView style={{ maxHeight: 160 }} showsVerticalScrollIndicator nestedScrollEnabled>
             <View
               onLayout={e => {
                 const h = e.nativeEvent.layout.height
@@ -106,25 +102,25 @@ function MemoryContextPanel({
               <View style={memStyles.memoList}>
                 {context!.retrievedMemos.map(memo => (
                   <TouchableOpacity
-                  key={memo.id}
-                  onPress={() => onMemoNavigate?.(memo.id)}
-                  activeOpacity={0.7}
-                  style={[memStyles.memoRow, { borderRadius: theme.radius.small }]}
-                >
-                  <FileText size={13} color={theme.textTertiary} />
-                  <Text style={[memStyles.memoExcerpt, { color: theme.text }]} numberOfLines={1}>
-                    {memo.excerpt}
-                  </Text>
-                  <Text style={[memStyles.memoDate, { color: theme.textTertiary }]}>
-                    {dayjs(memo.createdAt).format('M月D日')}
-                  </Text>
-                  <ArrowRight size={11} color={theme.textTertiary} />
-                </TouchableOpacity>
-              ))}
+                    key={memo.id}
+                    onPress={() => onMemoNavigate?.(memo.id)}
+                    activeOpacity={0.7}
+                    style={[memStyles.memoRow, { borderRadius: theme.radius.small }]}
+                  >
+                    <FileText size={13} color={theme.textTertiary} />
+                    <Text style={[memStyles.memoExcerpt, { color: theme.text }]} numberOfLines={1}>
+                      {memo.excerpt}
+                    </Text>
+                    <Text style={[memStyles.memoDate, { color: theme.textTertiary }]}>
+                      {dayjs(memo.createdAt).format('M月D日')}
+                    </Text>
+                    <ArrowRight size={11} color={theme.textTertiary} />
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-            </View>
-        </ScrollView>
-      </Animated.View>
+          </ScrollView>
+        </Animated.View>
       )}
     </View>
   )
@@ -172,7 +168,16 @@ function ThinkingPanel({ content, theme }: { content?: string; theme: any }) {
           }}
           style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
         >
-          <Text style={[styles.thinkingContent, { color: theme.textSecondary }]}>{content}</Text>
+          <ScrollView
+            style={{ maxHeight: 300 }}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator
+            bounces={false}
+          >
+            <Text style={[styles.thinkingContent, { color: theme.textSecondary }]}>
+              {content}
+            </Text>
+          </ScrollView>
         </View>
       </Animated.View>
     </View>
@@ -361,6 +366,7 @@ const memStyles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: 2,
+    width: '100%',
   },
   triggerText: {
     fontSize: 12,
