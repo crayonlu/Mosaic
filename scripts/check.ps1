@@ -16,7 +16,7 @@ Write-Host "Checking Mosaic project code..." -ForegroundColor Cyan
 Push-Location $ProjectRoot
 
 # Check Rust code (server)
-Write-Host "`n[1/4] Checking Rust (server)..." -ForegroundColor Yellow
+Write-Host "`n[1/3] Checking Rust (server)..." -ForegroundColor Yellow
 if (Test-Path "server/Cargo.toml") {
     Set-Location server
     cargo check
@@ -26,28 +26,11 @@ if (Test-Path "server/Cargo.toml") {
     Write-Host "  skipped (not found)" -ForegroundColor Gray
 }
 
-# Check TypeScript packages
-Write-Host "`n[2/4] Checking TypeScript packages..." -ForegroundColor Yellow
+# Check TypeScript packages via turbo
+Write-Host "`n[2/3] Checking TypeScript packages via turbo..." -ForegroundColor Yellow
 
-$packages = @("packages/api", "packages/cache", "packages/utils", "packages/sync")
-foreach ($pkg in $packages) {
-    if (Test-Path "$pkg/package.json") {
-        Write-Host "  Checking $pkg..." -ForegroundColor Gray
-        Set-Location $pkg
-        bun run lint
-        if ($LASTEXITCODE -ne 0) { $Failed += "$pkg (lint)" }
-        Set-Location $ProjectRoot
-    }
-}
-
-# Check mobile
-Write-Host "`n[3/4] Checking mobile app..." -ForegroundColor Yellow
-if (Test-Path "mobile/package.json") {
-    Set-Location mobile
-    bun run lint
-    if ($LASTEXITCODE -ne 0) { $Failed += "mobile (lint)" }
-    Set-Location $ProjectRoot
-}
+bun run check
+if ($LASTEXITCODE -ne 0) { $Failed += "turbo check" }
 
 # Return to original directory
 Pop-Location

@@ -1,4 +1,5 @@
 import js from '@eslint/js'
+import globals from 'globals'
 import tsPlugin from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
 import reactPlugin from 'eslint-plugin-react'
@@ -18,56 +19,13 @@ export default [
         },
       },
       globals: {
-        // Browser globals
-        window: 'readonly',
-        document: 'readonly',
-        console: 'readonly',
-        navigator: 'readonly',
-        localStorage: 'readonly',
-        sessionStorage: 'readonly',
-        setTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearTimeout: 'readonly',
-        clearInterval: 'readonly',
-        fetch: 'readonly',
-        URL: 'readonly',
-        Blob: 'readonly',
-        File: 'readonly',
-        FileList: 'readonly',
-        FileReader: 'readonly',
-        FormData: 'readonly',
-        Audio: 'readonly',
-        MediaRecorder: 'readonly',
-        // Node globals
-        process: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        module: 'readonly',
-        require: 'readonly',
-        exports: 'writable',
-        // DOM types
-        HTMLElement: 'readonly',
-        HTMLInputElement: 'readonly',
-        HTMLDivElement: 'readonly',
-        HTMLAudioElement: 'readonly',
-        HTMLVideoElement: 'readonly',
-        Element: 'readonly',
-        Node: 'readonly',
-        NodeFilter: 'readonly',
-        DOMParser: 'readonly',
-        MutationObserver: 'readonly',
-        KeyboardEvent: 'readonly',
-        MouseEvent: 'readonly',
-        Event: 'readonly',
-        RequestInit: 'readonly',
-        Response: 'readonly',
-        BodyInit: 'readonly',
-        fetch: 'readonly',
-        URL: 'readonly',
-        atob: 'readonly',
-        btoa: 'readonly',
+        ...globals.browser,
+        ...globals.node,
         // React (for types)
         React: 'readonly',
+        // DOM types needed for type annotations
+        RequestInit: 'readonly',
+        BodyInit: 'readonly',
       },
     },
     plugins: {

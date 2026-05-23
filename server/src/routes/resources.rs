@@ -4,9 +4,13 @@ use crate::services::{CacheHeaders, ResourceService};
 use actix_multipart::Multipart;
 use actix_web::http::header;
 use actix_web::{web, HttpRequest, HttpResponse};
+use bytes::Bytes;
 use futures_util::StreamExt;
 use serde::Deserialize;
 use serde_json::{Map, Value};
+use std::io::Write;
+use tempfile::NamedTempFile;
+use tokio::fs;
 
 /// Maximum upload size for resource files: 100 MB
 const MAX_UPLOAD_BYTES: usize = 100 * 1024 * 1024;
@@ -67,7 +71,12 @@ pub async fn upload_resource(
     let mut filename = String::new();
     let mut mime_type = String::from("image/jpeg");
     let mut metadata = empty_metadata();
-    let mut file_data = web::BytesMut::new();
+    // Stream to a temporary file instead of buffering in memory
+    let mut temp_file = match NamedTempFile::new() {
+        Ok(f) => f,
+        Err(_) => return HttpResponse::InternalServerError().finish(),
+    };
+    let mut file_size: usize = 0;
 
     while let Some(field_result) = payload.next().await {
         let mut field = match field_result {
@@ -86,16 +95,19 @@ pub async fn upload_resource(
             if let Some(content_type) = field.content_type() {
                 mime_type = content_type.to_string();
             }
-            // Check 100 MB upload limit
+            // Stream chunks to temp file with size check
             while let Some(chunk_result) = field.next().await {
                 match chunk_result {
                     Ok(bytes) => {
-                        if file_data.len() + bytes.len() > MAX_UPLOAD_BYTES {
+                        file_size += bytes.len();
+                        if file_size > MAX_UPLOAD_BYTES {
                             return HttpResponse::PayloadTooLarge().json(
                                 serde_json::json!({"error": "File too large, maximum size is 100MB"})
                             );
                         }
-                        file_data.extend_from_slice(&bytes);
+                        if let Err(_) = temp_file.write_all(&bytes) {
+                            return HttpResponse::InternalServerError().finish();
+                        }
                     }
                     Err(_) => return HttpResponse::InternalServerError().finish(),
                 }
@@ -133,18 +145,28 @@ pub async fn upload_resource(
         filename = "unnamed".to_string();
     }
 
-    let file_size = file_data.len() as i64;
+    // Flush temp file to disk before reading
+    if let Err(_) = temp_file.flush() {
+        return HttpResponse::InternalServerError().finish();
+    }
+
+    // Read the temp file into memory for processing
+    let data = match fs::read(temp_file.path()).await {
+        Ok(d) => Bytes::from(d),
+        Err(_) => return HttpResponse::InternalServerError().finish(),
+    };
+    // temp_file is dropped here, auto-deleting the temp file
 
     let create_req = CreateResourceRequest {
         memo_id,
         filename,
         mime_type,
-        file_size,
+        file_size: file_size as i64,
         metadata: Some(metadata),
     };
 
     match resource_service
-        .upload_resource(&user_id, create_req, file_data.freeze())
+        .upload_resource(&user_id, create_req, data)
         .await
     {
         Ok(resource) => HttpResponse::Ok().json(resource),

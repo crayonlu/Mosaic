@@ -5,7 +5,7 @@ import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
 import { FileX } from 'lucide-react-native'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native'
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 import { MemoCard } from './MemoCard'
 
@@ -39,9 +39,15 @@ interface MemoListProps {
   headerComponent?: React.ComponentType<any> | React.ReactElement | null | undefined
 }
 
+interface MemoSection {
+  title: string
+  date: string
+  data: MemoWithResources[]
+}
+
 export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: MemoListProps) {
   const { theme } = useThemeStore()
-  const flatListRef = useRef<FlatList>(null)
+  const sectionListRef = useRef<SectionList<MemoWithResources, MemoSection>>(null)
   const [refreshing, setRefreshing] = useState(false)
 
   const { data: memosByDate, isLoading: loadingByDate } = useMemosByDate(date || '', {
@@ -87,7 +93,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
     [onMemoDelete]
   )
 
-  const groupedMemos = useMemo(() => {
+  const sections: MemoSection[] = useMemo(() => {
     const groups: Record<
       string,
       { date: string; displayDate: string; memos: MemoWithResources[] }
@@ -127,28 +133,45 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
     }
 
     return Object.entries(groups)
-      .map(([, group]) => group)
+      .map(([, group]) => ({
+        title: group.displayDate,
+        date: group.date,
+        data: group.memos,
+      }))
       .sort((a, b) => b.date.localeCompare(a.date))
   }, [memos, date])
 
-  const renderDateHeader = useCallback(
-    (displayDate: string, count: number, isFirst: boolean) => (
-      <View
-        style={[
-          styles.dateHeader,
-          { borderTopColor: theme.border, borderTopWidth: isFirst ? 0 : StyleSheet.hairlineWidth },
-          isFirst && { marginTop: 0 },
-        ]}
-      >
-        <Text style={[styles.dateHeaderText, { color: theme.text }]}>{displayDate}</Text>
-        {count > 0 && (
-          <Text style={[styles.dateHeaderCount, { color: theme.textSecondary }]}>
-            {count} 条Memo
-          </Text>
-        )}
-      </View>
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: MemoSection }) => {
+      const isFirst = sections.length > 0 && section.date === sections[0].date
+      return (
+        <View
+          style={[
+            styles.dateHeader,
+            {
+              borderTopColor: theme.border,
+              borderTopWidth: isFirst ? 0 : StyleSheet.hairlineWidth,
+            },
+            isFirst && { marginTop: 0 },
+          ]}
+        >
+          <Text style={[styles.dateHeaderText, { color: theme.text }]}>{section.title}</Text>
+          {section.data.length > 0 && (
+            <Text style={[styles.dateHeaderCount, { color: theme.textSecondary }]}>
+              {section.data.length} 条Memo
+            </Text>
+          )}
+        </View>
+      )
+    },
+    [sections, theme.border, theme.text, theme.textSecondary]
+  )
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: MemoWithResources; index: number }) => (
+      <ListMemoCard memo={item} onPress={onMemoPress} onDelete={handleDelete} index={index} />
     ),
-    [theme.border, theme.text, theme.textSecondary]
+    [onMemoPress, handleDelete]
   )
 
   const renderEmptyState = useMemo(
@@ -166,30 +189,6 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
       </View>
     ),
     [date, theme.primary, theme.text, theme.textSecondary]
-  )
-
-  const renderGroup = useCallback(
-    ({
-      item: group,
-      index,
-    }: {
-      item: { date: string; displayDate: string; memos: MemoWithResources[] }
-      index: number
-    }) => (
-      <View key={group.date}>
-        {renderDateHeader(group.displayDate, group.memos.length, index === 0)}
-        {group.memos.map((memo, memoIndex) => (
-          <ListMemoCard
-            key={memo.id}
-            memo={memo}
-            onPress={onMemoPress}
-            onDelete={handleDelete}
-            index={memoIndex}
-          />
-        ))}
-      </View>
-    ),
-    [renderDateHeader, onMemoPress, handleDelete]
   )
 
   const renderFooter = useMemo(() => {
@@ -225,16 +224,17 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
   }
 
   return (
-    <FlatList
-      ref={flatListRef}
-      data={groupedMemos}
-      renderItem={renderGroup}
-      keyExtractor={item => item.date}
+    <SectionList<MemoWithResources, MemoSection>
+      ref={sectionListRef}
+      sections={sections}
+      renderItem={renderItem}
+      renderSectionHeader={renderSectionHeader}
+      keyExtractor={item => item.id}
       contentContainerStyle={styles.listContent}
-      maxToRenderPerBatch={10}
+      maxToRenderPerBatch={15}
       removeClippedSubviews={true}
       updateCellsBatchingPeriod={50}
-      windowSize={10}
+      windowSize={7}
       ListHeaderComponent={headerComponent}
       ListEmptyComponent={renderEmptyState}
       refreshControl={
@@ -248,6 +248,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
       onEndReached={handleLoadMore}
       onEndReachedThreshold={0.3}
       ListFooterComponent={renderFooter}
+      stickySectionHeadersEnabled={false}
       showsVerticalScrollIndicator={false}
     />
   )
