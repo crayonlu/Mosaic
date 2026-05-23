@@ -124,7 +124,7 @@ pub async fn health(
     HttpResponse::Ok().json(HealthResponse {
         uptime: format!("{}天{}小时", days, hours),
         started_at: _started_at.0,
-        version: "0.1.0".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
         storage_type: format!("{:?}", config.storage_type).to_lowercase(),
         storage_used,
         storage_used_formatted: format_size(storage_used),
