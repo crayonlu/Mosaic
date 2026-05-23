@@ -1,3 +1,4 @@
+import { toast } from '@/components/ui/Toast'
 import type { CreateMemoRequest, UpdateMemoRequest } from '@mosaic/api'
 import { memosApi } from '@mosaic/api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -8,12 +9,13 @@ export function useCreateMemo() {
   return useMutation({
     mutationFn: (data: CreateMemoRequest) => memosApi.create(data),
     onSuccess: () => {
-      // Only invalidate list views that would show the new memo
       queryClient.invalidateQueries({ queryKey: ['memos', 'infinite'] })
       queryClient.invalidateQueries({ queryKey: ['memos', 'date'] })
       queryClient.invalidateQueries({ queryKey: ['memos', 'tags'] })
       queryClient.invalidateQueries({ queryKey: ['stats'] })
-      // Don't invalidate ['memos', 'search'] — new memo won't match existing search
+    },
+    onError: () => {
+      toast.show({ type: 'error', title: '创建失败' })
     },
   })
 }
@@ -46,6 +48,9 @@ export function useDeleteMemo() {
       queryClient.invalidateQueries({ queryKey: ['memos', 'search'] })
       queryClient.invalidateQueries({ queryKey: ['stats'] })
     },
+    onError: () => {
+      toast.show({ type: 'error', title: '删除失败' })
+    },
   })
 }
 
@@ -57,6 +62,7 @@ export function useArchiveMemo() {
       memosApi.archive(id, diaryDate),
     onSuccess: (_, { id, diaryDate }) => {
       queryClient.invalidateQueries({ queryKey: ['memo', id] })
+      queryClient.invalidateQueries({ queryKey: ['memo', id, 'detail'] })
       queryClient.invalidateQueries({ queryKey: ['memos', 'infinite'] })
       queryClient.invalidateQueries({ queryKey: ['memos', 'date'] })
       queryClient.invalidateQueries({ queryKey: ['diaries'] })

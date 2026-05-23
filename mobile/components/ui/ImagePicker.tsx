@@ -76,7 +76,7 @@ export function ImagePicker({
       >
         {images.map((uri, index) => (
           <View
-            key={index}
+            key={uri}
             style={[
               styles.editImageContainer,
               {

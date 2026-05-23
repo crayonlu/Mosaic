@@ -25,17 +25,14 @@ if (Test-Path "server/Cargo.toml") {
     Write-Host "  server: skipped (not found)" -ForegroundColor Gray
 }
 
-# Format TypeScript/JavaScript packages
-Write-Host "`n[2/3] Formatting TypeScript packages..." -ForegroundColor Yellow
+# Format TypeScript/JavaScript packages via turbo
+Write-Host "`n[2/3] Formatting TypeScript packages via turbo..." -ForegroundColor Yellow
 
-$packages = @("packages/api", "packages/cache", "packages/utils")
-foreach ($pkg in $packages) {
-    if (Test-Path "$pkg/package.json") {
-        Write-Host "  Formatting $pkg..." -ForegroundColor Gray
-        Set-Location $pkg
-        bun format
-        Set-Location $ProjectRoot
-    }
+bun run format
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "  turbo format: OK" -ForegroundColor Green
+} else {
+    Write-Host "  turbo format: FAILED" -ForegroundColor Red
 }
 
 # Format mobile

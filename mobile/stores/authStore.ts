@@ -52,7 +52,9 @@ const savedServerUrl = tokenStorage.getServerUrl()
 if (savedServerUrl) {
   try {
     apiClient.setBaseUrl(savedServerUrl)
-  } catch {}
+  } catch {
+    console.warn('[authStore] Failed to set base URL from saved server URL')
+  }
 }
 
 export const useAuthStore = create<AuthStore>()(

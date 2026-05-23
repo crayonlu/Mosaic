@@ -80,11 +80,7 @@ function MemoryContextPanel({
 
   return (
     <View style={[memStyles.container, { borderTopColor: theme.border }]}>
-      <TouchableOpacity
-        onPress={handleToggle}
-        activeOpacity={0.7}
-        style={memStyles.trigger}
-      >
+      <TouchableOpacity onPress={handleToggle} activeOpacity={0.7} style={memStyles.trigger}>
         <Text style={[memStyles.triggerText, { color: theme.textSecondary }]}>
           {!hasOpenedRef.current
             ? '查看参考记录'

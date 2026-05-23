@@ -73,19 +73,16 @@ export function useMemoDetail(id: string) {
 
   return useQuery({
     queryKey: ['memo', id, 'detail'],
-    queryFn: withOfflineFallback<MemoDetail>(
-      () => memosApi.getDetail(id),
-      {
-        writeThrough: async (data) => {
-          await syncSingleMemo(data.memo)
-        },
-        fallback: async () => {
-          const memo = await fallbackSingleMemo(id)
-          if (!memo) return undefined
-          return { memo, revisions: [], botReplies: [] } satisfies MemoDetail
-        },
-      }
-    ),
+    queryFn: withOfflineFallback<MemoDetail>(() => memosApi.getDetail(id), {
+      writeThrough: async data => {
+        await syncSingleMemo(data.memo)
+      },
+      fallback: async () => {
+        const memo = await fallbackSingleMemo(id)
+        if (!memo) return undefined
+        return { memo, revisions: [], botReplies: [] } satisfies MemoDetail
+      },
+    }),
     enabled: !!id,
     staleTime: 60 * 1000,
     placeholderData: () => {

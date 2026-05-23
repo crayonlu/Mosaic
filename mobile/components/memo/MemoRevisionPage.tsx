@@ -106,7 +106,7 @@ export function MemoRevisionPage({
       <View style={styles.tagsContainer}>
         {tags.length > 0 ? (
           tags.map((tag, i) => (
-            <View key={i} style={[styles.tag, { backgroundColor: theme.surfaceMuted }]}>
+            <View key={tag} style={[styles.tag, { backgroundColor: theme.surfaceMuted }]}>
               <Text style={[styles.tagText, { color: theme.textSecondary }]}>#{tag}</Text>
             </View>
           ))

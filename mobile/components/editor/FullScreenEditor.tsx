@@ -123,7 +123,9 @@ export function FullScreenEditor({
       try {
         const { Share } = await import('react-native')
         await Share.share({ message: summary })
-      } catch {}
+      } catch {
+        // User cancelled share — not an error
+      }
     }
   }, [summary])
 

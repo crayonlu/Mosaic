@@ -140,7 +140,11 @@ export default function MemoDetailScreen() {
   const handleSaveAISummary = useCallback(
     async (text: string) => {
       if (!memo) return
-      await updateMemo({ id: memo.id, data: { aiSummary: text || null } })
+      try {
+        await updateMemo({ id: memo.id, data: { aiSummary: text || null } })
+      } catch {
+        toast.show({ type: 'error', title: '保存失败' })
+      }
     },
     [memo, updateMemo]
   )
@@ -155,6 +159,7 @@ export default function MemoDetailScreen() {
               onPress={goToPrev}
               disabled={currentPage === 0}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="上一个版本"
             >
               <ChevronLeft
                 size={20}
@@ -169,6 +174,7 @@ export default function MemoDetailScreen() {
               onPress={goToNext}
               disabled={currentPage === totalPages - 1}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="下一个版本"
             >
               <ChevronRight
                 size={20}
@@ -186,6 +192,7 @@ export default function MemoDetailScreen() {
               onPress={handleEdit}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               style={{ padding: 4 }}
+              accessibilityLabel="编辑记录"
             >
               <Pencil size={18} color={theme.text} strokeWidth={2} />
             </Pressable>
@@ -194,6 +201,7 @@ export default function MemoDetailScreen() {
             onPress={handleDelete}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={{ padding: 4 }}
+            accessibilityLabel="删除记录"
           >
             <Trash2 size={18} color={theme.text} strokeWidth={2} />
           </Pressable>

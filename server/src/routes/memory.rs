@@ -326,7 +326,8 @@ pub async fn get_memo_memory_contexts(
     };
 
     let limit = query.limit.unwrap_or(10);
-    let mut contexts: std::collections::HashMap<String, MemoryContextResponse> = std::collections::HashMap::new();
+    let mut contexts: std::collections::HashMap<String, MemoryContextResponse> =
+        std::collections::HashMap::new();
 
     for row in rows {
         let score_map: std::collections::HashMap<Uuid, (f64, String)> = row
@@ -335,7 +336,9 @@ pub async fn get_memo_memory_contexts(
             .unwrap_or(&vec![])
             .iter()
             .filter_map(|item| {
-                let id = item["memoId"].as_str().and_then(|s| Uuid::parse_str(s).ok())?;
+                let id = item["memoId"]
+                    .as_str()
+                    .and_then(|s| Uuid::parse_str(s).ok())?;
                 let score = item["score"].as_f64().unwrap_or(0.0);
                 let reason = item["reason"].as_str().unwrap_or("").to_string();
                 Some((id, (score, reason)))
@@ -392,7 +395,10 @@ pub async fn get_memo_memory_contexts(
         });
         retrieved_memos.truncate(limit);
 
-        contexts.insert(row.bot_id.to_string(), MemoryContextResponse { retrieved_memos });
+        contexts.insert(
+            row.bot_id.to_string(),
+            MemoryContextResponse { retrieved_memos },
+        );
     }
 
     HttpResponse::Ok().json(MemoContextsResponse { contexts })

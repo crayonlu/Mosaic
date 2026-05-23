@@ -1,3 +1,4 @@
+import { toast } from '@/components/ui/Toast'
 import { useRouter } from 'expo-router'
 import { useCallback } from 'react'
 import { useConnectionStore } from '../stores/connectionStore'
@@ -19,6 +20,16 @@ export function useErrorHandler(): ErrorHandler {
 
         if (err.status === 401) {
           router.replace('/setup')
+          return
+        }
+
+        if (err.status === 403) {
+          toast.show({ type: 'error', title: '无权限执行此操作' })
+          return
+        }
+
+        if (err.status && err.status >= 500) {
+          toast.show({ type: 'error', title: '服务器错误' })
           return
         }
       }

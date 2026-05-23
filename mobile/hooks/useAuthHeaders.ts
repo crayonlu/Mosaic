@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 
 let cachedHeaders: Record<string, string> | null = null
@@ -19,10 +19,12 @@ export function preloadAuthHeaders() {
 
 export function useAuthHeaders(): Record<string, string> {
   const [headers, setHeaders] = useState<Record<string, string>>(cachedHeaders ?? {})
+  const unmountedRef = useRef(false)
 
   useEffect(() => {
+    unmountedRef.current = false
+
     if (cachedHeaders) {
-      // Already cached — ensure state is in sync
       setHeaders(prev => (prev === cachedHeaders ? prev : cachedHeaders!))
       return
     }
@@ -33,7 +35,13 @@ export function useAuthHeaders(): Record<string, string> {
         return h
       })
     }
-    pendingPromise.then(h => setHeaders(h))
+    pendingPromise.then(h => {
+      if (!unmountedRef.current) setHeaders(h)
+    })
+
+    return () => {
+      unmountedRef.current = true
+    }
   }, [])
 
   return headers

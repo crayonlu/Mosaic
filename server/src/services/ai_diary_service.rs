@@ -378,8 +378,8 @@ impl AiDiaryService {
     pub fn compute_run_after_ms(target_date: NaiveDate, tz: Tz) -> i64 {
         let next_day = target_date + Duration::days(1);
         tz.with_ymd_and_hms(next_day.year(), next_day.month(), next_day.day(), 0, 5, 0)
-            .single()
-            .unwrap()
+            .latest()
+            .expect("invalid timezone transition for diary run time")
             .timestamp_millis()
     }
 
@@ -488,8 +488,8 @@ fn day_bounds(target_date: NaiveDate, tz: Tz) -> (i64, i64) {
             0,
             0,
         )
-        .single()
-        .unwrap();
+        .latest()
+        .expect("invalid timezone transition for diary bounds");
     let end = start + Duration::days(1);
     (start.timestamp_millis(), end.timestamp_millis())
 }
