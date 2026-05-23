@@ -36,6 +36,7 @@ function MemoryContextPanel({
   const [open, setOpen] = useState(false)
   const hasOpenedRef = useRef(false)
   const animHeight = useSharedValue(0)
+  const [contentHeight, setContentHeight] = useState(0)
 
   // Only fetch reference records when user clicks the trigger
   const { data: context, isLoading } = useMemoryContext(memoId, botId, {
@@ -55,12 +56,19 @@ function MemoryContextPanel({
   }, [isLoading])
 
   useEffect(() => {
-    const targetHeight = open ? 220 : 0
-    animHeight.value = withTiming(targetHeight, {
-      duration: 220,
-      easing: Easing.out(Easing.cubic),
-    })
-  }, [open, animHeight])
+    if (open && contentHeight > 0) {
+      const targetHeight = Math.min(contentHeight, 160)
+      animHeight.value = withTiming(targetHeight, {
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+      })
+    } else if (!open) {
+      animHeight.value = withTiming(0, {
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+      })
+    }
+  }, [open, contentHeight, animHeight])
 
   const expandStyle = useAnimatedStyle(() => ({
     height: animHeight.value,
@@ -85,29 +93,36 @@ function MemoryContextPanel({
       {hasOpenedRef.current && hasMemos && (
         <Animated.View style={expandStyle}>
           <ScrollView
-            style={{ maxHeight: 220 }}
+            style={{ maxHeight: 160 }}
             showsVerticalScrollIndicator
             nestedScrollEnabled
           >
-            <View style={memStyles.memoList}>
-              {context!.retrievedMemos.map(memo => (
-                <TouchableOpacity
-                key={memo.id}
-                onPress={() => onMemoNavigate?.(memo.id)}
-                activeOpacity={0.7}
-                style={[memStyles.memoRow, { borderRadius: theme.radius.small }]}
-              >
-                <FileText size={13} color={theme.textTertiary} />
-                <Text style={[memStyles.memoExcerpt, { color: theme.text }]} numberOfLines={1}>
-                  {memo.excerpt}
-                </Text>
-                <Text style={[memStyles.memoDate, { color: theme.textTertiary }]}>
-                  {dayjs(memo.createdAt).format('M月D日')}
-                </Text>
-                <ArrowRight size={11} color={theme.textTertiary} />
-              </TouchableOpacity>
-            ))}
-          </View>
+            <View
+              onLayout={e => {
+                const h = e.nativeEvent.layout.height
+                if (h > 0 && h !== contentHeight) setContentHeight(h)
+              }}
+            >
+              <View style={memStyles.memoList}>
+                {context!.retrievedMemos.map(memo => (
+                  <TouchableOpacity
+                  key={memo.id}
+                  onPress={() => onMemoNavigate?.(memo.id)}
+                  activeOpacity={0.7}
+                  style={[memStyles.memoRow, { borderRadius: theme.radius.small }]}
+                >
+                  <FileText size={13} color={theme.textTertiary} />
+                  <Text style={[memStyles.memoExcerpt, { color: theme.text }]} numberOfLines={1}>
+                    {memo.excerpt}
+                  </Text>
+                  <Text style={[memStyles.memoDate, { color: theme.textTertiary }]}>
+                    {dayjs(memo.createdAt).format('M月D日')}
+                  </Text>
+                  <ArrowRight size={11} color={theme.textTertiary} />
+                </TouchableOpacity>
+              ))}
+            </View>
+            </View>
         </ScrollView>
       </Animated.View>
       )}
