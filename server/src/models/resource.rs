@@ -47,6 +47,7 @@ pub fn with_thumbnail_metadata(metadata: Value, storage_path: String, mime_type:
 pub struct Resource {
     pub id: Uuid,
     pub memo_id: Option<Uuid>,
+    pub user_id: Uuid,
     pub filename: String,
     pub resource_type: String,
     pub mime_type: String,
@@ -64,6 +65,7 @@ impl FromRow<'_, sqlx::postgres::PgRow> for Resource {
         Ok(Resource {
             id: row.try_get("id")?,
             memo_id: row.try_get("memo_id")?,
+            user_id: row.try_get("user_id")?,
             filename: row.try_get("filename")?,
             resource_type: row.try_get("resource_type")?,
             mime_type: row.try_get("mime_type")?,

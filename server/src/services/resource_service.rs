@@ -304,12 +304,13 @@ impl ResourceService {
         let now = Utc::now().timestamp_millis();
 
         let resource = sqlx::query_as::<_, Resource>(
-              "INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, created_at, updated_at)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+              "INSERT INTO resources (id, memo_id, user_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, created_at, updated_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
              RETURNING *",
         )
         .bind(resource_id)
         .bind(memo_id)
+        .bind(user_uuid)
         .bind(&req.filename)
         .bind(if req.mime_type.starts_with("video/") { "video" } else { "image" })
         .bind(&req.mime_type)
@@ -612,11 +613,12 @@ impl ResourceService {
         let now = Utc::now().timestamp_millis();
 
         sqlx::query(
-              "INSERT INTO resources (id, memo_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, created_at, updated_at)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+              "INSERT INTO resources (id, memo_id, user_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, created_at, updated_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
         )
         .bind(resource_id)
         .bind(memo_id)
+        .bind(user_uuid)
         .bind(&req.filename)
         .bind(if req.mime_type.starts_with("video/") { "video" } else { "image" })
         .bind(&req.mime_type)

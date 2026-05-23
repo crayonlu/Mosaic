@@ -48,6 +48,7 @@ RUN apt-get update && apt-get install -y \
     libpq5 \
     ffmpeg \
     ca-certificates \
+    wget \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -s /bin/bash appuser
 
