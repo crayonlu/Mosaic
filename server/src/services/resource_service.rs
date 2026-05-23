@@ -337,7 +337,7 @@ impl ResourceService {
         let user_uuid = Uuid::parse_str(user_id)?;
         let storage_prefix = format!("resources/{}/%", user_uuid);
         let mut resource = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
+            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
              FROM resources r
              LEFT JOIN memos m ON m.id = r.memo_id
              WHERE r.id = $1 AND (m.user_id = $2 OR r.storage_path LIKE $3) AND r.is_deleted = FALSE",
@@ -372,7 +372,7 @@ impl ResourceService {
         let user_uuid = Uuid::parse_str(user_id)?;
         let storage_prefix = format!("resources/{}/%", user_uuid);
         let resource = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
+            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
              FROM resources r
              LEFT JOIN memos m ON m.id = r.memo_id
              WHERE r.id = $1 AND (m.user_id = $2 OR r.storage_path LIKE $3) AND r.is_deleted = FALSE",
@@ -464,7 +464,7 @@ impl ResourceService {
         let user_uuid = Uuid::parse_str(user_id)?;
         let storage_prefix = format!("resources/{}/%", user_uuid);
         let resource = sqlx::query_as::<_, Resource>(
-              "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
+              "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
              FROM resources r
              LEFT JOIN memos m ON m.id = r.memo_id
              WHERE r.id = $1 AND (m.user_id = $2 OR r.storage_path LIKE $3)",
@@ -648,7 +648,7 @@ impl ResourceService {
         let offset = (page - 1) * page_size;
 
         let resources = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
+            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
              FROM resources r
              JOIN memos m ON r.memo_id = m.id
              WHERE m.user_id = $1 AND r.is_deleted = FALSE
@@ -686,7 +686,7 @@ impl ResourceService {
     ) -> Result<ResourceResponse, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let resource = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
+            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
              FROM resources r
              JOIN memos m ON r.memo_id = m.id
              WHERE r.id = $1 AND m.user_id = $2 AND r.is_deleted = FALSE",

@@ -2,7 +2,7 @@ import { mmkvZustandStorage } from '@/lib/storage/mmkv'
 import { useThemeStore } from '@/stores/themeStore'
 import { X } from 'lucide-react-native'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Animated, { FadeOut, ZoomIn } from 'react-native-reanimated'
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
@@ -175,8 +175,8 @@ function Toast({
 
   return (
     <Animated.View
-      entering={ZoomIn.springify().damping(12).stiffness(100)}
-      exiting={FadeOut.duration(200)}
+      entering={FadeIn.duration(200)}
+      exiting={FadeOut.duration(150)}
       style={[
         styles.toastContainer,
         {
