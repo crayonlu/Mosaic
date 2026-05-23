@@ -5,7 +5,14 @@ import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
 import { FileX } from 'lucide-react-native'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native'
+import {
+  ActivityIndicator,
+  RefreshControl,
+  SectionList,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native'
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 import { MemoCard } from './MemoCard'
 
