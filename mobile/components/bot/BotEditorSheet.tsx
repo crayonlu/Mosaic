@@ -2,8 +2,8 @@ import { SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
 import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
+import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { useCreateBot, useDeleteBot, useUpdateBot } from '@/lib/query'
-import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type Bot } from '@mosaic/api'
 import { Image } from 'expo-image'
@@ -31,6 +31,7 @@ interface BotEditorSheetProps {
 export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
+  const authHeaders = useAuthHeaders()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [tagsInput, setTagsInput] = useState('')
@@ -38,7 +39,6 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
   const [model, setModel] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
   const bottomInset = insets.bottom + 16
 
   const { mutateAsync: createBot, isPending: isCreating } = useCreateBot()
@@ -55,7 +55,6 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
       setAutoReply(bot?.autoReply ?? true)
       setModel(bot?.model ?? '')
       setAvatarUrl(bot?.avatarUrl)
-      getBearerAuthHeaders().then(setAuthHeaders)
     }
   }, [visible, bot])
 

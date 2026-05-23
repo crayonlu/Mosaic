@@ -7,7 +7,7 @@ import {
 } from '@/lib/media/upload'
 import { SafeKeyboardAwareScrollView, SafeKeyboardStickyView } from '@/lib/native/safeProviders'
 import { useBotThread, useReplyToBot } from '@/lib/query'
-import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
+import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type BotReply } from '@mosaic/api'
 import { Image } from 'expo-image'
@@ -135,7 +135,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
   const [text, setText] = useState('')
   const [mediaItems, setMediaItems] = useState<MediaGridItem[]>([])
   const [uploadCandidates, setUploadCandidates] = useState<Record<string, SelectedMediaItem>>({})
-  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
+  const authHeaders = useAuthHeaders()
   const [uploadProgressItems, setUploadProgressItems] = useState<
     { id: string; progress: number }[]
   >([])
@@ -150,11 +150,6 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       setUploadProgressItems([])
       setPendingMessage(null)
     }
-  }, [visible])
-
-  useEffect(() => {
-    if (!visible) return
-    void getBearerAuthHeaders().then(setAuthHeaders)
   }, [visible])
 
   const bot = thread?.bot ?? reply?.bot

@@ -4,6 +4,7 @@ import type {
   ClipResult,
   CreateMemoRequest,
   ListMemosQuery,
+  MemoDetail,
   MemoRevision,
   MemoWithResourcesResponse,
   PaginatedResponse,
@@ -20,6 +21,10 @@ export const memosApi = {
 
   get(id: string): Promise<MemoWithResourcesResponse> {
     return apiClient.get<MemoWithResourcesResponse>(`/api/memos/${id}`)
+  },
+
+  getDetail(id: string): Promise<MemoDetail> {
+    return apiClient.get<MemoDetail>(`/api/memos/${id}/detail`)
   },
 
   getByDate(date: string, query: ListMemosQuery = {}): Promise<MemoWithResourcesResponse[]> {

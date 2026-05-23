@@ -4,7 +4,8 @@ import { MemoRevisionPage } from '@/components/memo/MemoRevisionPage'
 import { ScreenHeader } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
-import { useDeleteRevision, useMemo, useRevisions } from '@/lib/query/hooks/useMemos'
+import { useMemoDetail } from '@/lib/query/hooks/useMemos'
+import { useDeleteRevision } from '@/lib/query/hooks/useMemos'
 import { useDeleteMemo, useUpdateMemo } from '@/lib/query/mutations/memoMutations'
 import { useThemeStore } from '@/stores/themeStore'
 import {
@@ -33,14 +34,18 @@ export default function MemoDetailScreen() {
 
   const { confirm } = useToastConfirm()
 
-  const { data: memo, isLoading: memoLoading } = useMemo(id ?? '')
-  const { data: revisions = [] } = useRevisions(id ?? '')
+  // Single consolidated query — returns memo + revisions + botReplies in one request
+  const { data: detail, isLoading: detailLoading } = useMemoDetail(id ?? '')
   const { mutateAsync: deleteMemo } = useDeleteMemo()
   const { mutateAsync: deleteRevision } = useDeleteRevision()
   const { mutateAsync: updateMemo } = useUpdateMemo()
   const [showEditor, setShowEditor] = useState(false)
   const [botReply, setBotReply] = useState<BotReply | null>(null)
   const [threadVisible, setThreadVisible] = useState(false)
+
+  const memo = detail?.memo as MemoWithResources | undefined
+  const revisions = detail?.revisions ?? []
+  const botReplies = detail?.botReplies ?? []
 
   const pages = useRNMemo(() => {
     return [...revisions].sort((a, b) => a.revisionNumber - b.revisionNumber)
@@ -197,7 +202,7 @@ export default function MemoDetailScreen() {
     />
   )
 
-  if (memoLoading) {
+  if (detailLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         {renderHeader()}
@@ -269,6 +274,7 @@ export default function MemoDetailScreen() {
           memo={memo as MemoWithResources}
           revision={rev}
           isLatest
+          botReplies={botReplies}
           onBotReply={handleBotReply}
           onSaveAISummary={handleSaveAISummary}
         />
@@ -339,6 +345,7 @@ export default function MemoDetailScreen() {
                 memo={memo as MemoWithResources}
                 revision={rev}
                 isLatest={isLatest}
+                botReplies={isLatest ? botReplies : []}
                 onBotReply={handleBotReply}
                 onSaveAISummary={isLatest ? handleSaveAISummary : undefined}
               />

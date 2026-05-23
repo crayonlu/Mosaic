@@ -43,8 +43,8 @@ pub use bot::{
 };
 pub use diary::{CreateDiaryRequest, Diary, DiaryListQuery, DiaryResponse, UpdateDiaryRequest};
 pub use memo::{
-    CreateMemoRequest, Memo, MemoListQuery, MemoRevision, MemoRevisionResponse, MemoWithResources,
-    ResourceResponse as MemoResourceResponse, TagResponse, UpdateMemoRequest,
+    CreateMemoRequest, Memo, MemoDetailResponse, MemoListQuery, MemoRevision, MemoRevisionResponse,
+    MemoWithResources, ResourceResponse as MemoResourceResponse, TagResponse, UpdateMemoRequest,
 };
 pub use memory::{
     BotMemoryContext, BotMemoryDebugContext, MemoryStatsResponse, RelatedMemoContext,

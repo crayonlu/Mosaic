@@ -5,7 +5,7 @@ import type { BotReply } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { Image } from 'expo-image'
 import { ArrowRight, ChevronDown, ChevronUp, FileText, Lightbulb } from 'lucide-react-native'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Animated, {
   Easing,
@@ -33,17 +33,27 @@ function MemoryContextPanel({
   onMemoNavigate?: (memoId: string) => void
   theme: any
 }) {
-  const { data: context, isLoading } = useMemoryContext(memoId, botId)
   const [open, setOpen] = useState(false)
+  const hasOpenedRef = useRef(false)
   const [contentHeight, setContentHeight] = useState(0)
   const animHeight = useSharedValue(0)
+
+  // Only fetch reference records when user clicks the trigger
+  const { data: context, isLoading } = useMemoryContext(memoId, botId, {
+    enabled: hasOpenedRef.current,
+  })
 
   const hasMemos = (context?.retrievedMemos.length ?? 0) > 0
 
   const handleToggle = useCallback(() => {
-    if (!hasMemos) return
+    if (isLoading) return
+    if (!hasOpenedRef.current) {
+      hasOpenedRef.current = true
+      setOpen(true)
+      return
+    }
     setOpen(prev => !prev)
-  }, [hasMemos])
+  }, [isLoading])
 
   useEffect(() => {
     if (open) {
@@ -58,14 +68,15 @@ function MemoryContextPanel({
         easing: Easing.out(Easing.cubic),
       })
     }
-  }, [open, contentHeight])
+  }, [open, contentHeight, animHeight])
 
   const expandStyle = useAnimatedStyle(() => ({
     height: animHeight.value,
     overflow: 'hidden' as const,
   }))
 
-  if (!isLoading && !hasMemos) return null
+  // After fetch completed with empty results — hide permanently
+  if (hasOpenedRef.current && !isLoading && !hasMemos) return null
 
   return (
     <View style={[memStyles.container, { borderTopColor: theme.border }]}>
@@ -73,42 +84,45 @@ function MemoryContextPanel({
         onPress={handleToggle}
         activeOpacity={0.7}
         style={memStyles.trigger}
-        disabled={!hasMemos}
       >
         <Text style={[memStyles.triggerText, { color: theme.textSecondary }]}>
-          {isLoading || !context
-            ? '正在加载参考记录...'
-            : `参考了你 ${context.retrievedMemos.length} 条以前的记录`}
+          {!hasOpenedRef.current
+            ? '查看参考记录'
+            : isLoading || !context
+              ? '正在加载参考记录...'
+              : `参考了你 ${context.retrievedMemos.length} 条以前的记录`}
         </Text>
       </TouchableOpacity>
 
-      <Animated.View style={expandStyle}>
-        <View
-          onLayout={e => {
-            const h = e.nativeEvent.layout.height
-            if (h > 0 && h !== contentHeight) setContentHeight(h)
-          }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
-        >
-          {(context?.retrievedMemos ?? []).map(memo => (
-            <TouchableOpacity
-              key={memo.id}
-              onPress={() => onMemoNavigate?.(memo.id)}
-              activeOpacity={0.7}
-              style={[memStyles.memoRow, { borderRadius: theme.radius.small }]}
-            >
-              <FileText size={13} color={theme.textTertiary} />
-              <Text style={[memStyles.memoExcerpt, { color: theme.text }]} numberOfLines={1}>
-                {memo.excerpt}
-              </Text>
-              <Text style={[memStyles.memoDate, { color: theme.textTertiary }]}>
-                {dayjs(memo.createdAt).format('M月D日')}
-              </Text>
-              <ArrowRight size={11} color={theme.textTertiary} />
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Animated.View>
+      {hasOpenedRef.current && hasMemos && (
+        <Animated.View style={expandStyle}>
+          <View
+            onLayout={e => {
+              const h = e.nativeEvent.layout.height
+              if (h > 0 && h !== contentHeight) setContentHeight(h)
+            }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
+          >
+            {context!.retrievedMemos.map(memo => (
+              <TouchableOpacity
+                key={memo.id}
+                onPress={() => onMemoNavigate?.(memo.id)}
+                activeOpacity={0.7}
+                style={[memStyles.memoRow, { borderRadius: theme.radius.small }]}
+              >
+                <FileText size={13} color={theme.textTertiary} />
+                <Text style={[memStyles.memoExcerpt, { color: theme.text }]} numberOfLines={1}>
+                  {memo.excerpt}
+                </Text>
+                <Text style={[memStyles.memoDate, { color: theme.textTertiary }]}>
+                  {dayjs(memo.createdAt).format('M月D日')}
+                </Text>
+                <ArrowRight size={11} color={theme.textTertiary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Animated.View>
+      )}
     </View>
   )
 }

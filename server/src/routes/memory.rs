@@ -138,6 +138,7 @@ pub async fn get_memory_activity(
 pub(crate) struct ContextQuery {
     memo_id: Uuid,
     bot_id: Uuid,
+    limit: Option<usize>,
 }
 
 #[derive(Serialize)]
@@ -264,11 +265,145 @@ pub async fn get_memory_context(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
+    if let Some(limit) = query.limit {
+        retrieved_memos.truncate(limit);
+    }
+
     HttpResponse::Ok().json(MemoryContextResponse { retrieved_memos })
+}
+
+/// Consolidated endpoint: returns memory context for ALL bots that replied to a memo.
+#[derive(Deserialize)]
+pub(crate) struct MemoContextsQuery {
+    limit: Option<usize>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MemoContextsResponse {
+    contexts: std::collections::HashMap<String, MemoryContextResponse>,
+}
+
+pub async fn get_memo_memory_contexts(
+    req: HttpRequest,
+    path: web::Path<Uuid>,
+    pool: web::Data<PgPool>,
+    query: web::Query<MemoContextsQuery>,
+) -> HttpResponse {
+    let memo_id = path.into_inner();
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+    let user_uuid = match Uuid::parse_str(&user_id) {
+        Ok(id) => id,
+        Err(_) => return HttpResponse::BadRequest().finish(),
+    };
+
+    #[derive(sqlx::FromRow)]
+    struct BotLogRow {
+        bot_id: Uuid,
+        retrieved_memo_ids: serde_json::Value,
+        score_payload: serde_json::Value,
+    }
+
+    let rows = match sqlx::query_as::<_, BotLogRow>(
+        "SELECT DISTINCT ON (bot_id) bot_id, retrieved_memo_ids, score_payload
+         FROM bot_memory_debug_logs
+         WHERE user_id = $1 AND memo_id = $2
+         ORDER BY bot_id, created_at DESC",
+    )
+    .bind(user_uuid)
+    .bind(memo_id)
+    .fetch_all(pool.get_ref())
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            log::error!("[MemoMemoryContexts] Query failed: {}", e);
+            return HttpResponse::InternalServerError().finish();
+        }
+    };
+
+    let limit = query.limit.unwrap_or(10);
+    let mut contexts: std::collections::HashMap<String, MemoryContextResponse> = std::collections::HashMap::new();
+
+    for row in rows {
+        let score_map: std::collections::HashMap<Uuid, (f64, String)> = row
+            .score_payload
+            .as_array()
+            .unwrap_or(&vec![])
+            .iter()
+            .filter_map(|item| {
+                let id = item["memoId"].as_str().and_then(|s| Uuid::parse_str(s).ok())?;
+                let score = item["score"].as_f64().unwrap_or(0.0);
+                let reason = item["reason"].as_str().unwrap_or("").to_string();
+                Some((id, (score, reason)))
+            })
+            .collect();
+
+        let memo_ids: Vec<Uuid> = row
+            .retrieved_memo_ids
+            .as_array()
+            .unwrap_or(&vec![])
+            .iter()
+            .filter_map(|v| v.as_str().and_then(|s| Uuid::parse_str(s).ok()))
+            .collect();
+
+        let mut retrieved_memos: Vec<RetrievedMemoItem> = if memo_ids.is_empty() {
+            vec![]
+        } else {
+            #[derive(sqlx::FromRow)]
+            struct MemoRow {
+                id: Uuid,
+                content: String,
+                ai_summary: Option<String>,
+                created_at: i64,
+            }
+            sqlx::query_as::<_, MemoRow>(
+                "SELECT id, content, ai_summary, created_at FROM memos WHERE id = ANY($1) AND is_deleted = FALSE",
+            )
+            .bind(&memo_ids)
+            .fetch_all(pool.get_ref())
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|m| {
+                let (score, reason) = score_map.get(&m.id).cloned().unwrap_or((0.0, "recent".into()));
+                let excerpt = m
+                    .ai_summary
+                    .filter(|s| !s.trim().is_empty())
+                    .unwrap_or_else(|| m.content.chars().take(120).collect());
+                RetrievedMemoItem {
+                    id: m.id,
+                    excerpt,
+                    score,
+                    reason,
+                    created_at: m.created_at,
+                }
+            })
+            .collect()
+        };
+
+        retrieved_memos.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        retrieved_memos.truncate(limit);
+
+        contexts.insert(row.bot_id.to_string(), MemoryContextResponse { retrieved_memos });
+    }
+
+    HttpResponse::Ok().json(MemoContextsResponse { contexts })
 }
 
 pub fn configure_memory_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/memory/stats").route(web::get().to(get_memory_stats)))
         .service(web::resource("/memory/activity").route(web::get().to(get_memory_activity)))
-        .service(web::resource("/memory/context").route(web::get().to(get_memory_context)));
+        .service(web::resource("/memory/context").route(web::get().to(get_memory_context)))
+        .service(
+            web::resource("/memos/{id}/memory-contexts")
+                .route(web::get().to(get_memo_memory_contexts)),
+        );
 }

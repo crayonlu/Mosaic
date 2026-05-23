@@ -26,6 +26,7 @@ export function useUpdateMemo() {
       memosApi.update(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['memo', id] })
+      queryClient.invalidateQueries({ queryKey: ['memo', id, 'detail'] })
       queryClient.invalidateQueries({ queryKey: ['memo', id, 'revisions'] })
       queryClient.invalidateQueries({ queryKey: ['memos', 'infinite'] })
       queryClient.invalidateQueries({ queryKey: ['memos', 'date'] })

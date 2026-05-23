@@ -3,13 +3,13 @@ import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
 import { EditableAISummary } from '@/components/memo/EditableAISummary'
 import { DraggableImageGrid } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
-import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
+import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
 import type { BotReply, MemoRevision, MemoWithResources } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
 import { router } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 
@@ -17,6 +17,7 @@ interface MemoRevisionPageProps {
   memo: MemoWithResources
   revision: MemoRevision | null
   isLatest: boolean
+  botReplies?: BotReply[]
   onBotReply: (reply: BotReply) => void
   onSaveAISummary?: (text: string) => Promise<void>
 }
@@ -25,15 +26,12 @@ export function MemoRevisionPage({
   memo,
   revision,
   isLatest,
+  botReplies,
   onBotReply,
   onSaveAISummary,
 }: MemoRevisionPageProps) {
   const { theme } = useThemeStore()
-  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    getBearerAuthHeaders().then(setAuthHeaders)
-  }, [])
+  const authHeaders = useAuthHeaders()
 
   const content = isLatest ? memo.content : (revision?.content ?? '')
   const tags = isLatest ? memo.tags : (revision?.tags ?? [])
@@ -117,9 +115,9 @@ export function MemoRevisionPage({
         )}
       </View>
 
-      {isLatest && (
+      {isLatest && botReplies && (
         <BotReplyList
-          memoId={memo.id}
+          replies={botReplies}
           revisionNumber={revision?.revisionNumber}
           onReply={onBotReply}
           onMemoNavigate={id => router.push(`/memo/${id}`)}

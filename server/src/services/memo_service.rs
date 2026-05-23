@@ -957,6 +957,25 @@ impl MemoService {
         Ok(MemoWithResources::from_memo(memo, resources))
     }
 
+    pub async fn get_memo_detail(
+        &self,
+        user_id: &str,
+        memo_id: Uuid,
+    ) -> Result<crate::models::MemoDetailResponse, AppError> {
+        let memo = self.get_memo(user_id, memo_id).await?;
+        let revisions = self.get_revisions(user_id, memo_id).await?;
+        let bot_replies = if let Some(bot_service) = &self.bot_service {
+            bot_service.get_bot_replies(user_id, memo_id).await?
+        } else {
+            vec![]
+        };
+        Ok(crate::models::MemoDetailResponse {
+            memo,
+            revisions,
+            bot_replies,
+        })
+    }
+
     pub async fn list_memos(
         &self,
         user_id: &str,

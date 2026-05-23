@@ -17,11 +17,27 @@ export function useMemoryActivity(limit = 20) {
   })
 }
 
-export function useMemoryContext(memoId: string, botId: string) {
+export function useMemoMemoryContexts(
+  memoId: string,
+  opts?: { enabled?: boolean; limit?: number }
+) {
   return useQuery({
-    queryKey: ['memory-context', memoId, botId],
-    queryFn: () => memoryApi.getContext(memoId, botId),
+    queryKey: ['memo-memory-contexts', memoId, opts?.limit],
+    queryFn: () => memoryApi.getMemoContexts(memoId, opts?.limit),
     staleTime: 5 * 60_000,
-    enabled: !!memoId && !!botId,
+    enabled: (opts?.enabled ?? true) && !!memoId,
+  })
+}
+
+export function useMemoryContext(
+  memoId: string,
+  botId: string,
+  opts?: { enabled?: boolean; limit?: number }
+) {
+  return useQuery({
+    queryKey: ['memory-context', memoId, botId, opts?.limit],
+    queryFn: () => memoryApi.getContext(memoId, botId, opts?.limit),
+    staleTime: 5 * 60_000,
+    enabled: (opts?.enabled ?? true) && !!memoId && !!botId,
   })
 }

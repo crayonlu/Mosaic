@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import type { MemoryActivityEntry, MemoryContext, MemoryStats } from './types'
+import type { MemoContextsResponse, MemoryActivityEntry, MemoryContext, MemoryStats } from './types'
 
 export const memoryApi = {
   getStats(): Promise<MemoryStats> {
@@ -10,7 +10,13 @@ export const memoryApi = {
     return apiClient.get<MemoryActivityEntry[]>(`/api/memory/activity?limit=${limit}`)
   },
 
-  getContext(memoId: string, botId: string): Promise<MemoryContext> {
-    return apiClient.get<MemoryContext>(`/api/memory/context?memo_id=${memoId}&bot_id=${botId}`)
+  getContext(memoId: string, botId: string, limit?: number): Promise<MemoryContext> {
+    const params = `memo_id=${memoId}&bot_id=${botId}${limit ? `&limit=${limit}` : ''}`
+    return apiClient.get<MemoryContext>(`/api/memory/context?${params}`)
+  },
+
+  getMemoContexts(memoId: string, limit?: number): Promise<MemoContextsResponse> {
+    const params = limit ? `?limit=${limit}` : ''
+    return apiClient.get<MemoContextsResponse>(`/api/memos/${memoId}/memory-contexts${params}`)
   },
 }

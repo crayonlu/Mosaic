@@ -3,6 +3,7 @@ import { Button, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { SlidingSegmentedControl } from '@/components/ui/SlidingSegmentedControl'
 import { toast } from '@/components/ui/Toast'
+import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { useBots, useUpdateBot } from '@/lib/query'
 import { useAdminAIConfig } from '@/lib/query/hooks/useAdminAIConfig'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
@@ -90,26 +91,13 @@ function CollapsibleContent({
 }
 
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
-  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    const loadAuthHeaders = async () => {
-      const headers = await getBearerAuthHeaders()
-      setAuthHeaders(headers)
-    }
-
-    loadAuthHeaders()
-  }, [])
+  const authHeaders = useAuthHeaders()
 
   return <Image source={{ uri: avatarUrl, headers: authHeaders }} style={styles.avatarImage} />
 }
 
 function BotAvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
-  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    void getBearerAuthHeaders().then(setAuthHeaders)
-  }, [])
+  const authHeaders = useAuthHeaders()
 
   return (
     <Image

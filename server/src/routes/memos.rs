@@ -58,6 +58,25 @@ pub async fn get_memo(
     }
 }
 
+pub async fn get_memo_detail(
+    req: HttpRequest,
+    path: web::Path<uuid::Uuid>,
+    memo_service: web::Data<MemoService>,
+) -> HttpResponse {
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+
+    match memo_service
+        .get_memo_detail(&user_id, path.into_inner())
+        .await
+    {
+        Ok(detail) => HttpResponse::Ok().json(detail),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
 pub async fn list_memos(
     req: HttpRequest,
     query: web::Query<MemoListQuery>,
@@ -429,12 +448,8 @@ pub fn configure_memo_routes(cfg: &mut web::ServiceConfig) {
     .service(web::resource("/memos/tags").route(web::get().to(get_all_tags)))
     .service(web::resource("/memos/search").route(web::get().to(search_memos)))
     .service(web::resource("/memos/date/{date}").route(web::get().to(get_memos_by_date)))
-    .service(
-        web::resource("/memos/{id}")
-            .route(web::get().to(get_memo))
-            .route(web::put().to(update_memo))
-            .route(web::delete().to(delete_memo)),
-    )
+    .service(web::resource("/memos/{id}").route(web::get().to(get_memo)).route(web::put().to(update_memo)).route(web::delete().to(delete_memo)))
+    .service(web::resource("/memos/{id}/detail").route(web::get().to(get_memo_detail)))
     .service(web::resource("/memos/{id}/revisions").route(web::get().to(get_revisions)))
     .service(
         web::resource("/memos/{id}/revisions/{revision_id}")

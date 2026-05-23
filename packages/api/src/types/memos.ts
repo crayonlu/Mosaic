@@ -1,3 +1,4 @@
+import type { BotReply } from './bots'
 import type { Resource } from './resources'
 
 export interface Memo {
@@ -37,6 +38,12 @@ export interface TagResponse {
 
 export type MemoResponse = Memo
 export type MemoWithResourcesResponse = MemoWithResources
+
+export interface MemoDetail {
+  memo: MemoWithResources
+  revisions: MemoRevision[]
+  botReplies: BotReply[]
+}
 
 export interface ListMemosQuery {
   page?: number

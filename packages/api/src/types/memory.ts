@@ -24,3 +24,7 @@ export interface RetrievedMemoItem {
 export interface MemoryContext {
   retrievedMemos: RetrievedMemoItem[]
 }
+
+export interface MemoContextsResponse {
+  contexts: Record<string, MemoryContext>
+}

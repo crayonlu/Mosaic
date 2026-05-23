@@ -1,9 +1,8 @@
 import { Badge, DraggableImageGrid } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
-import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
+import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { useThemeStore } from '@/stores/themeStore'
 import { X } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MarkdownRenderer } from './MarkdownRenderer'
@@ -20,15 +19,7 @@ interface PostPreviewProps {
 export function PostPreview({ visible, content, items, tags, onClose, onPost }: PostPreviewProps) {
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
-  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    const loadAuthHeaders = async () => {
-      const headers = await getBearerAuthHeaders()
-      setAuthHeaders(headers)
-    }
-    loadAuthHeaders()
-  }, [])
+  const authHeaders = useAuthHeaders()
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>

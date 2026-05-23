@@ -19,7 +19,7 @@ export function useBotReplies(memoId: string) {
   return useQuery({
     queryKey: ['bot-replies', memoId],
     queryFn: () => botsApi.getBotReplies(memoId),
-    staleTime: 0,
+    staleTime: 60 * 1000,
     enabled: !!memoId,
   })
 }
@@ -28,7 +28,7 @@ export function useBotThread(replyId?: string | null) {
   return useQuery({
     queryKey: ['bot-thread', replyId],
     queryFn: () => botsApi.getBotThread(replyId as string),
-    staleTime: 0,
+    staleTime: 60 * 1000,
     enabled: !!replyId,
   })
 }
@@ -86,6 +86,7 @@ export function useReplyToBot() {
       botsApi.replyToBot(replyId, data),
     onSuccess: newReply => {
       queryClient.invalidateQueries({ queryKey: ['bot-replies', newReply.memoId] })
+      queryClient.invalidateQueries({ queryKey: ['memo', newReply.memoId, 'detail'] })
       queryClient.invalidateQueries({ queryKey: ['bot-thread'] })
     },
   })

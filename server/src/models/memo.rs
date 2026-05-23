@@ -105,6 +105,14 @@ pub struct MemoWithResources {
     pub resources: Vec<ResourceResponse>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MemoDetailResponse {
+    pub memo: MemoWithResources,
+    pub revisions: Vec<MemoRevisionResponse>,
+    pub bot_replies: Vec<crate::models::BotReplyResponse>,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateMemoRequest {

@@ -1,33 +1,25 @@
-import { useBotReplies } from '@/lib/query'
-import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
+import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { useThemeStore } from '@/stores/themeStore'
 import type { BotReply } from '@mosaic/api'
-import { useEffect, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
-import { SkeletonLine } from '@/components/ui/Skeleton'
 import { BotReplyCard } from './BotReplyCard'
 
 interface BotReplyListProps {
-  memoId: string
+  replies: BotReply[]
   revisionNumber?: number
   onReply: (reply: BotReply) => void
   onMemoNavigate?: (memoId: string) => void
 }
 
 export function BotReplyList({
-  memoId,
+  replies: allReplies,
   revisionNumber,
   onReply,
   onMemoNavigate,
 }: BotReplyListProps) {
   const { theme } = useThemeStore()
-  const { data: allReplies, isLoading } = useBotReplies(memoId)
-  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    getBearerAuthHeaders().then(setAuthHeaders)
-  }, [])
+  const authHeaders = useAuthHeaders()
 
   const replies =
     revisionNumber != null
@@ -35,19 +27,6 @@ export function BotReplyList({
           r => r.revisionNumber == null || r.revisionNumber === revisionNumber
         )
       : (allReplies ?? [])
-
-  // Loading state: show placeholder to reserve space
-  if (isLoading) {
-    return (
-      <View style={[styles.section, { borderTopColor: theme.border }]}>
-        <View style={styles.loadingPlaceholder}>
-          <SkeletonLine width={120} height={12} />
-          <SkeletonLine width="90%" height={12} style={{ marginTop: 8 }} />
-          <SkeletonLine width="60%" height={12} style={{ marginTop: 6 }} />
-        </View>
-      </View>
-    )
-  }
 
   if (replies.length === 0) return null
 
