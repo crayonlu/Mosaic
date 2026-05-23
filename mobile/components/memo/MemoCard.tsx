@@ -54,10 +54,11 @@ export const MemoCard = React.memo(
     }))
 
     const handlePressIn = useCallback(() => {
+      onPress?.()
       if (showPressFeedback) {
-        scale.value = withTiming(0.975, { duration: 120, easing: Easing.out(Easing.cubic) })
+        scale.value = withTiming(0.99, { duration: 120, easing: Easing.out(Easing.cubic) })
       }
-    }, [showPressFeedback, scale])
+    }, [showPressFeedback, scale, onPress])
 
     const handlePressOut = useCallback(() => {
       scale.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) })
@@ -102,7 +103,6 @@ export const MemoCard = React.memo(
     return (
       <Animated.View style={animatedStyle}>
         <Pressable
-          onPress={onPress}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           disabled={!onPress}
