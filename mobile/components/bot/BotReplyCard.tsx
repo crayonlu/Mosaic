@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 import { Image } from 'expo-image'
 import { ArrowRight, ChevronDown, ChevronUp, FileText, Lightbulb } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -35,7 +35,6 @@ function MemoryContextPanel({
 }) {
   const [open, setOpen] = useState(false)
   const hasOpenedRef = useRef(false)
-  const [contentHeight, setContentHeight] = useState(0)
   const animHeight = useSharedValue(0)
 
   // Only fetch reference records when user clicks the trigger
@@ -56,19 +55,12 @@ function MemoryContextPanel({
   }, [isLoading])
 
   useEffect(() => {
-    if (open) {
-      if (contentHeight === 0) return
-      animHeight.value = withTiming(contentHeight, {
-        duration: 220,
-        easing: Easing.out(Easing.cubic),
-      })
-    } else {
-      animHeight.value = withTiming(0, {
-        duration: 220,
-        easing: Easing.out(Easing.cubic),
-      })
-    }
-  }, [open, contentHeight, animHeight])
+    const targetHeight = open ? 220 : 0
+    animHeight.value = withTiming(targetHeight, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    })
+  }, [open, animHeight])
 
   const expandStyle = useAnimatedStyle(() => ({
     height: animHeight.value,
@@ -92,15 +84,14 @@ function MemoryContextPanel({
 
       {hasOpenedRef.current && hasMemos && (
         <Animated.View style={expandStyle}>
-          <View
-            onLayout={e => {
-              const h = e.nativeEvent.layout.height
-              if (h > 0 && h !== contentHeight) setContentHeight(h)
-            }}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
+          <ScrollView
+            style={{ maxHeight: 220 }}
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
           >
-            {context!.retrievedMemos.map(memo => (
-              <TouchableOpacity
+            <View style={memStyles.memoList}>
+              {context!.retrievedMemos.map(memo => (
+                <TouchableOpacity
                 key={memo.id}
                 onPress={() => onMemoNavigate?.(memo.id)}
                 activeOpacity={0.7}
@@ -117,7 +108,8 @@ function MemoryContextPanel({
               </TouchableOpacity>
             ))}
           </View>
-        </Animated.View>
+        </ScrollView>
+      </Animated.View>
       )}
     </View>
   )
@@ -367,7 +359,7 @@ const memStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 8,
+    paddingRight: 8,
     paddingVertical: 6,
   },
   memoExcerpt: {
