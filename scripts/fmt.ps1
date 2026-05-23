@@ -35,17 +35,18 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  turbo format: FAILED" -ForegroundColor Red
 }
 
-# Format mobile
-Write-Host "`n[3/3] Formatting mobile app..." -ForegroundColor Yellow
-if (Test-Path "mobile/package.json") {
-    Write-Host "  Formatting mobile app..." -ForegroundColor Gray
-    Set-Location mobile
-    bun format
-    Set-Location $ProjectRoot
+# Run CI-equivalent checks (lint, typecheck, format:check)
+Write-Host "`n[3/3] Running CI-equivalent checks..." -ForegroundColor Yellow
+
+bun run check
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "  all checks: OK" -ForegroundColor Green
+} else {
+    Write-Host "  checks: FAILED" -ForegroundColor Red
 }
 
 Pop-Location
 
 Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "All formatting complete!" -ForegroundColor Green
+Write-Host "All formatting and checks complete!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan

@@ -12,10 +12,14 @@ echo "🎨 Auto-formatting code..."
 # Format Rust (server)
 if [ -f server/Cargo.toml ]; then
   (cd server && cargo fmt) || exit 1
+  git add 'server/src/'
 fi
 
 # Format TypeScript via turbo
 bun run format || exit 1
+
+# Re-stage formatted files so commit includes formatting changes
+git add --update
 
 echo "🔍 Running code checks..."
 

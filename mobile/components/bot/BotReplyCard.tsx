@@ -174,9 +174,7 @@ function ThinkingPanel({ content, theme }: { content?: string; theme: any }) {
             showsVerticalScrollIndicator
             bounces={false}
           >
-            <Text style={[styles.thinkingContent, { color: theme.textSecondary }]}>
-              {content}
-            </Text>
+            <Text style={[styles.thinkingContent, { color: theme.textSecondary }]}>{content}</Text>
           </ScrollView>
         </View>
       </Animated.View>
