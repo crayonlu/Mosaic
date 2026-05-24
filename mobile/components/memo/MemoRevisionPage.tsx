@@ -32,7 +32,7 @@ export function MemoRevisionPage({
   onSaveAISummary,
 }: MemoRevisionPageProps) {
   const { theme } = useThemeStore()
-  const authHeaders = useAuthHeaders()
+  const { headers: authHeaders } = useAuthHeaders()
 
   const content = isLatest ? memo.content : (revision?.content ?? '')
   const tags = isLatest ? memo.tags : (revision?.tags ?? [])

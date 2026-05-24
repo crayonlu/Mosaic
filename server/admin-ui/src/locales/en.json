@@ -124,7 +124,9 @@
     "saveFailed": "Save failed",
     "openai": "OpenAI",
     "anthropic": "Anthropic",
-    "fetchFailed": "Fetch failed"
+    "fetchFailed": "Fetch failed",
+    "apiKeyPlaceholder": "sk-...",
+    "apiUrlPlaceholder": "https://api.openai.com/v1"
   },
   "automation": {
     "title": "Automation Settings",
@@ -157,6 +159,8 @@
     "pendingIndex": "{{n}} memos not indexed, click to backfill"
   },
   "common": {
-    "error": "Error"
+    "error": "Error",
+    "close": "Close",
+    "loading": "Loading…"
   }
 }

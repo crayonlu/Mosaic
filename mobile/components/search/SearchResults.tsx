@@ -1,5 +1,6 @@
 import { MemoCard } from '@/components/memo/MemoCard'
 import { MemoListSkeleton } from '@/components/ui'
+import { useMemo as useMemoQuery } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { Memo } from '@mosaic/api'
 import { FileX, Search } from 'lucide-react-native'
@@ -8,7 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 
 const SearchMemoCard = React.memo(function SearchMemoCard({
-  item,
+  item: initialItem,
   onPress,
   onDelete,
   semanticEnabled,
@@ -18,6 +19,9 @@ const SearchMemoCard = React.memo(function SearchMemoCard({
   onDelete?: (id: string) => void
   semanticEnabled: boolean
 }) {
+  // Read from normalized cache so search results share refs with other lists
+  const { data: cachedItem } = useMemoQuery(initialItem.id)
+  const item = (cachedItem ?? initialItem) as Memo
   const handlePress = useCallback(() => onPress(item), [item, onPress])
   return (
     <MemoCard

@@ -1,6 +1,6 @@
 import { MemoListSkeleton } from '@/components/ui'
 import i18n from '@/lib/i18n'
-import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
+import { useInfiniteMemos, useMemo as useMemoQuery, useMemosByDate } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MemoCard } from '../memo/MemoCard'
 
 const FeedMemoCard = React.memo(function FeedMemoCard({
-  memo,
+  memo: initialMemo,
   onPress,
   isSelected,
 }: {
@@ -17,6 +17,9 @@ const FeedMemoCard = React.memo(function FeedMemoCard({
   onPress: (memo: MemoWithResources) => void
   isSelected: boolean
 }) {
+  // Read from normalized cache so all pages share the same object reference
+  const { data: cachedMemo } = useMemoQuery(initialMemo.id)
+  const memo = cachedMemo ?? initialMemo
   const handlePress = useCallback(() => onPress(memo), [memo, onPress])
   return <MemoCard memo={memo} onPress={handlePress} isSelected={isSelected} />
 })

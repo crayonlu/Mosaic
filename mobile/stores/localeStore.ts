@@ -1,5 +1,6 @@
 import i18n, { type SupportedLocale } from '@/lib/i18n'
 import { mmkvZustandStorage } from '@/lib/storage/mmkv'
+import * as Localization from 'expo-localization'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
@@ -11,7 +12,9 @@ interface LocaleState {
 export const useLocaleStore = create<LocaleState>()(
   persist(
     (set, get) => ({
-      locale: 'en',
+      locale: (Localization.getLocales()?.[0]?.languageCode === 'zh'
+        ? 'zh'
+        : 'en') as SupportedLocale,
       setLocale: (locale: SupportedLocale) => {
         i18n.changeLanguage(locale)
         set({ locale })

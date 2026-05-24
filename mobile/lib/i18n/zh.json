@@ -11,9 +11,9 @@
   "stringUtils": {
     "unknownTime": "未知时间",
     "justNow": "刚刚",
-    "minutesAgo": "{n}分钟前",
-    "hoursAgo": "{n}小时前",
-    "daysAgo": "{n}天前",
+    "minutesAgo": "{{n}}分钟前",
+    "hoursAgo": "{{n}}小时前",
+    "daysAgo": "{{n}}天前",
     "dateFormat": "YYYY年MM月DD日",
     "dateTimeFormat": "YYYY年MM月DD日 HH:mm"
   },
@@ -28,7 +28,15 @@
     "save": "保存",
     "saving": "保存中...",
     "confirm": "确认",
-    "error": "错误"
+    "error": "错误",
+    "apply": "应用",
+    "archiving": "归档中…",
+    "clear": "清除",
+    "close": "关闭",
+    "done": "完成",
+    "loading": "加载中…",
+    "noMore": "没有更多了",
+    "reset": "重置"
   },
   "setup": {
     "subtitle": "完成初始设置，开启你的智能笔记之旅",
@@ -44,7 +52,11 @@
     "connectionOk": "连接成功",
     "testConnection": "测试连接",
     "start": "开始使用",
-    "urlHint": "请使用完整地址，例如 https://your-server.com"
+    "urlHint": "请输入完整服务器地址，如 https://your-server.com",
+    "healthCheckFailed": "健康检查失败：HTTP {{status}}",
+    "serverUrlPlaceholder": "https://your-server.com",
+    "usernamePlaceholder": "your-username",
+    "passwordPlaceholder": "••••••••"
   },
   "share": {
     "save": "保存",
@@ -77,7 +89,7 @@
     "incompleteMsg": "请填写标题和内容",
     "empty": "暂无自定义提醒",
     "pushNotifications": "推送通知",
-    "reminders": "提醒 ({count})"
+    "reminders": "提醒 ({{count}})"
   },
   "themePicker": {
     "title": "选择主题风格",
@@ -88,7 +100,8 @@
     "cleanSlate": "清冷",
     "cleanSlateDesc": "笔记极简，清晰克制",
     "sampleTagDaily": "日常",
-    "sampleTagReading": "阅读"
+    "sampleTagReading": "阅读",
+    "sampleContent": "今天做了什么？去散了散步，还读了一本书。"
   },
   "memo": {
     "deleteConfirm": "确定删除此便签？",
@@ -109,7 +122,7 @@
     "emptyTodayHint": "点击下方按钮创建你的第一条Memo",
     "empty": "暂无Memo",
     "emptyHint": "开始记录你的想法和灵感",
-    "count": "{count} 条Memo"
+    "count": "{{count}} 条Memo"
   },
   "settings": {
     "notLoggedIn": "未登录",
@@ -152,15 +165,25 @@
     "language": "语言",
     "quietPaper": "暖纸",
     "cleanSlate": "清冷",
-    "botsCount": "{count} 个 Bot",
-    "clearItemMsg": "确定要清除「{label}」吗？",
-    "storageTotal": "共 {size}"
+    "botsCount": "{{count}} 个 Bot",
+    "clearItemMsg": "确定要清除「{{label}}」吗？",
+    "storageTotal": "共 {{size}}",
+    "languageZh": "中文",
+    "general": "通用"
   },
   "archive": {
     "archive": "归档",
     "selectMemo": "请选择至少一条Memo",
     "subtitle": "整理今天的记录，沉淀成日记",
-    "selected": "已选 {count} 条"
+    "selected": "已选 {{count}} 条",
+    "confirm": "确认归档",
+    "dialogInfo": "将 {{count}} 条备忘归档到 {{date}}",
+    "diarySummary": "日记总结（可选）",
+    "failed": "归档失败",
+    "failedLog": "归档失败",
+    "intensity": "强度: {{score}}/10",
+    "mood": "心情",
+    "moodPlaceholder": "写下今天的心情或总结..."
   },
   "search": {
     "startSearch": "开始搜索",
@@ -173,7 +196,7 @@
     "unarchived": "未归档",
     "filter": "筛选",
     "archiveStatus": "归档状态",
-    "resultsCount": "共 {count} 条结果"
+    "resultsCount": "共 {{count}} 条结果"
   },
   "diary": {},
   "editor": {
@@ -184,13 +207,20 @@
       "tags": "标签",
       "tagsPlaceholder": "添加标签...",
       "dragHint": "长按图片拖拽调整顺序",
-      "mediaUploadFailed": "媒体上传失败"
+      "mediaUploadFailed": "媒体上传失败",
+      "create": "创建"
     },
     "postPreview": {
-      "title": "预览"
+      "title": "预览",
+      "empty": "暂无预览内容"
     }
   },
-  "tag": {},
+  "tag": {
+    "aiRecommend": "AI 推荐",
+    "aiRecommendFailed": "AI 推荐失败",
+    "noRecommendations": "暂无推荐",
+    "placeholder": "添加标签…"
+  },
   "bot": {
     "editBot": "编辑助手",
     "newBot": "新建助手",
@@ -214,7 +244,7 @@
     "descPlaceholder": "用自然语言描述 Bot 的性格、说话风格和行为特征。",
     "changeAvatar": "点击更换头像",
     "uploadAvatar": "点击上传头像",
-    "deleteConfirmMsg": "确定删除「{name}」？"
+    "deleteConfirmMsg": "确定删除「{{name}}」？"
   },
   "botThread": {
     "continueChat": "继续对话",
@@ -317,8 +347,113 @@
     "secureLabel": "安全凭证",
     "secureDesc": "登录令牌、服务器凭据",
     "dbLabel": "本地数据库",
-    "dbDesc": "笔记、日记等离线数据 - 共{count}条",
-    "appState": "应用状态（主题、推送设置等）- {count} 项",
+    "dbDesc": "笔记、日记等离线数据 - 共{{count}}条",
+    "appState": "应用状态（主题、推送设置等）- {{count}} 项",
     "zeroBytes": "0 B"
+  },
+  "aiConfig": {
+    "apiKeyPlaceholder": "API 密钥",
+    "apiUrlPlaceholder": "API 地址"
+  },
+  "archiveDateFilter": {
+    "selectDate": "选择日期"
+  },
+  "authStore": {
+    "loginFailed": "登录失败"
+  },
+  "avatarCropper": {
+    "hint": "头像将裁剪为 1:1 正方形",
+    "rotate": "旋转",
+    "title": "裁剪头像"
+  },
+  "botReply": {
+    "continueChat": "继续对话",
+    "dateFormat": "M月D日",
+    "loadingReference": "正在加载参考记录...",
+    "noReference": "没有参考任何记录",
+    "referenced": "参考了你 {{n}} 条以前的记录",
+    "thinkingTitle": "心路历程",
+    "threadCount": "已追问 {{n}} 轮",
+    "toggleThinking": "展开/折叠心路历程",
+    "viewReference": "查看参考记录"
+  },
+  "datePicker": {
+    "fri": "五",
+    "mon": "一",
+    "monthFormat": "yyyy年M月",
+    "sat": "六",
+    "selectDate": "选择日期",
+    "sun": "日",
+    "thu": "四",
+    "today": "今天",
+    "tue": "二",
+    "wed": "三",
+    "yesterday": "昨天"
+  },
+  "dayPageView": {
+    "diaryNotFound": "{{date}} 日记不存在",
+    "noArchivedMemos": "当天暂无已归档 Memo",
+    "saveFailed": "保存失败",
+    "summaryPlaceholder": "写下今天的心情或总结...",
+    "todayMood": "今日心情",
+    "todaySummary": "今日总结"
+  },
+  "errorHandler": {
+    "noPermission": "无权限执行此操作",
+    "serverError": "服务器错误"
+  },
+  "fullScreenEditor": {
+    "aiSummary": "AI 摘要"
+  },
+  "imagePicker": {
+    "upload": "上传"
+  },
+  "localPush": {
+    "dayEndBody": "睡前给心灵洗个澡，把今天的喜怒哀乐都收进盒子里吧。",
+    "dayEndTitle": "这一天，辛苦啦",
+    "reminderBody": "好记性不如烂笔头，别让今天那些闪光的瞬间偷偷溜走呀。",
+    "reminderTitle": "留住今天的碎片"
+  },
+  "mediaPreview": {
+    "close": "关闭"
+  },
+  "memoFeed": {
+    "empty": "暂无Memo",
+    "emptyHint": "开始记录你的想法和灵感",
+    "emptyToday": "今天还没有内容",
+    "emptyTodayHint": "点击下方按钮创建你的第一条Memo"
+  },
+  "memoInput": {
+    "placeholder": "记录你的想法..."
+  },
+  "memoMutations": {
+    "createFailed": "创建失败",
+    "deleteFailed": "删除失败"
+  },
+  "memoRevision": {
+    "aiSummary": "AI 摘要",
+    "createdAt": "创建于 {{time}}",
+    "noTags": "暂无标签",
+    "revisionNumber": "第 {{n}} 版",
+    "updatedAt": "更新于 {{time}}"
+  },
+  "modelCombobox": {
+    "placeholder": "搜索或输入模型名..."
+  },
+  "searchFilters": {
+    "dateRange": "日期范围",
+    "endDate": "结束日期",
+    "startDate": "开始日期",
+    "tags": "标签",
+    "to": "至"
+  },
+  "select": {
+    "placeholder": "添加标签..."
+  },
+  "tagInput": {
+    "placeholder": "添加标签..."
+  },
+  "textEditor": {
+    "placeholder": "开始输入…"
   }
 }

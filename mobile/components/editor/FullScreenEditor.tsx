@@ -5,24 +5,24 @@ import { useAISummary } from '@/hooks/useAISummary'
 import { useConnection } from '@/hooks/useConnection'
 import i18n from '@/lib/i18n'
 import {
-  createSelectedMediaItems,
-  uploadSelectedMedia,
-  type SelectedMediaItem,
+    createSelectedMediaItems,
+    uploadSelectedMedia,
+    type SelectedMediaItem,
 } from '@/lib/media/upload'
 import { normalizeContent } from '@/lib/utils/content'
 import { useThemeStore } from '@/stores/themeStore'
 import { Share as ShareIcon, X } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native'
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -59,7 +59,7 @@ export function FullScreenEditor({
   initialResourceIds = EMPTY_RESOURCE_IDS,
   uploadMemoId,
   title = 'Memo',
-  submitLabel = i18n.t('fullScreenEditor.create'),
+  submitLabel = i18n.t('editor.fullScreenEditor.create'),
   placeholder = "What's on your mind?",
   availableTags = [],
   onClose,
@@ -190,7 +190,7 @@ export function FullScreenEditor({
         uploadedResourceIds.push(...uploadedResources.map(resource => resource.id))
       } catch (error) {
         console.error('Media upload failed:', error)
-        toast.error(i18n.t('common.error'), i18n.t('fullScreenEditor.mediaUploadFailed'))
+        toast.error(i18n.t('common.error'), i18n.t('editor.fullScreenEditor.mediaUploadFailed'))
         setUploading(false)
         setUploadProgressItems([])
         return
@@ -302,7 +302,7 @@ export function FullScreenEditor({
                     { color: canSummarize ? theme.primary : theme.textSecondary },
                   ]}
                 >
-                  {i18n.t('fullScreenEditor.aiSummary')}
+                  {i18n.t('editor.fullScreenEditor.aiSummary')}
                 </Text>
               </TouchableOpacity>
 
@@ -312,7 +312,7 @@ export function FullScreenEditor({
                 activeOpacity={theme.state.pressedOpacity}
               >
                 <Text style={[styles.actionButtonText, { color: theme.text }]}>
-                  {i18n.t('fullScreenEditor.addImage')}
+                  {i18n.t('editor.fullScreenEditor.addImage')}
                 </Text>
               </TouchableOpacity>
 
@@ -334,7 +334,7 @@ export function FullScreenEditor({
                     { color: hasContent ? theme.text : theme.textSecondary },
                   ]}
                 >
-                  {i18n.t('fullScreenEditor.preview')}
+                  {i18n.t('editor.fullScreenEditor.preview')}
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -347,14 +347,14 @@ export function FullScreenEditor({
           >
             <View style={styles.tagContainer}>
               <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>
-                {i18n.t('fullScreenEditor.tags')}
+                {i18n.t('editor.fullScreenEditor.tags')}
               </Text>
               <TagInput
                 tags={tags}
                 onTagsChange={setTags}
                 content={content}
                 suggestions={availableTags}
-                placeholder={i18n.t('fullScreenEditor.tagsPlaceholder')}
+                placeholder={i18n.t('editor.fullScreenEditor.tagsPlaceholder')}
                 appearance="plain"
               />
             </View>
@@ -372,7 +372,7 @@ export function FullScreenEditor({
               {mediaItems.length > 0 && (
                 <>
                   <Text style={[styles.mediaHint, { color: theme.textSecondary }]}>
-                    {i18n.t('fullScreenEditor.dragHint')}
+                    {i18n.t('editor.fullScreenEditor.dragHint')}
                   </Text>
                   <DraggableImageGrid
                     items={mediaItems}
@@ -399,7 +399,7 @@ export function FullScreenEditor({
               >
                 <View style={styles.summaryHeader}>
                   <Text style={[styles.summaryTitle, { color: theme.text }]}>
-                    {i18n.t('fullScreenEditor.aiSummary')}
+                    {i18n.t('editor.fullScreenEditor.aiSummary')}
                   </Text>
                   <View style={styles.summaryActions}>
                     <TouchableOpacity

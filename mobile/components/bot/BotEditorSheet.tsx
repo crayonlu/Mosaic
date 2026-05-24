@@ -11,15 +11,15 @@ import { Camera, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ActivityIndicator,
-  Modal,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Modal,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -33,7 +33,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
   const { t } = useTranslation()
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
-  const authHeaders = useAuthHeaders()
+  const { headers: authHeaders } = useAuthHeaders()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [tagsInput, setTagsInput] = useState('')

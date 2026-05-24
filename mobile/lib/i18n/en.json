@@ -11,9 +11,9 @@
   "stringUtils": {
     "unknownTime": "Unknown time",
     "justNow": "Just now",
-    "minutesAgo": "{n} min ago",
-    "hoursAgo": "{n} h ago",
-    "daysAgo": "{n} d ago",
+    "minutesAgo": "{{n}} min ago",
+    "hoursAgo": "{{n}} h ago",
+    "daysAgo": "{{n}} d ago",
     "dateFormat": "YYYY-MM-DD",
     "dateTimeFormat": "YYYY-MM-DD HH:mm"
   },
@@ -28,7 +28,15 @@
     "save": "Save",
     "saving": "Saving...",
     "confirm": "Confirm",
-    "error": "Error"
+    "error": "Error",
+    "apply": "Apply",
+    "archiving": "Archiving…",
+    "clear": "Clear",
+    "close": "Close",
+    "done": "Done",
+    "loading": "Loading…",
+    "noMore": "No more",
+    "reset": "Reset"
   },
   "setup": {
     "subtitle": "Complete initial setup and start your smart note-taking journey",
@@ -44,7 +52,11 @@
     "connectionOk": "Connected",
     "testConnection": "Test Connection",
     "start": "Get Started",
-    "urlHint": "Please use a full URL, e.g. https://your-server.com"
+    "urlHint": "Please use a full URL, e.g. https://your-server.com",
+    "healthCheckFailed": "Health check failed: HTTP {{status}}",
+    "serverUrlPlaceholder": "https://your-server.com",
+    "usernamePlaceholder": "your-username",
+    "passwordPlaceholder": "••••••••"
   },
   "share": {
     "save": "Save",
@@ -77,7 +89,7 @@
     "incompleteMsg": "Please fill in title and content",
     "empty": "No custom reminders",
     "pushNotifications": "Push Notifications",
-    "reminders": "Reminders ({count})"
+    "reminders": "Reminders ({{count}})"
   },
   "themePicker": {
     "title": "Choose Your Theme",
@@ -88,7 +100,8 @@
     "cleanSlate": "Clean Slate",
     "cleanSlateDesc": "Minimal and restrained",
     "sampleTagDaily": "daily",
-    "sampleTagReading": "reading"
+    "sampleTagReading": "reading",
+    "sampleContent": "What did you do today? I went for a walk and read a book."
   },
   "memo": {
     "deleteConfirm": "Are you sure you want to delete this memo?",
@@ -109,7 +122,7 @@
     "emptyTodayHint": "Create your first memo using the button below",
     "empty": "No memos yet",
     "emptyHint": "Start recording your thoughts and ideas",
-    "count": "{count} memos"
+    "count": "{{count}} memos"
   },
   "settings": {
     "notLoggedIn": "Not logged in",
@@ -150,17 +163,27 @@
     "dimensions": " dims",
     "about": "About",
     "language": "Language",
-    "quietPaper": "Quiet Paper",
-    "cleanSlate": "Clean Slate",
-    "botsCount": "{count} Bot(s)",
-    "clearItemMsg": "Are you sure you want to clear \"{label}\"?",
-    "storageTotal": "{size} total"
+    "quietPaper": "Paper",
+    "cleanSlate": "Slate",
+    "botsCount": "{{count}} Bot(s)",
+    "clearItemMsg": "Are you sure you want to clear \"{{label}}\"?",
+    "storageTotal": "{{size}} total",
+    "languageZh": "中文",
+    "general": "General"
   },
   "archive": {
     "archive": "Archive",
     "selectMemo": "Please select at least one memo",
     "subtitle": "Organize today's records into a diary",
-    "selected": "Selected {count}"
+    "selected": "Selected {{count}}",
+    "confirm": "Confirm",
+    "dialogInfo": "Archive {{count}} memo(s) to {{date}}",
+    "diarySummary": "Diary Summary",
+    "failed": "Archive failed",
+    "failedLog": "Archive failed",
+    "intensity": "Mood intensity: {{score}}",
+    "mood": "Mood",
+    "moodPlaceholder": "How are you feeling today?"
   },
   "search": {
     "startSearch": "Start Search",
@@ -173,7 +196,7 @@
     "unarchived": "Unarchived",
     "filter": "Filter",
     "archiveStatus": "Archive status",
-    "resultsCount": "{count} results"
+    "resultsCount": "{{count}} results"
   },
   "diary": {},
   "editor": {
@@ -184,13 +207,20 @@
       "tags": "Tags",
       "tagsPlaceholder": "Add tags...",
       "dragHint": "Long press and drag to reorder",
-      "mediaUploadFailed": "Media upload failed"
+      "mediaUploadFailed": "Media upload failed",
+      "create": "Create"
     },
     "postPreview": {
-      "title": "Preview"
+      "title": "Preview",
+      "empty": "Nothing to preview"
     }
   },
-  "tag": {},
+  "tag": {
+    "aiRecommend": "AI Recommend",
+    "aiRecommendFailed": "AI recommendation failed",
+    "noRecommendations": "No recommendations",
+    "placeholder": "Add tags…"
+  },
   "bot": {
     "editBot": "Edit Bot",
     "newBot": "New Bot",
@@ -214,7 +244,7 @@
     "descPlaceholder": "Describe the Bot's personality, speaking style and behavior traits in natural language.",
     "changeAvatar": "Change avatar",
     "uploadAvatar": "Upload avatar",
-    "deleteConfirmMsg": "Are you sure you want to delete \"{name}\"?"
+    "deleteConfirmMsg": "Are you sure you want to delete \"{{name}}\"?"
   },
   "botThread": {
     "continueChat": "Continue conversation",
@@ -313,12 +343,117 @@
     "title": "Mood Heatmap"
   },
   "storage": {
-    "appState": "App state (themes, push settings, etc.) - {count} items",
+    "appState": "App state (themes, push settings, etc.) - {{count}} items",
     "appStateLabel": "Preferences & State",
     "secureLabel": "Secure Credentials",
     "secureDesc": "Login tokens, server credentials",
     "dbLabel": "Local Database",
-    "dbDesc": "Memos, diaries & offline data - {count} records",
+    "dbDesc": "Memos, diaries & offline data - {{count}} records",
     "zeroBytes": "0 B"
+  },
+  "aiConfig": {
+    "apiKeyPlaceholder": "API Key",
+    "apiUrlPlaceholder": "API URL"
+  },
+  "archiveDateFilter": {
+    "selectDate": "Select date"
+  },
+  "authStore": {
+    "loginFailed": "Login failed"
+  },
+  "avatarCropper": {
+    "hint": "Adjust the crop area and rotate as needed",
+    "rotate": "Rotate",
+    "title": "Edit Avatar"
+  },
+  "botReply": {
+    "continueChat": "Continue chat",
+    "dateFormat": "MMM D, YYYY h:mm A",
+    "loadingReference": "Loading referenced content…",
+    "noReference": "No referenced content",
+    "referenced": "Referenced from {{n}} memo(s)",
+    "thinkingTitle": "Thinking",
+    "threadCount": "{{count}} replies",
+    "toggleThinking": "Thinking",
+    "viewReference": "View reference"
+  },
+  "datePicker": {
+    "fri": "Fri",
+    "mon": "Mon",
+    "monthFormat": "MMMM yyyy",
+    "sat": "Sat",
+    "selectDate": "Select date",
+    "sun": "Sun",
+    "thu": "Thu",
+    "today": "Today",
+    "tue": "Tue",
+    "wed": "Wed",
+    "yesterday": "Yesterday"
+  },
+  "dayPageView": {
+    "diaryNotFound": "Diary not found",
+    "noArchivedMemos": "No archived memos",
+    "saveFailed": "Failed to save diary",
+    "summaryPlaceholder": "What happened today?",
+    "todayMood": "Today's Mood",
+    "todaySummary": "Today's Summary"
+  },
+  "errorHandler": {
+    "noPermission": "No permission",
+    "serverError": "Server error"
+  },
+  "fullScreenEditor": {
+    "aiSummary": "AI Summary"
+  },
+  "imagePicker": {
+    "upload": "Upload"
+  },
+  "localPush": {
+    "dayEndBody": "Record what happened today",
+    "dayEndTitle": "Day Review",
+    "reminderBody": "Time to write something down",
+    "reminderTitle": "Reminder"
+  },
+  "mediaPreview": {
+    "close": "Close"
+  },
+  "memoFeed": {
+    "empty": "No memos yet",
+    "emptyHint": "Start writing your first memo",
+    "emptyToday": "Nothing today",
+    "emptyTodayHint": "Tap + to create a memo"
+  },
+  "memoInput": {
+    "placeholder": "Write something…"
+  },
+  "memoMutations": {
+    "createFailed": "Failed to create memo",
+    "deleteFailed": "Failed to delete memo"
+  },
+  "memoRevision": {
+    "aiSummary": "AI Summary",
+    "createdAt": "Created {{time}}",
+    "noTags": "No tags",
+    "revisionNumber": "Version {{n}}",
+    "updatedAt": "Updated {{time}}"
+  },
+  "modelCombobox": {
+    "placeholder": "Select a model…"
+  },
+  "searchFilters": {
+    "dateRange": "Date Range",
+    "endDate": "End Date",
+    "startDate": "Start Date",
+    "tags": "Tags",
+    "to": "to"
+  },
+  "select": {
+    "placeholder": "Select…"
+  },
+  "tagInput": {
+    "placeholder": "Enter tag and press enter"
+  },
+  "textEditor": {
+    "placeholder": "Start writing…"
   }
 }

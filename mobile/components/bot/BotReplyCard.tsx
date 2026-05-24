@@ -202,11 +202,6 @@ export function BotReplyCard({
               theme={theme}
             />
           )}
-          {!isThread && threadCount > 0 && (
-            <Text style={[styles.threadHint, { color: theme.textSecondary }]}>
-              {i18n.t('botReply.threadCount', { n: threadCount })}
-            </Text>
-          )}
         </View>
       </View>
     </View>

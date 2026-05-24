@@ -21,7 +21,7 @@ interface PostPreviewProps {
 export function PostPreview({ visible, content, items, tags, onClose, onPost }: PostPreviewProps) {
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
-  const authHeaders = useAuthHeaders()
+  const { headers: authHeaders } = useAuthHeaders()
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -42,7 +42,7 @@ export function PostPreview({ visible, content, items, tags, onClose, onPost }: 
             <X size={24} color={theme.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.text }]}>
-            {i18n.t('postPreview.title')}
+            {i18n.t('editor.postPreview.title')}
           </Text>
           <View style={styles.headerButton} />
         </View>
@@ -59,7 +59,7 @@ export function PostPreview({ visible, content, items, tags, onClose, onPost }: 
             </View>
           ) : (
             <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              {i18n.t('postPreview.empty')}
+              {i18n.t('editor.postPreview.empty')}
             </Text>
           )}
 

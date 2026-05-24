@@ -2,45 +2,67 @@ import type { ListMemosQuery, MemoDetail, MemoWithResources } from '@mosaic/api'
 import { memosApi } from '@mosaic/api'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  fallbackMemosByDate,
-  fallbackMemosList,
-  fallbackSingleMemo,
-  syncMemosList,
-  syncMemosPage,
-  syncSingleMemo,
-  withOfflineFallback,
+    fallbackMemosByDate,
+    fallbackMemosList,
+    fallbackSingleMemo,
+    syncMemosList,
+    syncMemosPage,
+    syncSingleMemo,
+    withOfflineFallback,
 } from '../offlineSync'
 
 export function useMemos(query: ListMemosQuery = {}) {
+  const queryClient = useQueryClient()
   return useQuery({
     queryKey: ['memos', query],
-    queryFn: withOfflineFallback(() => memosApi.list(query as any), {
-      writeThrough: syncMemosPage,
-      fallback: () =>
-        fallbackMemosList({
-          page: query.page,
-          pageSize: query.pageSize,
-          archived: query.archived,
-          diaryDate: query.diaryDate,
-        }),
-    }),
-  })
-}
-
-export function useInfiniteMemos(query: ListMemosQuery = {}) {
-  return useInfiniteQuery({
-    queryKey: ['memos', 'infinite', query],
-    queryFn: ({ pageParam = 1 }) => {
-      const fn = withOfflineFallback(() => memosApi.list({ ...query, page: pageParam }), {
+    queryFn: withOfflineFallback(
+      async () => {
+        const data = await memosApi.list(query as any)
+        // Normalize: seed individual memo caches from list response
+        for (const memo of data.items ?? []) {
+          queryClient.setQueryData(['memo', memo.id], memo)
+        }
+        return data
+      },
+      {
         writeThrough: syncMemosPage,
         fallback: () =>
           fallbackMemosList({
-            page: pageParam as number,
+            page: query.page,
             pageSize: query.pageSize,
             archived: query.archived,
             diaryDate: query.diaryDate,
           }),
-      })
+      }
+    ),
+  })
+}
+
+export function useInfiniteMemos(query: ListMemosQuery = {}) {
+  const queryClient = useQueryClient()
+  return useInfiniteQuery({
+    queryKey: ['memos', 'infinite', query],
+    queryFn: ({ pageParam = 1 }) => {
+      const fn = withOfflineFallback(
+        async () => {
+          const data = await memosApi.list({ ...query, page: pageParam })
+          // Normalize: seed individual memo caches from each page
+          for (const memo of data.items ?? []) {
+            queryClient.setQueryData(['memo', memo.id], memo)
+          }
+          return data
+        },
+        {
+          writeThrough: syncMemosPage,
+          fallback: () =>
+            fallbackMemosList({
+              page: pageParam as number,
+              pageSize: query.pageSize,
+              archived: query.archived,
+              diaryDate: query.diaryDate,
+            }),
+        }
+      )
       return fn()
     },
     initialPageParam: 1,
@@ -61,6 +83,7 @@ export function useMemo(id: string) {
       fallback: () => fallbackSingleMemo(id),
     }),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 min: list write-through keeps it fresh
   })
 }
 
@@ -86,7 +109,12 @@ export function useMemoDetail(id: string) {
     enabled: !!id,
     staleTime: 60 * 1000,
     placeholderData: () => {
-      // Try to find this memo in the list cache for instant display
+      // Check normalized cache first (fastest path)
+      const cached = queryClient.getQueryData<MemoWithResources>(['memo', id])
+      if (cached) {
+        return { memo: cached, revisions: [], botReplies: [] } satisfies MemoDetail
+      }
+      // Fallback: scan list caches (legacy path)
       const listData = queryClient.getQueriesData<{ pages: { items: MemoWithResources[] }[] }>({
         queryKey: ['memos', 'infinite'],
       })
@@ -95,15 +123,10 @@ export function useMemoDetail(id: string) {
         for (const page of data.pages) {
           const found = page.items.find(m => m.id === id)
           if (found) {
-            return {
-              memo: found,
-              revisions: [],
-              botReplies: [],
-            } satisfies MemoDetail
+            return { memo: found, revisions: [], botReplies: [] } satisfies MemoDetail
           }
         }
       }
-      // Also check flat list queries
       const flatData = queryClient.getQueriesData<{ items: MemoWithResources[] }>({
         queryKey: ['memos'],
       })
@@ -111,11 +134,7 @@ export function useMemoDetail(id: string) {
         if (!data?.items) continue
         const found = data.items.find(m => m.id === id)
         if (found) {
-          return {
-            memo: found,
-            revisions: [],
-            botReplies: [],
-          } satisfies MemoDetail
+          return { memo: found, revisions: [], botReplies: [] } satisfies MemoDetail
         }
       }
       return undefined
@@ -124,12 +143,23 @@ export function useMemoDetail(id: string) {
 }
 
 export function useMemosByDate(date: string, query: ListMemosQuery = {}) {
+  const queryClient = useQueryClient()
   return useQuery({
     queryKey: ['memos', 'date', date, query],
-    queryFn: withOfflineFallback(() => memosApi.getByDate(date, query as any), {
-      writeThrough: syncMemosList,
-      fallback: () => fallbackMemosByDate(date),
-    }),
+    queryFn: withOfflineFallback(
+      async () => {
+        const data = await memosApi.getByDate(date, query as any)
+        // Normalize: seed individual memo caches from date query
+        for (const memo of data ?? []) {
+          queryClient.setQueryData(['memo', memo.id], memo)
+        }
+        return data
+      },
+      {
+        writeThrough: syncMemosList,
+        fallback: () => fallbackMemosByDate(date),
+      }
+    ),
     enabled: !!date,
   })
 }

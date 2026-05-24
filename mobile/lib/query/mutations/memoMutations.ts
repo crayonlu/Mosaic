@@ -9,7 +9,9 @@ export function useCreateMemo() {
 
   return useMutation({
     mutationFn: (data: CreateMemoRequest) => memosApi.create(data),
-    onSuccess: () => {
+    onSuccess: memo => {
+      // Write-through to normalized cache
+      queryClient.setQueryData(['memo', memo.id], memo)
       queryClient.invalidateQueries({ queryKey: ['memos', 'infinite'] })
       queryClient.invalidateQueries({ queryKey: ['memos', 'date'] })
       queryClient.invalidateQueries({ queryKey: ['memos', 'tags'] })
@@ -27,8 +29,9 @@ export function useUpdateMemo() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateMemoRequest }) =>
       memosApi.update(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['memo', id] })
+    onSuccess: (memo, { id }) => {
+      // Write-through to normalized cache — immediate update, no refetch
+      queryClient.setQueryData(['memo', id], memo)
       queryClient.invalidateQueries({ queryKey: ['memo', id, 'detail'] })
       queryClient.invalidateQueries({ queryKey: ['memo', id, 'revisions'] })
       queryClient.invalidateQueries({ queryKey: ['memos', 'infinite'] })
@@ -43,7 +46,10 @@ export function useDeleteMemo() {
 
   return useMutation({
     mutationFn: (id: string) => memosApi.delete(id),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
+      // Remove from normalized cache
+      queryClient.removeQueries({ queryKey: ['memo', id] })
+      queryClient.removeQueries({ queryKey: ['memo', id, 'detail'] })
       queryClient.invalidateQueries({ queryKey: ['memos', 'infinite'] })
       queryClient.invalidateQueries({ queryKey: ['memos', 'date'] })
       queryClient.invalidateQueries({ queryKey: ['memos', 'search'] })

@@ -6,12 +6,12 @@ import { Pause, Play } from 'lucide-react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type LayoutChangeEvent,
+    ActivityIndicator,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+    type LayoutChangeEvent,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -241,7 +241,7 @@ export function VideoPreviewContent({
       {!isReady && thumbnailSourceUri ? (
         <View style={styles.thumbnailOverlay} pointerEvents="none">
           <Image
-            source={{ uri: thumbnailSourceUri, headers: thumbnailHeaders }}
+            source={thumbnailSourceUri && thumbnailHeaders && Object.keys(thumbnailHeaders).length > 0 ? { uri: thumbnailSourceUri, headers: thumbnailHeaders } : undefined}
             style={styles.thumbnail}
             contentFit="contain"
           />

@@ -33,9 +33,12 @@ export function SearchFilters({
   onArchivedChange,
 }: SearchFiltersProps) {
   const { theme } = useThemeStore()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const sheetRef = useRef<BottomSheetModal>(null)
   const [activeDateTarget, setActiveDateTarget] = useState<'start' | 'end' | null>(null)
+
+  // Force full remount of BottomSheetModal on language change to prevent auto re-present
+  const sheetKey = `filter-sheet-${i18n.language}`
 
   const [tempSelectedTags, setTempSelectedTags] = useState<string[]>(selectedTags)
   const [tempIsArchived, setTempIsArchived] = useState<boolean | undefined>(isArchived)
@@ -46,6 +49,8 @@ export function SearchFilters({
     selectedTags.length > 0 || startDate || endDate || isArchived !== undefined
 
   const snapPoints = useMemo(() => ['50%'], [])
+  const sheetBgStyle = useMemo(() => ({ backgroundColor: theme.background }), [theme.background])
+  const sheetIndicatorStyle = useMemo(() => ({ backgroundColor: theme.textSecondary }), [theme.textSecondary])
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -142,14 +147,16 @@ export function SearchFilters({
       </View>
 
       <BottomSheetModal
+        key={sheetKey}
         ref={sheetRef}
         index={0}
         snapPoints={snapPoints}
         enablePanDownToClose
         backdropComponent={renderBackdrop}
-        backgroundStyle={{ backgroundColor: theme.background }}
-        handleIndicatorStyle={{ backgroundColor: theme.textSecondary }}
+        backgroundStyle={sheetBgStyle}
+        handleIndicatorStyle={sheetIndicatorStyle}
         keyboardBehavior="interactive"
+        onChange={() => {}}
       >
         <BottomSheetScrollView
           style={styles.modalBody}

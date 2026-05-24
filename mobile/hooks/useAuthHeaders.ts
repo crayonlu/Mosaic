@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
 import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
+import { useEffect, useRef, useState } from 'react'
 
 let cachedHeaders: Record<string, string> | null = null
 let pendingPromise: Promise<Record<string, string>> | null = null
@@ -17,15 +17,16 @@ export function preloadAuthHeaders() {
   })
 }
 
-export function useAuthHeaders(): Record<string, string> {
+export function useAuthHeaders(): { headers: Record<string, string>; ready: boolean } {
   const [headers, setHeaders] = useState<Record<string, string>>(cachedHeaders ?? {})
+  const [ready, setReady] = useState(!!cachedHeaders)
   const unmountedRef = useRef(false)
 
   useEffect(() => {
     unmountedRef.current = false
 
     if (cachedHeaders) {
-      setHeaders(prev => (prev === cachedHeaders ? prev : cachedHeaders!))
+      if (!ready) setReady(true)
       return
     }
     if (!pendingPromise) {
@@ -36,15 +37,18 @@ export function useAuthHeaders(): Record<string, string> {
       })
     }
     pendingPromise.then(h => {
-      if (!unmountedRef.current) setHeaders(h)
+      if (!unmountedRef.current) {
+        setHeaders(h)
+        setReady(true)
+      }
     })
 
     return () => {
       unmountedRef.current = true
     }
-  }, [])
+  }, [ready])
 
-  return headers
+  return { headers, ready }
 }
 
 export function clearAuthHeadersCache() {

@@ -16,30 +16,29 @@ import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 // import { router } from 'expo-router'
 import {
-    // Bell,
-    Bot,
-    Info,
-    LogOut,
-    Palette,
-    Plus,
-    ShieldCheck,
-    Sparkles,
-    Trash,
+  Bot,
+  Cog,
+  Info,
+  LogOut,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  Trash
 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-    TouchableOpacity as RNTouchableOpacity,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  TouchableOpacity as RNTouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native'
 import Animated, {
-    Easing,
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
 } from 'react-native-reanimated'
 
 const TouchableOpacity = (props: React.ComponentProps<typeof RNTouchableOpacity>) => (
@@ -87,13 +86,13 @@ function CollapsibleContent({
 }
 
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
-  const authHeaders = useAuthHeaders()
+  const { headers: authHeaders } = useAuthHeaders()
 
   return <Image source={{ uri: avatarUrl, headers: authHeaders }} style={styles.avatarImage} />
 }
 
 function BotAvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
-  const authHeaders = useAuthHeaders()
+  const { headers: authHeaders } = useAuthHeaders()
 
   return (
     <Image
@@ -411,23 +410,25 @@ export default function SettingsScreen() {
     </View>
   )
 
-  const appearanceSummary =
-    themeName === 'quietPaper' ? t('settings.quietPaper') : t('settings.cleanSlate')
+  const generalSummary =
+    (themeName === 'quietPaper' ? t('settings.quietPaper') : t('settings.cleanSlate')) +
+    ' · ' +
+    (locale === 'zh' ? i18n.t('settings.languageZh') : 'EN')
 
-  const renderAppearanceSection = () => (
+  const renderGeneralSection = () => (
     <View style={[styles.section]}>
       <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <TouchableOpacity
           style={[styles.menuItem, showAppearanceSettings && { borderBottomColor: theme.border }]}
           onPress={() => toggleSectionWithAnimation(setShowAppearanceSettings)}
         >
-          <Palette size={18} color={theme.text} />
+          <Cog size={18} color={theme.text} />
           <Text style={[styles.menuItemText, { color: theme.text }]}>
-            {t('settings.appearance')}
+            {t('settings.general')}
           </Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              {showAppearanceSettings ? t('settings.collapsed') : appearanceSummary}
+              {showAppearanceSettings ? t('settings.collapsed') : generalSummary}
             </Text>
           </View>
         </TouchableOpacity>
@@ -447,6 +448,26 @@ export default function SettingsScreen() {
                 ]}
                 value={themeName}
                 onChange={v => setThemeName(v as 'quietPaper' | 'cleanSlate')}
+                surfaceMuted={theme.surfaceMuted}
+                surface={theme.surface}
+                textColor={theme.text}
+                textMuted={theme.textSecondary}
+                radius={theme.radius.small}
+              />
+            </View>
+          </View>
+          <View style={[styles.appearanceRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border, paddingTop: 14, marginTop: 4 }]}>
+            <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>
+              {t('settings.language')}
+            </Text>
+            <View style={styles.appearanceControl}>
+              <SlidingSegmentedControl
+                options={[
+                  { label: i18n.t('settings.languageZh'), value: 'zh' },
+                  { label: 'EN', value: 'en' },
+                ]}
+                value={locale}
+                onChange={v => setLocale(v as 'zh' | 'en')}
                 surfaceMuted={theme.surfaceMuted}
                 surface={theme.surface}
                 textColor={theme.text}
@@ -635,33 +656,6 @@ export default function SettingsScreen() {
     </View>
   )
 
-  const renderLanguageSection = () => (
-    <View style={[styles.section]}>
-      <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <View style={styles.appearanceRow}>
-          <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>
-            {t('settings.language')}
-          </Text>
-          <View style={styles.appearanceControl}>
-            <SlidingSegmentedControl
-              options={[
-                { label: i18n.t('settings.languageZh'), value: 'zh' },
-                { label: 'EN', value: 'en' },
-              ]}
-              value={locale}
-              onChange={v => setLocale(v as 'zh' | 'en')}
-              surfaceMuted={theme.surfaceMuted}
-              surface={theme.surface}
-              textColor={theme.text}
-              textMuted={theme.textSecondary}
-              radius={theme.radius.small}
-            />
-          </View>
-        </View>
-      </View>
-    </View>
-  )
-
   const handleLogout = async () => {
     await logout()
   }
@@ -733,8 +727,7 @@ export default function SettingsScreen() {
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.content}>
         {renderAccountSection()}
-        {renderAppearanceSection()}
-        {renderLanguageSection()}
+        {renderGeneralSection()}
         {renderBotSection()}
         {renderAISettings()}
         {renderPermissionSection()}

@@ -19,7 +19,7 @@ export function BotReplyList({
   onMemoNavigate,
 }: BotReplyListProps) {
   const { theme } = useThemeStore()
-  const authHeaders = useAuthHeaders()
+  const { headers: authHeaders } = useAuthHeaders()
 
   const replies =
     revisionNumber != null

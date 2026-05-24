@@ -46,7 +46,7 @@ export const MemoCard = React.memo(
   }: MemoCardProps) {
     const { theme } = useThemeStore()
     const { t } = useTranslation()
-    const authHeaders = useAuthHeaders()
+    const { headers: authHeaders, ready: authReady } = useAuthHeaders()
     const [isOverflowing, setIsOverflowing] = useState(false)
 
     // Press scale animation

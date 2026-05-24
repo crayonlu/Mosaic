@@ -1,8 +1,8 @@
 import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
 import { ImageOff, Play, VideoOff, X } from 'lucide-react-native'
-import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { useEffect, useMemo, useState } from 'react'
+import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native'
 
 import { withAlpha } from './mediaPreviewUtils'
 import type { MediaGridItem } from './types'
@@ -55,7 +55,7 @@ export function MediaGridTile({
           <View style={[styles.loadingDot, { backgroundColor: theme.textSecondary }]} />
           <View style={[styles.loadingDot, { backgroundColor: theme.textSecondary }]} />
         </View>
-      ) : previewUri && !imageError ? (
+      ) : previewUri && !imageError && previewHeaders && Object.keys(previewHeaders).length > 0 ? (
         <Image
           source={{ uri: previewUri, headers: previewHeaders }}
           style={styles.image}

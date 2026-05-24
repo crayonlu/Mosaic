@@ -6,10 +6,10 @@ import { useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
 } from 'react-native-reanimated'
 
 import i18n from '@/lib/i18n'
@@ -250,7 +250,7 @@ export function ImagePreviewContent({
             <Animated.View collapsable={false} style={styles.gestureLayer}>
               <Animated.View style={[styles.imageLayer, animatedImageStyle]}>
                 <Image
-                  source={{ uri: initialUri, headers: initialHeaders }}
+                  source={initialUri && initialHeaders && Object.keys(initialHeaders).length > 0 ? { uri: initialUri, headers: initialHeaders } : undefined}
                   style={[styles.image, isOriginalLoaded ? styles.hiddenImage : undefined]}
                   contentFit="contain"
                   transition={isOriginalLoaded ? 0 : undefined}
@@ -264,7 +264,7 @@ export function ImagePreviewContent({
                 />
                 {shouldLoadOriginal ? (
                   <Image
-                    source={{ uri, headers }}
+                    source={uri && headers && Object.keys(headers).length > 0 ? { uri, headers } : undefined}
                     style={[
                       styles.originalImage,
                       !isOriginalLoaded ? styles.hiddenImage : undefined,

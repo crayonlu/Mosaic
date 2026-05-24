@@ -1,6 +1,6 @@
 import { MemoListSkeleton } from '@/components/ui'
 import i18n from '@/lib/i18n'
-import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
+import { useInfiniteMemos, useMemo as useMemoQuery, useMemosByDate } from '@/lib/query'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
@@ -8,18 +8,18 @@ import { FileX } from 'lucide-react-native'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-    ActivityIndicator,
-    RefreshControl,
-    SectionList,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  RefreshControl,
+  SectionList,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native'
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 import { MemoCard } from './MemoCard'
 
 const ListMemoCard = React.memo(function ListMemoCard({
-  memo,
+  memo: initialMemo,
   onPress,
   onDelete,
   index,
@@ -29,6 +29,9 @@ const ListMemoCard = React.memo(function ListMemoCard({
   onDelete: (id: string) => void
   index: number
 }) {
+  // Read from normalized cache so all pages share the same object reference
+  const { data: cachedMemo } = useMemoQuery(initialMemo.id)
+  const memo = cachedMemo ?? initialMemo
   const handlePress = useCallback(() => onPress(memo), [memo, onPress])
   return (
     <Animated.View

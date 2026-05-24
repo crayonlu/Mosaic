@@ -124,7 +124,9 @@
     "saveFailed": "保存失败",
     "openai": "OpenAI",
     "anthropic": "Anthropic",
-    "fetchFailed": "获取失败"
+    "fetchFailed": "获取失败",
+    "apiKeyPlaceholder": "sk-...",
+    "apiUrlPlaceholder": "https://api.openai.com/v1"
   },
   "automation": {
     "title": "自动化设置",
@@ -157,6 +159,8 @@
     "pendingIndex": "{{n}} 条历史 Memo 未索引，可手动触发回填"
   },
   "common": {
-    "error": "错误"
+    "error": "错误",
+    "close": "关闭",
+    "loading": "加载中…"
   }
 }
