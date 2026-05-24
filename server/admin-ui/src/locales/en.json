@@ -91,7 +91,7 @@
     "deleted": "Deleted",
     "operationFailed": "Operation failed",
     "deleteFailed": "Delete failed",
-    "count": "{count} · {auto} auto"
+    "count": "{{count}} · {{auto}} auto"
   },
   "botManager": {
     "title": "Bot Overview",
@@ -153,8 +153,8 @@
     "empty": "No memos yet. Index will be built automatically after the first entry.",
     "backfillStarted": "Index backfill has started, running in the background",
     "backfillFailed": "Start failed. Please check Embedding model configuration.",
-    "items": "{n} / {m} ({p}%)",
-    "pendingIndex": "{n} memos not indexed, click to backfill"
+    "items": "{{n}} / {{m}} ({{p}}%)",
+    "pendingIndex": "{{n}} memos not indexed, click to backfill"
   },
   "common": {
     "error": "Error"

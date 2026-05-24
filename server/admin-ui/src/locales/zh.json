@@ -91,7 +91,7 @@
     "deleted": "已删除",
     "operationFailed": "操作失败",
     "deleteFailed": "删除失败",
-    "count": "{count} 个 · {auto} 自动"
+    "count": "{{count}} 个 · {{auto}} 自动"
   },
   "botManager": {
     "title": "Bot 概览",
@@ -153,8 +153,8 @@
     "empty": "还没有 Memo，记录第一条后会自动建立索引",
     "backfillStarted": "索引回填已启动，后台处理中",
     "backfillFailed": "启动失败，请检查 Embedding 模型配置",
-    "items": "{n} / {m} 条",
-    "pendingIndex": "{n} 条历史 Memo 未索引，可手动触发回填"
+    "items": "{{n}} / {{m}} 条",
+    "pendingIndex": "{{n}} 条历史 Memo 未索引，可手动触发回填"
   },
   "common": {
     "error": "错误"
