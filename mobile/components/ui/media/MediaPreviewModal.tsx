@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import i18n from '@/lib/i18n'
 import { ImagePreviewContent } from './ImagePreviewContent'
 import { withAlpha } from './mediaPreviewUtils'
 import type { ResolvedMediaSource } from './types'
@@ -121,7 +122,7 @@ export function MediaPreviewModal({ items, initialIndex, onRequestClose }: Media
           <View style={styles.chromeLayer} pointerEvents="box-none">
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="关闭图像预览"
+              accessibilityLabel={i18n.t('mediaPreview.close')}
               onPress={onRequestClose}
               style={({ pressed }) => [
                 styles.closeButton,

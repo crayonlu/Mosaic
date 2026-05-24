@@ -11,11 +11,13 @@ import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
 import { router } from 'expo-router'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { StyleSheet, View } from 'react-native'
 
 const TAB_BAR_HEIGHT = 54
 
 export default function HomeScreen() {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const { canUseNetwork } = useConnection()
   const handleError = useErrorHandler()
@@ -33,12 +35,12 @@ export default function HomeScreen() {
   const handleDelete = async (id: string) => {
     if (!canUseNetwork || isPending) return
 
-    confirm('确定要删除这条 Memo 吗？', async () => {
+    confirm(t('memo.deleteConfirm'), async () => {
       try {
         await deleteMemo(id)
       } catch (error) {
         handleError(error)
-        toast.error('错误', '删除失败')
+        toast.error(t('common.error'), t('memo.deleteFailed'))
       }
     })
   }
@@ -63,7 +65,7 @@ export default function HomeScreen() {
       })
     } catch (error) {
       handleError(error)
-      toast.error('错误', '创建失败')
+      toast.error(t('common.error'), t('memo.createFailed'))
     }
   }
 

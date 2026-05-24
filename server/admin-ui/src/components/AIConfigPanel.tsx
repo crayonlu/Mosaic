@@ -1,5 +1,6 @@
 import { Check, Eye, EyeOff, Loader, Sparkles } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { adminApi } from "../api"
 import { useToast } from "../hooks/useToast"
 
@@ -42,6 +43,7 @@ interface ModelListResponse {
 }
 
 export default function AIConfigPanel() {
+  const { t } = useTranslation()
   const toast = useToast()
   const [loading, setLoading] = useState(false)
 
@@ -146,8 +148,11 @@ export default function AIConfigPanel() {
       setModelErrors((e) => ({ ...e, [key]: "" }))
     } catch (error: unknown) {
       setModelLists((l) => ({ ...l, [key]: [] }))
-      const message = error instanceof Error ? error.message : "未知错误"
-      setModelErrors((e2) => ({ ...e2, [key]: `获取失败: ${message}` }))
+      const message = error instanceof Error ? error.message : t("common.error")
+      setModelErrors((e2) => ({
+        ...e2,
+        [key]: `${t("aiConfig.fetchFailed")}: ${message}`,
+      }))
     } finally {
       setModelsLoading((l) => ({ ...l, [key]: false }))
     }
@@ -202,9 +207,9 @@ export default function AIConfigPanel() {
           supportsThinking: f.supportsThinking,
         },
       })
-      toast.success(`${key === "bot" ? "Bot" : "Embedding"} 配置已保存`)
+      toast.success(t("aiConfig.saved"))
     } catch {
-      toast.error("保存失败")
+      toast.error(t("aiConfig.saveFailed"))
     } finally {
       setSaving((s) => ({ ...s, [key]: false }))
     }
@@ -257,7 +262,7 @@ export default function AIConfigPanel() {
 
         <div className="flex flex-col gap-1">
           <label className="text-[11px] font-medium text-muted-foreground">
-            API 规范
+            {t("aiConfig.apiSpec")}
           </label>
           <div className="flex gap-0">
             {providers.map((p) => (
@@ -266,7 +271,9 @@ export default function AIConfigPanel() {
                 className={`flex-1 cursor-pointer border px-3 py-1 font-sans text-[11px] font-medium transition-colors first:rounded-l last:rounded-r ${f.provider === p ? "border-primary bg-accent text-accent-foreground" : "border-border bg-card text-muted-foreground"}`}
                 onClick={() => setProvider(key, p)}
               >
-                {p === "openai" ? "OpenAI" : "Anthropic"}
+                {p === "openai"
+                  ? t("aiConfig.openai")
+                  : t("aiConfig.anthropic")}
               </button>
             ))}
           </div>
@@ -274,11 +281,11 @@ export default function AIConfigPanel() {
 
         <div className="flex flex-col gap-1">
           <label className="text-[11px] font-medium text-muted-foreground">
-            Base URL
+            {t("aiConfig.baseUrl")}
           </label>
           <input
             className="w-full rounded-md border border-border bg-card px-3 py-2 font-sans text-[13px] text-foreground transition-colors outline-none focus:border-ring"
-            placeholder="https://api.openai.com"
+            placeholder={t("aiConfig.apiUrlPlaceholder")}
             value={f.baseUrl}
             onChange={(e) => setFormField(key, { baseUrl: e.target.value })}
           />
@@ -286,13 +293,13 @@ export default function AIConfigPanel() {
 
         <div className="flex flex-col gap-1">
           <label className="text-[11px] font-medium text-muted-foreground">
-            API Key
+            {t("aiConfig.apiKey")}
           </label>
           <div className="flex items-center gap-1">
             <input
               className="min-w-0 flex-1 rounded-md border border-border bg-card px-3 py-2 font-sans text-[13px] text-foreground transition-colors outline-none focus:border-ring"
               type={showKeys[key] ? "text" : "password"}
-              placeholder="sk-..."
+              placeholder={t("aiConfig.apiKeyPlaceholder")}
               value={f.apiKey}
               onChange={(e) => setFormField(key, { apiKey: e.target.value })}
             />
@@ -307,7 +314,7 @@ export default function AIConfigPanel() {
 
         <div className="flex flex-col gap-1">
           <label className="text-[11px] font-medium text-muted-foreground">
-            模型
+            {t("aiConfig.model")}
           </label>
           <div className="flex flex-col gap-1.5 sm:flex-row">
             <input
@@ -331,7 +338,7 @@ export default function AIConfigPanel() {
               {modelsLoading[key] ? (
                 <Loader size={13} className="spin" />
               ) : (
-                <span>获取</span>
+                <span>{t("aiConfig.fetch")}</span>
               )}
             </button>
           </div>
@@ -361,7 +368,7 @@ export default function AIConfigPanel() {
         {key === "bot" && (
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-medium text-muted-foreground">
-              Max Tokens
+              {t("aiConfig.maxTokens")}
             </label>
             <input
               type="number"
@@ -379,7 +386,7 @@ export default function AIConfigPanel() {
               }
             />
             <p className="m-0 text-[11px] text-muted-foreground">
-              每次回复的最大 token 数。留空则使用默认值 512。
+              {t("aiConfig.maxTokensDesc")}
             </p>
           </div>
         )}
@@ -387,7 +394,7 @@ export default function AIConfigPanel() {
         {key === "embedding" && (
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-medium text-muted-foreground">
-              向量维度
+              {t("aiConfig.vectorDim")}
             </label>
             <input
               type="number"
@@ -403,7 +410,7 @@ export default function AIConfigPanel() {
               }
             />
             <p className="m-0 text-[11px] text-muted-foreground">
-              首次使用会自动检测，也可手动指定。换模型时需更新并重新生成向量。
+              {t("aiConfig.vectorDimDesc")}
             </p>
           </div>
         )}
@@ -412,14 +419,14 @@ export default function AIConfigPanel() {
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1.5">
               <label className="text-[11px] font-medium text-muted-foreground">
-                模型能力
+                {t("aiConfig.capabilities")}
               </label>
               {detectingCaps[key] && (
                 <Loader size={10} className="spin text-muted-foreground" />
               )}
             </div>
             <p className="m-0 text-[10px] text-muted-foreground">
-              选择模型后自动检测，也可手动覆盖。
+              {t("aiConfig.capabilitiesDesc")}
             </p>
             <div className="flex gap-4">
               <label className="flex cursor-pointer items-center gap-1.5 text-[12px] text-foreground">
@@ -430,7 +437,7 @@ export default function AIConfigPanel() {
                     setFormField(key, { supportsVision: e.target.checked })
                   }
                 />
-                图片输入
+                {t("aiConfig.vision")}
               </label>
               <label className="flex cursor-pointer items-center gap-1.5 text-[12px] text-foreground">
                 <input
@@ -440,7 +447,7 @@ export default function AIConfigPanel() {
                     setFormField(key, { supportsThinking: e.target.checked })
                   }
                 />
-                心路历程
+                {t("aiConfig.thinking")}
               </label>
             </div>
           </div>
@@ -454,7 +461,11 @@ export default function AIConfigPanel() {
           {saving[key] ? (
             <Loader size={14} className="spin" />
           ) : (
-            <span>保存{key === "bot" ? " Bot" : " Embedding"} 配置</span>
+            <span>
+              {key === "bot"
+                ? t("aiConfig.saveBot")
+                : t("aiConfig.saveEmbedding")}
+            </span>
           )}
         </button>
       </div>
@@ -466,13 +477,13 @@ export default function AIConfigPanel() {
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
           <Sparkles size={16} />
-          AI 模型配置
+          {t("aiConfig.title")}
         </h3>
         <button
           className="cursor-pointer border-none bg-transparent text-xs text-muted-foreground transition-colors hover:text-foreground"
           onClick={loadConfig}
         >
-          刷新
+          {t("aiConfig.refresh")}
         </button>
       </div>
       <div className="px-3 py-3 sm:px-4">
@@ -480,8 +491,8 @@ export default function AIConfigPanel() {
           <div className="skeleton h-30" />
         ) : (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {renderCard("bot", "Bot 模型")}
-            {renderCard("embedding", "Embedding 模型")}
+            {renderCard("bot", t("aiConfig.botModel"))}
+            {renderCard("embedding", t("aiConfig.embeddingModel"))}
           </div>
         )}
       </div>

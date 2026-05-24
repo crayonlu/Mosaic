@@ -36,10 +36,10 @@ impl TimelineMemoryService {
                 .iter()
                 .map(|m| m.summary_excerpt.trim().to_string())
                 .collect::<Vec<_>>()
-                .join("；");
+                .join("; ");
 
             let truncated: String = combined.chars().take(200).collect();
-            lines.push(format!("{}：{}", label, truncated));
+            lines.push(format!("{}: {}", label, truncated));
         }
 
         Some(lines.join("\n"))

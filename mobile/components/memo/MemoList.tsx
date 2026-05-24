@@ -1,17 +1,19 @@
 import { MemoListSkeleton } from '@/components/ui'
+import i18n from '@/lib/i18n'
 import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
 import { FileX } from 'lucide-react-native'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
-  ActivityIndicator,
-  RefreshControl,
-  SectionList,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    RefreshControl,
+    SectionList,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native'
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 import { MemoCard } from './MemoCard'
@@ -53,6 +55,7 @@ interface MemoSection {
 }
 
 export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: MemoListProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const sectionListRef = useRef<SectionList<MemoWithResources, MemoSection>>(null)
   const [refreshing, setRefreshing] = useState(false)
@@ -110,7 +113,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
       const displayDate = stringUtils.formatDate(date)
       groups[date] = {
         date,
-        displayDate: date === stringUtils.getTodayDateString() ? '今天' : displayDate,
+        displayDate: date === stringUtils.getTodayDateString() ? t('date.today') : displayDate,
         memos,
       }
     } else {
@@ -120,9 +123,9 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
 
         let displayDate: string
         if (memoDate === today) {
-          displayDate = '今天'
+          displayDate = t('date.today')
         } else if (memoDate === stringUtils.getYesterdayDateString()) {
-          displayDate = '昨天'
+          displayDate = t('date.yesterday')
         } else {
           displayDate = stringUtils.formatDate(memoDate)
         }
@@ -146,7 +149,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
         data: group.memos,
       }))
       .sort((a, b) => b.date.localeCompare(a.date))
-  }, [memos, date])
+  }, [t, memos, date])
 
   const renderSectionHeader = useCallback(
     ({ section }: { section: MemoSection }) => {
@@ -165,13 +168,13 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
           <Text style={[styles.dateHeaderText, { color: theme.text }]}>{section.title}</Text>
           {section.data.length > 0 && (
             <Text style={[styles.dateHeaderCount, { color: theme.textSecondary }]}>
-              {section.data.length} 条Memo
+              {t('memo.count', { count: section.data.length })}
             </Text>
           )}
         </View>
       )
     },
-    [sections, theme.border, theme.text, theme.textSecondary]
+    [t, sections, theme.border, theme.text, theme.textSecondary]
   )
 
   const renderItem = useCallback(
@@ -188,14 +191,14 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
           <FileX size={48} color={theme.primary} strokeWidth={1.5} />
         </View>
         <Text style={[styles.emptyTitle, { color: theme.text }]}>
-          {date ? '今天还没有记录' : '暂无Memo'}
+          {date ? t('memo.emptyToday') : t('memo.empty')}
         </Text>
         <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-          {date ? '点击下方按钮创建你的第一条Memo' : '开始记录你的想法和灵感'}
+          {date ? t('memo.emptyTodayHint') : t('memo.emptyHint')}
         </Text>
       </View>
     ),
-    [date, theme.primary, theme.text, theme.textSecondary]
+    [t, date, theme.primary, theme.text, theme.textSecondary]
   )
 
   const renderFooter = useMemo(() => {
@@ -203,7 +206,9 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
     if (!hasMore) {
       return (
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: theme.textSecondary }]}>没有更多了</Text>
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+            {i18n.t('common.noMore')}
+          </Text>
         </View>
       )
     }

@@ -1,5 +1,6 @@
 import { Button, DatePickerSheet, Input, ScreenHeader } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
+import i18n from '@/lib/i18n'
 import {
   useCustomPushList,
   useDeleteCustomPush,
@@ -9,6 +10,7 @@ import { CustomPushData } from '@/lib/services/local-push/custom'
 import { useThemeStore } from '@/stores/themeStore'
 import { Bell, Clock, Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Modal,
   Pressable,
@@ -20,6 +22,7 @@ import {
 } from 'react-native'
 
 export default function CustomPushScreen() {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const { data: pushes = [] } = useCustomPushList()
   const { mutateAsync: saveCustomPush } = useSaveCustomPush()
@@ -50,8 +53,8 @@ export default function CustomPushScreen() {
     if (!title.trim() || !body.trim()) {
       toast.show({
         type: 'warning',
-        title: '填写不完整',
-        message: '请填写标题和内容',
+        title: t('push.incomplete'),
+        message: t('push.incompleteMsg'),
       })
       return
     }
@@ -118,7 +121,7 @@ export default function CustomPushScreen() {
 
   const formatTriggerTime = (trigger: string) => {
     const date = new Date(trigger)
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString(i18n.language === 'zh' ? 'zh-CN' : 'en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -131,7 +134,7 @@ export default function CustomPushScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ScreenHeader
         showBack
-        title="自定义提醒"
+        title={t('push.pushNotifications')}
         right={
           <TouchableOpacity onPress={() => setShowAddForm(true)} style={{ padding: 4 }}>
             <Bell size={24} color={theme.primary} />
@@ -143,34 +146,38 @@ export default function CustomPushScreen() {
         {showAddForm && (
           <View style={[styles.card, { backgroundColor: theme.surface }]}>
             <Text style={[styles.cardTitle, { color: theme.text }]}>
-              {editingPush ? '编辑提醒' : '新增提醒'}
+              {editingPush ? t('push.editReminder') : t('push.newReminder')}
             </Text>
 
             <View style={styles.formGroup}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>标题</Text>
-              <Input value={title} onChangeText={setTitle} placeholder="输入提醒标题" />
+              <Text style={[styles.label, { color: theme.textSecondary }]}>{t('push.title')}</Text>
+              <Input value={title} onChangeText={setTitle} placeholder={t('push.title')} />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>内容</Text>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>
+                {t('push.content')}
+              </Text>
               <Input
                 value={body}
                 onChangeText={setBody}
-                placeholder="输入提醒内容"
+                placeholder={t('push.content')}
                 multiline
                 numberOfLines={3}
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>提醒时间</Text>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>
+                {t('push.selectTime')}
+              </Text>
               <View style={styles.dateTimeRow}>
                 <TouchableOpacity
                   style={[styles.dateTimeBtn, { backgroundColor: theme.surfaceMuted }]}
                   onPress={() => setShowDatePicker(true)}
                 >
                   <Text style={{ color: theme.text, marginLeft: 4 }}>
-                    {triggerDate.toLocaleDateString('zh-CN')}
+                    {triggerDate.toLocaleDateString(i18n.language === 'zh' ? 'zh-CN' : 'en-US')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -178,7 +185,7 @@ export default function CustomPushScreen() {
                   onPress={openTimePicker}
                 >
                   <Text style={{ color: theme.text, marginLeft: 4 }}>
-                    {triggerDate.toLocaleTimeString('zh-CN', {
+                    {triggerDate.toLocaleTimeString(i18n.language === 'zh' ? 'zh-CN' : 'en-US', {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
@@ -188,23 +195,35 @@ export default function CustomPushScreen() {
             </View>
 
             <View style={styles.formActions}>
-              <Button title="取消" variant="secondary" onPress={resetForm} style={{ flex: 1 }} />
-              <Button title="保存" variant="primary" onPress={handleSave} style={{ flex: 1 }} />
+              <Button
+                title={t('push.cancel')}
+                variant="secondary"
+                onPress={resetForm}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title={t('push.save')}
+                variant="primary"
+                onPress={handleSave}
+                style={{ flex: 1 }}
+              />
             </View>
           </View>
         )}
 
         <View style={styles.listSection}>
           <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-            已设置的提醒 ({pushes.length})
+            {t('push.reminders', { count: pushes.length })}
           </Text>
 
           {pushes.length === 0 ? (
             <View style={[styles.emptyCard, { backgroundColor: theme.surfaceMuted }]}>
               <Bell size={48} color={theme.textSecondary} style={{ opacity: 0.5 }} />
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>暂无自定义提醒</Text>
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                {t('push.empty')}
+              </Text>
               <Text style={[styles.emptySubText, { color: theme.textSecondary }]}>
-                点击右上角添加新的提醒
+                {t('push.addHint')}
               </Text>
             </View>
           ) : (
@@ -222,7 +241,7 @@ export default function CustomPushScreen() {
                 </View>
                 <View style={styles.pushActions}>
                   <TouchableOpacity onPress={() => handleEdit(push)} style={styles.actionBtn}>
-                    <Text style={{ color: theme.primary, fontSize: 14 }}>编辑</Text>
+                    <Text style={{ color: theme.primary, fontSize: 14 }}>{t('common.edit')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleDelete(push.name)}
@@ -239,7 +258,7 @@ export default function CustomPushScreen() {
 
       <DatePickerSheet
         visible={showDatePicker}
-        title="选择日期"
+        title={t('push.selectDate')}
         selectedDate={formatPickerDate(triggerDate)}
         onSelect={handleDateSelect}
         onClose={() => setShowDatePicker(false)}
@@ -254,11 +273,15 @@ export default function CustomPushScreen() {
         <View style={styles.timeOverlay}>
           <Pressable style={styles.timeBackdrop} onPress={() => setShowTimePicker(false)} />
           <View style={[styles.timeSheet, { backgroundColor: theme.background }]}>
-            <Text style={[styles.timeSheetTitle, { color: theme.text }]}>选择时间</Text>
+            <Text style={[styles.timeSheetTitle, { color: theme.text }]}>
+              {t('push.selectTime')}
+            </Text>
 
             <View style={styles.timeColumns}>
               <View style={styles.timeColumn}>
-                <Text style={[styles.timeColumnLabel, { color: theme.textSecondary }]}>小时</Text>
+                <Text style={[styles.timeColumnLabel, { color: theme.textSecondary }]}>
+                  {t('push.hour')}
+                </Text>
                 <ScrollView style={styles.timeOptions} showsVerticalScrollIndicator={false}>
                   {Array.from({ length: 24 }, (_, hour) => (
                     <TouchableOpacity
@@ -280,7 +303,9 @@ export default function CustomPushScreen() {
               </View>
 
               <View style={styles.timeColumn}>
-                <Text style={[styles.timeColumnLabel, { color: theme.textSecondary }]}>分钟</Text>
+                <Text style={[styles.timeColumnLabel, { color: theme.textSecondary }]}>
+                  {t('push.minute')}
+                </Text>
                 <ScrollView style={styles.timeOptions} showsVerticalScrollIndicator={false}>
                   {minuteOptions.map(minute => (
                     <TouchableOpacity
@@ -305,12 +330,17 @@ export default function CustomPushScreen() {
 
             <View style={styles.timeActions}>
               <Button
-                title="取消"
+                title={t('push.cancel')}
                 variant="secondary"
                 onPress={() => setShowTimePicker(false)}
                 style={{ flex: 1 }}
               />
-              <Button title="确定" variant="primary" onPress={applyTime} style={{ flex: 1 }} />
+              <Button
+                title={t('push.confirm')}
+                variant="primary"
+                onPress={applyTime}
+                style={{ flex: 1 }}
+              />
             </View>
           </View>
         </View>

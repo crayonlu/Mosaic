@@ -1,9 +1,11 @@
-import { useThemeStore } from '@/stores/themeStore'
 import { CleanSlateTheme, QuietPaperTheme, type Theme, type ThemeName } from '@/constants/theme'
+import i18n from '@/lib/i18n'
+import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { Check } from 'lucide-react-native'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { Easing, FadeInUp } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -27,6 +29,7 @@ function ThemePreviewCard({
   onSelect,
   enterDelay,
 }: ThemePreviewCardProps) {
+  const { t } = useTranslation()
   return (
     <Animated.View
       style={{ flex: 1 }}
@@ -90,14 +93,18 @@ function ThemePreviewCard({
                 lineHeight: theme.typography.body.lineHeight,
               }}
             >
-              今天阳光很好，在阳台上读了一会儿书...
+              {i18n.t('themePicker.sampleContent')}
             </Text>
             <View style={styles.sampleTags}>
               <View style={[styles.sampleTag, { backgroundColor: theme.surfaceMuted }]}>
-                <Text style={[styles.sampleTagText, { color: theme.textSecondary }]}>日常</Text>
+                <Text style={[styles.sampleTagText, { color: theme.textSecondary }]}>
+                  {t('themePicker.sampleTagDaily')}
+                </Text>
               </View>
               <View style={[styles.sampleTag, { backgroundColor: theme.surfaceMuted }]}>
-                <Text style={[styles.sampleTagText, { color: theme.textSecondary }]}>阅读</Text>
+                <Text style={[styles.sampleTagText, { color: theme.textSecondary }]}>
+                  {t('themePicker.sampleTagReading')}
+                </Text>
               </View>
             </View>
           </View>
@@ -108,6 +115,7 @@ function ThemePreviewCard({
 }
 
 export default function ThemePickerScreen() {
+  const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const { setThemeName } = useThemeStore()
   const [selected, setSelected] = useState<ThemeName | null>(null)
@@ -132,17 +140,17 @@ export default function ThemePickerScreen() {
       ]}
     >
       <View style={styles.header}>
-        <Text style={[styles.title, { color: pageTheme.text }]}>选择主题风格</Text>
+        <Text style={[styles.title, { color: pageTheme.text }]}>{t('themePicker.title')}</Text>
         <Text style={[styles.subtitle, { color: pageTheme.textSecondary }]}>
-          你可以随时在设置中更改
+          {t('themePicker.subtitle')}
         </Text>
       </View>
 
       <View style={styles.cardsContainer}>
         <ThemePreviewCard
           name="quietPaper"
-          label="暖纸"
-          description="书房质感，温暖沉稳"
+          label={t('themePicker.quietPaper')}
+          description={t('themePicker.quietPaperDesc')}
           theme={QuietPaperTheme}
           selected={selected === 'quietPaper'}
           onSelect={() => setSelected('quietPaper')}
@@ -150,8 +158,8 @@ export default function ThemePickerScreen() {
         />
         <ThemePreviewCard
           name="cleanSlate"
-          label="清冷"
-          description="笔记极简，清晰克制"
+          label={t('themePicker.cleanSlate')}
+          description={t('themePicker.cleanSlateDesc')}
           theme={CleanSlateTheme}
           selected={selected === 'cleanSlate'}
           onSelect={() => setSelected('cleanSlate')}
@@ -184,7 +192,7 @@ export default function ThemePickerScreen() {
               },
             ]}
           >
-            开始使用
+            {t('themePicker.start')}
           </Text>
         </Pressable>
       </View>

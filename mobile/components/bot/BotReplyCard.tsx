@@ -1,4 +1,5 @@
 import { ExpandablePanel } from '@/components/ui/ExpandablePanel'
+import i18n from '@/lib/i18n'
 import { useMemoryContext } from '@/lib/query'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/themeStore'
@@ -56,12 +57,12 @@ function MemoryContextPanel({
       <TouchableOpacity onPress={handleToggle} activeOpacity={0.7} style={memStyles.trigger}>
         <Text style={[memStyles.triggerText, { color: theme.textSecondary }]}>
           {!hasOpenedRef.current
-            ? '查看参考记录'
+            ? i18n.t('botReply.viewReference')
             : isLoading || !context
-              ? '正在加载参考记录...'
+              ? i18n.t('botReply.loadingReference')
               : showEmptyMessage
-                ? '没有参考任何记录'
-                : `参考了你 ${context.retrievedMemos.length} 条以前的记录`}
+                ? i18n.t('botReply.noReference')
+                : i18n.t('botReply.referenced', { n: context.retrievedMemos.length })}
         </Text>
       </TouchableOpacity>
 
@@ -80,7 +81,7 @@ function MemoryContextPanel({
                   {memo.excerpt}
                 </Text>
                 <Text style={[memStyles.memoDate, { color: theme.textTertiary }]}>
-                  {dayjs(memo.createdAt).format('M月D日')}
+                  {dayjs(memo.createdAt).format(i18n.t('botReply.dateFormat'))}
                 </Text>
                 <ArrowRight size={11} color={theme.textTertiary} />
               </TouchableOpacity>
@@ -112,10 +113,12 @@ function ThinkingPanel({ content, theme }: { content?: string; theme: any }) {
         onPress={handleToggle}
         style={styles.thinkingHeader}
         activeOpacity={0.7}
-        accessibilityLabel="展开/折叠心路历程"
+        accessibilityLabel={i18n.t('botReply.toggleThinking')}
       >
         <Lightbulb size={14} color={theme.textSecondary} />
-        <Text style={[styles.thinkingTitle, { color: theme.textSecondary }]}>心路历程</Text>
+        <Text style={[styles.thinkingTitle, { color: theme.textSecondary }]}>
+          {i18n.t('botReply.thinkingTitle')}
+        </Text>
         {hasOpenedRef.current && expanded ? (
           <ChevronUp size={14} color={theme.textSecondary} style={{ marginLeft: 'auto' }} />
         ) : (
@@ -183,7 +186,9 @@ export function BotReplyCard({
                 {stringUtils.formatRelativeTime(reply.createdAt)}
               </Text>
               {!isThread && (
-                <Text style={[styles.replyBtn, { color: theme.textSecondary }]}>继续聊</Text>
+                <Text style={[styles.replyBtn, { color: theme.textSecondary }]}>
+                  {i18n.t('botReply.continueChat')}
+                </Text>
               )}
             </View>
             <Text style={[styles.content, { color: theme.text }]}>{reply.content}</Text>
@@ -199,9 +204,9 @@ export function BotReplyCard({
           )}
           {!isThread && threadCount > 0 && (
             <Text style={[styles.threadHint, { color: theme.textSecondary }]}>
-              已追问 {threadCount} 轮
-              </Text>
-            )}
+              {i18n.t('botReply.threadCount', { n: threadCount })}
+            </Text>
+          )}
         </View>
       </View>
     </View>

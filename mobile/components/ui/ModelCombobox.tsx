@@ -2,16 +2,17 @@ import { useThemeStore } from '@/stores/themeStore'
 import { fetchAvailableModels } from '@mosaic/utils'
 import { ChevronDown, X } from 'lucide-react-native'
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
   FlatList,
   Modal,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  StatusBar,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -28,8 +29,10 @@ export function ModelCombobox({
   onChange,
   baseUrl,
   placeholder = 'gpt-4o',
-  label = '模型',
+  label: labelProp,
 }: ModelComboboxProps) {
+  const { t } = useTranslation()
+  const label = labelProp ?? t('components.modelLabel')
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
 
@@ -48,7 +51,7 @@ export function ModelCombobox({
       const list = await fetchAvailableModels(baseUrl)
       setModels(list)
     } catch (e) {
-      setFetchError(e instanceof Error ? e.message : '获取失败')
+      setFetchError(e instanceof Error ? e.message : t('components.modelFetchFailed'))
     } finally {
       setLoading(false)
     }
@@ -104,7 +107,9 @@ export function ModelCombobox({
           style={[styles.sheet, { backgroundColor: theme.background, paddingTop: insets.top + 12 }]}
         >
           <View style={[styles.sheetHeader, { borderBottomColor: theme.border }]}>
-            <Text style={[styles.sheetTitle, { color: theme.text }]}>选择模型</Text>
+            <Text style={[styles.sheetTitle, { color: theme.text }]}>
+              {t('components.selectModel')}
+            </Text>
             <TouchableOpacity onPress={() => setOpen(false)} hitSlop={12}>
               <X size={20} color={theme.textSecondary} />
             </TouchableOpacity>
@@ -123,7 +128,7 @@ export function ModelCombobox({
               ]}
               value={search}
               onChangeText={setSearch}
-              placeholder="搜索或输入模型名..."
+              placeholder={t('modelCombobox.placeholder')}
               placeholderTextColor={theme.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}
@@ -137,7 +142,9 @@ export function ModelCombobox({
                 style={[styles.useInputBtn, { backgroundColor: theme.primary }]}
                 onPress={() => handleSelect(search.trim())}
               >
-                <Text style={[styles.useInputBtnText, { color: theme.onPrimary }]}>使用</Text>
+                <Text style={[styles.useInputBtnText, { color: theme.onPrimary }]}>
+                  {t('components.useModel')}
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -146,7 +153,7 @@ export function ModelCombobox({
             <View style={styles.loadingRow}>
               <ActivityIndicator size="small" color={theme.textSecondary} />
               <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-                获取模型列表...
+                {t('components.fetchingModels')}
               </Text>
             </View>
           )}
@@ -154,10 +161,14 @@ export function ModelCombobox({
           {!loading && fetchError && (
             <View style={styles.errorRow}>
               <Text style={[styles.errorText, { color: theme.error }]}>
-                {fetchError === '401' ? '当前 URL 未授权访问模型列表' : `获取失败: ${fetchError}`}
+                {fetchError === '401'
+                  ? t('components.unauthorizedModels')
+                  : `${t('components.modelFetchFailed')}: ${fetchError}`}
               </Text>
               <TouchableOpacity onPress={loadModels}>
-                <Text style={[styles.retryText, { color: theme.primary }]}>重试</Text>
+                <Text style={[styles.retryText, { color: theme.primary }]}>
+                  {t('components.retry')}
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -165,7 +176,7 @@ export function ModelCombobox({
           {!loading && !fetchError && models.length === 0 && !search && (
             <View style={styles.emptyRow}>
               <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                {!baseUrl.trim() ? '请先填写 API URL' : '未获取到模型列表'}
+                {!baseUrl.trim() ? t('components.fillApiUrl') : t('components.noModels')}
               </Text>
             </View>
           )}

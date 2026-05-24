@@ -7,6 +7,7 @@ import { apiClient, resourcesApi } from '@mosaic/api'
 import { router } from 'expo-router'
 import { X } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
   Pressable,
@@ -30,6 +31,7 @@ interface ClipResult {
 type ClipState = 'loading' | 'ready' | 'error'
 
 export default function ShareScreen() {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const { shareIntent, resetShareIntent, hasShareIntent } = useSafeShareIntent()
   const { mutateAsync: createMemo } = useCreateMemo()
@@ -70,7 +72,7 @@ export default function ShareScreen() {
         body = { clipType, resourceId: uploaded.id }
       } else {
         setClipState('error')
-        setErrorMessage('无法识别分享的内容')
+        setErrorMessage(t('share.unrecognized'))
         return
       }
 
@@ -80,11 +82,11 @@ export default function ShareScreen() {
       setSelectedTags(result.tags)
       setClipState('ready')
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'AI 处理失败，请重试'
+      const msg = err instanceof Error ? err.message : t('share.aiFailed')
       setClipState('error')
       setErrorMessage(msg)
     }
-  }, [hasShareIntent, shareIntent])
+  }, [t, hasShareIntent, shareIntent])
 
   useEffect(() => {
     processShareIntent()
@@ -106,7 +108,7 @@ export default function ShareScreen() {
       }
 
       if (userNote.trim()) {
-        content = `${content}\n\n---\n我的想法：${userNote}`
+        content = `${content}\n\n---\n${t('share.myThoughts')}: ${userNote}`
       }
 
       const resourceIds = attachedResourceId ? [attachedResourceId] : []
@@ -118,15 +120,16 @@ export default function ShareScreen() {
         aiSummary: clipResult.aiSummary,
       })
 
-      toast.success('已保存', 'Memo 已保存到 Mosaic')
+      toast.success(t('share.saved'), t('share.memoSaved'))
       resetShareIntent()
       router.back()
     } catch {
-      toast.error('保存失败', '请重试')
+      toast.error(t('share.saveFailed'), t('share.retry'))
     } finally {
       setIsSaving(false)
     }
   }, [
+    t,
     clipResult,
     isSaving,
     userNote,
@@ -144,8 +147,8 @@ export default function ShareScreen() {
   const sourceLabel = clipResult?.sourceUrl
     ? new URL(clipResult.sourceUrl).hostname
     : clipResult?.sourceType === 'image'
-      ? '图片'
-      : '文本'
+      ? t('share.image')
+      : t('share.text')
 
   const canSave = clipState === 'ready' && !isSaving
 
@@ -167,7 +170,7 @@ export default function ShareScreen() {
                 <Text
                   style={[styles.saveText, { color: theme.primary, opacity: canSave ? 1 : 0.3 }]}
                 >
-                  保存
+                  {t('share.save')}
                 </Text>
               )}
             </Pressable>
@@ -255,7 +258,9 @@ export default function ShareScreen() {
             <View style={styles.centerContent}>
               <Text style={[styles.errorText, { color: theme.error }]}>{errorMessage}</Text>
               <Pressable onPress={handleCancel}>
-                <Text style={[styles.retryText, { color: theme.textSecondary }]}>返回</Text>
+                <Text style={[styles.retryText, { color: theme.textSecondary }]}>
+                  {t('common.cancel')}
+                </Text>
               </Pressable>
             </View>
           )}
@@ -268,7 +273,7 @@ export default function ShareScreen() {
                 style={[styles.title, { color: theme.text }]}
                 value={title}
                 onChangeText={setTitle}
-                placeholder="标题"
+                placeholder={t('share.titlePlaceholder')}
                 placeholderTextColor={theme.textTertiary}
                 multiline
               />
@@ -304,7 +309,7 @@ export default function ShareScreen() {
                 style={[styles.note, { color: theme.text }]}
                 value={userNote}
                 onChangeText={setUserNote}
-                placeholder="写下你的想法..."
+                placeholder={t('share.notePlaceholder')}
                 placeholderTextColor={theme.textTertiary}
                 multiline
                 textAlignVertical="top"

@@ -8,6 +8,7 @@ import dayjs from 'dayjs'
 import { router } from 'expo-router'
 import { Check, X } from 'lucide-react-native'
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 type ArchivePhase = 'browsing' | 'selecting' | 'confirming'
@@ -63,6 +64,7 @@ function archiveReducer(state: ArchiveState, action: ArchiveAction): ArchiveStat
 }
 
 export default function ArchiveScreen() {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const dialogRef = useRef<ArchiveDialogRef>(null)
   const [selectedDate, setSelectedDate] = useState<string | undefined>(dayjs().format('YYYY-MM-DD'))
@@ -117,9 +119,10 @@ export default function ArchiveScreen() {
       <View style={styles.topArea}>
         <View style={styles.headerRow}>
           <View>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>归档</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>{t('tabs.archive')}</Text>
             <Text style={[styles.headerSubTitle, { color: theme.textSecondary }]}>
-              整理今天的记录，沉淀成日记{isSelectionMode ? ` · 已选 ${validSelectedCount} 条` : ''}
+              {t('archive.subtitle')}
+              {isSelectionMode ? ` · ${t('archive.selected', { count: validSelectedCount })}` : ''}
             </Text>
           </View>
 
@@ -145,7 +148,11 @@ export default function ArchiveScreen() {
                 { color: hasSelection ? theme.onPrimary : theme.textSecondary },
               ]}
             >
-              {hasSelection ? '归档' : isSelectionMode ? '完成' : '归档'}
+              {hasSelection
+                ? t('archive.archive')
+                : isSelectionMode
+                  ? t('common.confirm')
+                  : t('archive.archive')}
             </Text>
           </TouchableOpacity>
         </View>

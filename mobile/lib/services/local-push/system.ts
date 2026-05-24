@@ -1,6 +1,7 @@
-import { LocalPushService, type RigsterSchedule } from '.'
+import i18n from '@/lib/i18n'
 import { diariesApi, memosApi } from '@mosaic/api'
 import dayjs from 'dayjs'
+import { LocalPushService, type RigsterSchedule } from '.'
 
 // Lazy-load SchedulableTriggerInputTypes (not available in Expo Go)
 let _dailyType: string | undefined
@@ -21,8 +22,8 @@ function getDailyType(): string {
 const systemPushSchedule: Record<string, RigsterSchedule> = {
   'archive-reminder': {
     content: {
-      title: '这一天，辛苦啦',
-      body: '睡前给心灵洗个澡，把今天的喜怒哀乐都收进盒子里吧。',
+      title: i18n.t('localPush.dayEndTitle'),
+      body: i18n.t('localPush.dayEndBody'),
     },
     trigger: {
       hour: 21,
@@ -32,8 +33,8 @@ const systemPushSchedule: Record<string, RigsterSchedule> = {
   },
   'memo-reminder': {
     content: {
-      title: '留住今天的碎片',
-      body: '好记性不如烂笔头，别让今天那些闪光的瞬间偷偷溜走呀。',
+      title: i18n.t('localPush.reminderTitle'),
+      body: i18n.t('localPush.reminderBody'),
     },
     trigger: {
       hour: 21,

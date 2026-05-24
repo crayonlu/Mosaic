@@ -419,13 +419,13 @@ fn build_diary_system_prompt() -> String {
     format!(
         "You are an insightful personal diary assistant. The user provides their day's memos with timestamps so you can understand the emotional flow of their day — when energy shifted, how ideas developed, what led to what.\n\n\
          Your job: write a concise, reflective daily summary. The timestamps are for YOUR understanding, not for the reader.\n\n\
+         CRITICAL RULE — Never violate: Write your response in the SAME LANGUAGE as the user's memos. If memos are in Chinese, write in Chinese. If in Japanese, write in Japanese. And so on.\n\n\
          Rules:\n\
          1. Identify 2-3 themes or emotional threads that run through the day. Do not list events chronologically.\n\
          2. Notice connections: which ideas built on each other? where did the mood shift? what seems unresolved?\n\
          3. Write with warmth and insight — like a thoughtful friend who read everything and noticed patterns the user might have missed.\n\
          4. Stay grounded in the memos. If there's not enough material for a meaningful summary, be honest rather than padding.\n\
          5. Keep it concise: 2-3 paragraphs is ideal. Quality over quantity.\n\n\
-         6. Write in the same language as the memos provided.\n\n\
          Return only valid JSON with keys summary, moodKey, moodScore.\n\
          moodKey must be one of: {}.\n\
          moodScore must be an integer from 1 to 10.",
@@ -441,7 +441,7 @@ fn build_diary_prompt(target_date: NaiveDate, memos: &[Memo], tz: Tz) -> String 
             let summary = memo
                 .ai_summary
                 .as_ref()
-                .map(|text| format!("\nAI摘要: {}", text.trim()))
+                .map(|text| format!("\nAI Summary: {}", text.trim()))
                 .unwrap_or_default();
             format!("- [{}] {}{}", time, memo.content.trim(), summary)
         })

@@ -3,6 +3,7 @@ import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { DraggableImageGrid } from '@/components/ui/DraggableImageGrid'
 import { useAISummary } from '@/hooks/useAISummary'
 import { useConnection } from '@/hooks/useConnection'
+import i18n from '@/lib/i18n'
 import {
   createSelectedMediaItems,
   uploadSelectedMedia,
@@ -58,7 +59,7 @@ export function FullScreenEditor({
   initialResourceIds = EMPTY_RESOURCE_IDS,
   uploadMemoId,
   title = 'Memo',
-  submitLabel = '创建',
+  submitLabel = i18n.t('fullScreenEditor.create'),
   placeholder = "What's on your mind?",
   availableTags = [],
   onClose,
@@ -189,7 +190,7 @@ export function FullScreenEditor({
         uploadedResourceIds.push(...uploadedResources.map(resource => resource.id))
       } catch (error) {
         console.error('Media upload failed:', error)
-        toast.error('Error', 'Media upload failed')
+        toast.error(i18n.t('common.error'), i18n.t('fullScreenEditor.mediaUploadFailed'))
         setUploading(false)
         setUploadProgressItems([])
         return
@@ -251,7 +252,7 @@ export function FullScreenEditor({
                 activeOpacity={theme.state.pressedOpacity}
               >
                 <Text style={[styles.headerTextButtonLabel, { color: theme.textSecondary }]}>
-                  取消
+                  {i18n.t('common.cancel')}
                 </Text>
               </TouchableOpacity>
 
@@ -301,7 +302,7 @@ export function FullScreenEditor({
                     { color: canSummarize ? theme.primary : theme.textSecondary },
                   ]}
                 >
-                  AI 摘要
+                  {i18n.t('fullScreenEditor.aiSummary')}
                 </Text>
               </TouchableOpacity>
 
@@ -310,7 +311,9 @@ export function FullScreenEditor({
                 style={[styles.actionButton, { backgroundColor: theme.surfaceMuted }]}
                 activeOpacity={theme.state.pressedOpacity}
               >
-                <Text style={[styles.actionButtonText, { color: theme.text }]}>添加图片</Text>
+                <Text style={[styles.actionButtonText, { color: theme.text }]}>
+                  {i18n.t('fullScreenEditor.addImage')}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -331,7 +334,7 @@ export function FullScreenEditor({
                     { color: hasContent ? theme.text : theme.textSecondary },
                   ]}
                 >
-                  预览
+                  {i18n.t('fullScreenEditor.preview')}
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -343,13 +346,15 @@ export function FullScreenEditor({
             scrollEnabled={!isDraggingMedia}
           >
             <View style={styles.tagContainer}>
-              <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>标签</Text>
+              <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>
+                {i18n.t('fullScreenEditor.tags')}
+              </Text>
               <TagInput
                 tags={tags}
                 onTagsChange={setTags}
                 content={content}
                 suggestions={availableTags}
-                placeholder="添加标签..."
+                placeholder={i18n.t('fullScreenEditor.tagsPlaceholder')}
                 appearance="plain"
               />
             </View>
@@ -367,7 +372,7 @@ export function FullScreenEditor({
               {mediaItems.length > 0 && (
                 <>
                   <Text style={[styles.mediaHint, { color: theme.textSecondary }]}>
-                    长按图片拖拽调整顺序
+                    {i18n.t('fullScreenEditor.dragHint')}
                   </Text>
                   <DraggableImageGrid
                     items={mediaItems}
@@ -393,7 +398,9 @@ export function FullScreenEditor({
                 ]}
               >
                 <View style={styles.summaryHeader}>
-                  <Text style={[styles.summaryTitle, { color: theme.text }]}>AI 摘要</Text>
+                  <Text style={[styles.summaryTitle, { color: theme.text }]}>
+                    {i18n.t('fullScreenEditor.aiSummary')}
+                  </Text>
                   <View style={styles.summaryActions}>
                     <TouchableOpacity
                       onPress={handleCopySummary}

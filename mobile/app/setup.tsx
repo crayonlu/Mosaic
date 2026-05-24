@@ -10,6 +10,7 @@ import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
 import { CheckCircle, XCircle } from 'lucide-react-native'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useKeyboardHandler } from 'react-native-keyboard-controller'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -18,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error'
 
 export default function SetupScreen() {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
   const { login, isLoading } = useAuthStore()
@@ -35,7 +37,7 @@ export default function SetupScreen() {
     if (urlError) {
       setConnectionStatus('error')
       setErrorMessage(urlError)
-      setErrorHint('请使用完整地址，例如 https://your-server.com')
+      setErrorHint(t('setup.urlHint'))
       return
     }
 
@@ -53,7 +55,10 @@ export default function SetupScreen() {
       })
 
       if (!response.ok) {
-        throw { status: response.status, error: `Health check failed: HTTP ${response.status}` }
+        throw {
+          status: response.status,
+          error: t('setup.healthCheckFailed', { status: response.status }),
+        }
       }
 
       setConnectionStatus('success')
@@ -75,14 +80,14 @@ export default function SetupScreen() {
     if (urlError) {
       setConnectionStatus('error')
       setErrorMessage(urlError)
-      setErrorHint('请先修正服务器地址，再继续登录。')
+      setErrorHint(t('setup.fixUrlFirst'))
       return
     }
 
     if (connectionStatus !== 'success') {
       setConnectionStatus('error')
-      setErrorMessage('请先完成服务器连接测试')
-      setErrorHint('点击“测试连接”，显示连接成功后再登录。')
+      setErrorMessage(t('setup.testConnectionFirst'))
+      setErrorHint(t('setup.testConnectionHint'))
       return
     }
 
@@ -157,20 +162,20 @@ export default function SetupScreen() {
               contentFit="contain"
             />
             <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-              完成初始化配置，开始您的智能笔记之旅
+              {t('setup.subtitle')}
             </Text>
           </Animated.View>
 
           <View style={[styles.card, { backgroundColor: theme.surface }]}>
-            <Text style={[styles.cardTitle, { color: theme.text }]}>服务器配置</Text>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>{t('setup.serverConfig')}</Text>
             <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
-              输入您的 Mosaic 服务器信息
+              {t('setup.serverConfigDesc')}
             </Text>
 
             <View style={styles.form}>
               <Input
-                label="服务器地址"
-                placeholder="https://your-server.com"
+                label={t('setup.serverUrl')}
+                placeholder={t('setup.serverUrlPlaceholder')}
                 value={serverUrl}
                 onChangeText={text => {
                   setServerUrl(text)
@@ -183,8 +188,8 @@ export default function SetupScreen() {
               />
 
               <Input
-                label="用户名"
-                placeholder="your-username"
+                label={t('setup.username')}
+                placeholder={t('setup.usernamePlaceholder')}
                 value={username}
                 onChangeText={text => {
                   setUsername(text)
@@ -196,8 +201,8 @@ export default function SetupScreen() {
               />
 
               <Input
-                label="密码"
-                placeholder="••••••••"
+                label={t('setup.password')}
+                placeholder={t('setup.passwordPlaceholder')}
                 value={password}
                 onChangeText={text => {
                   setPassword(text)
@@ -235,10 +240,10 @@ export default function SetupScreen() {
                   <Button
                     title={
                       connectionStatus === 'testing'
-                        ? '测试中...'
+                        ? t('setup.testing')
                         : connectionStatus === 'success'
-                          ? '连接成功'
-                          : '测试连接'
+                          ? t('setup.connectionOk')
+                          : t('setup.testConnection')
                     }
                     onPress={handleTestConnection}
                     variant="secondary"
@@ -255,7 +260,7 @@ export default function SetupScreen() {
 
                 <View style={styles.buttonWrapper}>
                   <Button
-                    title="开始使用"
+                    title={t('setup.start')}
                     onPress={handleLogin}
                     disabled={!canLogin || isLoading}
                     loading={isLoading}

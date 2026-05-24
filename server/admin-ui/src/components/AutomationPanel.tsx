@@ -1,5 +1,6 @@
 import { Loader, Zap } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { adminApi } from "../api"
 import { useToast } from "../hooks/useToast"
 
@@ -13,6 +14,7 @@ interface AutomationSettings {
 }
 
 export default function AutomationPanel() {
+  const { t } = useTranslation()
   const toast = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -46,9 +48,9 @@ export default function AutomationPanel() {
     setSaving(true)
     try {
       await adminApi("/settings", { method: "PUT", body: settings })
-      toast.success("设置已保存")
+      toast.success(t("automation.saved"))
     } catch {
-      toast.error("保存失败")
+      toast.error(t("automation.saveFailed"))
     } finally {
       setSaving(false)
     }
@@ -59,7 +61,7 @@ export default function AutomationPanel() {
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
           <Zap size={16} />
-          自动化设置
+          {t("automation.title")}
         </h3>
       </div>
       <div className="px-4 py-4">
@@ -68,32 +70,32 @@ export default function AutomationPanel() {
         ) : (
           <div className="flex flex-col gap-4">
             <ToggleRow
-              label="自动标签"
-              description="创建 Memo 时，若无标签则自动生成 1-4 个标签"
+              label={t("automation.autoTag")}
+              description={t("automation.autoTagDesc")}
               checked={settings.autoTagEnabled}
               onChange={(v) =>
                 setSettings((s) => ({ ...s, autoTagEnabled: v }))
               }
             />
             <ToggleRow
-              label="自动 AI 摘要"
-              description="创建 Memo 时自动生成一句话摘要"
+              label={t("automation.autoSummary")}
+              description={t("automation.autoSummaryDesc")}
               checked={settings.autoSummaryEnabled}
               onChange={(v) =>
                 setSettings((s) => ({ ...s, autoSummaryEnabled: v }))
               }
             />
             <ToggleRow
-              label="自动 AI 日记归档"
-              description="每天结束后自动为当天 Memo 生成日记并归档"
+              label={t("automation.autoDiary")}
+              description={t("automation.autoDiaryDesc")}
               checked={settings.autoDiaryEnabled}
               onChange={(v) =>
                 setSettings((s) => ({ ...s, autoDiaryEnabled: v }))
               }
             />
             <NumberRow
-              label="最少 Memo 数量"
-              description="达到这个数量后才会尝试自动生成日记"
+              label={t("automation.minMemos")}
+              description={t("automation.minMemosDesc")}
               value={settings.autoDiaryMinMemos}
               onChange={(v) =>
                 setSettings((s) => ({ ...s, autoDiaryMinMemos: v }))
@@ -101,8 +103,8 @@ export default function AutomationPanel() {
               min={1}
             />
             <NumberRow
-              label="最少总字数"
-              description="当天 Memo 总字数达到这个值后才会尝试自动生成日记"
+              label={t("automation.minChars")}
+              description={t("automation.minCharsDesc")}
               value={settings.autoDiaryMinChars}
               onChange={(v) =>
                 setSettings((s) => ({ ...s, autoDiaryMinChars: v }))
@@ -110,8 +112,8 @@ export default function AutomationPanel() {
               min={1}
             />
             <TextRow
-              label="业务时区"
-              description="IANA 时区名称，用于日期分组与 Bot 时间（如 Asia/Shanghai）"
+              label={t("automation.timezone")}
+              description={t("automation.timezonePlaceholder")}
               value={settings.appTimezone}
               onChange={(v) => setSettings((s) => ({ ...s, appTimezone: v }))}
             />
@@ -123,7 +125,7 @@ export default function AutomationPanel() {
               {saving ? (
                 <Loader size={14} className="spin" />
               ) : (
-                <span>保存设置</span>
+                <span>{t("automation.save")}</span>
               )}
             </button>
           </div>

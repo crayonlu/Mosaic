@@ -1,4 +1,5 @@
 import { DatePickerSheet } from '@/components/ui'
+import i18n from '@/lib/i18n'
 import { useThemeStore } from '@/stores/themeStore'
 import dayjs from 'dayjs'
 import { Calendar, X } from 'lucide-react-native'
@@ -42,7 +43,7 @@ export function ArchiveDateFilter({ selectedDate, onDateSelect }: ArchiveDateFil
           <Text
             style={[styles.filterText, { color: selectedDate ? theme.text : theme.textSecondary }]}
           >
-            {formatDate(selectedDate) || '选择日期'}
+            {formatDate(selectedDate) || i18n.t('archiveDateFilter.selectDate')}
           </Text>
           {selectedDate && (
             <TouchableOpacity
@@ -62,7 +63,7 @@ export function ArchiveDateFilter({ selectedDate, onDateSelect }: ArchiveDateFil
         onSelect={onDateSelect}
         onClear={handleClearDate}
         onClose={() => setShowDatePicker(false)}
-        title="选择归档日期"
+        title={i18n.t('archiveDateFilter.selectDate')}
       />
     </>
   )

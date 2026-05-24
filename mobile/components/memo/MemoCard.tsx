@@ -11,6 +11,7 @@ import MaskedView from '@react-native-masked-view/masked-view'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Pencil, Trash2 } from 'lucide-react-native'
 import React, { useCallback, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, {
   Easing,
@@ -44,6 +45,7 @@ export const MemoCard = React.memo(
     showSemanticBadge = false,
   }: MemoCardProps) {
     const { theme } = useThemeStore()
+    const { t } = useTranslation()
     const authHeaders = useAuthHeaders()
     const [isOverflowing, setIsOverflowing] = useState(false)
 
@@ -125,7 +127,9 @@ export const MemoCard = React.memo(
                 { backgroundColor: theme.semantic.infoSoft, borderColor: theme.info },
               ]}
             >
-              <Text style={[styles.semanticBadgeText, { color: theme.info }]}>语义</Text>
+              <Text style={[styles.semanticBadgeText, { color: theme.info }]}>
+                {t('components.memoCard.semantic')}
+              </Text>
             </View>
           )}
           <View style={styles.contentContainer}>
@@ -190,7 +194,7 @@ export const MemoCard = React.memo(
                   <View style={[styles.editedBadge, { backgroundColor: theme.surfaceMuted }]}>
                     <Pencil size={10} color={theme.textSecondary} strokeWidth={2} />
                     <Text style={[styles.editedBadgeText, { color: theme.textSecondary }]}>
-                      已编辑
+                      {t('components.memoCard.edited')}
                     </Text>
                   </View>
                 )}

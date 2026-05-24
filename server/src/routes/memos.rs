@@ -34,7 +34,7 @@ pub async fn create_memo(
                 "create_memo",
                 "memo",
                 Some(memo.id.to_string()),
-                format!("创建了 Memo: {}...", truncate_str(&memo.content, 30)),
+                format!("Created memo: {}...", truncate_str(&memo.content, 30)),
             );
             HttpResponse::Ok().json(memo)
         }
@@ -124,7 +124,7 @@ pub async fn update_memo(
                 "update_memo",
                 "memo",
                 Some(memo.id.to_string()),
-                "更新了 Memo".to_string(),
+                "Updated memo".to_string(),
             );
             HttpResponse::Ok().json(memo)
         }
@@ -150,7 +150,7 @@ pub async fn delete_memo(
                 "delete_memo",
                 "memo",
                 Some(memo_id.to_string()),
-                "删除了 Memo".to_string(),
+                "Deleted memo".to_string(),
             );
             HttpResponse::Ok().finish()
         }
@@ -430,7 +430,7 @@ pub async fn delete_revision(
                 "delete_revision",
                 "memo_revision",
                 Some(revision_id.to_string()),
-                format!("删除了 Memo {} 的一个版本", memo_id),
+                format!("Deleted memo {} revision", memo_id),
             );
             HttpResponse::Ok().finish()
         }

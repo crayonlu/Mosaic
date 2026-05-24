@@ -1,5 +1,6 @@
 import { Bot } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { api } from "../api"
 
@@ -13,6 +14,7 @@ interface BotData {
 }
 
 export default function BotManager() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const [bots, setBots] = useState<BotData[]>([])
@@ -43,20 +45,20 @@ export default function BotManager() {
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
           <Bot size={16} />
-          Bot 概览
+          {t("botManager.title")}
         </h3>
         <button
           className="cursor-pointer border-none bg-transparent text-xs text-muted-foreground transition-colors hover:text-foreground"
           onClick={() => navigate("/bots")}
         >
-          进入管理页
+          {t("botManager.manage")}
         </button>
       </div>
       <div className="px-4 py-3">
         {loading && <div className="skeleton h-[80px]" />}
         {!loading && !bots.length && (
           <div className="py-8 text-center text-sm text-muted-foreground">
-            暂无 Bot
+            {t("botManager.empty")}
           </div>
         )}
         {!loading && bots.length > 0 && (
@@ -72,7 +74,7 @@ export default function BotManager() {
                 <span
                   className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase ${b.autoReply ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}
                 >
-                  {b.autoReply ? "自动" : "手动"}
+                  {b.autoReply ? t("botManager.auto") : t("botManager.manual")}
                 </span>
               </div>
             ))}

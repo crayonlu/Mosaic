@@ -820,7 +820,10 @@ impl BotService {
         limit: i64,
     ) -> Result<Vec<Resource>, AppError> {
         if resource_ids.len() > limit as usize {
-            return Err(AppError::InvalidInput(format!("最多添加 {} 张图片", limit)));
+            return Err(AppError::InvalidInput(format!(
+                "Maximum {} images allowed",
+                limit
+            )));
         }
 
         let resources = self
@@ -829,7 +832,7 @@ impl BotService {
 
         if resources.len() != resource_ids.len() {
             return Err(AppError::InvalidInput(
-                "图片不存在或没有访问权限".to_string(),
+                "Image not found or no access permission".to_string(),
             ));
         }
 
@@ -948,7 +951,9 @@ impl BotService {
 fn validate_ai_image_resources(resources: &[Resource]) -> Result<(), AppError> {
     for resource in resources {
         if !is_supported_ai_image_resource(resource) {
-            return Err(AppError::InvalidInput("不支持的图片格式".to_string()));
+            return Err(AppError::InvalidInput(
+                "Unsupported image format".to_string(),
+            ));
         }
     }
 

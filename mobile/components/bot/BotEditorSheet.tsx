@@ -1,24 +1,25 @@
 import { SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
-import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
+import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
 import { useCreateBot, useDeleteBot, useUpdateBot } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type Bot } from '@mosaic/api'
 import { Image } from 'expo-image'
 import { Camera, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
   Modal,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  StatusBar,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -29,6 +30,7 @@ interface BotEditorSheetProps {
 }
 
 export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
   const authHeaders = useAuthHeaders()
@@ -75,7 +77,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
       })
       setAvatarUrl(resourcesApi.getDownloadUrl(resource.id))
     } catch {
-      toast.error('头像上传失败')
+      toast.error(t('bot.avatarUploadFailed'))
     } finally {
       setUploadingAvatar(false)
     }
@@ -83,7 +85,11 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.show({ type: 'warning', title: '请输入名字', message: 'Bot 名字不能为空' })
+      toast.show({
+        type: 'warning',
+        title: t('bot.nameRequired'),
+        message: t('bot.nameRequiredMsg'),
+      })
       return
     }
 
@@ -112,7 +118,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
       }
       onClose()
     } catch {
-      toast.error('保存失败')
+      toast.error(t('bot.saveFailed'))
     }
   }
 
@@ -120,16 +126,16 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
     if (!bot) return
     toast.show({
       type: 'warning',
-      title: '确认删除',
-      message: `确定要删除「${bot.name}」吗？`,
-      actionLabel: '删除',
+      title: t('bot.deleteConfirm'),
+      message: t('bot.deleteConfirmMsg', { name: bot.name }),
+      actionLabel: t('common.delete'),
       duration: 10000,
       onAction: async () => {
         try {
           await deleteBot(bot.id)
           onClose()
         } catch {
-          toast.error('删除失败')
+          toast.error(t('bot.deleteFailed'))
         }
       },
     })
@@ -152,13 +158,13 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
             <X size={22} color={theme.textSecondary} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.text }]}>
-            {bot ? '编辑 Bot' : '新建 Bot'}
+            {bot ? t('bot.editBot') : t('bot.newBot')}
           </Text>
           <TouchableOpacity onPress={handleSave} disabled={isPending} hitSlop={12}>
             <Text
               style={[styles.saveBtn, { color: isPending ? theme.textSecondary : theme.primary }]}
             >
-              {isPending ? '保存中...' : '保存'}
+              {isPending ? t('bot.saving') : t('bot.save')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -194,7 +200,7 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
                 )}
               </View>
               <Text style={[styles.avatarHint, { color: theme.textSecondary }]}>
-                {avatarUrl ? '点击更换头像' : '点击上传头像'}
+                {avatarUrl ? t('bot.changeAvatar') : t('bot.uploadAvatar')}
               </Text>
             </TouchableOpacity>
 
@@ -205,40 +211,42 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
               ]}
             >
               <View style={[styles.field, { borderBottomColor: theme.border }]}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>名字</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{t('bot.name')}</Text>
                 <TextInput
                   style={[styles.input, { color: theme.text }]}
                   value={name}
                   onChangeText={setName}
-                  placeholder="给 Bot 起个名字..."
+                  placeholder={t('bot.namePlaceholder')}
                   placeholderTextColor={theme.textSecondary}
                   maxLength={50}
                 />
               </View>
 
               <View style={[styles.field, { borderBottomColor: theme.border }]}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>标签</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{t('bot.tags')}</Text>
                 <TextInput
                   style={[styles.input, { color: theme.text }]}
                   value={tagsInput}
                   onChangeText={setTagsInput}
-                  placeholder="犀利 幽默 温柔（空格分隔）"
+                  placeholder={t('bot.tagsPlaceholder')}
                   placeholderTextColor={theme.textSecondary}
                 />
               </View>
 
               <View style={styles.fieldRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>自动回复</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>
+                  {t('bot.autoReply')}
+                </Text>
                 <SwitchBtn value={autoReply} onValueChange={setAutoReply} />
               </View>
 
               <View style={[styles.field, { borderBottomColor: theme.border }]}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>模型配置</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{t('bot.model')}</Text>
                 <TextInput
                   style={[styles.input, { color: theme.text }]}
                   value={model}
                   onChangeText={setModel}
-                  placeholder="输入要覆盖的默认模型（留空使用系统默认）"
+                  placeholder={t('bot.modelPlaceholder')}
                   placeholderTextColor={theme.textSecondary}
                   maxLength={50}
                 />
@@ -252,15 +260,13 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
               ]}
             >
               <Text style={[styles.label, styles.descLabel, { color: theme.textSecondary }]}>
-                人格描述
+                {t('bot.personalityDesc')}
               </Text>
               <TextInput
                 style={[styles.descInput, { color: theme.text, borderColor: theme.border }]}
                 value={description}
                 onChangeText={setDescription}
-                placeholder={
-                  '你是一个说话犀利但内心关心朋友的损友...\n\n用自然语言描述 Bot 的性格、说话风格和行为特征。'
-                }
+                placeholder={t('bot.descPlaceholder')}
                 placeholderTextColor={theme.textSecondary}
                 multiline
                 textAlignVertical="top"
@@ -279,7 +285,9 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
                   onPress={handleDelete}
                   disabled={isDeleting}
                 >
-                  <Text style={[styles.deleteBtnText, { color: theme.error }]}>删除 Bot</Text>
+                  <Text style={[styles.deleteBtnText, { color: theme.error }]}>
+                    {t('bot.delete')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}

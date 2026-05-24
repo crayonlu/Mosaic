@@ -94,7 +94,7 @@ pub async fn create_or_update_diary(
                 "create_diary",
                 "diary",
                 Some(date_str.clone()),
-                format!("创建了日记 {}", date_str),
+                format!("Created diary {}", date_str),
             );
             HttpResponse::Ok().json(diary)
         }
@@ -139,7 +139,7 @@ pub async fn update_diary(
                 "update_diary",
                 "diary",
                 Some(date_str),
-                "更新了日记".to_string(),
+                "Updated diary".to_string(),
             );
             HttpResponse::Ok().json(diary)
         }

@@ -1,3 +1,4 @@
+import i18n from '@/lib/i18n'
 import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
 import * as ExpoImagePicker from 'expo-image-picker'
@@ -59,7 +60,7 @@ export function ImagePicker({
       {showUploadButton && images.length === 0 && (
         <View style={styles.uploadButtonContainer}>
           <Button
-            title="上传"
+            title={i18n.t('imagePicker.upload')}
             onPress={pickImage}
             variant="secondary"
             size="large"

@@ -8,6 +8,7 @@ import {
 } from '@gorhom/bottom-sheet'
 import { Calendar, Filter } from 'lucide-react-native'
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface SearchFiltersProps {
@@ -32,6 +33,7 @@ export function SearchFilters({
   onArchivedChange,
 }: SearchFiltersProps) {
   const { theme } = useThemeStore()
+  const { t } = useTranslation()
   const sheetRef = useRef<BottomSheetModal>(null)
   const [activeDateTarget, setActiveDateTarget] = useState<'start' | 'end' | null>(null)
 
@@ -89,9 +91,9 @@ export function SearchFilters({
   }
 
   const archiveOptions = [
-    { label: '全部', value: undefined },
-    { label: '已归档', value: true },
-    { label: '未归档', value: false },
+    { label: t('search.all'), value: undefined },
+    { label: t('search.archived'), value: true },
+    { label: t('search.unarchived'), value: false },
   ]
 
   const formatDate = (dateString?: string) => {
@@ -125,7 +127,7 @@ export function SearchFilters({
               { color: hasActiveFilters ? theme.primary : theme.textSecondary },
             ]}
           >
-            筛选
+            {t('search.filter')}
           </Text>
           {hasActiveFilters && (
             <View style={[styles.badge, { backgroundColor: theme.primary }]}>
@@ -155,7 +157,9 @@ export function SearchFilters({
         >
           <View style={{ flex: 1 }}>
             <View style={styles.filterSection}>
-              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>归档状态</Text>
+              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+                {t('search.archiveStatus')}
+              </Text>
               <View style={styles.archiveOptions}>
                 {archiveOptions.map(option => (
                   <TouchableOpacity
@@ -186,7 +190,9 @@ export function SearchFilters({
 
             {availableTags.length > 0 && (
               <View style={styles.filterSection}>
-                <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>标签</Text>
+                <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+                  {t('searchFilters.tags')}
+                </Text>
                 <View style={styles.tagsContainer}>
                   {availableTags.map(tag => (
                     <TouchableOpacity key={tag} onPress={() => toggleTag(tag)}>
@@ -201,7 +207,9 @@ export function SearchFilters({
             )}
 
             <View style={styles.filterSection}>
-              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>日期范围</Text>
+              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+                {t('searchFilters.dateRange')}
+              </Text>
               <View style={styles.dateRangeContainer}>
                 <TouchableOpacity
                   style={[
@@ -221,10 +229,12 @@ export function SearchFilters({
                       { color: tempStartDate ? theme.text : theme.textSecondary },
                     ]}
                   >
-                    {formatDate(tempStartDate) || '开始日期'}
+                    {formatDate(tempStartDate) || t('searchFilters.startDate')}
                   </Text>
                 </TouchableOpacity>
-                <Text style={[styles.dateSeparator, { color: theme.textSecondary }]}>至</Text>
+                <Text style={[styles.dateSeparator, { color: theme.textSecondary }]}>
+                  {t('searchFilters.to')}
+                </Text>
                 <TouchableOpacity
                   style={[
                     styles.dateButton,
@@ -243,7 +253,7 @@ export function SearchFilters({
                       { color: tempEndDate ? theme.text : theme.textSecondary },
                     ]}
                   >
-                    {formatDate(tempEndDate) || '结束日期'}
+                    {formatDate(tempEndDate) || t('searchFilters.endDate')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -261,7 +271,9 @@ export function SearchFilters({
               ]}
               onPress={clearFilters}
             >
-              <Text style={[styles.resetButtonText, { color: theme.text }]}>重置</Text>
+              <Text style={[styles.resetButtonText, { color: theme.text }]}>
+                {t('common.reset')}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -270,7 +282,9 @@ export function SearchFilters({
               ]}
               onPress={handleApplyFilters}
             >
-              <Text style={[styles.applyButtonText, { color: theme.onPrimary }]}>应用</Text>
+              <Text style={[styles.applyButtonText, { color: theme.onPrimary }]}>
+                {t('common.apply')}
+              </Text>
             </TouchableOpacity>
           </View>
         </BottomSheetScrollView>
@@ -278,7 +292,9 @@ export function SearchFilters({
 
       <DatePickerSheet
         visible={activeDateTarget !== null}
-        title={activeDateTarget === 'start' ? '开始日期' : '结束日期'}
+        title={
+          activeDateTarget === 'start' ? t('searchFilters.startDate') : t('searchFilters.endDate')
+        }
         selectedDate={activePickerDate}
         minDate={activeDateTarget === 'end' ? tempStartDate : undefined}
         maxDate={activeDateTarget === 'start' ? tempEndDate : undefined}

@@ -12,7 +12,7 @@ export interface Bot {
   autoReply: boolean
   sortOrder: number
   model?: string
-  aiConfig?: any
+  aiConfig?: Record<string, unknown>
   createdAt: number
   updatedAt: number
   memoryStats?: BotMemoryStats
@@ -62,7 +62,7 @@ export interface CreateBotRequest {
   tags: string[]
   autoReply: boolean
   model?: string
-  aiConfig?: any
+  aiConfig?: Record<string, unknown>
 }
 
 export interface UpdateBotRequest {
@@ -73,7 +73,7 @@ export interface UpdateBotRequest {
   autoReply?: boolean
   sortOrder?: number
   model?: string | null
-  aiConfig?: any | null
+  aiConfig?: Record<string, unknown> | null
 }
 
 export interface ReorderBotsRequest {

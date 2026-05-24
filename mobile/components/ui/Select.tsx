@@ -10,6 +10,8 @@ import {
   View,
 } from 'react-native'
 
+import i18n from '@/lib/i18n'
+
 export interface SelectOption {
   label: string
   value: string
@@ -27,7 +29,7 @@ export function Select({
   options,
   value,
   onValueChange,
-  placeholder = '请选择',
+  placeholder = i18n.t('select.placeholder'),
   size = 'medium',
 }: SelectProps) {
   const { theme } = useThemeStore()

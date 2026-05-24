@@ -4,6 +4,7 @@ import { useThemeStore } from '@/stores/themeStore'
 import type { Memo } from '@mosaic/api'
 import { FileX, Search } from 'lucide-react-native'
 import React, { useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 
 const SearchMemoCard = React.memo(function SearchMemoCard({
@@ -58,6 +59,7 @@ export function SearchResults({
   semanticEnabled = false,
 }: SearchResultsProps) {
   const { theme } = useThemeStore()
+  const { t } = useTranslation()
 
   const renderItem = useCallback(
     ({ item }: { item: Memo }) => (
@@ -78,9 +80,9 @@ export function SearchResults({
           <View style={[styles.emptyIcon]}>
             <Search size={48} color={theme.primary} strokeWidth={1.5} />
           </View>
-          <Text style={[styles.emptyTitle, { color: theme.text }]}>开始搜索</Text>
+          <Text style={[styles.emptyTitle, { color: theme.text }]}>{t('search.startSearch')}</Text>
           <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-            输入关键词或选择筛选条件开始搜索
+            {t('search.startSearchHint')}
           </Text>
         </View>
       )
@@ -91,20 +93,20 @@ export function SearchResults({
         <View style={[styles.emptyIcon]}>
           <FileX size={48} color={theme.primary} strokeWidth={1.5} />
         </View>
-        <Text style={[styles.emptyTitle, { color: theme.text }]}>暂无搜索结果</Text>
+        <Text style={[styles.emptyTitle, { color: theme.text }]}>{t('search.noResults')}</Text>
         <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-          尝试调整搜索条件或关键词
+          {t('search.noResultsHint')}
         </Text>
       </View>
     )
-  }, [emptyQuery, theme.primary, theme.text, theme.textSecondary])
+  }, [t, emptyQuery, theme.primary, theme.text, theme.textSecondary])
 
   const renderFooter = useMemo(() => {
     if (!hasMore && results.length > 0) {
       return (
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-            共 {results.length} 条结果
+            {t('search.resultsCount', { count: results.length })}
           </Text>
         </View>
       )
@@ -119,7 +121,7 @@ export function SearchResults({
     }
 
     return null
-  }, [hasMore, results.length, refreshing, theme.textSecondary, theme.primary])
+  }, [t, hasMore, results.length, refreshing, theme.textSecondary, theme.primary])
 
   if (loading && results.length === 0) {
     return <MemoListSkeleton count={6} />

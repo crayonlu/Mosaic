@@ -169,3 +169,17 @@ impl AiClient {
         }
     }
 }
+
+/// Shared system prompt used by all AI-related endpoints and services.
+/// Ensures the AI always responds in the same language as the user's input.
+pub fn build_ai_system_prompt() -> String {
+    "You are a helpful assistant that processes user content.\n\
+     CRITICAL: You MUST ALWAYS respond in the SAME LANGUAGE as the user's input content.\n\
+     - If the input is in Chinese, respond in Chinese.\n\
+     - If the input is in Japanese, respond in Japanese.\n\
+     - If the input is in Korean, respond in Korean.\n\
+     - If the input is in English, respond in English.\n\
+     - And so on for any language.\n\
+     This is the most important rule. Never violate it."
+        .to_string()
+}

@@ -29,7 +29,7 @@ pub async fn login(
                 "login",
                 "user",
                 Some(response.user.id.to_string()),
-                format!("用户 {} 登录成功", response.user.username),
+                format!("User {} logged in", response.user.username),
             );
             HttpResponse::Ok().json(response)
         }
@@ -57,7 +57,7 @@ pub async fn change_password(
                 "change_password",
                 "user",
                 Some(user_id.clone()),
-                "用户修改了密码".to_string(),
+                "User changed password".to_string(),
             );
             HttpResponse::Ok().finish()
         }

@@ -50,7 +50,7 @@ pub async fn create_bot(
                 "create_bot",
                 "bot",
                 Some(bot.id.to_string()),
-                format!("创建了 Bot: {}", bot.name),
+                format!("Created bot: {}", bot.name),
             );
             HttpResponse::Created().json(bot)
         }
@@ -80,7 +80,7 @@ pub async fn update_bot(
                 "update_bot",
                 "bot",
                 Some(bot.id.to_string()),
-                format!("更新了 Bot: {}", bot.name),
+                format!("Updated bot: {}", bot.name),
             );
             HttpResponse::Ok().json(bot)
         }
@@ -106,7 +106,7 @@ pub async fn delete_bot(
                 "delete_bot",
                 "bot",
                 Some(bot_id.to_string()),
-                "删除了 Bot".to_string(),
+                "Deleted bot".to_string(),
             );
             HttpResponse::NoContent().finish()
         }
@@ -189,7 +189,7 @@ pub async fn trigger_replies(
                 "trigger_replies",
                 "memo",
                 Some(memo_id.to_string()),
-                "触发了 Bot 自动回复".to_string(),
+                "Bot auto-reply triggered".to_string(),
             );
             HttpResponse::Accepted().finish()
         }
@@ -218,7 +218,7 @@ pub async fn reply_to_bot(
                 "reply_to_bot",
                 "bot_reply",
                 Some(reply.id.to_string()),
-                format!("用户回复了 Bot: {}", reply.bot.name),
+                format!("User replied to bot: {}", reply.bot.name),
             );
             HttpResponse::Created().json(reply)
         }

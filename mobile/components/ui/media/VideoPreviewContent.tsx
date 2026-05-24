@@ -4,13 +4,14 @@ import { Image } from 'expo-image'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { Pause, Play } from 'lucide-react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
-  type LayoutChangeEvent,
   View,
+  type LayoutChangeEvent,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -101,6 +102,7 @@ export function VideoPreviewContent({
   thumbnailHeaders,
   isActive,
 }: VideoPreviewContentProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
   const [isReady, setIsReady] = useState(false)
@@ -262,7 +264,9 @@ export function VideoPreviewContent({
           pointerEvents="none"
         >
           <ActivityIndicator size="large" color={theme.primary} />
-          <Text style={[styles.loadingText, { color: theme.text }]}>视频加载中...</Text>
+          <Text style={[styles.loadingText, { color: theme.text }]}>
+            {t('components.videoLoading')}
+          </Text>
         </View>
       ) : null}
 
@@ -274,7 +278,9 @@ export function VideoPreviewContent({
                 <View style={styles.centerControlWrap} pointerEvents="box-none">
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={isPlaying ? '暂停视频' : '播放视频'}
+                    accessibilityLabel={
+                      isPlaying ? t('components.videoPause') : t('components.videoPlay')
+                    }
                     onPress={handleTogglePlayback}
                     style={({ pressed }) => [
                       styles.centerControl,

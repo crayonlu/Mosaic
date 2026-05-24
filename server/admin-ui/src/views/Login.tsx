@@ -1,5 +1,6 @@
 import { Globe, Loader, Lock, Palette, User } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { getServerUrl, setServerUrl } from "../api"
 import { useToast } from "../hooks/useToast"
@@ -9,6 +10,7 @@ import { useThemeStore } from "../stores/themeStore"
 const isDev = import.meta.env.DEV
 
 export default function Login() {
+  const { t } = useTranslation()
   const auth = useAuthStore()
   const theme = useThemeStore()
   const navigate = useNavigate()
@@ -35,7 +37,7 @@ export default function Login() {
     e.preventDefault()
     setErrorMsg("")
     if (!username.trim() || !password.trim()) {
-      setErrorMsg("请填写用户名和密码")
+      setErrorMsg(t("login.fillCredentials"))
       return
     }
     setLoading(true)
@@ -43,8 +45,8 @@ export default function Login() {
       await auth.login(username, password)
       navigate("/dashboard", { replace: true })
     } catch {
-      setErrorMsg("登录失败，请检查用户名和密码")
-      toast.error("登录失败，请检查用户名和密码")
+      setErrorMsg(t("login.loginFailed"))
+      toast.error(t("login.loginFailed"))
     } finally {
       setLoading(false)
     }
@@ -69,10 +71,10 @@ export default function Login() {
             </svg>
           </div>
           <h1 className="text-xl font-semibold text-foreground">
-            Mosaic 管理后台
+            {t("login.title")}
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            登录以管理您的 Mosaic 服务
+            {t("login.subtitle")}
           </p>
         </div>
 
@@ -83,7 +85,7 @@ export default function Login() {
                 htmlFor="username"
                 className="text-xs font-medium text-muted-foreground"
               >
-                用户名
+                {t("login.username")}
               </label>
               <div className="flex items-center gap-2 rounded-md border border-transparent bg-muted px-3 transition-colors focus-within:border-ring">
                 <User size={15} className="shrink-0 text-muted-foreground" />
@@ -91,7 +93,7 @@ export default function Login() {
                   id="username"
                   type="text"
                   className="flex-1 border-none bg-transparent py-2.5 font-sans text-sm text-foreground outline-none"
-                  placeholder="请输入用户名"
+                  placeholder={t("login.usernamePlaceholder")}
                   autoComplete="username"
                   disabled={loading}
                   value={username}
@@ -105,7 +107,7 @@ export default function Login() {
                 htmlFor="password"
                 className="text-xs font-medium text-muted-foreground"
               >
-                密码
+                {t("login.password")}
               </label>
               <div className="flex items-center gap-2 rounded-md border border-transparent bg-muted px-3 transition-colors focus-within:border-ring">
                 <Lock size={15} className="shrink-0 text-muted-foreground" />
@@ -113,7 +115,7 @@ export default function Login() {
                   id="password"
                   type="password"
                   className="flex-1 border-none bg-transparent py-2.5 font-sans text-sm text-foreground outline-none"
-                  placeholder="请输入密码"
+                  placeholder={t("login.passwordPlaceholder")}
                   autoComplete="current-password"
                   disabled={loading}
                   value={password}
@@ -128,7 +130,7 @@ export default function Login() {
                   htmlFor="serverUrl"
                   className="text-xs font-medium text-muted-foreground"
                 >
-                  服务器地址
+                  {t("login.serverUrl")}
                 </label>
                 <div className="flex items-center gap-2 rounded-md border border-transparent bg-muted px-3 transition-colors focus-within:border-ring">
                   <Globe size={15} className="shrink-0 text-muted-foreground" />
@@ -136,7 +138,7 @@ export default function Login() {
                     id="serverUrl"
                     type="text"
                     className="flex-1 border-none bg-transparent py-2.5 font-sans text-sm text-foreground outline-none"
-                    placeholder="留空使用当前地址，如 http://192.168.1.100:8080"
+                    placeholder={t("login.serverUrlPlaceholder")}
                     disabled={loading}
                     value={serverUrl}
                     onChange={(e) => handleServerUrlChange(e.target.value)}
@@ -155,7 +157,7 @@ export default function Login() {
               {loading ? (
                 <Loader size={15} className="spin" />
               ) : (
-                <span>登录</span>
+                <span>{t("login.login")}</span>
               )}
             </button>
           </form>
@@ -167,7 +169,9 @@ export default function Login() {
             onClick={toggleTheme}
           >
             <Palette size={13} />
-            {theme.themeName === "quietPaper" ? "Clean Slate" : "Quiet Paper"}
+            {theme.themeName === "quietPaper"
+              ? t("layout.themeCleanSlate")
+              : t("layout.themeQuietPaper")}
           </button>
         </div>
       </div>

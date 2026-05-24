@@ -1,3 +1,4 @@
+pub mod ai;
 pub mod auth;
 pub mod bots;
 pub mod diaries;
@@ -7,6 +8,7 @@ pub mod resources;
 pub mod stats;
 pub mod sync;
 
+pub use ai::configure_ai_routes;
 pub use bots::configure_bot_routes;
 pub use diaries::configure_diary_routes;
 pub use memory::configure_memory_routes;

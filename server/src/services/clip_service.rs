@@ -302,7 +302,7 @@ fn truncate_str(s: &str, max_chars: usize) -> &str {
 fn parse_ai_clip_response(raw: &str) -> ClipResult {
     let trimmed = raw.trim();
 
-    let title = extract_field(trimmed, "TITLE").unwrap_or_else(|| "未命名".to_string());
+    let title = extract_field(trimmed, "TITLE").unwrap_or_else(|| "Untitled".to_string());
     let summary = extract_field(trimmed, "SUMMARY").unwrap_or_default();
     let tags_str = extract_field(trimmed, "TAGS").unwrap_or_default();
     let body = extract_field(trimmed, "CONTENT").unwrap_or_else(|| trimmed.to_string());

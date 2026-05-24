@@ -204,7 +204,8 @@ async fn main() -> anyhow::Result<()> {
                     .configure(routes::configure_stats_routes)
                     .configure(routes::configure_bot_routes)
                     .configure(routes::configure_memory_routes)
-                    .configure(routes::configure_sync_routes),
+                    .configure(routes::configure_sync_routes)
+                    .configure(routes::configure_ai_routes),
             )
             .service(
                 web::scope("/admin/api")

@@ -1,3 +1,4 @@
+import i18n from '@/lib/i18n'
 import { getDatabase } from './database'
 import { mmkv } from './mmkv'
 
@@ -17,7 +18,7 @@ export interface StorageSummary {
 }
 
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B'
+  if (bytes === 0) return i18n.t('storage.zeroBytes', { defaultValue: '0 B' })
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -30,8 +31,8 @@ function getMMKVStorage(): StorageItem {
 
   return {
     id: 'mmkv',
-    label: '偏好与状态',
-    description: `主题设置、推送开关等应用状态 - 共${keyCount}个`,
+    label: i18n.t('storage.appStateLabel'),
+    description: i18n.t('storage.appState', { count: keyCount }),
     size,
     itemCount: keyCount,
     clearable: false,
@@ -44,8 +45,8 @@ function getMMKVStorage(): StorageItem {
 function getSecureStorage(): StorageItem {
   return {
     id: 'secure',
-    label: '安全凭证',
-    description: '登录凭证等加密信息',
+    label: i18n.t('storage.secureLabel'),
+    description: i18n.t('storage.secureDesc'),
     size: 0,
     clearable: false,
     clear: async () => {
@@ -87,8 +88,8 @@ async function getSQLiteStorage(): Promise<StorageItem> {
 
     return {
       id: 'sqlite',
-      label: '本地数据库',
-      description: `笔记、日记等离线数据 - 共${totalRows}条`,
+      label: i18n.t('storage.dbLabel'),
+      description: i18n.t('storage.dbDesc', { count: totalRows }),
       size,
       itemCount: totalRows,
       clearable: totalRows > 0,
@@ -105,8 +106,8 @@ async function getSQLiteStorage(): Promise<StorageItem> {
     console.error('[getSQLiteStorage] Failed to get SQLite storage info:', error)
     return {
       id: 'sqlite',
-      label: '本地数据库',
-      description: 'Database initialization failed',
+      label: i18n.t('storage.dbLabel'),
+      description: i18n.t('storage.dbDesc'),
       size: 0,
       itemCount: 0,
       clearable: false,

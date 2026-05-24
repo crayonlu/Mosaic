@@ -3,6 +3,7 @@ import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
 import { ToastContainer } from '@/components/ui'
 import { preloadAuthHeaders } from '@/hooks/useAuthHeaders'
+import i18n from '@/lib/i18n'
 import {
   hideBootSplash,
   SafeKeyboardProvider,
@@ -17,6 +18,7 @@ import { Image } from 'expo-image'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { type ReactNode, useCallback, useEffect, useRef } from 'react'
+import { I18nextProvider, useTranslation } from 'react-i18next'
 import { StyleSheet, Text, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -65,6 +67,7 @@ function ShareIntentHandler({ children }: { children: ReactNode }) {
 }
 
 export default function RootLayout() {
+  const { t } = useTranslation()
   const theme = useThemeStore(s => s.theme)
   const themeName = useThemeStore(s => s.themeName)
   const isServerReachable = useConnectionStore(s => s.isServerReachable)
@@ -158,53 +161,56 @@ export default function RootLayout() {
                   <MoodBackground />
                   <StatusBar style="auto" />
                   <BottomSheetModalProvider>
-                    <QueryProvider>
-                      {isAuthenticated && !isServerReachable && (
-                        <View style={[styles.offlineBanner, { backgroundColor: theme.error }]}>
-                          <Text style={[styles.offlineText, { color: theme.onPrimary }]}>
-                            {lastError || '无法连接到服务器'}
-                          </Text>
-                        </View>
-                      )}
-                      <Stack
-                        screenOptions={{
-                          headerShown: false,
-                          contentStyle: {
-                            backgroundColor: isDiariesTab ? 'transparent' : theme.background,
-                          },
-                        }}
-                      >
-                        <Stack.Screen name="theme-picker" options={{ headerShown: false }} />
-                        <Stack.Screen name="setup" options={{ headerShown: false }} />
-                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                        <Stack.Screen
-                          name="share"
-                          options={{
-                            presentation: 'modal',
-                            animation: 'slide_from_bottom',
+                    <I18nextProvider i18n={i18n}>
+                      <QueryProvider>
+                        {isAuthenticated && !isServerReachable && (
+                          <View style={[styles.offlineBanner, { backgroundColor: theme.error }]}>
+                            <Text style={[styles.offlineText, { color: theme.onPrimary }]}>
+                              {lastError || t('offline.cannotConnect')}
+                            </Text>
+                          </View>
+                        )}
+                        <Stack
+                          screenOptions={{
                             headerShown: false,
+                            contentStyle: {
+                              backgroundColor: isDiariesTab ? 'transparent' : theme.background,
+                            },
                           }}
-                        />
-                      </Stack>
-                      {themeName !== 'cleanSlate' && (segments[0] as string) !== 'theme-picker' && (
-                        <View
-                          pointerEvents="none"
-                          style={[StyleSheet.absoluteFill, styles.noiseOverlay]}
                         >
-                          <Image
-                            source={require('../assets/images/noise.png')}
-                            contentFit="cover"
-                            style={[styles.noiseImage, { opacity: 0.6 }]}
+                          <Stack.Screen name="theme-picker" options={{ headerShown: false }} />
+                          <Stack.Screen name="setup" options={{ headerShown: false }} />
+                          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                          <Stack.Screen
+                            name="share"
+                            options={{
+                              presentation: 'modal',
+                              animation: 'slide_from_bottom',
+                              headerShown: false,
+                            }}
                           />
-                        </View>
-                      )}
-                      <ToastContainer />
-                      {!isAppReady && (
-                        <View style={styles.splashOverlay}>
-                          <ThemeAwareSplash />
-                        </View>
-                      )}
-                    </QueryProvider>
+                        </Stack>
+                        {themeName !== 'cleanSlate' &&
+                          (segments[0] as string) !== 'theme-picker' && (
+                            <View
+                              pointerEvents="none"
+                              style={[StyleSheet.absoluteFill, styles.noiseOverlay]}
+                            >
+                              <Image
+                                source={require('../assets/images/noise.png')}
+                                contentFit="cover"
+                                style={[styles.noiseImage, { opacity: 0.6 }]}
+                              />
+                            </View>
+                          )}
+                        <ToastContainer />
+                        {!isAppReady && (
+                          <View style={styles.splashOverlay}>
+                            <ThemeAwareSplash />
+                          </View>
+                        )}
+                      </QueryProvider>
+                    </I18nextProvider>
                   </BottomSheetModalProvider>
                 </SafeAreaContainer>
               </View>

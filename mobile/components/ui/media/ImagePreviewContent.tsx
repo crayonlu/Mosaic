@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 
+import i18n from '@/lib/i18n'
 import { withAlpha } from './mediaPreviewUtils'
 
 interface ImagePreviewContentProps {
@@ -299,7 +300,7 @@ export function ImagePreviewContent({
           {canLoadOriginal && !shouldLoadOriginal && !isOriginalLoaded && !isOriginalLoading ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="查看原图"
+              accessibilityLabel={i18n.t('imagePreview.viewOriginal')}
               style={[
                 styles.originalButton,
                 {
@@ -309,7 +310,9 @@ export function ImagePreviewContent({
               ]}
               onPress={loadOriginalImage}
             >
-              <Text style={[styles.originalButtonText, { color: theme.text }]}>查看原图</Text>
+              <Text style={[styles.originalButtonText, { color: theme.text }]}>
+                {i18n.t('imagePreview.viewOriginal')}
+              </Text>
             </Pressable>
           ) : null}
 
@@ -324,7 +327,7 @@ export function ImagePreviewContent({
           >
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="缩小图片"
+              accessibilityLabel={i18n.t('imagePreview.zoomOut')}
               style={styles.toolButton}
               onPress={() => applyScale(scale.value - 0.35)}
             >
@@ -333,7 +336,7 @@ export function ImagePreviewContent({
             <Text style={[styles.scaleText, { color: theme.textSecondary }]}>{scaleLabel}%</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="放大图片"
+              accessibilityLabel={i18n.t('imagePreview.zoomIn')}
               style={styles.toolButton}
               onPress={() => applyScale(scale.value + 0.35)}
             >
@@ -341,7 +344,7 @@ export function ImagePreviewContent({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="旋转图片"
+              accessibilityLabel={i18n.t('imagePreview.rotate')}
               style={styles.toolButton}
               onPress={rotateImage}
             >
@@ -349,7 +352,7 @@ export function ImagePreviewContent({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="最大化图片"
+              accessibilityLabel={i18n.t('imagePreview.maximize')}
               style={styles.toolButton}
               onPress={() => applyScale(MAX_SCALE)}
             >
@@ -357,11 +360,13 @@ export function ImagePreviewContent({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="复位图片"
+              accessibilityLabel={i18n.t('imagePreview.reset')}
               style={styles.resetButton}
               onPress={resetTransform}
             >
-              <Text style={[styles.resetText, { color: theme.text }]}>复位</Text>
+              <Text style={[styles.resetText, { color: theme.text }]}>
+                {i18n.t('imagePreview.reset')}
+              </Text>
             </Pressable>
           </View>
         </>

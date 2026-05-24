@@ -8,7 +8,8 @@ import {
   Server,
   User as UserIcon,
 } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
   adminApi,
   api,
@@ -37,31 +38,6 @@ interface HealthResponse {
 }
 
 const animationCache = new Map<string, number>()
-
-const kpiDefs: KpiDef[] = [
-  { label: "Memo", color: "#7C3AED", Icon: FileText },
-  { label: "日记", color: "#F97316", Icon: MessageSquare },
-  { label: "资源", color: "#10B981", Icon: Image },
-  { label: "Bot", color: "#3B82F6", Icon: Bot },
-]
-
-const actionLabels: Record<string, string> = {
-  create_memo: "创建 Memo",
-  update_memo: "更新 Memo",
-  delete_memo: "删除 Memo",
-  create_diary: "创建日记",
-  update_diary: "更新日记",
-  delete_diary: "删除日记",
-  create_bot: "创建 Bot",
-  update_bot: "更新 Bot",
-  delete_bot: "删除 Bot",
-  trigger_replies: "Bot 自动回复",
-  reply_to_bot: "用户回复 Bot",
-  backfill_memory_started: "记忆回填启动",
-  backfill_memory_completed: "记忆回填完成",
-  login: "登录",
-  change_password: "修改密码",
-}
 
 const levelColors: Record<string, string> = {
   info: "bg-info/10 text-info",
@@ -108,9 +84,40 @@ function useAnimatedValue(target: number, key: string) {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const auth = useAuthStore()
   const toast = useToast()
 
+  const actionLabels: Record<string, string> = useMemo(
+    () => ({
+      create_memo: t("dashboard.actions.createMemo"),
+      update_memo: t("dashboard.actions.updateMemo"),
+      delete_memo: t("dashboard.actions.deleteMemo"),
+      create_diary: t("dashboard.actions.createDiary"),
+      update_diary: t("dashboard.actions.updateDiary"),
+      delete_diary: t("dashboard.actions.deleteDiary"),
+      create_bot: t("dashboard.actions.createBot"),
+      update_bot: t("dashboard.actions.updateBot"),
+      delete_bot: t("dashboard.actions.deleteBot"),
+      trigger_replies: t("dashboard.actions.botReply"),
+      reply_to_bot: t("dashboard.actions.userReplyBot"),
+      backfill_memory_started: t("dashboard.actions.memoryBackfillStart"),
+      backfill_memory_completed: t("dashboard.actions.memoryBackfillComplete"),
+      login: t("dashboard.actions.login"),
+      change_password: t("dashboard.actions.changePassword"),
+    }),
+    [t]
+  )
+
+  const kpiDefs: KpiDef[] = useMemo(
+    () => [
+      { label: t("dashboard.memo"), color: "#7C3AED", Icon: FileText },
+      { label: t("dashboard.diary"), color: "#F97316", Icon: MessageSquare },
+      { label: t("dashboard.resource"), color: "#10B981", Icon: Image },
+      { label: t("dashboard.bot"), color: "#3B82F6", Icon: Bot },
+    ],
+    [t]
+  )
   const [kpiValues, setKpiValues] = useState([0, 0, 0, 0])
   const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([])
   const [activityLoading, setActivityLoading] = useState(false)
@@ -162,16 +169,16 @@ export default function Dashboard() {
   async function changePwd(e: React.FormEvent) {
     e.preventDefault()
     if (!pwdForm.oldPassword || !pwdForm.newPassword) {
-      toast.error("请填写完整")
+      toast.error(t("dashboard.fillComplete"))
       return
     }
     setPwdSaving(true)
     try {
       await api("/auth/change-password", { method: "POST", body: pwdForm })
-      toast.success("密码已修改")
+      toast.success(t("dashboard.passwordChanged"))
       setPwdForm({ oldPassword: "", newPassword: "" })
     } catch {
-      toast.error("修改失败，请检查当前密码")
+      toast.error(t("dashboard.changeFailed"))
     } finally {
       setPwdSaving(false)
     }
@@ -194,7 +201,7 @@ export default function Dashboard() {
 
         <div className="flex min-h-11 items-start gap-3 px-4 py-3">
           <span className="shrink-0 pt-px text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-            活动
+            {t("dashboard.activity")}
           </span>
           <div className="min-w-0 flex-1">
             {activityLoading ? (
@@ -204,7 +211,7 @@ export default function Dashboard() {
               </div>
             ) : activityEntries.length === 0 ? (
               <span className="text-[12px] text-muted-foreground">
-                暂无活动记录
+                {t("dashboard.noActivity")}
               </span>
             ) : (
               <div className="flex flex-col gap-1.5 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-5 lg:gap-y-1">
@@ -232,7 +239,7 @@ export default function Dashboard() {
           <button
             onClick={loadActivity}
             className="flex size-6 shrink-0 items-center justify-center rounded border-none bg-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            title="刷新"
+            title={t("dashboard.refresh")}
           >
             <RefreshCw size={12} />
           </button>
@@ -310,18 +317,19 @@ function SystemCard({
   health: HealthResponse | null
   onRefresh: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="rounded-lg border border-border">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
           <Server size={15} />
-          系统状态
+          {t("dashboard.systemStatus")}
         </h3>
         <button
           className="border-none bg-transparent text-xs text-muted-foreground transition-colors hover:text-foreground"
           onClick={onRefresh}
         >
-          刷新
+          {t("dashboard.refresh")}
         </button>
       </div>
       <div className="px-4 py-3">
@@ -329,10 +337,19 @@ function SystemCard({
           <div className="skeleton h-20 rounded" />
         ) : (
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            <HealthItem label="运行时间" value={health.uptime} />
-            <HealthItem label="存储类型" value={health.storageType} />
-            <HealthItem label="存储用量" value={health.storageUsedFormatted} />
-            <HealthItem label="数据库" value={health.dbSizeFormatted} />
+            <HealthItem label={t("dashboard.uptime")} value={health.uptime} />
+            <HealthItem
+              label={t("dashboard.storageType")}
+              value={health.storageType}
+            />
+            <HealthItem
+              label={t("dashboard.storageUsage")}
+              value={health.storageUsedFormatted}
+            />
+            <HealthItem
+              label={t("dashboard.database")}
+              value={health.dbSizeFormatted}
+            />
           </div>
         )}
       </div>
@@ -364,24 +381,27 @@ function AccountCard({
   pwdSaving: boolean
   onChangePwd: (e: React.FormEvent) => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="rounded-lg border border-border bg-card">
       <div className="flex items-center border-b border-border px-4 py-3">
         <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
           <UserIcon size={15} />
-          账号
+          {t("dashboard.account")}
         </h3>
       </div>
       <div className="px-4 py-3">
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-[11px] text-muted-foreground">当前用户</span>
+          <span className="text-[11px] text-muted-foreground">
+            {t("dashboard.currentUser")}
+          </span>
           <span className="text-[13px] font-medium text-foreground">
             {username || "-"}
           </span>
         </div>
         <hr className="border-t border-border" />
         <p className="mt-3 mb-2.5 text-[11px] font-medium text-muted-foreground">
-          修改密码
+          {t("dashboard.changePassword")}
         </p>
         <form
           onSubmit={onChangePwd}
@@ -391,7 +411,7 @@ function AccountCard({
             <input
               type="password"
               className="h-8 flex-1 rounded-md border border-border bg-muted px-2.5 font-sans text-[13px] text-foreground transition-colors outline-none focus:border-ring"
-              placeholder="当前密码"
+              placeholder={t("dashboard.currentPassword")}
               value={pwdForm.oldPassword}
               onChange={(e) =>
                 setPwdForm({ ...pwdForm, oldPassword: e.target.value })
@@ -400,7 +420,7 @@ function AccountCard({
             <input
               type="password"
               className="h-8 flex-1 rounded-md border border-border bg-muted px-2.5 font-sans text-[13px] text-foreground transition-colors outline-none focus:border-ring"
-              placeholder="新密码"
+              placeholder={t("dashboard.newPassword")}
               value={pwdForm.newPassword}
               onChange={(e) =>
                 setPwdForm({ ...pwdForm, newPassword: e.target.value })
@@ -412,7 +432,11 @@ function AccountCard({
             className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             disabled={pwdSaving}
           >
-            {pwdSaving ? <Loader size={13} className="spin" /> : "修改"}
+            {pwdSaving ? (
+              <Loader size={13} className="spin" />
+            ) : (
+              t("dashboard.change")
+            )}
           </button>
         </form>
       </div>

@@ -1,4 +1,5 @@
 import { toast } from '@/components/ui/Toast'
+import i18n from '@/lib/i18n'
 import { useRouter } from 'expo-router'
 import { useCallback } from 'react'
 import { useConnectionStore } from '../stores/connectionStore'
@@ -24,12 +25,12 @@ export function useErrorHandler(): ErrorHandler {
         }
 
         if (err.status === 403) {
-          toast.show({ type: 'error', title: '无权限执行此操作' })
+          toast.show({ type: 'error', title: i18n.t('errorHandler.noPermission') })
           return
         }
 
         if (err.status && err.status >= 500) {
-          toast.show({ type: 'error', title: '服务器错误' })
+          toast.show({ type: 'error', title: i18n.t('errorHandler.serverError') })
           return
         }
       }

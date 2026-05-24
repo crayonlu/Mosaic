@@ -5,6 +5,8 @@ import { useThemeStore } from '@/stores/themeStore'
 import { X } from 'lucide-react-native'
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import i18n from '@/lib/i18n'
 import { MarkdownRenderer } from './MarkdownRenderer'
 
 interface PostPreviewProps {
@@ -39,7 +41,9 @@ export function PostPreview({ visible, content, items, tags, onClose, onPost }: 
           <TouchableOpacity onPress={onClose} style={styles.headerButton}>
             <X size={24} color={theme.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>预览</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>
+            {i18n.t('postPreview.title')}
+          </Text>
           <View style={styles.headerButton} />
         </View>
 
@@ -54,7 +58,9 @@ export function PostPreview({ visible, content, items, tags, onClose, onPost }: 
               <MarkdownRenderer content={content} />
             </View>
           ) : (
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>无内容</Text>
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+              {i18n.t('postPreview.empty')}
+            </Text>
           )}
 
           {items.length > 0 && (

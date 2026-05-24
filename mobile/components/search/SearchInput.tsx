@@ -1,6 +1,7 @@
 import { useThemeStore } from '@/stores/themeStore'
 import { Search, X } from 'lucide-react-native'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
 
 interface SearchInputProps {
@@ -14,12 +15,15 @@ interface SearchInputProps {
 export function SearchInput({
   value,
   onChangeText,
-  placeholder = '搜索内容或标签...',
+  placeholder,
   onSubmit,
   style,
 }: SearchInputProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const [isFocused, setIsFocused] = useState(false)
+
+  const resolvedPlaceholder = placeholder || t('search.placeholder')
 
   const handleClear = () => {
     onChangeText('')
@@ -42,7 +46,7 @@ export function SearchInput({
         style={[styles.input, { color: theme.text }]}
         value={value}
         onChangeText={onChangeText}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         placeholderTextColor={theme.textSecondary}
         onSubmitEditing={onSubmit}
         onFocus={() => setIsFocused(true)}

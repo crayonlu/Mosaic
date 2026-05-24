@@ -1,10 +1,13 @@
 import { ChevronDown, LogOut, Palette, User } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, Outlet } from "react-router-dom"
+import i18n from "../lib/i18n"
 import { useAuthStore } from "../stores/authStore"
 import { useThemeStore } from "../stores/themeStore"
 
 export default function AdminLayout() {
+  const { t } = useTranslation()
   const auth = useAuthStore()
   const themeStore = useThemeStore()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -41,6 +44,12 @@ export default function AdminLayout() {
     )
   }
 
+  function toggleLanguage() {
+    const next = i18n.language === "zh" ? "en" : "zh"
+    i18n.changeLanguage(next)
+    localStorage.setItem("admin-ui-locale", next)
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header
@@ -68,12 +77,22 @@ export default function AdminLayout() {
 
           <div className="flex items-center gap-2">
             <button
+              className="flex size-7 items-center justify-center rounded-md border-none bg-transparent text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={toggleLanguage}
+              title={t("layout.switchLanguage")}
+            >
+              {i18n.language === "zh"
+                ? t("layout.languageEn")
+                : t("layout.languageZh")}
+            </button>
+
+            <button
               className="flex size-7 items-center justify-center rounded-md border-none bg-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               onClick={toggleTheme}
               title={
                 themeStore.themeName === "quietPaper"
-                  ? "切换 Clean Slate"
-                  : "切换 Quiet Paper"
+                  ? t("layout.themeCleanSlate")
+                  : t("layout.themeQuietPaper")
               }
             >
               <Palette size={15} />
@@ -86,7 +105,7 @@ export default function AdminLayout() {
               >
                 <User size={14} className="text-muted-foreground" />
                 <span className="hidden max-w-25 overflow-hidden text-ellipsis whitespace-nowrap sm:inline">
-                  {auth.user?.username || "用户"}
+                  {auth.user?.username || t("layout.user")}
                 </span>
                 <ChevronDown
                   size={12}
@@ -100,7 +119,7 @@ export default function AdminLayout() {
                     onClick={handleLogout}
                   >
                     <LogOut size={14} />
-                    退出登录
+                    {t("layout.logout")}
                   </button>
                 </div>
               )}

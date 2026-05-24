@@ -5,6 +5,7 @@ export {
   type ServerAiConfig,
   type ServerAiConfigPayload,
 } from './admin'
+export { aiApi, type SuggestTagsResponse, type SummarizeResponse } from './ai'
 export { authApi } from './auth'
 export { botsApi } from './bots'
 export { ApiClient, apiClient, type TokenStorage } from './client'

@@ -1,3 +1,4 @@
+import i18n from '@/lib/i18n'
 import { useThemeStore } from '@/stores/themeStore'
 import { ArrowUp, Maximize2 } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
@@ -25,7 +26,7 @@ interface MemoInputProps {
 export function MemoInput({
   onSubmit,
   onFocusChange,
-  placeholder = '记录你的想法...',
+  placeholder = i18n.t('memoInput.placeholder'),
   availableTags = [],
   disabled = false,
 }: MemoInputProps) {

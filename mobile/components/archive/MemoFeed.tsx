@@ -1,4 +1,5 @@
 import { MemoListSkeleton } from '@/components/ui'
+import i18n from '@/lib/i18n'
 import { useInfiniteMemos, useMemosByDate } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
@@ -125,10 +126,10 @@ export function MemoFeed({
     () => (
       <View style={[styles.emptyContainer, { paddingBottom: insets.bottom }]}>
         <Text style={[styles.emptyTitle, { color: theme.text }]}>
-          {targetDate ? '今天还没有记录' : '暂无Memo'}
+          {targetDate ? i18n.t('memoFeed.emptyToday') : i18n.t('memoFeed.empty')}
         </Text>
         <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-          {targetDate ? '点击下方按钮创建你的第一条Memo' : '开始记录你的想法和灵感'}
+          {targetDate ? i18n.t('memoFeed.emptyTodayHint') : i18n.t('memoFeed.emptyHint')}
         </Text>
       </View>
     ),
@@ -147,7 +148,9 @@ export function MemoFeed({
     if (!hasMore && memos.length > 0) {
       return (
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: theme.textSecondary }]}>没有更多了</Text>
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+            {i18n.t('common.noMore')}
+          </Text>
         </View>
       )
     }

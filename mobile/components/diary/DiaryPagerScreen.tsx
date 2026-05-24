@@ -1,10 +1,12 @@
 import { useDiaryPager } from '@/hooks/useDiaryPager'
+import i18n from '@/lib/i18n'
 import { useMoodStore } from '@/stores/moodStore'
 import { useThemeStore } from '@/stores/themeStore'
 import dayjs from 'dayjs'
 import { router } from 'expo-router'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Pencil } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import PagerView from 'react-native-pager-view'
 import Animated, { Easing, FadeIn, FadeOut } from 'react-native-reanimated'
@@ -54,6 +56,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     setCurrentMood,
   ])
 
+  useTranslation()
   const today = useMemo(() => dayjs().startOf('day'), [])
   const isToday = useMemo(() => dayjs(currentDate).isSame(today, 'day'), [currentDate, today])
 
@@ -215,7 +218,9 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
             exiting={FadeOut.duration(100).easing(Easing.out(Easing.cubic))}
           >
             <TouchableOpacity style={styles.headerAction} onPress={handleCancelEdit}>
-              <Text style={[styles.headerActionText, { color: theme.textSecondary }]}>取消</Text>
+              <Text style={[styles.headerActionText, { color: theme.textSecondary }]}>
+                {i18n.t('common.cancel')}
+              </Text>
             </TouchableOpacity>
           </Animated.View>
         ) : (
@@ -259,7 +264,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
                   { color: hasChanges && !isSaving ? theme.primary : theme.textSecondary },
                 ]}
               >
-                {isSaving ? '保存中...' : '保存'}
+                {isSaving ? i18n.t('common.saving') : i18n.t('common.save')}
               </Text>
             </TouchableOpacity>
           </Animated.View>

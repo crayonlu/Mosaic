@@ -26,11 +26,7 @@ interface ExpandablePanelProps {
  * Handles: content height measurement → (optional `Math.min(measured, maxHeight)` capping) →
  * animated expand/collapse with nestedScrollEnabled ScrollView.
  */
-export function ExpandablePanel({
-  expanded,
-  children,
-  maxHeight,
-}: ExpandablePanelProps) {
+export function ExpandablePanel({ expanded, children, maxHeight }: ExpandablePanelProps) {
   const [contentHeight, setContentHeight] = useState(0)
   const animHeight = useSharedValue(0)
 

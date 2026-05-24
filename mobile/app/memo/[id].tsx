@@ -4,8 +4,7 @@ import { MemoRevisionPage } from '@/components/memo/MemoRevisionPage'
 import { ScreenHeader } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
-import { useMemoDetail } from '@/lib/query/hooks/useMemos'
-import { useDeleteRevision } from '@/lib/query/hooks/useMemos'
+import { useDeleteRevision, useMemoDetail } from '@/lib/query/hooks/useMemos'
 import { useDeleteMemo, useUpdateMemo } from '@/lib/query/mutations/memoMutations'
 import { useThemeStore } from '@/stores/themeStore'
 import {
@@ -17,6 +16,7 @@ import {
 import { router, useLocalSearchParams } from 'expo-router'
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useMemo as useRNMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import PagerView from 'react-native-pager-view'
 
@@ -26,6 +26,7 @@ function arraysEqual(a: unknown[], b: unknown[]): boolean {
 }
 
 export default function MemoDetailScreen() {
+  const { t } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { theme } = useThemeStore()
   const pagerRef = useRef<PagerView>(null)
@@ -55,10 +56,6 @@ export default function MemoDetailScreen() {
   const latestPageIndex = totalPages - 1
 
   const [currentPage, setCurrentPage] = useState(latestPageIndex)
-
-  useEffect(() => {
-    console.log('[MemoDetail] revisions loaded:', revisions.length, 'pages:', pages.length)
-  }, [revisions])
 
   useEffect(() => {
     if (pages.length === 0) return
@@ -104,28 +101,28 @@ export default function MemoDetailScreen() {
       if (!rev) return
       try {
         await deleteRevision({ memoId: memo.id, revisionId: rev.id })
-        toast.show({ type: 'success', title: '已删除该版本' })
+        toast.show({ type: 'success', title: t('memo.versionDeleted') })
       } catch {
-        toast.show({ type: 'error', title: '删除失败' })
+        toast.show({ type: 'error', title: t('memo.versionDeleteFailed') })
       }
     }
 
     const doDeleteMemo = async () => {
       try {
         await deleteMemo(memo.id)
-        toast.show({ type: 'success', title: '已删除' })
+        toast.show({ type: 'success', title: t('memo.deleted') })
         router.back()
       } catch {
-        toast.show({ type: 'error', title: '删除失败' })
+        toast.show({ type: 'error', title: t('memo.deleteFailed') })
       }
     }
 
     if (canDeleteRevision) {
-      confirm('确定要删除该版本吗？', doDeleteRevision)
+      confirm(t('memo.versionDeleteConfirm'), doDeleteRevision)
     } else {
-      confirm('确定要删除该记录吗？', doDeleteMemo)
+      confirm(t('memo.deleteConfirm'), doDeleteMemo)
     }
-  }, [memo, pages, currentPage, isOnLatest, deleteRevision, deleteMemo, confirm])
+  }, [t, memo, pages, currentPage, isOnLatest, deleteRevision, deleteMemo, confirm])
 
   const handleEdit = useCallback(() => {
     if (!memo) return
@@ -143,10 +140,10 @@ export default function MemoDetailScreen() {
       try {
         await updateMemo({ id: memo.id, data: { aiSummary: text || null } })
       } catch {
-        toast.show({ type: 'error', title: '保存失败' })
+        toast.show({ type: 'error', title: t('memo.saveFailed') })
       }
     },
-    [memo, updateMemo]
+    [t, memo, updateMemo]
   )
 
   const renderHeader = () => (
@@ -159,7 +156,7 @@ export default function MemoDetailScreen() {
               onPress={goToPrev}
               disabled={currentPage === 0}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityLabel="上一个版本"
+              accessibilityLabel={t('components.screenHeader.back')}
             >
               <ChevronLeft
                 size={20}
@@ -174,7 +171,7 @@ export default function MemoDetailScreen() {
               onPress={goToNext}
               disabled={currentPage === totalPages - 1}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityLabel="下一个版本"
+              accessibilityLabel={t('components.screenHeader.back')}
             >
               <ChevronRight
                 size={20}
@@ -192,7 +189,7 @@ export default function MemoDetailScreen() {
               onPress={handleEdit}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               style={{ padding: 4 }}
-              accessibilityLabel="编辑记录"
+              accessibilityLabel={t('memo.editMemo')}
             >
               <Pencil size={18} color={theme.text} strokeWidth={2} />
             </Pressable>
@@ -201,7 +198,7 @@ export default function MemoDetailScreen() {
             onPress={handleDelete}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={{ padding: 4 }}
-            accessibilityLabel="删除记录"
+            accessibilityLabel={t('common.delete')}
           >
             <Trash2 size={18} color={theme.text} strokeWidth={2} />
           </Pressable>
@@ -226,7 +223,9 @@ export default function MemoDetailScreen() {
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         {renderHeader()}
         <View style={[styles.content, styles.centered]}>
-          <Text style={[styles.notFoundText, { color: theme.textSecondary }]}>记录不存在</Text>
+          <Text style={[styles.notFoundText, { color: theme.textSecondary }]}>
+            {t('memo.notFound')}
+          </Text>
         </View>
       </View>
     )
@@ -240,9 +239,9 @@ export default function MemoDetailScreen() {
         {showEditor && (
           <FullScreenEditor
             visible
-            title="编辑记录"
-            submitLabel="保存"
-            placeholder="编辑内容..."
+            title={t('memo.editMemo')}
+            submitLabel={t('memo.save')}
+            placeholder={t('memo.editContent')}
             initialContent={memo.content ?? ''}
             initialTags={Array.isArray(memo.tags) ? memo.tags : []}
             initialAISummary={memo.aiSummary ?? undefined}
@@ -301,9 +300,9 @@ export default function MemoDetailScreen() {
       {showEditor && (
         <FullScreenEditor
           visible
-          title="编辑记录"
-          submitLabel="保存"
-          placeholder="编辑内容..."
+          title={t('memo.editMemo')}
+          submitLabel={t('memo.save')}
+          placeholder={t('memo.editContent')}
           initialContent={memo.content ?? ''}
           initialTags={Array.isArray(memo.tags) ? memo.tags : []}
           initialAISummary={memo.aiSummary ?? undefined}

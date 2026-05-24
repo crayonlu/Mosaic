@@ -122,7 +122,7 @@ pub async fn health(
     let hours = (elapsed % 86400000) / 3600000;
 
     HttpResponse::Ok().json(HealthResponse {
-        uptime: format!("{}天{}小时", days, hours),
+        uptime: format!("{}d {}h", days, hours),
         started_at: _started_at.0,
         version: env!("CARGO_PKG_VERSION").to_string(),
         storage_type: format!("{:?}", config.storage_type).to_lowercase(),

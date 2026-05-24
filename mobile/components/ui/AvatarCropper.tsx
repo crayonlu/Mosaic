@@ -1,3 +1,4 @@
+import i18n from '@/lib/i18n'
 import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
 import * as ImageManipulator from 'expo-image-manipulator'
@@ -75,7 +76,7 @@ export function AvatarCropper({ visible, imageUri, onClose, onCropComplete }: Av
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <X size={24} color={theme.text} />
           </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>裁剪头像</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{i18n.t('avatarCropper.title')}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -102,7 +103,9 @@ export function AvatarCropper({ visible, imageUri, onClose, onCropComplete }: Av
             />
           </View>
 
-          <Text style={[styles.hint, { color: theme.textSecondary }]}>头像将裁剪为 1:1 正方形</Text>
+          <Text style={[styles.hint, { color: theme.textSecondary }]}>
+            {i18n.t('avatarCropper.hint')}
+          </Text>
 
           <View style={styles.controls}>
             <TouchableOpacity
@@ -110,20 +113,22 @@ export function AvatarCropper({ visible, imageUri, onClose, onCropComplete }: Av
               onPress={handleRotate}
             >
               <RotateCw size={24} color={theme.text} />
-              <Text style={[styles.rotateText, { color: theme.text }]}>旋转</Text>
+              <Text style={[styles.rotateText, { color: theme.text }]}>
+                {i18n.t('avatarCropper.rotate')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={[styles.footer, { backgroundColor: theme.surface }]}>
           <Button
-            title="取消"
+            title={i18n.t('common.cancel')}
             variant="secondary"
             onPress={handleClose}
             style={styles.footerButton}
           />
           <Button
-            title="完成"
+            title={i18n.t('common.done')}
             variant="primary"
             onPress={handleCrop}
             loading={isProcessing}

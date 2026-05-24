@@ -20,6 +20,7 @@ pub mod time_formatter;
 pub mod timeline_memory_service;
 pub mod video_processor;
 
+pub use ai_client::build_ai_system_prompt;
 pub use ai_client::AiClient;
 pub use ai_diary_service::AiDiaryService;
 pub use app_settings_service::AppSettingsService;

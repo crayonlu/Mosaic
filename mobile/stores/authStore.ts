@@ -1,4 +1,5 @@
 import { clearAuthHeadersCache } from '@/hooks/useAuthHeaders'
+import i18n from '@/lib/i18n'
 import { tokenStorage } from '@/lib/services/tokenStorage'
 import { mmkvZustandStorage } from '@/lib/storage/mmkv'
 import type { ApiError, User } from '@mosaic/api'
@@ -156,7 +157,7 @@ export const useAuthStore = create<AuthStore>()(
           const apiError = error as ApiError
           set({
             isLoading: false,
-            error: apiError.error || '登录失败',
+            error: apiError.error || i18n.t('authStore.loginFailed'),
           })
           throw error
         }

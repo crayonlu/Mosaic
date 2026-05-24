@@ -1,5 +1,6 @@
+import i18n from '@/lib/i18n'
+import { extractHashtags, extractTextFromHtml, extractUrls } from '@mosaic/utils'
 import dayjs from 'dayjs'
-import { extractTextFromHtml, extractHashtags, extractUrls } from '@mosaic/utils'
 
 export const stringUtils = {
   generateId: (): string => {
@@ -23,24 +24,24 @@ export const stringUtils = {
     const d = dayjs(date)
     if (!d.isValid()) {
       console.error('Invalid date provided to formatRelativeTime:', date)
-      return '未知时间'
+      return i18n.t('stringUtils.unknownTime')
     }
 
     const now = dayjs()
     const diff = now.diff(d, 'second')
 
-    if (diff < 60) return '刚刚'
-    if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`
-    if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`
-    if (diff < 604800) return `${Math.floor(diff / 86400)}天前`
+    if (diff < 60) return i18n.t('stringUtils.justNow')
+    if (diff < 3600) return i18n.t('stringUtils.minutesAgo', { n: Math.floor(diff / 60) })
+    if (diff < 86400) return i18n.t('stringUtils.hoursAgo', { n: Math.floor(diff / 3600) })
+    if (diff < 604800) return i18n.t('stringUtils.daysAgo', { n: Math.floor(diff / 86400) })
 
-    return d.format('YYYY年MM月DD日')
+    return d.format(i18n.t('stringUtils.dateFormat'))
   },
   formatDate: (date: string | Date | number): string => {
-    return dayjs(date).format('YYYY年MM月DD日')
+    return dayjs(date).format(i18n.t('stringUtils.dateFormat'))
   },
   formatDateTime: (date: string | Date | number): string => {
-    return dayjs(date).format('YYYY年MM月DD日 HH:mm')
+    return dayjs(date).format(i18n.t('stringUtils.dateTimeFormat'))
   },
   formatFileSize: (bytes: number): string => {
     if (bytes === 0) return '0 B'

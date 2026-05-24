@@ -11,13 +11,13 @@ pub fn date_label(ts_ms: i64, tz: Tz) -> String {
     let diff_days = (today - memo_date).num_days();
 
     if diff_days == 0 {
-        "今天".to_string()
+        "Today".to_string()
     } else if diff_days == 1 {
-        "昨天".to_string()
+        "Yesterday".to_string()
     } else if diff_days < 7 {
-        format!("{}天前", diff_days)
+        format!("{}d ago", diff_days)
     } else {
-        format!("{}月{}日", memo_date.month(), memo_date.day())
+        format!("{}-{}", memo_date.month(), memo_date.day())
     }
 }
 

@@ -1,7 +1,8 @@
 import { mapServerConnectionError } from '@/lib/errors/serverConnection'
+import i18n from '@/lib/i18n'
+import { getSyncEngine } from '@/lib/sync/engine'
 import { create } from 'zustand'
 import { useAuthStore } from './authStore'
-import { getSyncEngine } from '@/lib/sync/engine'
 
 interface ConnectionState {
   isConnected: boolean
@@ -62,7 +63,7 @@ export const useConnectionStore = create<ConnectionStore>((set, get) => ({
       set({
         isServerReachable: false,
         isConnected: false,
-        lastError: '未检测到服务器配置，请先完成初始化设置。',
+        lastError: i18n.t('error.noServerConfig'),
       })
       return
     }

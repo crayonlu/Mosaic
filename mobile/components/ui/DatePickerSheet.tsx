@@ -1,3 +1,4 @@
+import i18n from '@/lib/i18n'
 import { useThemeStore } from '@/stores/themeStore'
 import dayjs, { Dayjs } from 'dayjs'
 import { ChevronLeft, ChevronRight } from 'lucide-react-native'
@@ -16,7 +17,15 @@ interface DatePickerSheetProps {
   maxDate?: string
 }
 
-const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
+const WEEKDAY_LABELS = [
+  i18n.t('datePicker.mon'),
+  i18n.t('datePicker.tue'),
+  i18n.t('datePicker.wed'),
+  i18n.t('datePicker.thu'),
+  i18n.t('datePicker.fri'),
+  i18n.t('datePicker.sat'),
+  i18n.t('datePicker.sun'),
+]
 
 export function DatePickerSheet({
   visible,
@@ -24,7 +33,7 @@ export function DatePickerSheet({
   onSelect,
   onClose,
   onClear,
-  title = '选择日期',
+  title = i18n.t('datePicker.selectDate'),
   minDate,
   maxDate,
 }: DatePickerSheetProps) {
@@ -91,7 +100,7 @@ export function DatePickerSheet({
                 <ChevronLeft size={16} color={theme.textSecondary} />
               </TouchableOpacity>
               <Text style={[styles.monthText, { color: theme.text }]}>
-                {monthCursor.format('YYYY 年 M 月')}
+                {monthCursor.format(i18n.t('datePicker.monthFormat'))}
               </Text>
               <TouchableOpacity
                 style={[styles.monthButton, { backgroundColor: theme.surfaceMuted }]}
@@ -169,14 +178,18 @@ export function DatePickerSheet({
               onPress={() => quickSelect(0)}
               activeOpacity={theme.state.pressedOpacity}
             >
-              <Text style={[styles.quickButtonText, { color: theme.text }]}>今天</Text>
+              <Text style={[styles.quickButtonText, { color: theme.text }]}>
+                {i18n.t('datePicker.today')}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.quickButton, { backgroundColor: theme.surfaceMuted }]}
               onPress={() => quickSelect(-1)}
               activeOpacity={theme.state.pressedOpacity}
             >
-              <Text style={[styles.quickButtonText, { color: theme.text }]}>昨天</Text>
+              <Text style={[styles.quickButtonText, { color: theme.text }]}>
+                {i18n.t('datePicker.yesterday')}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.quickButton, { backgroundColor: theme.surfaceMuted }]}
@@ -186,7 +199,9 @@ export function DatePickerSheet({
               }}
               activeOpacity={theme.state.pressedOpacity}
             >
-              <Text style={[styles.quickButtonText, { color: theme.textSecondary }]}>清空</Text>
+              <Text style={[styles.quickButtonText, { color: theme.textSecondary }]}>
+                {i18n.t('common.clear')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

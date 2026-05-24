@@ -1,4 +1,5 @@
 import { toast } from '@/components/ui/Toast'
+import i18n from '@/lib/i18n'
 import type { CreateMemoRequest, UpdateMemoRequest } from '@mosaic/api'
 import { memosApi } from '@mosaic/api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -15,7 +16,7 @@ export function useCreateMemo() {
       queryClient.invalidateQueries({ queryKey: ['stats'] })
     },
     onError: () => {
-      toast.show({ type: 'error', title: '创建失败' })
+      toast.show({ type: 'error', title: i18n.t('memoMutations.createFailed') })
     },
   })
 }
@@ -49,7 +50,7 @@ export function useDeleteMemo() {
       queryClient.invalidateQueries({ queryKey: ['stats'] })
     },
     onError: () => {
-      toast.show({ type: 'error', title: '删除失败' })
+      toast.show({ type: 'error', title: i18n.t('memoMutations.deleteFailed') })
     },
   })
 }

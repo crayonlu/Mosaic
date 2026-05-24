@@ -7,41 +7,39 @@ import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { useBots, useUpdateBot } from '@/lib/query'
 import { useAdminAIConfig } from '@/lib/query/hooks/useAdminAIConfig'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
-import { getBearerAuthHeaders } from '@/lib/services/apiAuth'
 import { formatBytes, getStorageSummary, type StorageItem } from '@/lib/storage/storageManager'
 import { useAuthStore } from '@/stores/authStore'
+import { useLocaleStore } from '@/stores/localeStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 // import { router } from 'expo-router'
 import {
-  // Bell,
-  Bot,
-  Info,
-  LogOut,
-  Palette,
-  Plus,
-  ShieldCheck,
-  Sparkles,
-  Trash,
+    // Bell,
+    Bot,
+    Info,
+    LogOut,
+    Palette,
+    Plus,
+    ShieldCheck,
+    Sparkles,
+    Trash,
 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity as RNTouchableOpacity,
-  View,
+    TouchableOpacity as RNTouchableOpacity,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native'
 import Animated, {
-  Easing,
-  FadeIn,
-  FadeOut,
-  LinearTransition,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
+    Easing,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
 } from 'react-native-reanimated'
 
 const TouchableOpacity = (props: React.ComponentProps<typeof RNTouchableOpacity>) => (
@@ -49,8 +47,6 @@ const TouchableOpacity = (props: React.ComponentProps<typeof RNTouchableOpacity>
 )
 
 const appVersion = Constants.expoConfig?.version ?? 'unknown'
-const expandLayoutTransition = LinearTransition.duration(220)
-
 function CollapsibleContent({
   expanded,
   children,
@@ -109,7 +105,9 @@ function BotAvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
 }
 
 export default function SettingsScreen() {
+  const { t, i18n } = useTranslation()
   const { theme, themeName, setThemeName } = useThemeStore()
+  const { locale, setLocale } = useLocaleStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
   // const { data: customPushCount = 0 } = useCustomPushCount()
   const [showBotSettings, setShowBotSettings] = useState(false)
@@ -157,21 +155,21 @@ export default function SettingsScreen() {
         { title: string; message: string; requiresRestart?: boolean }
       > = {
         sqlite: {
-          title: '确认清除本地数据',
-          message: '清除后需要重启应用才能正常使用，确定吗？',
+          title: t('settings.confirmClearData'),
+          message: t('settings.clearRestartMsg'),
           requiresRestart: true,
         },
       }
       const { title, message, requiresRestart } = messages[item.id] ?? {
-        title: '确认清除',
-        message: `确定要清除「${item.label}」吗？`,
+        title: t('settings.confirmClear'),
+        message: t('settings.clearItemMsg', { label: item.label }),
       }
 
       toast.show({
         type: 'warning',
         title,
         message,
-        actionLabel: '确定',
+        actionLabel: t('common.confirm'),
         onAction: async () => {
           setClearingId(item.id)
           try {
@@ -190,7 +188,7 @@ export default function SettingsScreen() {
             console.error('Failed to clear storage:', error)
             toast.show({
               type: 'error',
-              title: '清除失败',
+              title: t('settings.clearFailed'),
               message: String((error as Error).message),
             })
           } finally {
@@ -200,7 +198,7 @@ export default function SettingsScreen() {
         duration: 10000,
       })
     },
-    [loadStorageInfo]
+    [t, loadStorageInfo]
   )
 
   const toggleSectionWithAnimation = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
@@ -236,8 +234,8 @@ export default function SettingsScreen() {
         setPushEnabled(false)
         toast.show({
           type: 'warning',
-          title: '未获得系统权限',
-          message: '请先在系统设置中允许通知权限',
+          title: t('settings.noPushPermission'),
+          message: t('settings.pushHint'),
         })
         return
       }
@@ -249,8 +247,8 @@ export default function SettingsScreen() {
       console.error('Toggle push error:', error)
       toast.show({
         type: 'error',
-        title: '操作失败',
-        message: '推送开关更新失败，请稍后重试',
+        title: t('error.operationFailed'),
+        message: t('error.pushToggleFailed'),
       })
       await loadPushStatus()
     }
@@ -272,8 +270,8 @@ export default function SettingsScreen() {
       console.error('Upload avatar error:', error)
       toast.show({
         type: 'error',
-        title: '上传失败',
-        message: '上传头像时出错',
+        title: t('error.uploadFailed'),
+        message: t('settings.avatarUploadError'),
       })
     }
   }
@@ -295,10 +293,10 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.userInfo}>
               <Text style={[styles.username, { color: theme.text }]}>
-                {user?.username || '未登录'}
+                {user?.username || t('settings.notLoggedIn')}
               </Text>
               <Text style={[styles.serverUrl, { color: theme.textSecondary }]}>
-                {serverUrl || '未配置服务器'}
+                {serverUrl || t('settings.noServer')}
               </Text>
             </View>
             <Button
@@ -306,9 +304,9 @@ export default function SettingsScreen() {
               onPress={() => {
                 toast.show({
                   type: 'warning',
-                  title: '确认登出',
-                  message: '确定要退出登录吗？',
-                  actionLabel: '确定',
+                  title: t('settings.confirmLogout'),
+                  message: t('settings.logoutConfirmMsg'),
+                  actionLabel: t('common.confirm'),
                   onAction: handleLogout,
                   duration: 10000,
                 })
@@ -329,10 +327,14 @@ export default function SettingsScreen() {
           onPress={() => toggleSectionWithAnimation(setShowBotSettings)}
         >
           <Bot size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>AI Bot</Text>
+          <Text style={[styles.menuItemText, { color: theme.text }]}>{t('settings.aiBot')}</Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              {showBotSettings ? '收起' : bots.length > 0 ? `${bots.length} 个 Bot` : '暂无'}
+              {showBotSettings
+                ? t('settings.collapsed')
+                : bots.length > 0
+                  ? t('settings.botsCount', { count: bots.length })
+                  : t('settings.none')}
             </Text>
           </View>
         </TouchableOpacity>
@@ -395,7 +397,9 @@ export default function SettingsScreen() {
             }}
           >
             <Plus size={16} color={theme.primary} />
-            <Text style={[styles.addBotText, { color: theme.primary }]}>添加 Bot</Text>
+            <Text style={[styles.addBotText, { color: theme.primary }]}>
+              {t('settings.addBot')}
+            </Text>
           </TouchableOpacity>
         </CollapsibleContent>
       </View>
@@ -407,7 +411,8 @@ export default function SettingsScreen() {
     </View>
   )
 
-  const appearanceSummary = themeName === 'quietPaper' ? '暖纸' : '清冷'
+  const appearanceSummary =
+    themeName === 'quietPaper' ? t('settings.quietPaper') : t('settings.cleanSlate')
 
   const renderAppearanceSection = () => (
     <View style={[styles.section]}>
@@ -417,10 +422,12 @@ export default function SettingsScreen() {
           onPress={() => toggleSectionWithAnimation(setShowAppearanceSettings)}
         >
           <Palette size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>外观</Text>
+          <Text style={[styles.menuItemText, { color: theme.text }]}>
+            {t('settings.appearance')}
+          </Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              {showAppearanceSettings ? '收起' : appearanceSummary}
+              {showAppearanceSettings ? t('settings.collapsed') : appearanceSummary}
             </Text>
           </View>
         </TouchableOpacity>
@@ -429,12 +436,14 @@ export default function SettingsScreen() {
           style={[styles.appearanceSettings, { borderTopColor: theme.border }]}
         >
           <View style={styles.appearanceRow}>
-            <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>配色风格</Text>
+            <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>
+              {t('settings.theme')}
+            </Text>
             <View style={styles.appearanceControl}>
               <SlidingSegmentedControl
                 options={[
-                  { label: '暖纸', value: 'quietPaper' },
-                  { label: '清冷', value: 'cleanSlate' },
+                  { label: t('settings.quietPaper'), value: 'quietPaper' },
+                  { label: t('settings.cleanSlate'), value: 'cleanSlate' },
                 ]}
                 value={themeName}
                 onChange={v => setThemeName(v as 'quietPaper' | 'cleanSlate')}
@@ -452,7 +461,7 @@ export default function SettingsScreen() {
   )
 
   const maskKey = (key: string) => {
-    if (!key) return '未配置'
+    if (!key) return t('settings.notConfigured')
     if (key.length <= 8) return '••••••••'
     return `${key.slice(0, 4)}••••${key.slice(-4)}`
   }
@@ -464,12 +473,12 @@ export default function SettingsScreen() {
     const embConfigured = Boolean(embConfig?.model && embConfig?.apiKey)
 
     const statusText = showAISettings
-      ? '收起'
+      ? t('settings.collapsed')
       : botConfigured && embConfigured
-        ? '已配置'
+        ? t('settings.configured')
         : botConfigured || embConfigured
-          ? '部分配置'
-          : '未配置'
+          ? t('settings.partialConfig')
+          : t('settings.notConfigured')
 
     const renderModelCard = (
       label: string,
@@ -481,14 +490,16 @@ export default function SettingsScreen() {
         return (
           <View style={styles.aiModelCard}>
             <Text style={[styles.aiCardTypeLabel, { color: theme.textTertiary }]}>{label}</Text>
-            <Text style={[styles.aiEmptyText, { color: theme.textTertiary }]}>未配置</Text>
+            <Text style={[styles.aiEmptyText, { color: theme.textTertiary }]}>
+              {t('settings.notConfigured')}
+            </Text>
           </View>
         )
       }
 
       const metaParts = [config!.provider]
       if (config!.apiKey) metaParts.push(maskKey(config!.apiKey))
-      if (config!.embeddingDim) metaParts.push(`${config!.embeddingDim} 维`)
+      if (config!.embeddingDim) metaParts.push(`${config!.embeddingDim}${t('settings.dimensions')}`)
       const metaLine = metaParts.filter(Boolean).join('  ·  ')
 
       const activePills = (pills ?? []).filter(p => p.show)
@@ -521,7 +532,9 @@ export default function SettingsScreen() {
             onPress={() => toggleSectionWithAnimation(setShowAISettings)}
           >
             <Sparkles size={18} color={theme.text} />
-            <Text style={[styles.menuItemText, { color: theme.text }]}>AI 配置</Text>
+            <Text style={[styles.menuItemText, { color: theme.text }]}>
+              {t('settings.aiConfig')}
+            </Text>
             <View style={{ flex: 1, alignItems: 'flex-end' }}>
               <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
                 {statusText}
@@ -532,12 +545,12 @@ export default function SettingsScreen() {
             expanded={showAISettings}
             style={[styles.aiSettings, { borderTopColor: theme.border }]}
           >
-            {renderModelCard('BOT 模型', botConfig, botConfigured, [
-              { text: '图片输入', show: Boolean(botConfig?.supportsVision) },
-              { text: '心路历程', show: Boolean(botConfig?.supportsThinking) },
+            {renderModelCard(t('settings.botModel'), botConfig, botConfigured, [
+              { text: t('settings.supportsVision'), show: Boolean(botConfig?.supportsVision) },
+              { text: t('settings.supportsThinking'), show: Boolean(botConfig?.supportsThinking) },
             ])}
             <View style={[styles.aiDivider, { backgroundColor: theme.border }]} />
-            {renderModelCard('EMBEDDING 模型', embConfig, embConfigured)}
+            {renderModelCard(t('settings.embeddingModel'), embConfig, embConfigured)}
           </CollapsibleContent>
         </View>
       </View>
@@ -552,10 +565,12 @@ export default function SettingsScreen() {
           onPress={() => toggleSectionWithAnimation(setShowPermissionSettings)}
         >
           <ShieldCheck size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>权限管理</Text>
+          <Text style={[styles.menuItemText, { color: theme.text }]}>
+            {t('settings.permissions')}
+          </Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              {showPermissionSettings ? '隐藏设置' : '显示设置'}
+              {showPermissionSettings ? t('settings.collapsed') : t('settings.expanded')}
             </Text>
           </View>
         </TouchableOpacity>
@@ -580,7 +595,7 @@ export default function SettingsScreen() {
                     color: theme.text,
                   }}
                 >
-                  推送消息
+                  {t('settings.pushMessages')}
                 </Text>
                 <Text
                   style={{
@@ -591,9 +606,9 @@ export default function SettingsScreen() {
                 >
                   {pushPermissionGranted
                     ? pushEnabled
-                      ? '已开启提醒'
-                      : '已关闭提醒'
-                    : '系统通知权限未开启'}
+                      ? t('settings.pushEnabled')
+                      : t('settings.pushDisabled')
+                    : t('settings.pushNoPermission')}
                 </Text>
               </View>
               <SwitchBtn value={pushEnabled} onValueChange={handleTogglePush} />
@@ -609,13 +624,40 @@ export default function SettingsScreen() {
       <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <TouchableOpacity style={styles.menuItem}>
           <Info size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>关于</Text>
+          <Text style={[styles.menuItemText, { color: theme.text }]}>{t('settings.about')}</Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
               Mosaic v{appVersion}
             </Text>
           </View>
         </TouchableOpacity>
+      </View>
+    </View>
+  )
+
+  const renderLanguageSection = () => (
+    <View style={[styles.section]}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
+        <View style={styles.appearanceRow}>
+          <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>
+            {t('settings.language')}
+          </Text>
+          <View style={styles.appearanceControl}>
+            <SlidingSegmentedControl
+              options={[
+                { label: i18n.t('settings.languageZh'), value: 'zh' },
+                { label: 'EN', value: 'en' },
+              ]}
+              value={locale}
+              onChange={v => setLocale(v as 'zh' | 'en')}
+              surfaceMuted={theme.surfaceMuted}
+              surface={theme.surface}
+              textColor={theme.text}
+              textMuted={theme.textSecondary}
+              radius={theme.radius.small}
+            />
+          </View>
+        </View>
       </View>
     </View>
   )
@@ -632,11 +674,13 @@ export default function SettingsScreen() {
           onPress={() => toggleSectionWithAnimation(setShowStorageSettings)}
         >
           <Trash size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>存储管理</Text>
+          <Text style={[styles.menuItemText, { color: theme.text }]}>{t('settings.storage')}</Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              {showStorageSettings ? '隐藏' : '显示'} · 共{' '}
-              {isLoadingStorage ? '...' : formatBytes(totalStorageSize)}
+              {showStorageSettings ? t('settings.collapsed') : t('settings.expanded')} ·{' '}
+              {t('settings.storageTotal', {
+                size: isLoadingStorage ? '...' : formatBytes(totalStorageSize),
+              })}
             </Text>
           </View>
         </TouchableOpacity>
@@ -664,7 +708,9 @@ export default function SettingsScreen() {
                 </Text>
                 <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
                   {item.size > 0 ? formatBytes(item.size) : '—'}
-                  {item.itemCount != null && item.itemCount > 0 ? ` · ${item.itemCount} 项` : ''}
+                  {item.itemCount != null && item.itemCount > 0
+                    ? ` · ${item.itemCount} ${t('settings.items')}`
+                    : ''}
                 </Text>
               </View>
               {item.clearable && (
@@ -673,7 +719,7 @@ export default function SettingsScreen() {
                   size="small"
                   onPress={() => handleClearStorage(item)}
                   disabled={clearingId === item.id}
-                  title={clearingId === item.id ? '清除中...' : '清除'}
+                  title={clearingId === item.id ? t('settings.clearing') : t('settings.clear')}
                 />
               )}
             </View>
@@ -688,6 +734,7 @@ export default function SettingsScreen() {
       <View style={styles.content}>
         {renderAccountSection()}
         {renderAppearanceSection()}
+        {renderLanguageSection()}
         {renderBotSection()}
         {renderAISettings()}
         {renderPermissionSection()}

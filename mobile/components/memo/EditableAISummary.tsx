@@ -1,14 +1,15 @@
 import { toast } from '@/components/ui/Toast'
 import { useThemeStore } from '@/stores/themeStore'
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native'
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 
@@ -18,6 +19,7 @@ interface EditableAISummaryProps {
 }
 
 export function EditableAISummary({ summary, onSave }: EditableAISummaryProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState(summary)
@@ -52,11 +54,11 @@ export function EditableAISummary({ summary, onSave }: EditableAISummaryProps) {
       await onSave(trimmed)
       setIsEditing(false)
     } catch {
-      toast.error('保存失败')
+      toast.error(t('memo.saveFailed'))
     } finally {
       setSaving(false)
     }
-  }, [draft, summary, onSave])
+  }, [t, draft, summary, onSave])
 
   return (
     <Animated.View
@@ -69,7 +71,7 @@ export function EditableAISummary({ summary, onSave }: EditableAISummaryProps) {
         },
       ]}
     >
-      <Text style={[styles.title, { color: theme.textSecondary }]}>AI 摘要</Text>
+      <Text style={[styles.title, { color: theme.textSecondary }]}>{t('memo.aiSummary')}</Text>
 
       {isEditing ? (
         <View style={styles.editArea}>
@@ -87,7 +89,7 @@ export function EditableAISummary({ summary, onSave }: EditableAISummaryProps) {
               },
             ]}
             placeholderTextColor={theme.textTertiary}
-            placeholder="输入摘要内容..."
+            placeholder={t('memo.summaryPlaceholder')}
           />
           <View style={styles.actions}>
             <TouchableOpacity
@@ -96,7 +98,9 @@ export function EditableAISummary({ summary, onSave }: EditableAISummaryProps) {
               disabled={saving}
               activeOpacity={0.7}
             >
-              <Text style={[styles.actionButtonText, { color: theme.textSecondary }]}>取消</Text>
+              <Text style={[styles.actionButtonText, { color: theme.textSecondary }]}>
+                {t('common.cancel')}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSave}
@@ -107,7 +111,7 @@ export function EditableAISummary({ summary, onSave }: EditableAISummaryProps) {
               {saving ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={[styles.actionButtonText, { color: '#fff' }]}>保存</Text>
+                <Text style={[styles.actionButtonText, { color: '#fff' }]}>{t('common.save')}</Text>
               )}
             </TouchableOpacity>
           </View>

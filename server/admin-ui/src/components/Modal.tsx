@@ -1,6 +1,7 @@
 import { X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
+import { useTranslation } from "react-i18next"
 
 interface ModalProps {
   show: boolean
@@ -17,6 +18,7 @@ export default function Modal({
   children,
   footer,
 }: ModalProps) {
+  const { t } = useTranslation()
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 640)
   const [visible, setVisible] = useState(false)
   const [animating, setAnimating] = useState(false)
@@ -84,7 +86,7 @@ export default function Modal({
               <button
                 onClick={onClose}
                 className="flex size-8 items-center justify-center rounded-md border-none bg-transparent text-muted-foreground transition-colors hover:bg-muted"
-                aria-label="Close"
+                aria-label={t("common.close")}
               >
                 <X size={18} />
               </button>

@@ -1,3 +1,5 @@
+import i18n from '@/lib/i18n'
+
 export { CleanSlateTheme, QuietPaperTheme, type Theme, type ThemeName } from './theme'
 
 export { MOOD_INTENSITY_LEVELS, MOODS, type MoodKey } from '@mosaic/utils'
@@ -19,35 +21,35 @@ export const Tabs = {
       key: 'home',
       screen: Screens.HOME,
       icon: { focused: 'book-filled', unfocused: 'book' },
-      label: '记录',
+      label: (): string => i18n.t('tabs.memos'),
     },
     {
       name: 'Archive',
       key: 'archive',
       screen: Screens.ARCHIVE,
       icon: { focused: 'folder-open-filled', unfocused: 'folder-open' },
-      label: '归档',
+      label: (): string => i18n.t('tabs.archive'),
     },
     {
       name: 'Diaries',
       key: 'diaries',
       screen: 'diaries',
       icon: { focused: 'calendar-filled', unfocused: 'calendar' },
-      label: '日记',
+      label: (): string => i18n.t('tabs.diary'),
     },
     {
       name: 'Search',
       key: 'search',
       screen: 'search',
       icon: { focused: 'magnifying-glass-filled', unfocused: 'magnifying-glass' },
-      label: '搜索',
+      label: (): string => i18n.t('tabs.search'),
     },
     {
       name: 'Settings',
       key: 'settings',
       screen: Screens.SETTINGS,
       icon: { focused: 'gear-solid-filled', unfocused: 'gear-solid' },
-      label: '设置',
+      label: (): string => i18n.t('tabs.settings'),
     },
   ],
 } as const
@@ -96,8 +98,8 @@ export const HapticTypes = {
 
 // Date formats
 export const DateFormats = {
-  FULL: 'YYYY年MM月DD日 HH:mm',
-  DATE_ONLY: 'YYYY年MM月DD日',
+  FULL: (): string => i18n.t('dateFormat.full'),
+  DATE_ONLY: (): string => i18n.t('dateFormat.dateOnly'),
   TIME_ONLY: 'HH:mm',
   RELATIVE: 'relative',
 } as const

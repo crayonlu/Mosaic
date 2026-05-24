@@ -1,16 +1,17 @@
-import { useThemeStore } from '@/stores/themeStore'
+import i18n from '@/lib/i18n'
 import { useHeatmap } from '@/lib/query'
+import { useThemeStore } from '@/stores/themeStore'
 import { MOODS, getMoodColor } from '@mosaic/utils'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
+    Easing,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
 } from 'react-native-reanimated'
 interface HeatMapCell {
   date: string
@@ -18,12 +19,6 @@ interface HeatMapCell {
   moodKey?: string
   count?: number
   isToday?: boolean
-}
-
-interface HeatMapData {
-  startDate: string
-  endDate: string
-  cells: HeatMapCell[]
 }
 
 interface MoodHeatMapProps {
@@ -309,7 +304,9 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
 
       {/* Legend */}
       <View style={[styles.legend]}>
-        <Text style={[styles.legendText, { color: theme.textSecondary }]}>情绪热力图</Text>
+        <Text style={[styles.legendText, { color: theme.textSecondary }]}>
+          {i18n.t('moodHeatMap.title')}
+        </Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

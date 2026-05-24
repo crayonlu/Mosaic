@@ -3,7 +3,6 @@
  * Main app navigation with clean glassmorphism style
  */
 
-import { Tabs as TabItems } from '@/constants/common'
 import { useThemeStore } from '@/stores/themeStore'
 import { diariesApi } from '@mosaic/api'
 import { useQueryClient } from '@tanstack/react-query'
@@ -11,6 +10,7 @@ import dayjs from 'dayjs'
 import { Tabs } from 'expo-router'
 import { Book, Calendar, Files, Search, Settings } from 'lucide-react-native'
 import React, { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { StyleSheet, View } from 'react-native'
 import Animated, {
   Easing,
@@ -69,6 +69,7 @@ const tabIconStyles = StyleSheet.create({
 })
 
 export default function TabLayout() {
+  const { t } = useTranslation()
   const theme = useThemeStore(s => s.theme)
   const queryClient = useQueryClient()
   const inactiveTabColor = `${theme.primary}90`
@@ -114,7 +115,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: TabItems.items[0].label,
+          title: t('tabs.home'),
           tabBarIcon: ({ focused, color }) => (
             <TabIconWithDot focused={focused}>
               <Book size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
@@ -125,7 +126,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="archive"
         options={{
-          title: TabItems.items[1].label,
+          title: t('tabs.archive'),
           tabBarIcon: ({ focused, color }) => (
             <TabIconWithDot focused={focused}>
               <Files size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
@@ -136,7 +137,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="diaries"
         options={{
-          title: TabItems.items[2].label,
+          title: t('tabs.diaries'),
           sceneStyle: {
             backgroundColor: 'transparent',
           },
@@ -150,7 +151,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: TabItems.items[3].label,
+          title: t('tabs.search'),
           tabBarIcon: ({ focused, color }) => (
             <TabIconWithDot focused={focused}>
               <Search size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
@@ -161,7 +162,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: TabItems.items[4].label,
+          title: t('tabs.settings'),
           tabBarIcon: ({ focused, color }) => (
             <TabIconWithDot focused={focused}>
               <Settings size={24} color={color} strokeWidth={focused ? 2.5 : 2} />

@@ -1,3 +1,4 @@
+import i18n from '@/lib/i18n'
 import { useThemeStore } from '@/stores/themeStore'
 import { useEffect, useMemo, useState } from 'react'
 import { StyleSheet, TextInput, View } from 'react-native'
@@ -14,7 +15,7 @@ interface TextEditorProps {
 export function TextEditor({
   value,
   onChange,
-  placeholder = "What's on your mind?",
+  placeholder = i18n.t('textEditor.placeholder'),
   editable = true,
   appearance = 'default',
 }: TextEditorProps) {

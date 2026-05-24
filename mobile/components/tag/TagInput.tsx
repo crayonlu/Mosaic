@@ -1,25 +1,25 @@
 import { toast } from '@/components/ui/Toast'
-import { useAIConfig } from '@/hooks/useAIConfig'
 import { useAITags } from '@/hooks/useAITags'
 import { normalizeContent } from '@/lib/utils/content'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { X } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native'
 import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
 } from 'react-native-reanimated'
 
 interface TagInputProps {
@@ -74,14 +74,15 @@ export function TagInput({
   onTagsChange,
   content = '',
   suggestions = [],
-  placeholder = '添加标签...',
+  placeholder = t('tagInput.placeholder'),
   maxTags = 10,
   appearance = 'default',
 }: TagInputProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const isPlain = appearance === 'plain'
   const { isConnected } = useConnectionStore()
-  const { isAIEnabled } = useAIConfig()
+  const effectivePlaceholder = placeholder || t('tag.placeholder')
   const {
     suggestions: aiSuggestions,
     loading: aiLoading,
@@ -123,7 +124,7 @@ export function TagInput({
 
   const handleAISuggest = () => {
     const normalized = normalizeContent(content || '')
-    if (normalized && isConnected && isAIEnabled) {
+    if (normalized && isConnected) {
       setShowAISuggestionsOnly(true)
       setShowSuggestions(true)
       getAISuggestions(normalized)
@@ -134,7 +135,7 @@ export function TagInput({
     showSuggestions &&
     (filteredSuggestions.length > 0 ||
       (showAISuggestionsOnly && (aiSuggestions.length > 0 || aiLoading || Boolean(aiError))))
-  const canShowAIRecommend = Boolean(normalizeContent(content || '')) && isConnected && isAIEnabled
+  const canShowAIRecommend = Boolean(normalizeContent(content || '')) && isConnected
 
   useEffect(() => {
     if (!aiError) {
@@ -148,11 +149,11 @@ export function TagInput({
 
     toast.show({
       type: 'error',
-      title: 'AI 标签推荐失败',
+      title: t('tag.aiRecommendFailed'),
       message: aiError,
     })
     lastToastErrorRef.current = aiError
-  }, [aiError])
+  }, [t, aiError])
 
   return (
     <View style={styles.root}>
@@ -207,7 +208,7 @@ export function TagInput({
               onFocus={() =>
                 inputValue.length > 0 && filteredSuggestions.length > 0 && setShowSuggestions(true)
               }
-              placeholder={tags.length === 0 ? placeholder : ''}
+              placeholder={tags.length === 0 ? effectivePlaceholder : ''}
               placeholderTextColor={theme.textSecondary}
               style={[styles.input, { color: theme.text }]}
             />
@@ -238,7 +239,9 @@ export function TagInput({
               {aiLoading ? (
                 <ActivityIndicator size="small" />
               ) : (
-                <Text style={[styles.aiButtonText, { color: theme.primary }]}>AI 推荐</Text>
+                <Text style={[styles.aiButtonText, { color: theme.primary }]}>
+                  {t('tag.aiRecommend')}
+                </Text>
               )}
             </View>
           </TouchableOpacity>
@@ -249,7 +252,9 @@ export function TagInput({
         <View style={styles.suggestionsInline}>
           {showAISuggestionsOnly && aiLoading && <SuggestionSkeleton />}
           {showAISuggestionsOnly && !aiLoading && !aiError && aiSuggestions.length === 0 && (
-            <Text style={[styles.feedbackText, { color: theme.textSecondary }]}>暂无推荐标签</Text>
+            <Text style={[styles.feedbackText, { color: theme.textSecondary }]}>
+              {t('tag.noRecommendations')}
+            </Text>
           )}
           {(showAISuggestionsOnly ? aiSuggestions : filteredSuggestions).map(
             (suggestion, index) => {

@@ -1,3 +1,4 @@
+use super::ai_client::build_ai_system_prompt;
 use crate::error::AppError;
 use crate::models::{
     CreateMemoRequest, Memo, MemoResourceResponse as ResourceResponse, MemoRevision,
@@ -788,17 +789,27 @@ impl MemoService {
         let user_message = AiClient::build_user_message(&prompt, vision_images, &config.provider);
 
         let reply = match ai_client
-            .send_ai_messages(&ai_config, String::new(), vec![user_message], None)
+            .send_ai_messages(
+                &ai_config,
+                build_ai_system_prompt(),
+                vec![user_message],
+                None,
+            )
             .await
         {
             Ok(r) => r,
             Err(e) => {
-                log::warn!("[AutoTag] AI call failed for memo {}: {}", memo.id, e);
+                log::warn!("[AutoTags] AI call failed for memo {}: {}", memo.id, e);
                 return;
             }
         };
 
         let raw = reply.content.trim().to_string();
+        let raw = raw
+            .trim_start_matches("```json")
+            .trim_start_matches("```")
+            .trim_end_matches("```")
+            .trim();
         let start = raw.find('[').unwrap_or(0);
         let end = raw.rfind(']').map(|i| i + 1).unwrap_or(raw.len());
         let tags: Vec<String> = match serde_json::from_str(&raw[start..end]) {
@@ -840,7 +851,9 @@ impl MemoService {
             log::info!("[AutoTag] tagged memo {} with {:?}", memo.id, tags);
         }
     }
+}
 
+impl MemoService {
     async fn auto_generate_summary(
         pool: &PgPool,
         config_svc: &ServerAiConfigService,
@@ -885,7 +898,12 @@ impl MemoService {
         let user_message = AiClient::build_user_message(&prompt, vision_images, &config.provider);
 
         let reply = match ai_client
-            .send_ai_messages(&ai_config, String::new(), vec![user_message], None)
+            .send_ai_messages(
+                &ai_config,
+                build_ai_system_prompt(),
+                vec![user_message],
+                None,
+            )
             .await
         {
             Ok(r) => r,

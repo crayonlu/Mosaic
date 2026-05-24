@@ -1,6 +1,7 @@
 import { ArrowLeft, Bot, Camera, Loader, Plus, Trash2 } from "lucide-react"
 import type { FetchOptions } from "ofetch"
 import { useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { api } from "../api"
 import AdminImage from "../components/AdminImage"
@@ -24,6 +25,7 @@ const emptyForm = {
 }
 
 export default function Bots() {
+  const { t } = useTranslation()
   const toast = useToast()
 
   const [bots, setBots] = useState<BotData[]>([])
@@ -77,7 +79,7 @@ export default function Bots() {
 
   async function save() {
     if (!form.name.trim()) {
-      toast.error("请输入名称")
+      toast.error(t("bots.nameRequired"))
       return
     }
     setSaving(true)
@@ -94,17 +96,17 @@ export default function Bots() {
           method: "PUT",
           body,
         })) as BotData
-        toast.success("已更新")
+        toast.success(t("bots.updated"))
         await loadBots()
         openEditor(updated)
       } else {
         await api("/bots", { method: "POST", body })
-        toast.success("已创建")
+        toast.success(t("bots.created"))
         await loadBots()
         clearEditor()
       }
     } catch {
-      toast.error("操作失败")
+      toast.error(t("bots.operationFailed"))
     } finally {
       setSaving(false)
     }
@@ -113,11 +115,11 @@ export default function Bots() {
   async function handleDelete(bot: BotData) {
     try {
       await api(`/bots/${bot.id}`, { method: "DELETE" })
-      toast.success("已删除")
+      toast.success(t("bots.deleted"))
       await loadBots()
       if (editing?.id === bot.id) clearEditor()
     } catch {
-      toast.error("删除失败")
+      toast.error(t("bots.deleteFailed"))
     }
   }
 
@@ -152,9 +154,9 @@ export default function Bots() {
         thumbnailUrl?: string
       }
       setForm((f) => ({ ...f, avatarUrl: res.url || res.thumbnailUrl || "" }))
-      toast.success("头像已上传")
+      toast.success(t("bots.avatarUploaded"))
     } catch {
-      toast.error("上传失败")
+      toast.error(t("bots.uploadFailed"))
     } finally {
       setAvatarUploading(false)
       if (avatarRef.current) avatarRef.current.value = ""
@@ -187,14 +189,14 @@ export default function Bots() {
             className="inline-flex w-fit items-center gap-1.5 text-[13px] text-muted-foreground no-underline transition-colors hover:text-foreground"
           >
             <ArrowLeft size={14} />
-            返回
+            {t("bots.back")}
           </Link>
           <div className="flex items-center gap-3">
             <h1 className="text-[17px] font-semibold text-foreground">
-              Bot 管理
+              {t("bots.title")}
             </h1>
             <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-[11px] text-muted-foreground">
-              {bots.length} 个 · {autoReplyCount} 自动
+              {t("bots.count", { count: bots.length, auto: autoReplyCount })}
             </span>
           </div>
         </div>
@@ -205,7 +207,7 @@ export default function Bots() {
           type="button"
         >
           <Plus size={14} />
-          新建 Bot
+          {t("bots.newBot")}
         </button>
       </div>
 
@@ -226,10 +228,10 @@ export default function Bots() {
               </div>
               <div>
                 <p className="text-[13px] font-medium text-foreground">
-                  还没有 Bot
+                  {t("bots.empty")}
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  点击右上角「新建 Bot」开始
+                  {t("bots.emptyHint")}
                 </p>
               </div>
             </div>
@@ -266,7 +268,7 @@ export default function Bots() {
                           <span
                             className={`inline-flex shrink-0 rounded-full px-2 py-px text-[10px] font-medium ${bot.autoReply ? "bg-success/10 text-success" : "bg-muted-foreground/15 text-muted-foreground"}`}
                           >
-                            {bot.autoReply ? "自动" : "手动"}
+                            {bot.autoReply ? t("bots.auto") : t("bots.manual")}
                           </span>
                         </div>
                         {bot.tags.length > 0 && (
@@ -292,7 +294,7 @@ export default function Bots() {
                     <button
                       className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                       onClick={() => handleDelete(bot)}
-                      title="删除"
+                      title={t("bots.delete")}
                       type="button"
                     >
                       <Trash2 size={14} />
@@ -308,14 +310,14 @@ export default function Bots() {
           <div className="rounded-lg border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h2 className="text-[13px] font-semibold text-foreground">
-                {editing ? "编辑 Bot" : "新建 Bot"}
+                {editing ? t("bots.editBot") : t("bots.newBot")}
               </h2>
               <button
                 className="text-xs text-muted-foreground transition-colors hover:text-foreground"
                 onClick={clearEditor}
                 type="button"
               >
-                取消
+                {t("bots.cancel")}
               </button>
             </div>
 
@@ -352,11 +354,11 @@ export default function Bots() {
 
                 <div className="min-w-0 flex-1">
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                    名称 <span className="text-destructive">*</span>
+                    {t("bots.name")} <span className="text-destructive">*</span>
                   </label>
                   <input
                     className="h-9 w-full rounded-md border border-border bg-background px-3 font-sans text-[13px] text-foreground transition-colors outline-none focus:border-ring"
-                    placeholder="Bot 名称"
+                    placeholder={t("bots.namePlaceholder")}
                     maxLength={30}
                     value={form.name}
                     onChange={(e) =>
@@ -368,11 +370,11 @@ export default function Bots() {
 
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                  简介
+                  {t("bots.description")}
                 </label>
                 <textarea
                   className="w-full resize-y rounded-md border border-border bg-background px-3 py-2.5 font-sans text-[13px] leading-relaxed text-foreground transition-colors outline-none focus:border-ring"
-                  placeholder="描述这个 Bot 的人设、职责或回复风格"
+                  placeholder={t("bots.descriptionPlaceholder")}
                   rows={10}
                   maxLength={1000}
                   value={form.description}
@@ -387,7 +389,7 @@ export default function Bots() {
 
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                  标签
+                  {t("bots.tags")}
                 </label>
                 {form.tags.length > 0 && (
                   <div className="mb-2 flex flex-wrap gap-1.5">
@@ -416,7 +418,7 @@ export default function Bots() {
                 <div className="flex gap-2">
                   <input
                     className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 font-sans text-[13px] text-foreground transition-colors outline-none focus:border-ring"
-                    placeholder="输入后回车添加"
+                    placeholder={t("bots.tagsPlaceholder")}
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={onTagKeyDown}
@@ -426,7 +428,7 @@ export default function Bots() {
                     onClick={addTag}
                     type="button"
                   >
-                    添加
+                    {t("bots.add")}
                   </button>
                 </div>
               </div>
@@ -446,10 +448,10 @@ export default function Bots() {
                 </div>
                 <div>
                   <span className="text-[13px] font-medium text-foreground">
-                    自动回复
+                    {t("bots.autoReply")}
                   </span>
                   <p className="text-[11px] text-muted-foreground">
-                    创建 Memo 时自动触发该 Bot 回复
+                    {t("bots.autoReplyDesc")}
                   </p>
                 </div>
               </label>
@@ -463,9 +465,9 @@ export default function Bots() {
                 {saving ? (
                   <Loader size={14} className="spin" />
                 ) : editing ? (
-                  "保存更改"
+                  t("bots.saveChanges")
                 ) : (
-                  "创建 Bot"
+                  t("bots.createBot")
                 )}
               </button>
             </div>
