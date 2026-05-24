@@ -5,11 +5,23 @@ import appJson from './app.json'
 const baseConfig = appJson.expo as ExpoConfig
 
 export default ({ config }: ConfigContext): ExpoConfig => {
+  const plugins = [...(baseConfig.plugins ?? [])]
+
+  // Ensure required plugins are present
+  const hasLocalization = plugins.some(p =>
+    typeof p === 'string' ? p === 'expo-localization' : p[0] === 'expo-localization'
+  )
+  const hasSecureStore = plugins.some(p =>
+    typeof p === 'string' ? p === 'expo-secure-store' : p[0] === 'expo-secure-store'
+  )
+  if (!hasLocalization) plugins.push('expo-localization')
+  if (!hasSecureStore) plugins.push('expo-secure-store')
+
   const merged: ExpoConfig = {
     ...config,
     ...baseConfig,
     platforms: ['android', 'ios', 'web'],
-    plugins: [...(baseConfig.plugins ?? [])],
+    plugins,
   }
 
   merged.plugins?.push(

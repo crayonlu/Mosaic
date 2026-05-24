@@ -11,7 +11,9 @@ let pendingPromise: Promise<Record<string, string>> | null = null
 export function preloadAuthHeaders() {
   if (cachedHeaders || pendingPromise) return
   pendingPromise = getBearerAuthHeaders().then(h => {
-    cachedHeaders = h
+    if (Object.keys(h).length > 0) {
+      cachedHeaders = h
+    }
     pendingPromise = null
     return h
   })
@@ -19,19 +21,24 @@ export function preloadAuthHeaders() {
 
 export function useAuthHeaders(): { headers: Record<string, string>; ready: boolean } {
   const [headers, setHeaders] = useState<Record<string, string>>(cachedHeaders ?? {})
-  const [ready, setReady] = useState(!!cachedHeaders)
+  const [ready, setReady] = useState(!!cachedHeaders && Object.keys(cachedHeaders).length > 0)
   const unmountedRef = useRef(false)
 
   useEffect(() => {
     unmountedRef.current = false
 
-    if (cachedHeaders) {
+    if (cachedHeaders && Object.keys(cachedHeaders).length > 0) {
       if (!ready) setReady(true)
       return
     }
+    if (cachedHeaders && Object.keys(cachedHeaders).length === 0) {
+      cachedHeaders = null
+    }
     if (!pendingPromise) {
       pendingPromise = getBearerAuthHeaders().then(h => {
-        cachedHeaders = h
+        if (Object.keys(h).length > 0) {
+          cachedHeaders = h
+        }
         pendingPromise = null
         return h
       })
