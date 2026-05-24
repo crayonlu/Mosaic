@@ -1,3 +1,4 @@
+import { ExpandablePanel } from '@/components/ui/ExpandablePanel'
 import { useMemoryContext } from '@/lib/query'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/themeStore'
@@ -5,14 +6,8 @@ import type { BotReply } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { Image } from 'expo-image'
 import { ArrowRight, ChevronDown, ChevronUp, FileText, Lightbulb } from 'lucide-react-native'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
+import { useCallback, useRef, useState } from 'react'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface BotReplyCardProps {
   reply: BotReply
@@ -35,8 +30,6 @@ function MemoryContextPanel({
 }) {
   const [open, setOpen] = useState(false)
   const hasOpenedRef = useRef(false)
-  const animHeight = useSharedValue(0)
-  const [contentHeight, setContentHeight] = useState(0)
 
   // Only fetch reference records when user clicks the trigger
   const { data: context, isLoading } = useMemoryContext(memoId, botId, {
@@ -55,28 +48,8 @@ function MemoryContextPanel({
     setOpen(prev => !prev)
   }, [isLoading])
 
-  useEffect(() => {
-    if (open && contentHeight > 0) {
-      const targetHeight = Math.min(contentHeight, 160)
-      animHeight.value = withTiming(targetHeight, {
-        duration: 220,
-        easing: Easing.out(Easing.cubic),
-      })
-    } else if (!open) {
-      animHeight.value = withTiming(0, {
-        duration: 220,
-        easing: Easing.out(Easing.cubic),
-      })
-    }
-  }, [open, contentHeight, animHeight])
-
-  const expandStyle = useAnimatedStyle(() => ({
-    height: animHeight.value,
-    overflow: 'hidden' as const,
-  }))
-
-  // After fetch completed with empty results — hide permanently
-  if (hasOpenedRef.current && !isLoading && !hasMemos) return null
+  // After fetch completed with empty results — show message instead of panel
+  const showEmptyMessage = hasOpenedRef.current && !isLoading && context && !hasMemos
 
   return (
     <View style={[memStyles.container, { borderTopColor: theme.border }]}>
@@ -86,41 +59,34 @@ function MemoryContextPanel({
             ? '查看参考记录'
             : isLoading || !context
               ? '正在加载参考记录...'
-              : `参考了你 ${context.retrievedMemos.length} 条以前的记录`}
+              : showEmptyMessage
+                ? '没有参考任何记录'
+                : `参考了你 ${context.retrievedMemos.length} 条以前的记录`}
         </Text>
       </TouchableOpacity>
 
       {hasOpenedRef.current && hasMemos && (
-        <Animated.View style={expandStyle}>
-          <ScrollView style={{ maxHeight: 160 }} showsVerticalScrollIndicator nestedScrollEnabled>
-            <View
-              onLayout={e => {
-                const h = e.nativeEvent.layout.height
-                if (h > 0 && h !== contentHeight) setContentHeight(h)
-              }}
-            >
-              <View style={memStyles.memoList}>
-                {context!.retrievedMemos.map(memo => (
-                  <TouchableOpacity
-                    key={memo.id}
-                    onPress={() => onMemoNavigate?.(memo.id)}
-                    activeOpacity={0.7}
-                    style={[memStyles.memoRow, { borderRadius: theme.radius.small }]}
-                  >
-                    <FileText size={13} color={theme.textTertiary} />
-                    <Text style={[memStyles.memoExcerpt, { color: theme.text }]} numberOfLines={1}>
-                      {memo.excerpt}
-                    </Text>
-                    <Text style={[memStyles.memoDate, { color: theme.textTertiary }]}>
-                      {dayjs(memo.createdAt).format('M月D日')}
-                    </Text>
-                    <ArrowRight size={11} color={theme.textTertiary} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </ScrollView>
-        </Animated.View>
+        <ExpandablePanel expanded={open} maxHeight={160}>
+          <View style={memStyles.memoList}>
+            {context!.retrievedMemos.map(memo => (
+              <TouchableOpacity
+                key={memo.id}
+                onPress={() => onMemoNavigate?.(memo.id)}
+                activeOpacity={0.7}
+                style={[memStyles.memoRow, { borderRadius: theme.radius.small }]}
+              >
+                <FileText size={13} color={theme.textTertiary} />
+                <Text style={[memStyles.memoExcerpt, { color: theme.text }]} numberOfLines={1}>
+                  {memo.excerpt}
+                </Text>
+                <Text style={[memStyles.memoDate, { color: theme.textTertiary }]}>
+                  {dayjs(memo.createdAt).format('M月D日')}
+                </Text>
+                <ArrowRight size={11} color={theme.textTertiary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ExpandablePanel>
       )}
     </View>
   )
@@ -128,56 +94,39 @@ function MemoryContextPanel({
 
 function ThinkingPanel({ content, theme }: { content?: string; theme: any }) {
   const [expanded, setExpanded] = useState(false)
-  const [contentHeight, setContentHeight] = useState(0)
-  const animHeight = useSharedValue(0)
+  const hasOpenedRef = useRef(false)
 
-  useEffect(() => {
-    animHeight.value = withTiming(expanded ? contentHeight : 0, {
-      duration: 220,
-      easing: Easing.out(Easing.cubic),
-    })
-  }, [expanded, contentHeight, animHeight])
-
-  const clipStyle = useAnimatedStyle(() => ({
-    height: animHeight.value,
-    overflow: 'hidden' as const,
-  }))
+  const handleToggle = useCallback(() => {
+    if (!hasOpenedRef.current) {
+      hasOpenedRef.current = true
+      setExpanded(true)
+      return
+    }
+    setExpanded(v => !v)
+  }, [])
 
   if (!content) return null
   return (
     <View style={[styles.thinkingContainer, { backgroundColor: theme.surfaceMuted }]}>
       <TouchableOpacity
-        onPress={() => setExpanded(v => !v)}
+        onPress={handleToggle}
         style={styles.thinkingHeader}
         activeOpacity={0.7}
         accessibilityLabel="展开/折叠心路历程"
       >
         <Lightbulb size={14} color={theme.textSecondary} />
         <Text style={[styles.thinkingTitle, { color: theme.textSecondary }]}>心路历程</Text>
-        {expanded ? (
+        {hasOpenedRef.current && expanded ? (
           <ChevronUp size={14} color={theme.textSecondary} style={{ marginLeft: 'auto' }} />
         ) : (
           <ChevronDown size={14} color={theme.textSecondary} style={{ marginLeft: 'auto' }} />
         )}
       </TouchableOpacity>
-      <Animated.View style={clipStyle}>
-        <View
-          onLayout={e => {
-            const h = e.nativeEvent.layout.height
-            if (h > 0 && h !== contentHeight) setContentHeight(h)
-          }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
-        >
-          <ScrollView
-            style={{ maxHeight: 300 }}
-            nestedScrollEnabled
-            showsVerticalScrollIndicator
-            bounces={false}
-          >
-            <Text style={[styles.thinkingContent, { color: theme.textSecondary }]}>{content}</Text>
-          </ScrollView>
-        </View>
-      </Animated.View>
+      {hasOpenedRef.current && (
+        <ExpandablePanel expanded={expanded} maxHeight={240}>
+          <Text style={[styles.thinkingContent, { color: theme.textSecondary }]}>{content}</Text>
+        </ExpandablePanel>
+      )}
     </View>
   )
 }
@@ -208,13 +157,13 @@ export function BotReplyCard({
             </Text>
           </View>
         )}
-        <TouchableOpacity onPress={() => onReply(reply)} activeOpacity={0.85}>
-          <View
-            style={[
-              styles.bubble,
-              { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
-            ]}
-          >
+        <View
+          style={[
+            styles.bubble,
+            { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
+          ]}
+        >
+          <TouchableOpacity onPress={() => onReply(reply)} activeOpacity={0.85}>
             <View style={styles.header}>
               <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
                 {reply.bot.avatarUrl ? (
@@ -238,22 +187,22 @@ export function BotReplyCard({
               )}
             </View>
             <Text style={[styles.content, { color: theme.text }]}>{reply.content}</Text>
-            <ThinkingPanel content={reply.thinkingContent} theme={theme} />
-            {!isThread && (
-              <MemoryContextPanel
-                memoId={reply.memoId}
-                botId={reply.bot.id}
-                onMemoNavigate={onMemoNavigate}
-                theme={theme}
-              />
-            )}
-            {!isThread && threadCount > 0 && (
-              <Text style={[styles.threadHint, { color: theme.textSecondary }]}>
-                已追问 {threadCount} 轮
+          </TouchableOpacity>
+          <ThinkingPanel content={reply.thinkingContent} theme={theme} />
+          {!isThread && (
+            <MemoryContextPanel
+              memoId={reply.memoId}
+              botId={reply.bot.id}
+              onMemoNavigate={onMemoNavigate}
+              theme={theme}
+            />
+          )}
+          {!isThread && threadCount > 0 && (
+            <Text style={[styles.threadHint, { color: theme.textSecondary }]}>
+              已追问 {threadCount} 轮
               </Text>
             )}
-          </View>
-        </TouchableOpacity>
+        </View>
       </View>
     </View>
   )
