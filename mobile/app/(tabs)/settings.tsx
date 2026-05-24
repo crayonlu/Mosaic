@@ -15,16 +15,7 @@ import { resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 // import { router } from 'expo-router'
-import {
-  Bot,
-  Cog,
-  Info,
-  LogOut,
-  Plus,
-  ShieldCheck,
-  Sparkles,
-  Trash
-} from 'lucide-react-native'
+import { Bot, Cog, Info, LogOut, Plus, ShieldCheck, Sparkles, Trash } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -423,9 +414,7 @@ export default function SettingsScreen() {
           onPress={() => toggleSectionWithAnimation(setShowAppearanceSettings)}
         >
           <Cog size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>
-            {t('settings.general')}
-          </Text>
+          <Text style={[styles.menuItemText, { color: theme.text }]}>{t('settings.general')}</Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
               {showAppearanceSettings ? t('settings.collapsed') : generalSummary}
@@ -456,7 +445,17 @@ export default function SettingsScreen() {
               />
             </View>
           </View>
-          <View style={[styles.appearanceRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border, paddingTop: 14, marginTop: 4 }]}>
+          <View
+            style={[
+              styles.appearanceRow,
+              {
+                borderTopWidth: StyleSheet.hairlineWidth,
+                borderTopColor: theme.border,
+                paddingTop: 14,
+                marginTop: 4,
+              },
+            ]}
+          >
             <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>
               {t('settings.language')}
             </Text>

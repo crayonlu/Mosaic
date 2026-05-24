@@ -3,9 +3,9 @@ import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import i18n from '@/lib/i18n'
 import {
-    createSelectedMediaItems,
-    uploadSelectedMedia,
-    type SelectedMediaItem,
+  createSelectedMediaItems,
+  uploadSelectedMedia,
+  type SelectedMediaItem,
 } from '@/lib/media/upload'
 import { SafeKeyboardAwareScrollView, SafeKeyboardStickyView } from '@/lib/native/safeProviders'
 import { useBotThread, useReplyToBot } from '@/lib/query'
@@ -15,22 +15,22 @@ import { Image } from 'expo-image'
 import { ChevronDown, ChevronUp, ImagePlus, Lightbulb, Send, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-    Modal,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 import Animated, {
-    Easing,
-    useAnimatedStyle,
-    useSharedValue,
-    withRepeat,
-    withSequence,
-    withTiming,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 

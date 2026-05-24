@@ -5,24 +5,24 @@ import { useAISummary } from '@/hooks/useAISummary'
 import { useConnection } from '@/hooks/useConnection'
 import i18n from '@/lib/i18n'
 import {
-    createSelectedMediaItems,
-    uploadSelectedMedia,
-    type SelectedMediaItem,
+  createSelectedMediaItems,
+  uploadSelectedMedia,
+  type SelectedMediaItem,
 } from '@/lib/media/upload'
 import { normalizeContent } from '@/lib/utils/content'
 import { useThemeStore } from '@/stores/themeStore'
 import { Share as ShareIcon, X } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'

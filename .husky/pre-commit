@@ -15,8 +15,8 @@ if [ -f server/Cargo.toml ]; then
   git add 'server/src/'
 fi
 
-# Format TypeScript via turbo
-bun run format || exit 1
+# Format TypeScript via turbo (format:force bypasses stale cache)
+bun run format:force || exit 1
 
 # Re-stage formatted files so commit includes formatting changes
 git add --update
@@ -28,7 +28,7 @@ if [ -f server/Cargo.toml ]; then
   (cd server && cargo check) || exit 1
 fi
 
-# Check TypeScript via turbo (lint + typecheck + format:check)
-bun run check || exit 1
+# Check TypeScript via turbo (check:force ensures real check, not cached replay)
+bun run check:force || exit 1
 
 echo "✅ All checks and formatting passed!"

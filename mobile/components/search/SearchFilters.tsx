@@ -50,7 +50,10 @@ export function SearchFilters({
 
   const snapPoints = useMemo(() => ['50%'], [])
   const sheetBgStyle = useMemo(() => ({ backgroundColor: theme.background }), [theme.background])
-  const sheetIndicatorStyle = useMemo(() => ({ backgroundColor: theme.textSecondary }), [theme.textSecondary])
+  const sheetIndicatorStyle = useMemo(
+    () => ({ backgroundColor: theme.textSecondary }),
+    [theme.textSecondary]
+  )
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (

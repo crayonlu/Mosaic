@@ -2,13 +2,13 @@ import type { ListMemosQuery, MemoDetail, MemoWithResources } from '@mosaic/api'
 import { memosApi } from '@mosaic/api'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-    fallbackMemosByDate,
-    fallbackMemosList,
-    fallbackSingleMemo,
-    syncMemosList,
-    syncMemosPage,
-    syncSingleMemo,
-    withOfflineFallback,
+  fallbackMemosByDate,
+  fallbackMemosList,
+  fallbackSingleMemo,
+  syncMemosList,
+  syncMemosPage,
+  syncSingleMemo,
+  withOfflineFallback,
 } from '../offlineSync'
 
 export function useMemos(query: ListMemosQuery = {}) {

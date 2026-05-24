@@ -20,8 +20,10 @@
     "typecheck": "turbo run typecheck",
     "build": "turbo run build",
     "format": "turbo run format",
+    "format:force": "turbo run format --force",
     "format:check": "turbo run format:check",
     "check": "turbo run lint typecheck format:check",
+    "check:force": "turbo run lint typecheck format:check --force",
     "prepare": "husky"
   },
   "engines": {
