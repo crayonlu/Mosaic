@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname "$0")/_/husky.sh"
-
 # Strip AI attribution lines from commit messages
 # e.g. "Co-authored-by: Copilot", "Co-authored-by: GitHub Copilot", etc.
 #
