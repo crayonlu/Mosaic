@@ -380,7 +380,7 @@
   "datePicker": {
     "fri": "Fri",
     "mon": "Mon",
-    "monthFormat": "MMMM yyyy",
+    "monthFormat": "MMMM YYYY",
     "sat": "Sat",
     "selectDate": "Select date",
     "sun": "Sun",

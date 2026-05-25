@@ -1,4 +1,4 @@
-import i18n from '@/lib/i18n'
+import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { useEffect, useMemo, useState } from 'react'
 import { StyleSheet, TextInput, View } from 'react-native'
@@ -15,11 +15,13 @@ interface TextEditorProps {
 export function TextEditor({
   value,
   onChange,
-  placeholder = i18n.t('textEditor.placeholder'),
+  placeholder,
   editable = true,
   appearance = 'default',
 }: TextEditorProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
+  const resolvedPlaceholder = placeholder ?? t('textEditor.placeholder')
   const isPlain = appearance === 'plain'
   const minHeight = useMemo(() => (isPlain ? 56 : 120), [isPlain])
   const [contentHeight, setContentHeight] = useState(minHeight)
@@ -60,7 +62,7 @@ export function TextEditor({
             setContentHeight(Math.max(minHeight, nextHeight))
           }
         }}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         placeholderTextColor={theme.textSecondary}
         multiline
         editable={editable}

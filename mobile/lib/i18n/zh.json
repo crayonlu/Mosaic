@@ -380,7 +380,7 @@
   "datePicker": {
     "fri": "五",
     "mon": "一",
-    "monthFormat": "yyyy年M月",
+    "monthFormat": "YYYY年M月",
     "sat": "六",
     "selectDate": "选择日期",
     "sun": "日",

@@ -1,4 +1,4 @@
-import i18n from '@/lib/i18n'
+import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
 import * as ExpoImagePicker from 'expo-image-picker'
@@ -24,6 +24,7 @@ export function ImagePicker({
   showUploadButton = true,
   triggerUpload = 0,
 }: ImagePickerProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
 
@@ -60,7 +61,7 @@ export function ImagePicker({
       {showUploadButton && images.length === 0 && (
         <View style={styles.uploadButtonContainer}>
           <Button
-            title={i18n.t('imagePicker.upload')}
+            title={t('imagePicker.upload')}
             onPress={pickImage}
             variant="secondary"
             size="large"

@@ -1,16 +1,16 @@
+import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { Check, ChevronDown } from 'lucide-react-native'
 import { useState } from 'react'
 import {
   Modal,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native'
-
-import i18n from '@/lib/i18n'
 
 export interface SelectOption {
   label: string
@@ -29,14 +29,14 @@ export function Select({
   options,
   value,
   onValueChange,
-  placeholder = i18n.t('select.placeholder'),
+  placeholder,
   size = 'medium',
 }: SelectProps) {
-  const { theme } = useThemeStore()
+  const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
 
-  const selectedOption = options.find(opt => opt.value === value)
-  const displayText = selectedOption?.label || placeholder
+  const resolvedPlaceholder = placeholder ?? t('select.placeholder')
+  const displayText = selectedOption?.label || resolvedPlaceholder
 
   const handleSelect = (optionValue: string) => {
     onValueChange(optionValue)
@@ -93,8 +93,10 @@ export function Select({
         visible={isOpen}
         transparent
         animationType="fade"
+        statusBarTranslucent
         onRequestClose={() => setIsOpen(false)}
       >
+        <StatusBar backgroundColor="transparent" translucent />
         <TouchableWithoutFeedback onPress={() => setIsOpen(false)}>
           <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
             <TouchableWithoutFeedback>

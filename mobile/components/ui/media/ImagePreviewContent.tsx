@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 
-import i18n from '@/lib/i18n'
+import { useTranslation } from 'react-i18next'
 import { withAlpha } from './mediaPreviewUtils'
 
 interface ImagePreviewContentProps {
@@ -40,6 +40,7 @@ export function ImagePreviewContent({
   isActive,
   onZoomActiveChange,
 }: ImagePreviewContentProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const loadingOverlayColor = withAlpha(theme.background, 0.18)
@@ -308,7 +309,7 @@ export function ImagePreviewContent({
           {canLoadOriginal && !shouldLoadOriginal && !isOriginalLoaded && !isOriginalLoading ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={i18n.t('imagePreview.viewOriginal')}
+              accessibilityLabel={t('imagePreview.viewOriginal')}
               style={[
                 styles.originalButton,
                 {
@@ -319,7 +320,7 @@ export function ImagePreviewContent({
               onPress={loadOriginalImage}
             >
               <Text style={[styles.originalButtonText, { color: theme.text }]}>
-                {i18n.t('imagePreview.viewOriginal')}
+                {t('imagePreview.viewOriginal')}
               </Text>
             </Pressable>
           ) : null}
@@ -335,7 +336,7 @@ export function ImagePreviewContent({
           >
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={i18n.t('imagePreview.zoomOut')}
+              accessibilityLabel={t('imagePreview.zoomOut')}
               style={styles.toolButton}
               onPress={() => applyScale(scale.value - 0.35)}
             >
@@ -344,7 +345,7 @@ export function ImagePreviewContent({
             <Text style={[styles.scaleText, { color: theme.textSecondary }]}>{scaleLabel}%</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={i18n.t('imagePreview.zoomIn')}
+              accessibilityLabel={t('imagePreview.zoomIn')}
               style={styles.toolButton}
               onPress={() => applyScale(scale.value + 0.35)}
             >
@@ -352,7 +353,7 @@ export function ImagePreviewContent({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={i18n.t('imagePreview.rotate')}
+              accessibilityLabel={t('imagePreview.rotate')}
               style={styles.toolButton}
               onPress={rotateImage}
             >
@@ -360,7 +361,7 @@ export function ImagePreviewContent({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={i18n.t('imagePreview.maximize')}
+              accessibilityLabel={t('imagePreview.maximize')}
               style={styles.toolButton}
               onPress={() => applyScale(MAX_SCALE)}
             >
@@ -368,12 +369,12 @@ export function ImagePreviewContent({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={i18n.t('imagePreview.reset')}
+              accessibilityLabel={t('imagePreview.reset')}
               style={styles.resetButton}
               onPress={resetTransform}
             >
               <Text style={[styles.resetText, { color: theme.text }]}>
-                {i18n.t('imagePreview.reset')}
+                {t('imagePreview.reset')}
               </Text>
             </Pressable>
           </View>

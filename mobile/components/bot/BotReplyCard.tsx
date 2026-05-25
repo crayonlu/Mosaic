@@ -1,5 +1,5 @@
 import { ExpandablePanel } from '@/components/ui/ExpandablePanel'
-import i18n from '@/lib/i18n'
+import { useTranslation } from 'react-i18next'
 import { useMemoryContext } from '@/lib/query'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/themeStore'
@@ -29,6 +29,7 @@ function MemoryContextPanel({
   onMemoNavigate?: (memoId: string) => void
   theme: any
 }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const hasOpenedRef = useRef(false)
 
@@ -57,12 +58,12 @@ function MemoryContextPanel({
       <TouchableOpacity onPress={handleToggle} activeOpacity={0.7} style={memStyles.trigger}>
         <Text style={[memStyles.triggerText, { color: theme.textSecondary }]}>
           {!hasOpenedRef.current
-            ? i18n.t('botReply.viewReference')
+            ? t('botReply.viewReference')
             : isLoading || !context
-              ? i18n.t('botReply.loadingReference')
+              ? t('botReply.loadingReference')
               : showEmptyMessage
-                ? i18n.t('botReply.noReference')
-                : i18n.t('botReply.referenced', { n: context.retrievedMemos.length })}
+                ? t('botReply.noReference')
+                : t('botReply.referenced', { n: context.retrievedMemos.length })}
         </Text>
       </TouchableOpacity>
 
@@ -81,7 +82,7 @@ function MemoryContextPanel({
                   {memo.excerpt}
                 </Text>
                 <Text style={[memStyles.memoDate, { color: theme.textTertiary }]}>
-                  {dayjs(memo.createdAt).format(i18n.t('botReply.dateFormat'))}
+                  {dayjs(memo.createdAt).format(t('botReply.dateFormat'))}
                 </Text>
                 <ArrowRight size={11} color={theme.textTertiary} />
               </TouchableOpacity>
@@ -94,6 +95,7 @@ function MemoryContextPanel({
 }
 
 function ThinkingPanel({ content, theme }: { content?: string; theme: any }) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const hasOpenedRef = useRef(false)
 
@@ -113,11 +115,11 @@ function ThinkingPanel({ content, theme }: { content?: string; theme: any }) {
         onPress={handleToggle}
         style={styles.thinkingHeader}
         activeOpacity={0.7}
-        accessibilityLabel={i18n.t('botReply.toggleThinking')}
+        accessibilityLabel={t('botReply.toggleThinking')}
       >
         <Lightbulb size={14} color={theme.textSecondary} />
         <Text style={[styles.thinkingTitle, { color: theme.textSecondary }]}>
-          {i18n.t('botReply.thinkingTitle')}
+          {t('botReply.thinkingTitle')}
         </Text>
         {hasOpenedRef.current && expanded ? (
           <ChevronUp size={14} color={theme.textSecondary} style={{ marginLeft: 'auto' }} />
@@ -141,6 +143,7 @@ export function BotReplyCard({
   isThread = false,
   authHeaders = {},
 }: BotReplyCardProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const threadCount = Math.max(reply.threadCount - 1, 0)
 
@@ -187,7 +190,7 @@ export function BotReplyCard({
               </Text>
               {!isThread && (
                 <Text style={[styles.replyBtn, { color: theme.textSecondary }]}>
-                  {i18n.t('botReply.continueChat')}
+                  {t('botReply.continueChat')}
                 </Text>
               )}
             </View>

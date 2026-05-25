@@ -1,9 +1,9 @@
 import { MemoListSkeleton } from '@/components/ui'
-import i18n from '@/lib/i18n'
 import { useInfiniteMemos, useMemo as useMemoQuery, useMemos, useMemosByDate } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { MemoCard } from '../memo/MemoCard'
 
@@ -44,6 +44,7 @@ export function MemoFeed({
   onSelectionChange,
   onMemosChange,
 }: MemoFeedProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const [refreshing, setRefreshing] = useState(false)
 
@@ -132,28 +133,28 @@ export function MemoFeed({
 
   const renderEmptyState = useMemo(
     () => (
-      <View style={[styles.emptyContainer, { paddingBottom: 54 }]}>
+      <View style={[styles.emptyContainer]}>
         <Text style={[styles.emptyTitle, { color: theme.text }]}>
           {hasArchivedMemos
             ? targetDate
-              ? i18n.t('memoFeed.emptyTodayArchived')
-              : i18n.t('memoFeed.emptyArchived')
+              ? t('memoFeed.emptyTodayArchived')
+              : t('memoFeed.emptyArchived')
             : targetDate
-              ? i18n.t('memoFeed.emptyToday')
-              : i18n.t('memoFeed.empty')}
+              ? t('memoFeed.emptyToday')
+              : t('memoFeed.empty')}
         </Text>
         <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
           {hasArchivedMemos
             ? targetDate
-              ? i18n.t('memoFeed.emptyTodayArchivedHint')
-              : i18n.t('memoFeed.emptyArchivedHint')
+              ? t('memoFeed.emptyTodayArchivedHint')
+              : t('memoFeed.emptyArchivedHint')
             : targetDate
-              ? i18n.t('memoFeed.emptyTodayHint')
-              : i18n.t('memoFeed.emptyHint')}
+              ? t('memoFeed.emptyTodayHint')
+              : t('memoFeed.emptyHint')}
         </Text>
       </View>
     ),
-    [targetDate, theme.text, theme.textSecondary, hasArchivedMemos]
+    [targetDate, theme.text, theme.textSecondary, hasArchivedMemos, t]
   )
 
   const renderFooter = useMemo(() => {
@@ -169,14 +170,14 @@ export function MemoFeed({
       return (
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-            {i18n.t('common.noMore')}
+            {t('common.noMore')}
           </Text>
         </View>
       )
     }
 
     return null
-  }, [isFetchingNextPage, hasMore, memos.length, theme.primary, theme.textSecondary])
+  }, [isFetchingNextPage, hasMore, memos.length, theme.primary, theme.textSecondary, t])
 
   if (isLoading) {
     return (

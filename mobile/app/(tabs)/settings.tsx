@@ -404,7 +404,7 @@ export default function SettingsScreen() {
   const generalSummary =
     (themeName === 'quietPaper' ? t('settings.quietPaper') : t('settings.cleanSlate')) +
     ' · ' +
-    (locale === 'zh' ? i18n.t('settings.languageZh') : 'EN')
+    (locale === 'zh' ? t('settings.languageZh') : 'EN')
 
   const renderGeneralSection = () => (
     <View style={[styles.section]}>
@@ -462,7 +462,7 @@ export default function SettingsScreen() {
             <View style={styles.appearanceControl}>
               <SlidingSegmentedControl
                 options={[
-                  { label: i18n.t('settings.languageZh'), value: 'zh' },
+                  { label: t('settings.languageZh'), value: 'zh' },
                   { label: 'EN', value: 'en' },
                 ]}
                 value={locale}

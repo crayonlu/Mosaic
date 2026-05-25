@@ -1,5 +1,4 @@
 import { useDiaryPager } from '@/hooks/useDiaryPager'
-import i18n from '@/lib/i18n'
 import { useMoodStore } from '@/stores/moodStore'
 import { useThemeStore } from '@/stores/themeStore'
 import dayjs from 'dayjs'
@@ -56,7 +55,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
     setCurrentMood,
   ])
 
-  useTranslation()
+  const { t } = useTranslation()
   const today = useMemo(() => dayjs().startOf('day'), [])
   const isToday = useMemo(() => dayjs(currentDate).isSame(today, 'day'), [currentDate, today])
 
@@ -219,7 +218,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
           >
             <TouchableOpacity style={styles.headerAction} onPress={handleCancelEdit}>
               <Text style={[styles.headerActionText, { color: theme.textSecondary }]}>
-                {i18n.t('common.cancel')}
+                {t('common.cancel')}
               </Text>
             </TouchableOpacity>
           </Animated.View>
@@ -264,7 +263,7 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
                   { color: hasChanges && !isSaving ? theme.primary : theme.textSecondary },
                 ]}
               >
-                {isSaving ? i18n.t('common.saving') : i18n.t('common.save')}
+                {isSaving ? t('common.saving') : t('common.save')}
               </Text>
             </TouchableOpacity>
           </Animated.View>

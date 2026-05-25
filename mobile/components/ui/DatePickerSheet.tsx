@@ -1,10 +1,11 @@
-import i18n from '@/lib/i18n'
 import { useThemeStore } from '@/stores/themeStore'
 import dayjs, { Dayjs } from 'dayjs'
 import { ChevronLeft, ChevronRight } from 'lucide-react-native'
 import { useEffect, useMemo, useState } from 'react'
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Modal, Pressable, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 interface DatePickerSheetProps {
   visible: boolean
@@ -17,28 +18,32 @@ interface DatePickerSheetProps {
   maxDate?: string
 }
 
-const WEEKDAY_LABELS = [
-  i18n.t('datePicker.mon'),
-  i18n.t('datePicker.tue'),
-  i18n.t('datePicker.wed'),
-  i18n.t('datePicker.thu'),
-  i18n.t('datePicker.fri'),
-  i18n.t('datePicker.sat'),
-  i18n.t('datePicker.sun'),
-]
-
 export function DatePickerSheet({
   visible,
   selectedDate,
   onSelect,
   onClose,
   onClear,
-  title = i18n.t('datePicker.selectDate'),
+  title: titleProp,
   minDate,
   maxDate,
 }: DatePickerSheetProps) {
   const { theme } = useThemeStore()
+  const { t } = useTranslation()
+  const insets = useSafeAreaInsets()
   const [monthCursor, setMonthCursor] = useState(dayjs().startOf('month'))
+
+  const title = titleProp ?? t('datePicker.selectDate')
+
+  const weekdayLabels = [
+    t('datePicker.mon'),
+    t('datePicker.tue'),
+    t('datePicker.wed'),
+    t('datePicker.thu'),
+    t('datePicker.fri'),
+    t('datePicker.sat'),
+    t('datePicker.sun'),
+  ]
 
   useEffect(() => {
     if (visible) {
@@ -84,11 +89,23 @@ export function DatePickerSheet({
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <StatusBar backgroundColor="transparent" translucent />
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        <View style={[styles.sheet, { backgroundColor: theme.background }]}>
+        <View
+          style={[
+            styles.sheet,
+            { backgroundColor: theme.background, paddingBottom: Math.max(18, insets.bottom) },
+          ]}
+        >
           <View style={styles.header}>
             <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
             <View style={styles.headerActions}>
@@ -100,7 +117,7 @@ export function DatePickerSheet({
                 <ChevronLeft size={16} color={theme.textSecondary} />
               </TouchableOpacity>
               <Text style={[styles.monthText, { color: theme.text }]}>
-                {monthCursor.format(i18n.t('datePicker.monthFormat'))}
+                {monthCursor.format(t('datePicker.monthFormat'))}
               </Text>
               <TouchableOpacity
                 style={[styles.monthButton, { backgroundColor: theme.surfaceMuted }]}
@@ -113,7 +130,7 @@ export function DatePickerSheet({
           </View>
 
           <View style={styles.weekRow}>
-            {WEEKDAY_LABELS.map(label => (
+            {weekdayLabels.map(label => (
               <Text key={label} style={[styles.weekLabel, { color: theme.textSecondary }]}>
                 {label}
               </Text>
@@ -179,7 +196,7 @@ export function DatePickerSheet({
               activeOpacity={theme.state.pressedOpacity}
             >
               <Text style={[styles.quickButtonText, { color: theme.text }]}>
-                {i18n.t('datePicker.today')}
+                {t('datePicker.today')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -188,7 +205,7 @@ export function DatePickerSheet({
               activeOpacity={theme.state.pressedOpacity}
             >
               <Text style={[styles.quickButtonText, { color: theme.text }]}>
-                {i18n.t('datePicker.yesterday')}
+                {t('datePicker.yesterday')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -200,7 +217,7 @@ export function DatePickerSheet({
               activeOpacity={theme.state.pressedOpacity}
             >
               <Text style={[styles.quickButtonText, { color: theme.textSecondary }]}>
-                {i18n.t('common.clear')}
+                {t('common.clear')}
               </Text>
             </TouchableOpacity>
           </View>

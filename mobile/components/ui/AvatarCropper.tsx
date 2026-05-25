@@ -1,4 +1,4 @@
-import i18n from '@/lib/i18n'
+import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
 import * as ImageManipulator from 'expo-image-manipulator'
@@ -19,6 +19,7 @@ interface AvatarCropperProps {
 }
 
 export function AvatarCropper({ visible, imageUri, onClose, onCropComplete }: AvatarCropperProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const [rotation, setRotation] = useState(0)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -76,7 +77,7 @@ export function AvatarCropper({ visible, imageUri, onClose, onCropComplete }: Av
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <X size={24} color={theme.text} />
           </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>{i18n.t('avatarCropper.title')}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{t('avatarCropper.title')}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -104,7 +105,7 @@ export function AvatarCropper({ visible, imageUri, onClose, onCropComplete }: Av
           </View>
 
           <Text style={[styles.hint, { color: theme.textSecondary }]}>
-            {i18n.t('avatarCropper.hint')}
+            {t('avatarCropper.hint')}
           </Text>
 
           <View style={styles.controls}>
@@ -114,7 +115,7 @@ export function AvatarCropper({ visible, imageUri, onClose, onCropComplete }: Av
             >
               <RotateCw size={24} color={theme.text} />
               <Text style={[styles.rotateText, { color: theme.text }]}>
-                {i18n.t('avatarCropper.rotate')}
+                {t('avatarCropper.rotate')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -122,13 +123,13 @@ export function AvatarCropper({ visible, imageUri, onClose, onCropComplete }: Av
 
         <View style={[styles.footer, { backgroundColor: theme.surface }]}>
           <Button
-            title={i18n.t('common.cancel')}
+            title={t('common.cancel')}
             variant="secondary"
             onPress={handleClose}
             style={styles.footerButton}
           />
           <Button
-            title={i18n.t('common.done')}
+            title={t('common.done')}
             variant="primary"
             onPress={handleCrop}
             loading={isProcessing}

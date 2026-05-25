@@ -2,7 +2,7 @@ import { MoodDragBar } from '@/components/diary/MoodDragBar'
 import { MemoCard } from '@/components/memo/MemoCard'
 import { Loading } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
-import i18n from '@/lib/i18n'
+import { useTranslation } from 'react-i18next'
 import { useDiary, useUpdateDiary } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
@@ -85,6 +85,7 @@ export const DayPageView = React.memo(
     { date, onMemoPress, isEditing, onEditStateChange },
     ref
   ) {
+    const { t } = useTranslation()
     const theme = useThemeStore(s => s.theme)
     const [summaryDraft, setSummaryDraft] = useState('')
     const [moodKeyDraft, setMoodKeyDraft] = useState<MoodKey | undefined>(undefined)
@@ -129,7 +130,7 @@ export const DayPageView = React.memo(
           },
         })
       } catch {
-        toast.error(i18n.t('dayPageView.saveFailed'))
+        toast.error(t('dayPageView.saveFailed'))
       }
     }, [diary, date, summaryDraft, moodKeyDraft, moodScoreDraft, updateDiary])
 
@@ -171,7 +172,7 @@ export const DayPageView = React.memo(
     if (isLoading) {
       return (
         <View style={styles.centeredContainer}>
-          <Loading text={i18n.t('common.loading')} />
+          <Loading text={t('common.loading')} />
         </View>
       )
     }
@@ -180,7 +181,7 @@ export const DayPageView = React.memo(
       return (
         <View style={styles.centeredContainer}>
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            {i18n.t('dayPageView.diaryNotFound', { date })}
+            {t('dayPageView.diaryNotFound', { date })}
           </Text>
         </View>
       )
@@ -196,13 +197,13 @@ export const DayPageView = React.memo(
         {(diary.summary || isEditing) && (
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-              {i18n.t('dayPageView.todaySummary')}
+              {t('dayPageView.todaySummary')}
             </Text>
             {isEditing ? (
               <TextInput
                 value={summaryDraft}
                 onChangeText={setSummaryDraft}
-                placeholder={i18n.t('dayPageView.summaryPlaceholder')}
+                placeholder={t('dayPageView.summaryPlaceholder')}
                 placeholderTextColor={theme.textSecondary}
                 multiline
                 textAlignVertical="top"
@@ -218,7 +219,7 @@ export const DayPageView = React.memo(
         {isEditing && (
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-              {i18n.t('dayPageView.todayMood')}
+              {t('dayPageView.todayMood')}
             </Text>
             <View style={styles.moodCircles}>
               {MOODS.map(mood => {
@@ -258,7 +259,7 @@ export const DayPageView = React.memo(
             ))
           ) : (
             <Text style={[styles.emptyArchiveText, { color: theme.textSecondary }]}>
-              {i18n.t('dayPageView.noArchivedMemos')}
+              {t('dayPageView.noArchivedMemos')}
             </Text>
           )}
         </View>

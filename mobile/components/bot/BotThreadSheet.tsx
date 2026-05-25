@@ -1,7 +1,7 @@
 import { toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
-import i18n from '@/lib/i18n'
+import { useTranslation } from 'react-i18next'
 import {
   createSelectedMediaItems,
   uploadSelectedMedia,
@@ -49,11 +49,11 @@ function ThinkingContentBlock({ content, theme }: { content: string; theme: any 
         onPress={() => setExpanded(v => !v)}
         style={styles.thinkingHeader}
         activeOpacity={0.7}
-        accessibilityLabel={i18n.t('botThread.toggleThinking')}
+        accessibilityLabel={t('botThread.toggleThinking')}
       >
         <Lightbulb size={14} color={theme.textSecondary} />
         <Text style={[styles.thinkingTitle, { color: theme.textSecondary }]}>
-          {i18n.t('botThread.thinkingTitle')}
+          {t('botThread.thinkingTitle')}
         </Text>
         {expanded ? (
           <ChevronUp size={14} color={theme.textSecondary} style={{ marginLeft: 'auto' }} />
@@ -130,6 +130,7 @@ interface BotThreadSheetProps {
 }
 
 export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
   const { data: thread, isLoading } = useBotThread(reply?.latestReplyId ?? reply?.id)
@@ -188,7 +189,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
 
     const slots = 4 - mediaItems.length
     if (slots <= 0) {
-      toast.error(i18n.t('botThread.maxImages'))
+      toast.error(t('botThread.maxImages'))
       return
     }
 
@@ -204,7 +205,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
     const question = text.trim()
     if (!latestReplyId || (!question && mediaItems.length === 0) || isPending) return
 
-    const sentText = question || i18n.t('botThread.imageReplyPrompt')
+    const sentText = question || t('botThread.imageReplyPrompt')
     const sentMediaItems = mediaItems
     const sentUploadCandidates = uploadCandidates
 
@@ -252,7 +253,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       setMediaItems(sentMediaItems)
       setUploadCandidates(sentUploadCandidates)
       setPendingMessage(null)
-      toast.error(error instanceof Error ? error.message : i18n.t('botThread.sendFailed'))
+      toast.error(error instanceof Error ? error.message : t('botThread.sendFailed'))
     }
   }, [isPending, latestReplyId, mediaItems, replyToBot, text, uploadCandidates])
 
@@ -285,7 +286,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
             <View style={{ flex: 1 }}>
               <Text style={[styles.title, { color: theme.text }]}>{bot?.name ?? 'Bot'}</Text>
               <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                {i18n.t('botThread.continueChat')}
+                {t('botThread.continueChat')}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} hitSlop={12}>
@@ -375,7 +376,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                       ]}
                     >
                       <Text style={[styles.messageText, { color: theme.textSecondary }]}>
-                        {i18n.t('botThread.replying')}
+                        {t('botThread.replying')}
                       </Text>
                     </View>
                   </View>
@@ -446,7 +447,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                   onChangeText={setText}
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
-                  placeholder={i18n.t('botThread.askPlaceholder')}
+                  placeholder={t('botThread.askPlaceholder')}
                   placeholderTextColor={theme.textSecondary}
                   multiline={isFocused}
                   textAlignVertical={isFocused ? 'top' : 'center'}

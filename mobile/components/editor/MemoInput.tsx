@@ -1,4 +1,4 @@
-import i18n from '@/lib/i18n'
+import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { ArrowUp, Maximize2 } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
@@ -26,11 +26,13 @@ interface MemoInputProps {
 export function MemoInput({
   onSubmit,
   onFocusChange,
-  placeholder = i18n.t('memoInput.placeholder'),
+  placeholder,
   availableTags = [],
   disabled = false,
 }: MemoInputProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
+  const resolvedPlaceholder = placeholder ?? t('memoInput.placeholder')
   const inputRef = useRef<TextInput>(null)
   const [isFullScreenVisible, setIsFullScreenVisible] = useState(false)
   const [text, setText] = useState('')
@@ -130,7 +132,7 @@ export function MemoInput({
               },
               !isFocused && styles.inputCollapsed,
             ]}
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             placeholderTextColor={theme.textSecondary}
             value={text}
             onChangeText={setText}
@@ -188,7 +190,7 @@ export function MemoInput({
         visible={isFullScreenVisible}
         initialContent={text}
         initialTags={[]}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         availableTags={availableTags}
         onClose={() => setIsFullScreenVisible(false)}
         onSubmit={handleFullScreenSubmit}

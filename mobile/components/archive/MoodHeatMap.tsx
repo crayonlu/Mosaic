@@ -1,4 +1,4 @@
-import i18n from '@/lib/i18n'
+import { useTranslation } from 'react-i18next'
 import { useHeatmap } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { MOODS, getMoodColor } from '@mosaic/utils'
@@ -133,6 +133,7 @@ function AnimatedDayCell({
 }
 
 export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const { data: heatmapData, isLoading: loading } = useHeatmap()
   const scrollViewRef = useRef<ScrollView>(null)
@@ -305,7 +306,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
       {/* Legend */}
       <View style={[styles.legend]}>
         <Text style={[styles.legendText, { color: theme.textSecondary }]}>
-          {i18n.t('moodHeatMap.title')}
+          {t('moodHeatMap.title')}
         </Text>
         <ScrollView
           horizontal

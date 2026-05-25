@@ -1,5 +1,4 @@
 import { MemoListSkeleton } from '@/components/ui'
-import i18n from '@/lib/i18n'
 import { useInfiniteMemos, useMemo as useMemoQuery, useMemosByDate } from '@/lib/query'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
@@ -210,7 +209,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
       return (
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-            {i18n.t('common.noMore')}
+            {t('common.noMore')}
           </Text>
         </View>
       )

@@ -1,6 +1,5 @@
 import { Button, DatePickerSheet, Input, ScreenHeader } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
-import i18n from '@/lib/i18n'
 import {
   useCustomPushList,
   useDeleteCustomPush,
@@ -15,6 +14,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -268,8 +268,10 @@ export default function CustomPushScreen() {
         visible={showTimePicker}
         transparent
         animationType="fade"
+        statusBarTranslucent
         onRequestClose={() => setShowTimePicker(false)}
       >
+        <StatusBar backgroundColor="transparent" translucent />
         <View style={styles.timeOverlay}>
           <Pressable style={styles.timeBackdrop} onPress={() => setShowTimePicker(false)} />
           <View style={[styles.timeSheet, { backgroundColor: theme.background }]}>

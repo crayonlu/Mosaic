@@ -1,5 +1,4 @@
 import { CleanSlateTheme, QuietPaperTheme, type Theme, type ThemeName } from '@/constants/theme'
-import i18n from '@/lib/i18n'
 import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
@@ -93,7 +92,7 @@ function ThemePreviewCard({
                 lineHeight: theme.typography.body.lineHeight,
               }}
             >
-              {i18n.t('themePicker.sampleContent')}
+              {t('themePicker.sampleContent')}
             </Text>
             <View style={styles.sampleTags}>
               <View style={[styles.sampleTag, { backgroundColor: theme.surfaceMuted }]}>

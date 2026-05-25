@@ -18,7 +18,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { Image } from 'expo-image'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { type ReactNode, useCallback, useEffect, useRef } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { I18nextProvider, useTranslation } from 'react-i18next'
 import { StyleSheet, Text, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -68,7 +68,8 @@ function ShareIntentHandler({ children }: { children: ReactNode }) {
 }
 
 export default function RootLayout() {
-  const { t } = useTranslation()
+  const { t, i18n: i18nInstance } = useTranslation()
+  const [langRevision, setLangRevision] = useState(0)
   const theme = useThemeStore(s => s.theme)
   const themeName = useThemeStore(s => s.themeName)
   const isServerReachable = useConnectionStore(s => s.isServerReachable)
@@ -80,6 +81,14 @@ export default function RootLayout() {
   const initAuth = useAuthStore(s => s.initialize)
   const segments = useSegments()
   const router = useRouter()
+
+  useEffect(() => {
+    const handler = () => setLangRevision(v => v + 1)
+    i18nInstance.on('languageChanged', handler)
+    return () => {
+      i18nInstance.off('languageChanged', handler)
+    }
+  }, [i18nInstance])
 
   const hideNativeSplash = useCallback(() => {
     hideBootSplash({ fade: true })

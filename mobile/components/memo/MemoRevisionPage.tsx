@@ -4,7 +4,7 @@ import { EditableAISummary } from '@/components/memo/EditableAISummary'
 import { DraggableImageGrid } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
-import i18n from '@/lib/i18n'
+import { useTranslation } from 'react-i18next'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
 import type { BotReply, MemoRevision, MemoWithResources } from '@mosaic/api'
@@ -31,6 +31,7 @@ export function MemoRevisionPage({
   onBotReply,
   onSaveAISummary,
 }: MemoRevisionPageProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const { headers: authHeaders } = useAuthHeaders()
 
@@ -41,8 +42,8 @@ export function MemoRevisionPage({
   const isFirstRevision = revision?.revisionNumber === 1
 
   const timeLabel = isFirstRevision
-    ? i18n.t('memoRevision.createdAt', { time: stringUtils.formatDateTime(timestamp) })
-    : i18n.t('memoRevision.updatedAt', { time: stringUtils.formatDateTime(timestamp) })
+    ? t('memoRevision.createdAt', { time: stringUtils.formatDateTime(timestamp) })
+    : t('memoRevision.updatedAt', { time: stringUtils.formatDateTime(timestamp) })
 
   const mediaItems: MediaGridItem[] = useMemo(
     () =>
@@ -70,7 +71,7 @@ export function MemoRevisionPage({
         {!isLatest && revision && (
           <View style={[styles.revisionBadge, { backgroundColor: theme.surfaceMuted }]}>
             <Text style={[styles.revisionBadgeText, { color: theme.textSecondary }]}>
-              {i18n.t('memoRevision.revisionNumber', { n: revision.revisionNumber })}
+              {t('memoRevision.revisionNumber', { n: revision.revisionNumber })}
             </Text>
           </View>
         )}
@@ -90,7 +91,7 @@ export function MemoRevisionPage({
           ]}
         >
           <Text style={[styles.aiSummaryTitle, { color: theme.text }]}>
-            {i18n.t('memoRevision.aiSummary')}
+            {t('memoRevision.aiSummary')}
           </Text>
           <MarkdownRenderer content={aiSummary} />
         </Animated.View>
@@ -115,7 +116,7 @@ export function MemoRevisionPage({
           ))
         ) : (
           <Text style={[styles.tagText, { color: theme.textTertiary }]}>
-            {i18n.t('memoRevision.noTags')}
+            {t('memoRevision.noTags')}
           </Text>
         )}
       </View>

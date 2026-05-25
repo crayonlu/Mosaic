@@ -6,7 +6,7 @@ import { X } from 'lucide-react-native'
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import i18n from '@/lib/i18n'
+import { useTranslation } from 'react-i18next'
 import { MarkdownRenderer } from './MarkdownRenderer'
 
 interface PostPreviewProps {
@@ -19,6 +19,7 @@ interface PostPreviewProps {
 }
 
 export function PostPreview({ visible, content, items, tags, onClose, onPost }: PostPreviewProps) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
   const { headers: authHeaders } = useAuthHeaders()
@@ -42,7 +43,7 @@ export function PostPreview({ visible, content, items, tags, onClose, onPost }: 
             <X size={24} color={theme.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.text }]}>
-            {i18n.t('editor.postPreview.title')}
+            {t('editor.postPreview.title')}
           </Text>
           <View style={styles.headerButton} />
         </View>
@@ -59,7 +60,7 @@ export function PostPreview({ visible, content, items, tags, onClose, onPost }: 
             </View>
           ) : (
             <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              {i18n.t('editor.postPreview.empty')}
+              {t('editor.postPreview.empty')}
             </Text>
           )}
 

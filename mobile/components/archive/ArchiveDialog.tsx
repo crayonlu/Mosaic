@@ -1,7 +1,6 @@
 import { MoodDragBar } from '@/components/diary/MoodDragBar'
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
-import i18n from '@/lib/i18n'
 import { useThemeStore } from '@/stores/themeStore'
 import {
   BottomSheetBackdrop,
@@ -45,7 +44,7 @@ export const ArchiveDialog = forwardRef<ArchiveDialogRef, ArchiveDialogProps>(
     ref
   ) {
     const { theme } = useThemeStore()
-    useTranslation()
+    const { t } = useTranslation()
     const queryClient = useQueryClient()
     const sheetRef = useRef<BottomSheetModal>(null)
 
@@ -88,7 +87,7 @@ export const ArchiveDialog = forwardRef<ArchiveDialogRef, ArchiveDialogProps>(
 
     const handleConfirm = async () => {
       if (selectedMemos.length === 0) {
-        toast.error(i18n.t('archive.selectMemo'))
+        toast.error(t('archive.selectMemo'))
         return
       }
 
@@ -113,8 +112,8 @@ export const ArchiveDialog = forwardRef<ArchiveDialogRef, ArchiveDialogProps>(
         sheetRef.current?.dismiss()
         onSuccess()
       } catch (error) {
-        console.error(i18n.t('archive.failedLog'), error)
-        toast.error(i18n.t('archive.failed'))
+        console.error(t('archive.failedLog'), error)
+        toast.error(t('archive.failed'))
       } finally {
         setLoading(false)
       }
@@ -142,16 +141,14 @@ export const ArchiveDialog = forwardRef<ArchiveDialogRef, ArchiveDialogProps>(
         >
           <View style={styles.info}>
             <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-              {i18n.t('archive.dialogInfo', { count: selectedMemos.length, date: targetDate })}
+              {t('archive.dialogInfo', { count: selectedMemos.length, date: targetDate })}
             </Text>
           </View>
 
           <View style={styles.summarySection}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              {i18n.t('archive.diarySummary')}
-            </Text>
+            <Text style={[styles.label, { color: theme.text }]}>{t('archive.diarySummary')}</Text>
             <BottomSheetTextInput
-              placeholder={i18n.t('archive.moodPlaceholder')}
+              placeholder={t('archive.moodPlaceholder')}
               value={summary}
               onChangeText={setSummary}
               multiline
@@ -169,7 +166,7 @@ export const ArchiveDialog = forwardRef<ArchiveDialogRef, ArchiveDialogProps>(
           </View>
 
           <View style={styles.moodSection}>
-            <Text style={[styles.label, { color: theme.text }]}>{i18n.t('archive.mood')}</Text>
+            <Text style={[styles.label, { color: theme.text }]}>{t('archive.mood')}</Text>
             <View style={styles.moodSelector}>
               {MOODS.map(mood => (
                 <TouchableOpacity
@@ -193,7 +190,7 @@ export const ArchiveDialog = forwardRef<ArchiveDialogRef, ArchiveDialogProps>(
             {moodKey && (
               <View style={styles.intensitySection}>
                 <Text style={[styles.intensityLabel, { color: theme.textSecondary }]}>
-                  {i18n.t('archive.intensity', { score: moodScore })}
+                  {t('archive.intensity', { score: moodScore })}
                 </Text>
                 <MoodDragBar value={moodScore} onChange={setMoodScore} />
               </View>
@@ -203,13 +200,13 @@ export const ArchiveDialog = forwardRef<ArchiveDialogRef, ArchiveDialogProps>(
 
         <View style={[styles.footer, { borderTopColor: theme.border }]}>
           <Button
-            title={i18n.t('common.cancel')}
+            title={t('common.cancel')}
             variant="secondary"
             onPress={onCancel}
             style={styles.footerButton}
           />
           <Button
-            title={loading ? i18n.t('common.archiving') : i18n.t('archive.confirm')}
+            title={loading ? t('common.archiving') : t('archive.confirm')}
             onPress={handleConfirm}
             loading={loading}
             disabled={loading}
