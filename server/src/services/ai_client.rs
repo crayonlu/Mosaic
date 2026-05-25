@@ -1,4 +1,5 @@
 use base64::{engine::general_purpose, Engine as _};
+use log;
 use serde_json::json;
 
 pub struct AiConfig {
@@ -83,6 +84,15 @@ impl AiClient {
         };
 
         let response = request.send().await?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body_text = response.text().await.unwrap_or_default();
+            let msg = format!("AI API returned HTTP {}: {}", status, body_text);
+            log::warn!("[AiClient] {}", msg);
+            return Err(msg.into());
+        }
+
         let json: serde_json::Value = response.json().await?;
 
         let (content, thinking_content) = match config.provider.as_str() {

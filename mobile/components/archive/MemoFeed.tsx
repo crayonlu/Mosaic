@@ -1,11 +1,10 @@
 import { MemoListSkeleton } from '@/components/ui'
 import i18n from '@/lib/i18n'
-import { useInfiniteMemos, useMemo as useMemoQuery, useMemosByDate } from '@/lib/query'
+import { useInfiniteMemos, useMemo as useMemoQuery, useMemos, useMemosByDate } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MemoCard } from '../memo/MemoCard'
 
 const FeedMemoCard = React.memo(function FeedMemoCard({
@@ -46,7 +45,6 @@ export function MemoFeed({
   onMemosChange,
 }: MemoFeedProps) {
   const { theme } = useThemeStore()
-  const insets = useSafeAreaInsets()
   const [refreshing, setRefreshing] = useState(false)
 
   const {
@@ -73,6 +71,13 @@ export function MemoFeed({
 
   const isLoading = targetDate ? loadingByDate : loadingList
   const hasMore = targetDate ? false : hasNextPage
+
+  // Detect if empty state is due to all memos being archived
+  const { data: archivedAll } = useMemos({ archived: true, pageSize: 1 })
+  const { data: archivedForDate } = useMemosByDate(targetDate || '', { archived: true })
+  const hasArchivedMemos = targetDate
+    ? (archivedForDate?.length ?? 0) > 0
+    : (archivedAll?.total ?? 0) > 0
 
   useEffect(() => {
     onMemosChange?.(memos)
@@ -127,16 +132,28 @@ export function MemoFeed({
 
   const renderEmptyState = useMemo(
     () => (
-      <View style={[styles.emptyContainer, { paddingBottom: insets.bottom }]}>
+      <View style={[styles.emptyContainer, { paddingBottom: 54 }]}>
         <Text style={[styles.emptyTitle, { color: theme.text }]}>
-          {targetDate ? i18n.t('memoFeed.emptyToday') : i18n.t('memoFeed.empty')}
+          {hasArchivedMemos
+            ? targetDate
+              ? i18n.t('memoFeed.emptyTodayArchived')
+              : i18n.t('memoFeed.emptyArchived')
+            : targetDate
+              ? i18n.t('memoFeed.emptyToday')
+              : i18n.t('memoFeed.empty')}
         </Text>
         <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-          {targetDate ? i18n.t('memoFeed.emptyTodayHint') : i18n.t('memoFeed.emptyHint')}
+          {hasArchivedMemos
+            ? targetDate
+              ? i18n.t('memoFeed.emptyTodayArchivedHint')
+              : i18n.t('memoFeed.emptyArchivedHint')
+            : targetDate
+              ? i18n.t('memoFeed.emptyTodayHint')
+              : i18n.t('memoFeed.emptyHint')}
         </Text>
       </View>
     ),
-    [targetDate, theme.text, theme.textSecondary, insets.bottom]
+    [targetDate, theme.text, theme.textSecondary, hasArchivedMemos]
   )
 
   const renderFooter = useMemo(() => {

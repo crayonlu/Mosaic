@@ -152,7 +152,7 @@ pub async fn suggest_tags(
         base_url: config.base_url.clone(),
         api_key: config.api_key.clone(),
         model: config.model.clone(),
-        max_tokens: Some(100),
+        max_tokens: Some(256),
     };
 
     let user_message = AiClient::build_user_message(&prompt, &[], &config.provider);

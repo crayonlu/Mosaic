@@ -420,8 +420,12 @@
   "memoFeed": {
     "empty": "暂无Memo",
     "emptyHint": "开始记录你的想法和灵感",
+    "emptyArchived": "暂无未归档的Memo",
+    "emptyArchivedHint": "所有Memo均已归档。前往归档页查看",
     "emptyToday": "今天还没有内容",
-    "emptyTodayHint": "点击下方按钮创建你的第一条Memo"
+    "emptyTodayHint": "点击下方按钮创建你的第一条Memo",
+    "emptyTodayArchived": "今天的Memo已全部归档",
+    "emptyTodayArchivedHint": "在日记页面中查看已归档的日记内容"
   },
   "memoInput": {
     "placeholder": "记录你的想法..."

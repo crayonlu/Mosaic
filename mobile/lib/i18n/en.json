@@ -420,8 +420,12 @@
   "memoFeed": {
     "empty": "No memos yet",
     "emptyHint": "Start writing your first memo",
+    "emptyArchived": "No unarchived memos",
+    "emptyArchivedHint": "All memos have been archived. Check the Archive tab",
     "emptyToday": "Nothing today",
-    "emptyTodayHint": "Tap + to create a memo"
+    "emptyTodayHint": "Tap + to create a memo",
+    "emptyTodayArchived": "Today's memos are all archived",
+    "emptyTodayArchivedHint": "View archived content in the Diary page"
   },
   "memoInput": {
     "placeholder": "Write something…"

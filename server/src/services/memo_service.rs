@@ -782,7 +782,7 @@ impl MemoService {
             base_url: config.base_url.clone(),
             api_key: config.api_key.clone(),
             model: config.model.clone(),
-            max_tokens: Some(100),
+            max_tokens: Some(256),
         };
 
         let vision_images = if config.supports_vision { images } else { &[] };
@@ -891,7 +891,7 @@ impl MemoService {
             base_url: config.base_url.clone(),
             api_key: config.api_key.clone(),
             model: config.model.clone(),
-            max_tokens: Some(120),
+            max_tokens: Some(256),
         };
 
         let vision_images = if config.supports_vision { images } else { &[] };
