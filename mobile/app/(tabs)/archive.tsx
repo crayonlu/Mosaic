@@ -160,15 +160,17 @@ export default function ArchiveScreen() {
         <ArchiveDateFilter selectedDate={selectedDate} onDateSelect={setSelectedDate} />
       </View>
 
-      <MemoFeed
-        targetDate={selectedDate}
-        onMemoPress={handleMemoPress}
-        onMemoDelete={handleMemoDelete}
-        isSelectionMode={isSelectionMode}
-        selectedIds={selectedMemoIds}
-        onSelectionChange={id => dispatch({ type: 'TOGGLE_MEMO', id })}
-        onMemosChange={setVisibleMemos}
-      />
+      <View style={{ flex: 1 }}>
+        <MemoFeed
+          targetDate={selectedDate}
+          onMemoPress={handleMemoPress}
+          onMemoDelete={handleMemoDelete}
+          isSelectionMode={isSelectionMode}
+          selectedIds={selectedMemoIds}
+          onSelectionChange={id => dispatch({ type: 'TOGGLE_MEMO', id })}
+          onMemosChange={setVisibleMemos}
+        />
+      </View>
       <ArchiveDialog
         ref={dialogRef}
         selectedMemos={dialogMemos}

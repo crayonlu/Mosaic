@@ -4,7 +4,7 @@ import { ImageOff, Play, VideoOff, X } from 'lucide-react-native'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native'
 
-import { withAlpha } from './mediaPreviewUtils'
+import { isRemoteUri, withAlpha } from './mediaPreviewUtils'
 import type { MediaGridItem } from './types'
 
 interface MediaGridTileProps {
@@ -55,7 +55,9 @@ export function MediaGridTile({
           <View style={[styles.loadingDot, { backgroundColor: theme.textSecondary }]} />
           <View style={[styles.loadingDot, { backgroundColor: theme.textSecondary }]} />
         </View>
-      ) : previewUri && !imageError && previewHeaders && Object.keys(previewHeaders).length > 0 ? (
+      ) : previewUri &&
+        !imageError &&
+        (!isRemoteUri(previewUri) || (previewHeaders && Object.keys(previewHeaders).length > 0)) ? (
         <Image
           source={{ uri: previewUri, headers: previewHeaders }}
           style={styles.image}

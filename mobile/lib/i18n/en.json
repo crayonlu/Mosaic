@@ -202,7 +202,7 @@
   "editor": {
     "fullScreenEditor": {
       "aiSummary": "AI Summary",
-      "addImage": "Add Image",
+      "addImage": "Add Resource",
       "preview": "Preview",
       "tags": "Tags",
       "tagsPlaceholder": "Add tags...",

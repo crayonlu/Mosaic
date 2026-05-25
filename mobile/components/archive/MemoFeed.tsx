@@ -189,7 +189,12 @@ export function MemoFeed({
   }
 
   if (memos.length === 0) {
-    return renderEmptyState
+    return (
+      <View style={{ flex: 1 }}>
+        {headerComponent}
+        {renderEmptyState}
+      </View>
+    )
   }
 
   return (
@@ -228,7 +233,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   emptyContainer: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
