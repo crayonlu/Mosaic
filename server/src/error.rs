@@ -46,6 +46,9 @@ pub enum AppError {
 
     #[error("Processing error: {0}")]
     Processing(String),
+
+    #[error("Operation timed out")]
+    Timeout,
 }
 
 #[derive(Serialize)]
@@ -70,6 +73,7 @@ impl ResponseError for AppError {
             AppError::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Processing(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Timeout => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -95,6 +99,10 @@ impl ResponseError for AppError {
             }
             AppError::Storage(e) => {
                 log::error!("Storage error: {e}");
+                "Internal server error".to_string()
+            }
+            AppError::Timeout => {
+                log::error!("Operation timed out");
                 "Internal server error".to_string()
             }
             _ => self.to_string(),

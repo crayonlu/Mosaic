@@ -13,6 +13,7 @@ pub mod memo_service;
 pub mod memory_embedding_service;
 pub mod memory_retrieval_service;
 pub mod resource_service;
+pub mod retry;
 pub mod server_ai_config_service;
 pub mod stats_service;
 pub mod sync_service;

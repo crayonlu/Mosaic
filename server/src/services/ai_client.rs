@@ -1,6 +1,9 @@
 use base64::{engine::general_purpose, Engine as _};
 use log;
 use serde_json::json;
+use std::time::Duration;
+
+const AI_REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
 
 pub struct AiConfig {
     pub provider: String,
@@ -30,7 +33,10 @@ pub struct AiClient {
 impl AiClient {
     pub fn new() -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                .timeout(AI_REQUEST_TIMEOUT)
+                .build()
+                .expect("Failed to build reqwest client for AiClient"),
         }
     }
 

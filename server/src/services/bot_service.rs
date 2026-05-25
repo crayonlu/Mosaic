@@ -6,6 +6,7 @@ use crate::models::{
     ReplyToBotRequest, UpdateBotRequest,
 };
 use crate::services::ai_client::{AiClient, AiConfig, AiImageInput, AiReply};
+use crate::services::retry::with_retry;
 use crate::services::{AppSettingsService, BotMemoryContextService, ServerAiConfigService};
 use crate::storage::traits::Storage;
 use chrono::Utc;
@@ -13,6 +14,7 @@ use chrono_tz::Tz;
 use serde_json::json;
 use sqlx::PgPool;
 use std::sync::Arc;
+use std::time::Duration;
 use uuid::Uuid;
 
 #[derive(sqlx::FromRow)]
@@ -493,21 +495,39 @@ impl BotService {
                             .await;
                     }
 
-                    if let Ok(reply) = call_ai_for_reply(
-                        &ai_config,
-                        &bot.name,
-                        &bot.description,
-                        &memo_content,
-                        memory_context.as_deref(),
-                        None,
-                        None,
-                        &memo_images,
-                        bot.model.as_deref(),
-                        &ai_client,
-                        tz,
-                    )
-                    .await
-                    {
+                    let retry_result = with_retry(
+                        || {
+                            let bot_name = bot.name.clone();
+                            let bot_desc = bot.description.clone();
+                            let memo_content = memo_content.clone();
+                            let mc = memory_context.clone();
+                            let bot_model = bot.model.clone();
+                            let ai_client = ai_client.clone();
+                            let memo_images = memo_images.clone();
+                            let ai_config = ai_config.clone();
+                            async move {
+                                call_ai_for_reply(
+                                    &ai_config,
+                                    &bot_name,
+                                    &bot_desc,
+                                    &memo_content,
+                                    mc.as_deref(),
+                                    None,
+                                    None,
+                                    &memo_images,
+                                    bot_model.as_deref(),
+                                    &ai_client,
+                                    tz,
+                                )
+                                .await
+                                .map_err(|e| AppError::Internal(e.to_string()))
+                            }
+                        },
+                        2,
+                        Duration::from_secs(60),
+                    ).await;
+
+                    if let Ok(reply) = retry_result {
                         let now = Utc::now().timestamp_millis();
                         let _ = sqlx::query(
                             "INSERT INTO bot_replies (id, memo_id, bot_id, content, thinking_content, parent_reply_id, user_question, revision_number, created_at)

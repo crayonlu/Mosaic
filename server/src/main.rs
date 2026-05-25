@@ -167,7 +167,7 @@ async fn main() -> anyhow::Result<()> {
             .app_data(web::Data::new(clip_service.clone()))
             .app_data(activity_log.clone())
             .app_data(started_at.clone())
-            .route("/health", web::get().to(health_check))
+            .route("/health", web::route().to(health_check))
             .service(
                 web::scope("/api/auth")
                     .service(web::resource("/login").route(web::post().to(routes::auth::login)))
