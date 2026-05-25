@@ -570,46 +570,41 @@ impl MemoService {
                 );
 
                 let (Some(config_svc), Some(client)) = (config_svc, client) else {
-                    // No AI config or client: still run Phase 4 concurrently
-                    // (embedding with retry + bot replies).
-                    let embed_fut = async {
-                        let result = with_retry(
-                            || {
-                                let me_svc = memory_embedding_service.clone();
-                                let memo = memo.clone();
-                                let rc = revision_context.clone();
-                                async move {
-                                    me_svc
-                                        .refresh_for_memo_with_context(&memo, Some(&rc))
-                                        .await
-                                        .map_err(|e| AppError::Internal(e.to_string()))
-                                }
-                            },
-                            2,
-                            Duration::from_secs(30),
-                        ).await;
-                        if let Err(e) = result {
+                    // No AI config or client: run embedding first, then bot replies.
+                    // Bot replies must run AFTER embedding so the anchor embedding
+                    // exists when the RAG similarity search executes.
+                    let embed_result = with_retry(
+                        || {
+                            let me_svc = memory_embedding_service.clone();
+                            let memo = memo.clone();
+                            let rc = revision_context.clone();
+                            async move {
+                                me_svc
+                                    .refresh_for_memo_with_context(&memo, Some(&rc))
+                                    .await
+                                    .map_err(|e| AppError::Internal(e.to_string()))
+                            }
+                        },
+                        2,
+                        Duration::from_secs(30),
+                    ).await;
+                    if let Err(e) = embed_result {
+                        log::error!(
+                            "[MemoryRefresh] embedding failed for memo {} after retries: {}",
+                            memo_id,
+                            e
+                        );
+                    }
+
+                    if let Some(bot_svc) = &bot_service {
+                        if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
                             log::error!(
-                                "[MemoryRefresh] embedding failed for memo {} after retries: {}",
+                                "[MemoryRefresh] bot trigger_replies failed for memo {}: {}",
                                 memo_id,
-                                e
+                                error
                             );
                         }
-                    };
-
-                    let bot_fut = async {
-                        if let Some(bot_svc) = &bot_service {
-                            if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
-                                log::error!(
-                                    "[MemoryRefresh] bot trigger_replies failed for memo {}: {}",
-                                    memo_id,
-                                    error
-                                );
-                            }
-                        }
-                    };
-
-                    tokio::join!(embed_fut, bot_fut);
+                    }
                     return;
                 };
 
@@ -767,37 +762,35 @@ impl MemoService {
                 .flatten()
                 .unwrap_or(memo);
 
-                // Phase 4: Run embedding and bot replies concurrently
-                // with per-task retry for embedding.
-                let embed_fut = async {
-                    let result = with_retry(
-                        || {
-                            let me_svc = memory_embedding_service.clone();
-                            let fm = fresh_memo.clone();
-                            let rc = revision_context.clone();
-                            async move {
-                                me_svc
-                                    .refresh_for_memo_with_context(&fm, Some(&rc))
-                                    .await
-                                    .map_err(|e| AppError::Internal(e.to_string()))
-                            }
-                        },
-                        2,
-                        Duration::from_secs(30),
-                    ).await;
-                    if let Err(e) = result {
-                        log::error!(
-                            "[MemoryRefresh] embedding failed for memo {} after retries: {}",
-                            memo_id,
-                            e
-                        );
-                    }
-                };
+                // Phase 4: Embedding first, then bot replies (sequential).
+                // Bot relies on anchor embedding for RAG similarity search —
+                // running concurrently causes the bot to see a missing embedding
+                // and fall back to recency-only candidates, all of which fail
+                // the MIN_SEMANTIC threshold and return no related memos.
+                let embed_result = with_retry(
+                    || {
+                        let me_svc = memory_embedding_service.clone();
+                        let fm = fresh_memo.clone();
+                        let rc = revision_context.clone();
+                        async move {
+                            me_svc
+                                .refresh_for_memo_with_context(&fm, Some(&rc))
+                                .await
+                                .map_err(|e| AppError::Internal(e.to_string()))
+                        }
+                    },
+                    2,
+                    Duration::from_secs(30),
+                ).await;
+                if let Err(e) = embed_result {
+                    log::error!(
+                        "[MemoryRefresh] embedding failed for memo {} after retries: {}",
+                        memo_id,
+                        e
+                    );
+                }
 
-                let bot_fut = async {
-                    if !content_changed {
-                        return;
-                    }
+                if content_changed {
                     if let Some(bot_svc) = &bot_service {
                         if let Err(error) = bot_svc.trigger_replies(&user_id_str, memo_id).await {
                             log::error!(
@@ -807,9 +800,7 @@ impl MemoService {
                             );
                         }
                     }
-                };
-
-                tokio::join!(embed_fut, bot_fut);
+                }
             })
             .await;
 
