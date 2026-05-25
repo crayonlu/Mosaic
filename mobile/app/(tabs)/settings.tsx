@@ -95,7 +95,7 @@ function BotAvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
 }
 
 export default function SettingsScreen() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { theme, themeName, setThemeName } = useThemeStore()
   const { locale, setLocale } = useLocaleStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
@@ -743,6 +743,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 12,
+    paddingTop: 4,
     flexDirection: 'column',
     gap: 8,
   },

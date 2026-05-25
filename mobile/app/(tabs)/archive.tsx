@@ -190,7 +190,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topArea: {
-    paddingTop: 8,
     paddingBottom: 4,
   },
   headerRow: {

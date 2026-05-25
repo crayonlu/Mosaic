@@ -117,10 +117,10 @@ const styles = StyleSheet.create({
   header: {
     display: 'flex',
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     gap: 12,
     paddingBottom: 4,
-    paddingTop: 0,
+    paddingTop: 4,
   },
   resultsContainer: {
     flex: 1,

@@ -64,6 +64,9 @@ export function SafeKeyboardAvoidingView({
   keyboardVerticalOffset?: number
 }) {
   if (!keyboardControllerModule) {
+    console.warn(
+      '[KeyboardAvoidingView] react-native-keyboard-controller not available in Expo Go, using regular View.'
+    )
     return <View style={style}>{children}</View>
   }
   const KAV = keyboardControllerModule.KeyboardAvoidingView

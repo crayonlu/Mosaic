@@ -39,7 +39,7 @@
     "reset": "重置"
   },
   "setup": {
-    "subtitle": "完成初始设置，开启你的智能笔记之旅",
+    "subtitle": "完成初始设置 开启你的智能笔记之旅",
     "serverConfig": "服务器配置",
     "serverConfigDesc": "输入你的 Mosaic 服务器信息",
     "serverUrl": "服务器地址",

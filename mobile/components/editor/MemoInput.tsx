@@ -7,6 +7,7 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
 } from 'react-native-reanimated'
 import { FullScreenEditor } from './FullScreenEditor'
@@ -42,36 +43,47 @@ export function MemoInput({
   const expandProgress = useSharedValue(0)
 
   useEffect(() => {
-    const sub = Keyboard.addListener('keyboardDidHide', () => {
-      inputRef.current?.blur()
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      wrapperHeight.value = withTiming(EXPANDED_HEIGHT, {
+        duration: ANIM_DURATION,
+        easing: Easing.out(Easing.cubic),
+      })
+      expandProgress.value = withTiming(1, {
+        duration: ANIM_DURATION,
+        easing: Easing.out(Easing.cubic),
+      })
     })
-    return () => sub.remove()
-  }, [])
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      inputRef.current?.blur()
+      wrapperHeight.value = withDelay(
+        150,
+        withTiming(COLLAPSED_HEIGHT, {
+          duration: ANIM_DURATION,
+          easing: Easing.out(Easing.cubic),
+        })
+      )
+      expandProgress.value = withDelay(
+        150,
+        withTiming(0, {
+          duration: ANIM_DURATION,
+          easing: Easing.out(Easing.cubic),
+        })
+      )
+    })
+    return () => {
+      showSub.remove()
+      hideSub.remove()
+    }
+  }, [wrapperHeight, expandProgress])
 
   const handleFocus = () => {
     setIsFocused(true)
     onFocusChange?.(true)
-    wrapperHeight.value = withTiming(EXPANDED_HEIGHT, {
-      duration: ANIM_DURATION,
-      easing: Easing.out(Easing.cubic),
-    })
-    expandProgress.value = withTiming(1, {
-      duration: ANIM_DURATION,
-      easing: Easing.out(Easing.cubic),
-    })
   }
 
   const handleBlur = () => {
     setIsFocused(false)
     onFocusChange?.(false)
-    wrapperHeight.value = withTiming(COLLAPSED_HEIGHT, {
-      duration: ANIM_DURATION,
-      easing: Easing.out(Easing.cubic),
-    })
-    expandProgress.value = withTiming(0, {
-      duration: ANIM_DURATION,
-      easing: Easing.out(Easing.cubic),
-    })
   }
 
   const wrapperAnimStyle = useAnimatedStyle(() => ({

@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   section: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   sectionLabel: {
     fontSize: 12,
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     paddingVertical: 24,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   emptyText: {
     fontSize: 15,

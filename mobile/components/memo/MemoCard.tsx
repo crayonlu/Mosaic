@@ -240,7 +240,7 @@ export const MemoCard = React.memo(
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
-    paddingHorizontal: 12,
+    paddingHorizontal: 6,
     paddingTop: 10,
     paddingBottom: 6,
     marginHorizontal: 8,

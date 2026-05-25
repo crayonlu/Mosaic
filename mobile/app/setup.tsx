@@ -11,11 +11,11 @@ import { Image } from 'expo-image'
 import { CheckCircle, XCircle } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useKeyboardHandler } from 'react-native-keyboard-controller'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
+import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error'
 
 export default function SetupScreen() {
@@ -114,8 +114,10 @@ export default function SetupScreen() {
   const canLogin = isFormValid && connectionStatus === 'success'
 
   const LOGO_SECTION_HEIGHT = 140
+  const LOGO_MARGIN_BOTTOM = 32
   const logoOpacity = useSharedValue(1)
   const logoHeight = useSharedValue(LOGO_SECTION_HEIGHT)
+  const logoMargin = useSharedValue(LOGO_MARGIN_BOTTOM)
 
   useKeyboardHandler({
     onStart: e => {
@@ -125,12 +127,16 @@ export default function SetupScreen() {
       logoHeight.value = withTiming(isOpening ? 0 : LOGO_SECTION_HEIGHT, {
         duration: isOpening ? 150 : 200,
       })
+      logoMargin.value = withTiming(isOpening ? 0 : LOGO_MARGIN_BOTTOM, {
+        duration: isOpening ? 150 : 200,
+      })
     },
   })
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     opacity: logoOpacity.value,
     height: logoHeight.value,
+    marginBottom: logoMargin.value,
     overflow: 'hidden' as const,
   }))
 
@@ -140,138 +146,139 @@ export default function SetupScreen() {
         styles.container,
         {
           backgroundColor: theme.background,
-          paddingTop: insets.top,
-          paddingRight: insets.right,
-          paddingBottom: insets.bottom,
-          paddingLeft: insets.left,
         },
       ]}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <SafeKeyboardAvoidingView
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : insets.top}
         style={styles.keyboardView}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <Animated.View style={[styles.header, logoAnimatedStyle]}>
-            <Image
-              source={require('@/assets/images/mosaic-light.svg')}
-              style={styles.logo}
-              contentFit="contain"
-            />
-            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-              {t('setup.subtitle')}
-            </Text>
-          </Animated.View>
-
-          <View style={[styles.card, { backgroundColor: theme.surface }]}>
-            <Text style={[styles.cardTitle, { color: theme.text }]}>{t('setup.serverConfig')}</Text>
-            <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
-              {t('setup.serverConfigDesc')}
-            </Text>
-
-            <View style={styles.form}>
-              <Input
-                label={t('setup.serverUrl')}
-                placeholder={t('setup.serverUrlPlaceholder')}
-                value={serverUrl}
-                onChangeText={text => {
-                  setServerUrl(text)
-                  handleInputChange()
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                editable={!isLoading}
+          <View style={styles.centerWrapper}>
+            <Animated.View style={[styles.header, logoAnimatedStyle]}>
+              <Image
+                source={require('@/assets/images/mosaic-light.svg')}
+                style={styles.logo}
+                contentFit="contain"
               />
+              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+                {t('setup.subtitle')}
+              </Text>
+            </Animated.View>
 
-              <Input
-                label={t('setup.username')}
-                placeholder={t('setup.usernamePlaceholder')}
-                value={username}
-                onChangeText={text => {
-                  setUsername(text)
-                  handleInputChange()
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
+            <View style={[styles.card, { backgroundColor: theme.surface }]}>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>
+                {t('setup.serverConfig')}
+              </Text>
+              <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
+                {t('setup.serverConfigDesc')}
+              </Text>
 
-              <Input
-                label={t('setup.password')}
-                placeholder={t('setup.passwordPlaceholder')}
-                value={password}
-                onChangeText={text => {
-                  setPassword(text)
-                  handleInputChange()
-                }}
-                showPasswordToggle
-                editable={!isLoading}
-              />
+              <View style={styles.form}>
+                <Input
+                  label={t('setup.serverUrl')}
+                  placeholder={t('setup.serverUrlPlaceholder')}
+                  value={serverUrl}
+                  onChangeText={text => {
+                    setServerUrl(text)
+                    handleInputChange()
+                  }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  editable={!isLoading}
+                />
 
-              {connectionStatus === 'error' && (
-                <View
-                  style={[
-                    styles.errorContainer,
-                    {
-                      backgroundColor: theme.semantic.errorSoft,
-                      borderColor: theme.border,
-                      borderRadius: theme.radius.medium,
-                    },
-                  ]}
-                >
-                  <XCircle size={16} color={theme.error} />
-                  <View style={styles.errorTextWrapper}>
-                    <Text style={[styles.errorText, { color: theme.error }]}>{errorMessage}</Text>
-                    {errorHint ? (
-                      <Text style={[styles.errorHint, { color: theme.textSecondary }]}>
-                        {errorHint}
-                      </Text>
-                    ) : null}
-                  </View>
-                </View>
-              )}
+                <Input
+                  label={t('setup.username')}
+                  placeholder={t('setup.usernamePlaceholder')}
+                  value={username}
+                  onChangeText={text => {
+                    setUsername(text)
+                    handleInputChange()
+                  }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
 
-              <View style={styles.buttonRow}>
-                <View style={styles.buttonWrapper}>
-                  <Button
-                    title={
-                      connectionStatus === 'testing'
-                        ? t('setup.testing')
-                        : connectionStatus === 'success'
-                          ? t('setup.connectionOk')
-                          : t('setup.testConnection')
-                    }
-                    onPress={handleTestConnection}
-                    variant="secondary"
-                    disabled={!serverUrl || isLoading}
-                    loading={connectionStatus === 'testing'}
-                    fullWidth
-                  />
-                  {connectionStatus === 'success' && (
-                    <View style={styles.successIcon}>
-                      <CheckCircle size={20} color={theme.success} />
+                <Input
+                  label={t('setup.password')}
+                  placeholder={t('setup.passwordPlaceholder')}
+                  value={password}
+                  onChangeText={text => {
+                    setPassword(text)
+                    handleInputChange()
+                  }}
+                  showPasswordToggle
+                  editable={!isLoading}
+                />
+
+                {connectionStatus === 'error' && (
+                  <View
+                    style={[
+                      styles.errorContainer,
+                      {
+                        backgroundColor: theme.semantic.errorSoft,
+                        borderColor: theme.border,
+                        borderRadius: theme.radius.medium,
+                      },
+                    ]}
+                  >
+                    <XCircle size={16} color={theme.error} />
+                    <View style={styles.errorTextWrapper}>
+                      <Text style={[styles.errorText, { color: theme.error }]}>{errorMessage}</Text>
+                      {errorHint ? (
+                        <Text style={[styles.errorHint, { color: theme.textSecondary }]}>
+                          {errorHint}
+                        </Text>
+                      ) : null}
                     </View>
-                  )}
-                </View>
+                  </View>
+                )}
 
-                <View style={styles.buttonWrapper}>
-                  <Button
-                    title={t('setup.start')}
-                    onPress={handleLogin}
-                    disabled={!canLogin || isLoading}
-                    loading={isLoading}
-                    fullWidth
-                  />
+                <View style={styles.buttonRow}>
+                  <View style={styles.buttonWrapper}>
+                    <Button
+                      title={
+                        connectionStatus === 'testing'
+                          ? t('setup.testing')
+                          : connectionStatus === 'success'
+                            ? t('setup.connectionOk')
+                            : t('setup.testConnection')
+                      }
+                      onPress={handleTestConnection}
+                      variant="secondary"
+                      disabled={!serverUrl || isLoading}
+                      loading={connectionStatus === 'testing'}
+                      fullWidth
+                    />
+                    {connectionStatus === 'success' && (
+                      <View style={styles.successIcon}>
+                        <CheckCircle size={20} color={theme.success} />
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={styles.buttonWrapper}>
+                    <Button
+                      title={t('setup.start')}
+                      onPress={handleLogin}
+                      disabled={!canLogin || isLoading}
+                      loading={isLoading}
+                      fullWidth
+                    />
+                  </View>
                 </View>
               </View>
             </View>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </SafeKeyboardAvoidingView>
     </View>
   )
 }
@@ -279,6 +286,7 @@ export default function SetupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingBottom: 0,
   },
   keyboardView: {
     flex: 1,
@@ -286,11 +294,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 24,
+  },
+  centerWrapper: {
+    paddingHorizontal: 24,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
   },
   logo: {
     width: 180,

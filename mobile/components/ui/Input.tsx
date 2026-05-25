@@ -1,7 +1,15 @@
 import { useThemeStore } from '@/stores/themeStore'
 import { Eye, EyeOff } from 'lucide-react-native'
-import { useState } from 'react'
-import { StyleSheet, Text, TextInput, TextInputProps, TouchableOpacity, View } from 'react-native'
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Keyboard,
+  StyleSheet,
+  Text,
+  TextInput,
+  TextInputProps,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 
 interface InputProps extends TextInputProps {
   label?: string
@@ -9,10 +17,56 @@ interface InputProps extends TextInputProps {
   showPasswordToggle?: boolean
 }
 
-export function Input({ label, error, showPasswordToggle, style, ...props }: InputProps) {
+export const Input = forwardRef<TextInput, InputProps>(function Input(
+  { label, error, showPasswordToggle, style, ...props },
+  ref
+) {
   const { theme } = useThemeStore()
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
+  const inputRef = useRef<TextInput>(null)
+  const isFocusedRef = useRef(false)
+
+  const setRef = useCallback(
+    (node: TextInput | null) => {
+      inputRef.current = node
+      if (typeof ref === 'function') {
+        ref(node)
+      } else if (ref) {
+        ref.current = node
+      }
+    },
+    [ref]
+  )
+
+  const lastShowTimeRef = useRef(0)
+
+  useEffect(() => {
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      console.log(`[Input:${label}] keyboardDidHide isFocused=${isFocusedRef.current}`)
+      if (isFocusedRef.current) {
+        const hideTime = Date.now()
+        setTimeout(() => {
+          // Only blur if keyboard didn't show again (secureTextEntry re-init, etc.)
+          if (isFocusedRef.current && lastShowTimeRef.current < hideTime) {
+            console.log(`[Input:${label}] blurring after keyboard hide`)
+            inputRef.current?.blur()
+          } else {
+            console.log(`[Input:${label}] skip blur — keyboard re-shown`)
+          }
+        }, 200)
+      }
+    })
+
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      lastShowTimeRef.current = Date.now()
+    })
+
+    return () => {
+      hideSub.remove()
+      showSub.remove()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const borderColor = error ? theme.error : isFocused ? theme.primary : 'transparent'
   const borderWidth = error || isFocused ? 1 : 0
@@ -21,17 +75,24 @@ export function Input({ label, error, showPasswordToggle, style, ...props }: Inp
   return (
     <View style={styles.container}>
       {label && <Text style={[styles.label, { color: theme.text }]}>{label}</Text>}
-      <View style={styles.inputWrapper}>
+      <View
+        style={[
+          styles.inputWrapper,
+          {
+            backgroundColor,
+            borderColor,
+            borderWidth,
+            borderRadius: theme.radius.medium,
+            paddingHorizontal: theme.spacing,
+          },
+        ]}
+      >
         <TextInput
+          ref={setRef}
           style={[
             styles.input,
             {
-              backgroundColor,
               color: theme.text,
-              borderColor,
-              borderWidth,
-              borderRadius: theme.radius.medium,
-              paddingHorizontal: theme.spacing,
               fontSize: theme.typography.bodyLarge.fontSize,
               flex: 1,
             },
@@ -40,11 +101,15 @@ export function Input({ label, error, showPasswordToggle, style, ...props }: Inp
           placeholderTextColor={theme.textSecondary}
           secureTextEntry={showPasswordToggle && !passwordVisible}
           onFocus={e => {
+            console.log(`[Input:${label}] onFocus`)
             setIsFocused(true)
+            isFocusedRef.current = true
             props.onFocus?.(e)
           }}
           onBlur={e => {
+            console.log(`[Input:${label}] onBlur`)
             setIsFocused(false)
+            isFocusedRef.current = false
             props.onBlur?.(e)
           }}
           {...props}
@@ -65,7 +130,7 @@ export function Input({ label, error, showPasswordToggle, style, ...props }: Inp
       {error && <Text style={[styles.error, { color: theme.error }]}>{error}</Text>}
     </View>
   )
-}
+})
 
 const styles = StyleSheet.create({
   container: {
@@ -84,13 +149,11 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 48,
-    width: '100%',
-    minWidth: '100%',
+    flex: 1,
   },
   toggleButton: {
-    padding: 12,
-    position: 'absolute',
-    right: 4,
+    padding: 8,
+    marginLeft: 4,
   },
   error: {
     fontSize: 12,
