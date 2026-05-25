@@ -1,5 +1,7 @@
 # Mosaic Admin Dashboard
 
+中文 | [English](./README.md)
+
 Mosaic 服务端的 Web 管理后台，基于 Vite + React 19 + shadcn/ui 构建。
 
 ## 访问方式
