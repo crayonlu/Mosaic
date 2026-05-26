@@ -24,6 +24,8 @@ export function getMediaTileSize(count: number, measuredContainerWidth?: number)
 
 export function getOptimizedMediaUri(uri: string, variant?: 'thumb' | 'opt'): string {
   if (!uri || !variant) return uri ?? ''
+  // Only append variant to remote (http/https) URIs — local file:// URIs don't support query strings
+  if (!isRemoteUri(uri)) return uri
   const separator = uri.includes('?') ? '&' : '?'
   return `${uri}${separator}variant=${variant}`
 }
