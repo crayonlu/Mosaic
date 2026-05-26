@@ -131,7 +131,7 @@
     "appearance": "外观",
     "theme": "主题",
     "aiBot": "Bots",
-    "addBot": "添加助手",
+    "addBot": "添加 Bot",
     "aiConfig": "AI 配置",
     "configured": "已配置",
     "partialConfig": "部分配置",
@@ -222,8 +222,8 @@
     "placeholder": "添加标签…"
   },
   "bot": {
-    "editBot": "编辑助手",
-    "newBot": "新建助手",
+    "editBot": "编辑 Bot",
+    "newBot": "新建 Bot",
     "delete": "删除",
     "deleteConfirm": "确认删除",
     "deleteFailed": "删除失败",
@@ -232,7 +232,7 @@
     "saving": "保存中...",
     "avatarUploadFailed": "头像上传失败",
     "nameRequired": "名称为必填项",
-    "nameRequiredMsg": "助手名称不能为空",
+    "nameRequiredMsg": "Bot 名称不能为空",
     "name": "名字",
     "namePlaceholder": "给 Bot 起个名字...",
     "tags": "标签",
