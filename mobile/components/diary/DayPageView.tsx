@@ -1,23 +1,26 @@
 import { MoodDragBar } from '@/components/diary/MoodDragBar'
 import { MemoCard } from '@/components/memo/MemoCard'
-import { Loading } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
 import { useTranslation } from 'react-i18next'
 import { useDiary, useUpdateDiary } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
 import { MOODS, type MoodKey } from '@mosaic/utils'
+import dayjs from 'dayjs'
 import React, {
   forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ScrollView } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
+  FadeIn,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -36,6 +39,8 @@ interface DayPageViewProps {
   onMemoPress?: (memoId: string) => void
   isEditing: boolean
   onEditStateChange?: () => void
+  onRegisterRef?: (ref: DayPageViewRef | null) => void
+  isCurrent?: boolean
 }
 
 const MoodCircle = React.memo(function MoodCircle({
@@ -82,16 +87,39 @@ const MoodCircle = React.memo(function MoodCircle({
 
 export const DayPageView = React.memo(
   forwardRef<DayPageViewRef, DayPageViewProps>(function DayPageView(
-    { date, onMemoPress, isEditing, onEditStateChange },
+    { date, onMemoPress, isEditing, onEditStateChange, onRegisterRef, isCurrent },
     ref
   ) {
     const { t } = useTranslation()
     const theme = useThemeStore(s => s.theme)
+
+    // Synchronously reset drafts when the date changes, before the render.
+    // This prevents a one-frame flash where the new date renders with the old
+    // date's draft state before the useEffect([date]) cleanup fires.
+    const prevDateRef = useRef(date)
     const [summaryDraft, setSummaryDraft] = useState('')
     const [moodKeyDraft, setMoodKeyDraft] = useState<MoodKey | undefined>(undefined)
     const [moodScoreDraft, setMoodScoreDraft] = useState(5)
 
     const { data: diary, isLoading } = useDiary(date)
+
+    // Sync reset when date changes — runs during render (before paint) via the ref check.
+    if (prevDateRef.current !== date) {
+      console.log(
+        '[FLASH] DayPageView date prop changed:',
+        prevDateRef.current,
+        '→',
+        date,
+        '| hasData:',
+        !!diary
+      )
+      prevDateRef.current = date
+      // Reset to the new date's data if already in cache, otherwise to empty.
+      // These setState calls during render are safe per React docs when guarded by a ref.
+      setSummaryDraft(diary?.summary ?? '')
+      setMoodKeyDraft(diary?.moodKey as MoodKey | undefined)
+      setMoodScoreDraft(diary?.moodScore ?? 5)
+    }
     const updateDiary = useUpdateDiary()
     const archivedMemos = useMemo<MemoWithResources[]>(() => diary?.memos ?? [], [diary?.memos])
 
@@ -102,13 +130,6 @@ export const DayPageView = React.memo(
         setMoodScoreDraft(diary?.moodScore ?? 5)
       }
     }, [diary?.summary, diary?.moodKey, diary?.moodScore, isEditing])
-
-    useEffect(() => {
-      setSummaryDraft(diary?.summary ?? '')
-      setMoodKeyDraft(diary?.moodKey as MoodKey | undefined)
-      setMoodScoreDraft(diary?.moodScore ?? 5)
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [date])
 
     const hasChanges = useMemo(
       () =>
@@ -146,17 +167,27 @@ export const DayPageView = React.memo(
       if (isEditing) onEditStateChange?.()
     }, [hasChanges, isEditing]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        hasChanges,
-        isPending: updateDiary.isPending,
-        hasDiary: !!diary,
-        save: handleSave,
-        cancel: handleCancel,
-      }),
-      [hasChanges, updateDiary.isPending, diary, handleSave, handleCancel]
-    )
+    const handle: DayPageViewRef = {
+      hasChanges,
+      isPending: updateDiary.isPending,
+      hasDiary: !!diary,
+      save: handleSave,
+      cancel: handleCancel,
+    }
+
+    useImperativeHandle(ref, () => handle, [
+      hasChanges,
+      updateDiary.isPending,
+      diary,
+      handleSave,
+      handleCancel,
+    ])
+
+    useEffect(() => {
+      onRegisterRef?.(handle)
+      return () => onRegisterRef?.(null)
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [onRegisterRef])
 
     const handleMemoPress = useCallback((memoId: string) => onMemoPress?.(memoId), [onMemoPress])
 
@@ -169,20 +200,31 @@ export const DayPageView = React.memo(
       return handlers
     }, [archivedMemos, handleMemoPress])
 
-    if (isLoading) {
-      return (
-        <View style={styles.centeredContainer}>
-          <Loading text={t('common.loading')} />
-        </View>
-      )
+    const dayNum = dayjs(date).format('D')
+    const weekday = dayjs(date).format('ddd').toUpperCase()
+
+    const dateCard = (
+      <View style={styles.dateCard}>
+        <Text style={[styles.dateCardDay, { color: theme.text }]}>{dayNum}</Text>
+        <Text style={[styles.dateCardWeekday, { color: theme.textSecondary }]}>{weekday}</Text>
+      </View>
+    )
+
+    if (isLoading && !diary) {
+      return <View style={styles.centeredContainer}>{dateCard}</View>
     }
 
     if (!diary) {
       return (
         <View style={styles.centeredContainer}>
-          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            {t('dayPageView.diaryNotFound', { date })}
-          </Text>
+          {dateCard}
+          {isCurrent && (
+            <Animated.View entering={FadeIn.duration(200)}>
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                {t('dayPageView.diaryNotFound', { date })}
+              </Text>
+            </Animated.View>
+          )}
         </View>
       )
     }
@@ -283,6 +325,23 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 32,
     gap: 20,
+  },
+  dateCard: {
+    alignItems: 'center',
+    paddingTop: 32,
+    paddingBottom: 8,
+  },
+  dateCardDay: {
+    fontSize: 56,
+    fontWeight: '200',
+    lineHeight: 60,
+  },
+  dateCardWeekday: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginTop: 2,
   },
   section: {
     paddingHorizontal: 12,

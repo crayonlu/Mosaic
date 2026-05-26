@@ -38,6 +38,11 @@ export function MoodDragBar({
 
   const panGesture = Gesture.Pan()
     .enabled(!disabled)
+    // Require a clear horizontal intent (±8px) before activating.
+    // This prevents the gesture from competing with PagerView's horizontal swipe recognizer
+    // when the user's touch starts ambiguously near the drag bar.
+    .activeOffsetX([-8, 8])
+    .failOffsetY([-12, 12])
     .onBegin(() => {
       'worklet'
       startRatio.value = positionRatio.value

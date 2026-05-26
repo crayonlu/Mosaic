@@ -43,16 +43,12 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
 
   useEffect(() => {
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      console.log(`[Input:${label}] keyboardDidHide isFocused=${isFocusedRef.current}`)
       if (isFocusedRef.current) {
         const hideTime = Date.now()
         setTimeout(() => {
           // Only blur if keyboard didn't show again (secureTextEntry re-init, etc.)
           if (isFocusedRef.current && lastShowTimeRef.current < hideTime) {
-            console.log(`[Input:${label}] blurring after keyboard hide`)
             inputRef.current?.blur()
-          } else {
-            console.log(`[Input:${label}] skip blur — keyboard re-shown`)
           }
         }, 200)
       }
@@ -101,13 +97,11 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
           placeholderTextColor={theme.textSecondary}
           secureTextEntry={showPasswordToggle && !passwordVisible}
           onFocus={e => {
-            console.log(`[Input:${label}] onFocus`)
             setIsFocused(true)
             isFocusedRef.current = true
             props.onFocus?.(e)
           }}
           onBlur={e => {
-            console.log(`[Input:${label}] onBlur`)
             setIsFocused(false)
             isFocusedRef.current = false
             props.onBlur?.(e)

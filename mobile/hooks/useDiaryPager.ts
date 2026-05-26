@@ -2,7 +2,7 @@ import type { DiaryWithMemosResponse, MoodKey } from '@mosaic/api'
 import { diariesApi } from '@mosaic/api'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 interface UseDiaryPagerOptions {
   initialDate?: string
   prefetchDays?: number
@@ -52,14 +52,27 @@ export function useDiaryPager(options: UseDiaryPagerOptions = {}): UseDiaryPager
     return dates
   }, [currentDate, prefetchDays])
 
+  const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   useEffect(() => {
-    prefetchDates.forEach(date => {
-      queryClient.prefetchQuery({
-        queryKey: ['diary', date],
-        queryFn: () => diariesApi.get(date),
-        staleTime: 10 * 60 * 1000,
+    // Delay prefetch by 300ms so network activity doesn't compete with the swipe animation frame budget.
+    if (prefetchTimerRef.current) clearTimeout(prefetchTimerRef.current)
+    prefetchTimerRef.current = setTimeout(() => {
+      prefetchTimerRef.current = null
+      prefetchDates.forEach(date => {
+        queryClient.prefetchQuery({
+          queryKey: ['diary', date],
+          queryFn: () => diariesApi.get(date),
+          staleTime: 10 * 60 * 1000,
+        })
       })
-    })
+    }, 300)
+    return () => {
+      if (prefetchTimerRef.current) {
+        clearTimeout(prefetchTimerRef.current)
+        prefetchTimerRef.current = null
+      }
+    }
   }, [prefetchDates, queryClient])
 
   const shiftCurrentDate = useCallback((value: number, unit: dayjs.ManipulateType) => {

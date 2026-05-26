@@ -27,20 +27,34 @@ class TokenStorage {
     return mmkv.getString(KEYS.SERVER_URL) ?? null
   }
 
+  async getServerUrlAsync(): Promise<string | null> {
+    const fromMmkv = mmkv.getString(KEYS.SERVER_URL)
+    if (fromMmkv) return fromMmkv
+    return secureStorage.getServerUrl()
+  }
+
   setServerUrl(url: string): void {
     mmkv.set(KEYS.SERVER_URL, url)
+    secureStorage.setServerUrl(url).catch(() => {})
   }
 
   getUsername(): string | null {
     return mmkv.getString(KEYS.USERNAME) ?? null
   }
 
+  async getUsernameAsync(): Promise<string | null> {
+    const fromMmkv = mmkv.getString(KEYS.USERNAME)
+    if (fromMmkv) return fromMmkv
+    return secureStorage.getUsername()
+  }
+
   setUsername(username: string): void {
     mmkv.set(KEYS.USERNAME, username)
+    secureStorage.setUsername(username).catch(() => {})
   }
 
   async clearAll(): Promise<void> {
-    await secureStorage.clearTokens()
+    await Promise.all([secureStorage.clearTokens(), secureStorage.clearServerConfig()])
     mmkv.remove(KEYS.SERVER_URL)
     mmkv.remove(KEYS.USERNAME)
   }

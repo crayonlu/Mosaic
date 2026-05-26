@@ -41,5 +41,6 @@ export function useDiary(date: string) {
       fallback: () => fallbackSingleDiary(date),
     }),
     enabled: !!date,
+    staleTime: 5 * 60 * 1000,
   })
 }

@@ -69,7 +69,7 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true })
 
         try {
-          const serverUrl = tokenStorage.getServerUrl()
+          const serverUrl = await tokenStorage.getServerUrlAsync()
           const hasTokens = await tokenStorage.hasTokens()
 
           if (!serverUrl || !hasTokens) {
