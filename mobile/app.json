@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "Mosaic",
-    "slug": "Mosaic",
+    "slug": "mosaic",
+    "owner": "crayonorg",
     "platforms": ["android", "ios", "web"],
     "version": "1.0.1",
     "orientation": "portrait",
@@ -11,7 +12,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "xyz.cyncyn.mosaic"
+      "bundleIdentifier": "xyz.cyncyn.mosaic",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -50,6 +54,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5de5b19b-a26d-44be-8b17-7f50b8b72566"
+      }
     }
   }
 }
