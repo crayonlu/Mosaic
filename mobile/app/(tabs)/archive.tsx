@@ -151,7 +151,7 @@ export default function ArchiveScreen() {
               {hasSelection
                 ? t('archive.archive')
                 : isSelectionMode
-                  ? t('common.confirm')
+                  ? t('common.cancel')
                   : t('archive.archive')}
             </Text>
           </TouchableOpacity>

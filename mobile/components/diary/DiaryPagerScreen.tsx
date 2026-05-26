@@ -239,9 +239,16 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
           </Animated.View>
         )}
 
-        <Text style={[styles.currentDate, { color: theme.text }]}>
-          {dayjs(currentDate).format('YYYY-MM-DD')}
-        </Text>
+        <View style={styles.headerCenter}>
+          <Text style={[styles.currentDate, { color: theme.text }]}>
+            {dayjs(currentDate).format('YYYY-MM-DD')}
+          </Text>
+          {!isEditing && hasDiary && (
+            <TouchableOpacity style={styles.editButton} onPress={handleStartEdit} hitSlop={8}>
+              <Pencil size={18} color={theme.textSecondary} strokeWidth={2} />
+            </TouchableOpacity>
+          )}
+        </View>
 
         {isEditing ? (
           <Animated.View
@@ -298,11 +305,6 @@ export function DiaryPagerScreen({ initialDate }: DiaryPagerScreenProps) {
                   strokeWidth={2.2}
                 />
               </TouchableOpacity>
-              {hasDiary && (
-                <TouchableOpacity style={styles.navButton} onPress={handleStartEdit} hitSlop={8}>
-                  <Pencil size={18} color={theme.textSecondary} strokeWidth={2} />
-                </TouchableOpacity>
-              )}
             </View>
           </Animated.View>
         )}
@@ -335,6 +337,17 @@ const styles = StyleSheet.create({
   },
   headerNavGroup: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  editButton: {
+    padding: 6,
+    borderRadius: 8,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   navButton: {
