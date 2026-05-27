@@ -5,7 +5,7 @@ export default function ThemeAwareSplash() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('@/assets/images/mosaic-light.png')}
+        source={require('@/assets/images/splash-icon.png')}
         style={styles.logo}
         contentFit="contain"
       />
@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 150,
+    height: 191,
   },
 })
