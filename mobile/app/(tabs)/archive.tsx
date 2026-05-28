@@ -7,7 +7,7 @@ import type { MemoWithResources } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { router } from 'expo-router'
 import { Check, X } from 'lucide-react-native'
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { useMemo, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -78,12 +78,6 @@ export default function ArchiveScreen() {
   const today = dayjs().format('YYYY-MM-DD')
   const { data: todayDiary } = useDiary(today)
 
-  useEffect(() => {
-    if (archiveState.phase === 'confirming') {
-      dialogRef.current?.present()
-    }
-  }, [archiveState.phase])
-
   const selectedMemoIds = archiveState.selectedIds
   const isSelectionMode = archiveState.phase !== 'browsing'
 
@@ -110,8 +104,14 @@ export default function ArchiveScreen() {
         return
       }
       setDialogMemos(selectedMemos)
+      dispatch({ type: 'PRESS_ARCHIVE_BUTTON' })
+      return
     }
     dispatch({ type: 'PRESS_ARCHIVE_BUTTON' })
+  }
+
+  const handleDateSelect = (date?: string) => {
+    setSelectedDate(date)
   }
 
   return (
@@ -157,7 +157,11 @@ export default function ArchiveScreen() {
           </TouchableOpacity>
         </View>
 
-        <ArchiveDateFilter selectedDate={selectedDate} onDateSelect={setSelectedDate} />
+        <ArchiveDateFilter
+          selectedDate={selectedDate}
+          onDateSelect={handleDateSelect}
+          disabled={isSelectionMode}
+        />
       </View>
 
       <View style={{ flex: 1 }}>
@@ -171,18 +175,20 @@ export default function ArchiveScreen() {
           onMemosChange={setVisibleMemos}
         />
       </View>
-      <ArchiveDialog
-        ref={dialogRef}
-        selectedMemos={dialogMemos}
-        targetDate={selectedDate || today}
-        existingDiary={selectedDate === today ? todayDiary : undefined}
-        onSuccess={() => {
-          dispatch({ type: 'CONFIRM_SUCCESS' })
-          setDialogMemos([])
-        }}
-        onCancel={() => dialogRef.current?.dismiss()}
-        onDismiss={() => dispatch({ type: 'SHEET_CLOSED' })}
-      />
+      {archiveState.phase === 'confirming' && (
+        <ArchiveDialog
+          ref={dialogRef}
+          selectedMemos={dialogMemos}
+          targetDate={selectedDate || today}
+          existingDiary={selectedDate === today ? todayDiary : undefined}
+          onSuccess={() => {
+            dispatch({ type: 'CONFIRM_SUCCESS' })
+            setDialogMemos([])
+          }}
+          onCancel={() => dialogRef.current?.dismiss()}
+          onDismiss={() => dispatch({ type: 'SHEET_CLOSED' })}
+        />
+      )}
     </View>
   )
 }

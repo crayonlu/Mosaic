@@ -65,6 +65,12 @@ export const ArchiveDialog = forwardRef<ArchiveDialogRef, ArchiveDialogProps>(
     )
 
     useEffect(() => {
+      requestAnimationFrame(() => {
+        sheetRef.current?.present()
+      })
+    }, [])
+
+    useEffect(() => {
       if (existingDiary) {
         setSummary(existingDiary.summary || '')
         setMoodKey(existingDiary.moodKey as MoodKey)
@@ -125,7 +131,7 @@ export const ArchiveDialog = forwardRef<ArchiveDialogRef, ArchiveDialogProps>(
         snapPoints={snapPoints}
         enableDynamicSizing={false}
         enablePanDownToClose
-        onDismiss={onDismiss} // 唯一触发父组件状态更新的地方，确保动画完成再更新
+        onDismiss={onDismiss}
         backdropComponent={renderBackdrop}
         backgroundStyle={{ backgroundColor: theme.background }}
         handleIndicatorStyle={{ backgroundColor: theme.textSecondary }}

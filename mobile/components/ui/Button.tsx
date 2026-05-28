@@ -146,6 +146,7 @@ export function Button({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={isInactive}
+      style={style}
     >
       <Animated.View
         style={[
@@ -161,7 +162,6 @@ export function Button({
             opacity: isInactive ? theme.state.disabledOpacity : 1,
           },
           animatedStyle,
-          style,
         ]}
       >
         {loading ? (

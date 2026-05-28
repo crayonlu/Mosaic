@@ -9,13 +9,13 @@ import {
   uploadSelectedMedia,
   type SelectedMediaItem,
 } from '@/lib/media/upload'
+import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
 import { normalizeContent } from '@/lib/utils/content'
 import { useThemeStore } from '@/stores/themeStore'
 import { Share as ShareIcon, X } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
@@ -235,7 +235,7 @@ export function FullScreenEditor({
     >
       <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <KeyboardAvoidingView
+        <SafeKeyboardAvoidingView
           style={[
             styles.keyboardView,
             {
@@ -436,7 +436,7 @@ export function FullScreenEditor({
               </View>
             )}
           </ScrollView>
-        </KeyboardAvoidingView>
+        </SafeKeyboardAvoidingView>
 
         <PostPreview
           visible={showPreview}

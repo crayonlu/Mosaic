@@ -9,9 +9,14 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 interface ArchiveDateFilterProps {
   selectedDate?: string
   onDateSelect: (date?: string) => void
+  disabled?: boolean
 }
 
-export function ArchiveDateFilter({ selectedDate, onDateSelect }: ArchiveDateFilterProps) {
+export function ArchiveDateFilter({
+  selectedDate,
+  onDateSelect,
+  disabled,
+}: ArchiveDateFilterProps) {
   const { theme } = useThemeStore()
   const { t } = useTranslation()
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -36,9 +41,11 @@ export function ArchiveDateFilter({ selectedDate, onDateSelect }: ArchiveDateFil
               backgroundColor: theme.surfaceMuted,
               borderColor: 'transparent',
               borderRadius: theme.radius.medium,
+              opacity: disabled ? 0.5 : 1,
             },
           ]}
           onPress={() => setShowDatePicker(true)}
+          disabled={disabled}
         >
           <Calendar size={18} color={theme.textSecondary} />
           <Text
@@ -46,7 +53,7 @@ export function ArchiveDateFilter({ selectedDate, onDateSelect }: ArchiveDateFil
           >
             {formatDate(selectedDate) || t('archiveDateFilter.selectDate')}
           </Text>
-          {selectedDate && (
+          {selectedDate && !disabled && (
             <TouchableOpacity
               onPress={handleClearDate}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

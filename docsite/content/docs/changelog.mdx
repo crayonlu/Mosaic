@@ -5,6 +5,50 @@ description: Release history
 
 # Changelog
 
+## v1.0.2 (2026-05-28)
+
+### ⚡ Performance
+
+- **Keyboard lag fix** — BotEditorSheet now uses `KeyboardAwareScrollView` (UI-thread native animation) instead of JS-thread `KeyboardAvoidingView`, eliminating stutter on keyboard show/hide
+- Upgraded `react-native-keyboard-controller` from 1.18.5 to 1.21.8 — brings layout-free keyboard animations, memory leak fixes, and Fabric compatibility improvements
+- FullScreenEditor migrated from React Native's built-in `KeyboardAvoidingView` to keyboard-controller's native version
+
+### 🐛 Bug Fixes
+
+- Fixed ArchiveDialog re-appearing unexpectedly when switching dates after a previous archive session (BottomSheetModal props-change re-present issue)
+- Fixed archive date picker remaining interactive during selection mode — now properly disabled
+- Fixed clear (X) button on date filter still clickable during archive selection
+- Fixed Button component `style` prop not affecting layout (e.g. `flex: 1` in footer buttons) — style now correctly applies to the outer Pressable
+
+### 🔧 Refactors
+
+- Extracted `SettingsSection` reusable component — all settings sections now share a unified collapsible pattern (icon + title + summary + badge + collapsible content)
+- About section redesigned to match other collapsible sections with version info, update status, and action button
+- Added `useSafeKeyboardHandler` hook to safeProviders for Expo Go compatibility
+
+### 🌐 Localization
+
+- Added new i18n keys: `version`, `updateStatus`, `installUpdate`, `checkUpdate` (zh/en)
+
+### 📱 Other Mobile Improvements
+
+- In-app update system via GitHub Releases (download progress, install prompt)
+- New app icon and splash screen with brand refresh
+- BootSplash integration for native splash screen
+- Terminology update: "助手" → "Bot" across the app
+- Full i18n migration to `react-i18next`
+- Diary feature enhancements with new hooks and pager animations
+- Retry mechanism with exponential backoff for async operations
+- ProGuard rules plugin for Android release builds
+
+### 🖥 Server
+
+- Fixed embedding execution order — now runs before bot replies to ensure RAG anchor exists
+- Replaced hardcoded `max_tokens` with config values in AI service calls
+- Added `user_id` to resources table for ownership tracking
+
+---
+
 ## v1.0.1 (2026-05-22)
 
 ### 🎨 New Theme System

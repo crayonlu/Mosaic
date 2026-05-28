@@ -82,6 +82,7 @@ plans/*
 docs/internal/*
 docs/superpowers/*
 .superpowers/*
+.workbuddy/
 
 **/.turbo
 

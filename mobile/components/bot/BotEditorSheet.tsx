@@ -2,7 +2,7 @@ import { SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { toast } from '@/components/ui/Toast'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
-import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
+import { SafeKeyboardAwareScrollView } from '@/lib/native/safeProviders'
 import { useCreateBot, useDeleteBot, useUpdateBot } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type Bot } from '@mosaic/api'
@@ -13,7 +13,6 @@ import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
   Modal,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -169,130 +168,129 @@ export function BotEditorSheet({ visible, bot, onClose }: BotEditorSheetProps) {
           </TouchableOpacity>
         </View>
 
-        <SafeKeyboardAvoidingView style={styles.bodyKeyboard} behavior="padding">
-          <ScrollView
-            style={styles.bodyScroll}
-            contentContainerStyle={[styles.body, { paddingBottom: bottomInset }]}
-            keyboardShouldPersistTaps="handled"
+        <SafeKeyboardAwareScrollView
+          style={styles.bodyScroll}
+          contentContainerStyle={[styles.body, { paddingBottom: bottomInset }]}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={bottomInset}
+        >
+          <TouchableOpacity
+            style={styles.avatarRow}
+            onPress={handleAvatarPress}
+            disabled={uploadingAvatar}
+            activeOpacity={0.75}
           >
-            <TouchableOpacity
-              style={styles.avatarRow}
-              onPress={handleAvatarPress}
-              disabled={uploadingAvatar}
-              activeOpacity={0.75}
-            >
-              <View style={[styles.avatarCircle, { backgroundColor: theme.primary }]}>
-                {uploadingAvatar ? (
-                  <ActivityIndicator size="small" color={theme.onPrimary} />
-                ) : avatarUrl ? (
-                  <Image
-                    source={{ uri: avatarUrl, headers: authHeaders }}
-                    style={styles.avatarImage}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <Camera size={22} color={theme.onPrimary} />
-                    <Text style={[styles.avatarPlaceholderText, { color: theme.onPrimary }]}>
-                      {name.charAt(0).toUpperCase() || '?'}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Text style={[styles.avatarHint, { color: theme.textSecondary }]}>
-                {avatarUrl ? t('bot.changeAvatar') : t('bot.uploadAvatar')}
-              </Text>
-            </TouchableOpacity>
-
-            <View
-              style={[
-                styles.section,
-                { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
-              ]}
-            >
-              <View style={[styles.field, { borderBottomColor: theme.border }]}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>{t('bot.name')}</Text>
-                <TextInput
-                  style={[styles.input, { color: theme.text }]}
-                  value={name}
-                  onChangeText={setName}
-                  placeholder={t('bot.namePlaceholder')}
-                  placeholderTextColor={theme.textSecondary}
-                  maxLength={50}
+            <View style={[styles.avatarCircle, { backgroundColor: theme.primary }]}>
+              {uploadingAvatar ? (
+                <ActivityIndicator size="small" color={theme.onPrimary} />
+              ) : avatarUrl ? (
+                <Image
+                  source={{ uri: avatarUrl, headers: authHeaders }}
+                  style={styles.avatarImage}
+                  contentFit="cover"
                 />
-              </View>
-
-              <View style={[styles.field, { borderBottomColor: theme.border }]}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>{t('bot.tags')}</Text>
-                <TextInput
-                  style={[styles.input, { color: theme.text }]}
-                  value={tagsInput}
-                  onChangeText={setTagsInput}
-                  placeholder={t('bot.tagsPlaceholder')}
-                  placeholderTextColor={theme.textSecondary}
-                />
-              </View>
-
-              <View style={styles.fieldRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>
-                  {t('bot.autoReply')}
-                </Text>
-                <SwitchBtn value={autoReply} onValueChange={setAutoReply} />
-              </View>
-
-              <View style={[styles.field, { borderBottomColor: theme.border }]}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>{t('bot.model')}</Text>
-                <TextInput
-                  style={[styles.input, { color: theme.text }]}
-                  value={model}
-                  onChangeText={setModel}
-                  placeholder={t('bot.modelPlaceholder')}
-                  placeholderTextColor={theme.textSecondary}
-                  maxLength={50}
-                />
-              </View>
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Camera size={22} color={theme.onPrimary} />
+                  <Text style={[styles.avatarPlaceholderText, { color: theme.onPrimary }]}>
+                    {name.charAt(0).toUpperCase() || '?'}
+                  </Text>
+                </View>
+              )}
             </View>
+            <Text style={[styles.avatarHint, { color: theme.textSecondary }]}>
+              {avatarUrl ? t('bot.changeAvatar') : t('bot.uploadAvatar')}
+            </Text>
+          </TouchableOpacity>
 
-            <View
-              style={[
-                styles.section,
-                { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
-              ]}
-            >
-              <Text style={[styles.label, styles.descLabel, { color: theme.textSecondary }]}>
-                {t('bot.personalityDesc')}
-              </Text>
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
+            ]}
+          >
+            <View style={[styles.field, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>{t('bot.name')}</Text>
               <TextInput
-                style={[styles.descInput, { color: theme.text, borderColor: theme.border }]}
-                value={description}
-                onChangeText={setDescription}
-                placeholder={t('bot.descPlaceholder')}
+                style={[styles.input, { color: theme.text }]}
+                value={name}
+                onChangeText={setName}
+                placeholder={t('bot.namePlaceholder')}
                 placeholderTextColor={theme.textSecondary}
-                multiline
-                textAlignVertical="top"
+                maxLength={50}
               />
             </View>
 
-            {bot && (
-              <View
-                style={[
-                  styles.section,
-                  { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
-                ]}
+            <View style={[styles.field, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>{t('bot.tags')}</Text>
+              <TextInput
+                style={[styles.input, { color: theme.text }]}
+                value={tagsInput}
+                onChangeText={setTagsInput}
+                placeholder={t('bot.tagsPlaceholder')}
+                placeholderTextColor={theme.textSecondary}
+              />
+            </View>
+
+            <View style={styles.fieldRow}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>
+                {t('bot.autoReply')}
+              </Text>
+              <SwitchBtn value={autoReply} onValueChange={setAutoReply} />
+            </View>
+
+            <View style={[styles.field, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>{t('bot.model')}</Text>
+              <TextInput
+                style={[styles.input, { color: theme.text }]}
+                value={model}
+                onChangeText={setModel}
+                placeholder={t('bot.modelPlaceholder')}
+                placeholderTextColor={theme.textSecondary}
+                maxLength={50}
+              />
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
+            ]}
+          >
+            <Text style={[styles.label, styles.descLabel, { color: theme.textSecondary }]}>
+              {t('bot.personalityDesc')}
+            </Text>
+            <TextInput
+              style={[styles.descInput, { color: theme.text, borderColor: theme.border }]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder={t('bot.descPlaceholder')}
+              placeholderTextColor={theme.textSecondary}
+              multiline
+              textAlignVertical="top"
+            />
+          </View>
+
+          {bot && (
+            <View
+              style={[
+                styles.section,
+                { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
+              ]}
+            >
+              <TouchableOpacity
+                style={[styles.deleteBtn, { borderColor: theme.error }]}
+                onPress={handleDelete}
+                disabled={isDeleting}
               >
-                <TouchableOpacity
-                  style={[styles.deleteBtn, { borderColor: theme.error }]}
-                  onPress={handleDelete}
-                  disabled={isDeleting}
-                >
-                  <Text style={[styles.deleteBtnText, { color: theme.error }]}>
-                    {t('bot.delete')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </ScrollView>
-        </SafeKeyboardAvoidingView>
+                <Text style={[styles.deleteBtnText, { color: theme.error }]}>
+                  {t('bot.delete')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </SafeKeyboardAwareScrollView>
       </View>
     </Modal>
   )
@@ -321,9 +319,6 @@ const styles = StyleSheet.create({
   body: {
     padding: 16,
     gap: 12,
-  },
-  bodyKeyboard: {
-    flex: 1,
   },
   bodyScroll: {
     flex: 1,
@@ -413,7 +408,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
   },
   deleteBtnText: {
     fontSize: 15,

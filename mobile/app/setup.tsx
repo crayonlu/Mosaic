@@ -12,10 +12,9 @@ import { CheckCircle, XCircle } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useKeyboardHandler } from 'react-native-keyboard-controller'
+import { SafeKeyboardAvoidingView, useSafeKeyboardHandler } from '@/lib/native/safeProviders'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error'
 
 export default function SetupScreen() {
@@ -119,7 +118,7 @@ export default function SetupScreen() {
   const logoHeight = useSharedValue(LOGO_SECTION_HEIGHT)
   const logoMargin = useSharedValue(LOGO_MARGIN_BOTTOM)
 
-  useKeyboardHandler({
+  useSafeKeyboardHandler({
     onStart: e => {
       'worklet'
       const isOpening = e.height > 0

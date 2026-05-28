@@ -175,3 +175,16 @@ export function SafeKeyboardAwareScrollView({
     </KASV>
   )
 }
+
+type KeyboardHandlerCallbacks = {
+  onStart?: (e: { height: number }) => void
+  onMove?: (e: { height: number }) => void
+  onEnd?: (e: { height: number }) => void
+}
+
+export function useSafeKeyboardHandler(handlers: KeyboardHandlerCallbacks, deps: any[] = []) {
+  if (!keyboardControllerModule) {
+    return
+  }
+  keyboardControllerModule.useKeyboardHandler(handlers, deps)
+}

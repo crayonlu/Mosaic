@@ -77,6 +77,57 @@ function CollapsibleContent({
   )
 }
 
+interface SettingsSectionProps {
+  icon: React.ReactNode
+  title: string
+  summary: string
+  expanded: boolean
+  onToggle: () => void
+  children: React.ReactNode
+  contentStyle?: any
+  badge?: React.ReactNode
+}
+
+function SettingsSection({
+  icon,
+  title,
+  summary,
+  expanded,
+  onToggle,
+  children,
+  contentStyle,
+  badge,
+}: SettingsSectionProps) {
+  const { theme } = useThemeStore()
+
+  return (
+    <View style={styles.section}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
+        <TouchableOpacity
+          style={[styles.menuItem, expanded && { borderBottomColor: theme.border }]}
+          onPress={onToggle}
+        >
+          {icon}
+          <Text style={[styles.menuItemText, { color: theme.text }]}>{title}</Text>
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>{summary}</Text>
+          </View>
+          {badge}
+        </TouchableOpacity>
+        <CollapsibleContent
+          expanded={expanded}
+          style={[
+            { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border },
+            contentStyle,
+          ]}
+        >
+          {children}
+        </CollapsibleContent>
+      </View>
+    </View>
+  )
+}
+
 function AvatarImageWithAuth({ avatarUrl }: { avatarUrl: string }) {
   const { headers: authHeaders } = useAuthHeaders()
 
@@ -105,6 +156,7 @@ export default function SettingsScreen() {
   const [showBotSettings, setShowBotSettings] = useState(false)
   const [showAppearanceSettings, setShowAppearanceSettings] = useState(false)
   const [showAISettings, setShowAISettings] = useState(false)
+  const [showAboutSettings, setShowAboutSettings] = useState(false)
   const [botEditorVisible, setBotEditorVisible] = useState(false)
   const [editingBot, setEditingBot] = useState<import('@mosaic/api').Bot | undefined>(undefined)
   const { data: bots = [] } = useBots()
@@ -312,95 +364,84 @@ export default function SettingsScreen() {
   }
 
   const renderBotSection = () => (
-    <View style={[styles.section]}>
-      <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <TouchableOpacity
-          style={[styles.menuItem, showBotSettings && { borderBottomColor: theme.border }]}
-          onPress={() => toggleSectionWithAnimation(setShowBotSettings)}
-        >
-          <Bot size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>{t('settings.aiBot')}</Text>
-          <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              {showBotSettings
-                ? t('settings.collapsed')
-                : bots.length > 0
-                  ? t('settings.botsCount', { count: bots.length })
-                  : t('settings.none')}
-            </Text>
-          </View>
-        </TouchableOpacity>
-        <CollapsibleContent
-          expanded={showBotSettings}
-          style={[styles.botSettings, { borderTopColor: theme.border }]}
-        >
-          {bots.map((bot, index) => (
-            <TouchableOpacity
-              key={bot.id}
-              style={[
-                styles.botItem,
-                index > 0 && {
-                  borderTopWidth: StyleSheet.hairlineWidth,
-                  borderTopColor: theme.border,
-                },
-              ]}
-              activeOpacity={1}
-              onPress={() => {
-                setEditingBot(bot)
-                setBotEditorVisible(true)
-              }}
-            >
-              <View style={[styles.botAvatar, { backgroundColor: theme.primary }]}>
-                {bot.avatarUrl ? (
-                  <BotAvatarImageWithAuth avatarUrl={bot.avatarUrl} />
-                ) : (
-                  <Text style={[styles.botAvatarText, { color: theme.onPrimary }]}>
-                    {bot.name.charAt(0).toUpperCase()}
-                  </Text>
-                )}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.botName, { color: theme.text }]}>{bot.name}</Text>
-                {bot.tags.length > 0 && (
-                  <Text style={[styles.botTags, { color: theme.textSecondary }]}>
-                    {bot.tags.map(t => `#${t}`).join(' ')}
-                  </Text>
-                )}
-              </View>
-              <View onStartShouldSetResponder={() => true}>
-                <SwitchBtn
-                  value={bot.autoReply}
-                  onValueChange={v => updateBot({ id: bot.id, data: { autoReply: v } })}
-                />
-              </View>
-            </TouchableOpacity>
-          ))}
+    <>
+      <SettingsSection
+        icon={<Bot size={18} color={theme.text} />}
+        title={t('settings.aiBot')}
+        summary={
+          showBotSettings
+            ? t('settings.collapsed')
+            : bots.length > 0
+              ? t('settings.botsCount', { count: bots.length })
+              : t('settings.none')
+        }
+        expanded={showBotSettings}
+        onToggle={() => toggleSectionWithAnimation(setShowBotSettings)}
+      >
+        {bots.map((bot, index) => (
           <TouchableOpacity
+            key={bot.id}
             style={[
-              styles.addBotBtn,
-              {
+              styles.botItem,
+              index > 0 && {
+                borderTopWidth: StyleSheet.hairlineWidth,
                 borderTopColor: theme.border,
-                borderTopWidth: bots.length > 0 ? StyleSheet.hairlineWidth : 0,
               },
             ]}
+            activeOpacity={1}
             onPress={() => {
-              setEditingBot(undefined)
+              setEditingBot(bot)
               setBotEditorVisible(true)
             }}
           >
-            <Plus size={16} color={theme.primary} />
-            <Text style={[styles.addBotText, { color: theme.primary }]}>
-              {t('settings.addBot')}
-            </Text>
+            <View style={[styles.botAvatar, { backgroundColor: theme.primary }]}>
+              {bot.avatarUrl ? (
+                <BotAvatarImageWithAuth avatarUrl={bot.avatarUrl} />
+              ) : (
+                <Text style={[styles.botAvatarText, { color: theme.onPrimary }]}>
+                  {bot.name.charAt(0).toUpperCase()}
+                </Text>
+              )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.botName, { color: theme.text }]}>{bot.name}</Text>
+              {bot.tags.length > 0 && (
+                <Text style={[styles.botTags, { color: theme.textSecondary }]}>
+                  {bot.tags.map(t => `#${t}`).join(' ')}
+                </Text>
+              )}
+            </View>
+            <View onStartShouldSetResponder={() => true}>
+              <SwitchBtn
+                value={bot.autoReply}
+                onValueChange={v => updateBot({ id: bot.id, data: { autoReply: v } })}
+              />
+            </View>
           </TouchableOpacity>
-        </CollapsibleContent>
-      </View>
+        ))}
+        <TouchableOpacity
+          style={[
+            styles.addBotBtn,
+            {
+              borderTopColor: theme.border,
+              borderTopWidth: bots.length > 0 ? StyleSheet.hairlineWidth : 0,
+            },
+          ]}
+          onPress={() => {
+            setEditingBot(undefined)
+            setBotEditorVisible(true)
+          }}
+        >
+          <Plus size={16} color={theme.primary} />
+          <Text style={[styles.addBotText, { color: theme.primary }]}>{t('settings.addBot')}</Text>
+        </TouchableOpacity>
+      </SettingsSection>
       <BotEditorSheet
         visible={botEditorVisible}
         bot={editingBot}
         onClose={() => setBotEditorVisible(false)}
       />
-    </View>
+    </>
   )
 
   const generalSummary =
@@ -409,77 +450,64 @@ export default function SettingsScreen() {
     (locale === 'zh' ? t('settings.languageZh') : 'EN')
 
   const renderGeneralSection = () => (
-    <View style={[styles.section]}>
-      <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <TouchableOpacity
-          style={[styles.menuItem, showAppearanceSettings && { borderBottomColor: theme.border }]}
-          onPress={() => toggleSectionWithAnimation(setShowAppearanceSettings)}
-        >
-          <Cog size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>{t('settings.general')}</Text>
-          <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              {showAppearanceSettings ? t('settings.collapsed') : generalSummary}
-            </Text>
-          </View>
-        </TouchableOpacity>
-        <CollapsibleContent
-          expanded={showAppearanceSettings}
-          style={[styles.appearanceSettings, { borderTopColor: theme.border }]}
-        >
-          <View style={styles.appearanceRow}>
-            <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>
-              {t('settings.theme')}
-            </Text>
-            <View style={styles.appearanceControl}>
-              <SlidingSegmentedControl
-                options={[
-                  { label: t('settings.quietPaper'), value: 'quietPaper' },
-                  { label: t('settings.cleanSlate'), value: 'cleanSlate' },
-                ]}
-                value={themeName}
-                onChange={v => setThemeName(v as 'quietPaper' | 'cleanSlate')}
-                surfaceMuted={theme.surfaceMuted}
-                surface={theme.surface}
-                textColor={theme.text}
-                textMuted={theme.textSecondary}
-                radius={theme.radius.small}
-              />
-            </View>
-          </View>
-          <View
-            style={[
-              styles.appearanceRow,
-              {
-                borderTopWidth: StyleSheet.hairlineWidth,
-                borderTopColor: theme.border,
-                paddingTop: 14,
-                marginTop: 4,
-              },
+    <SettingsSection
+      icon={<Cog size={18} color={theme.text} />}
+      title={t('settings.general')}
+      summary={showAppearanceSettings ? t('settings.collapsed') : generalSummary}
+      expanded={showAppearanceSettings}
+      onToggle={() => toggleSectionWithAnimation(setShowAppearanceSettings)}
+    >
+      <View style={styles.appearanceRow}>
+        <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>
+          {t('settings.theme')}
+        </Text>
+        <View style={styles.appearanceControl}>
+          <SlidingSegmentedControl
+            options={[
+              { label: t('settings.quietPaper'), value: 'quietPaper' },
+              { label: t('settings.cleanSlate'), value: 'cleanSlate' },
             ]}
-          >
-            <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>
-              {t('settings.language')}
-            </Text>
-            <View style={styles.appearanceControl}>
-              <SlidingSegmentedControl
-                options={[
-                  { label: t('settings.languageZh'), value: 'zh' },
-                  { label: 'EN', value: 'en' },
-                ]}
-                value={locale}
-                onChange={v => setLocale(v as 'zh' | 'en')}
-                surfaceMuted={theme.surfaceMuted}
-                surface={theme.surface}
-                textColor={theme.text}
-                textMuted={theme.textSecondary}
-                radius={theme.radius.small}
-              />
-            </View>
-          </View>
-        </CollapsibleContent>
+            value={themeName}
+            onChange={v => setThemeName(v as 'quietPaper' | 'cleanSlate')}
+            surfaceMuted={theme.surfaceMuted}
+            surface={theme.surface}
+            textColor={theme.text}
+            textMuted={theme.textSecondary}
+            radius={theme.radius.small}
+          />
+        </View>
       </View>
-    </View>
+      <View
+        style={[
+          styles.appearanceRow,
+          {
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: theme.border,
+            paddingTop: 14,
+            marginTop: 4,
+          },
+        ]}
+      >
+        <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>
+          {t('settings.language')}
+        </Text>
+        <View style={styles.appearanceControl}>
+          <SlidingSegmentedControl
+            options={[
+              { label: t('settings.languageZh'), value: 'zh' },
+              { label: 'EN', value: 'en' },
+            ]}
+            value={locale}
+            onChange={v => setLocale(v as 'zh' | 'en')}
+            surfaceMuted={theme.surfaceMuted}
+            surface={theme.surface}
+            textColor={theme.text}
+            textMuted={theme.textSecondary}
+            radius={theme.radius.small}
+          />
+        </View>
+      </View>
+    </SettingsSection>
   )
 
   const maskKey = (key: string) => {
@@ -547,171 +575,149 @@ export default function SettingsScreen() {
     }
 
     return (
-      <View style={[styles.section]}>
-        <View style={[styles.card, { backgroundColor: theme.surface }]}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => toggleSectionWithAnimation(setShowAISettings)}
-          >
-            <Sparkles size={18} color={theme.text} />
-            <Text style={[styles.menuItemText, { color: theme.text }]}>
-              {t('settings.aiConfig')}
-            </Text>
-            <View style={{ flex: 1, alignItems: 'flex-end' }}>
-              <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-                {statusText}
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <CollapsibleContent
-            expanded={showAISettings}
-            style={[styles.aiSettings, { borderTopColor: theme.border }]}
-          >
-            {renderModelCard(t('settings.botModel'), botConfig, botConfigured, [
-              { text: t('settings.supportsVision'), show: Boolean(botConfig?.supportsVision) },
-              { text: t('settings.supportsThinking'), show: Boolean(botConfig?.supportsThinking) },
-            ])}
-            <View style={[styles.aiDivider, { backgroundColor: theme.border }]} />
-            {renderModelCard(t('settings.embeddingModel'), embConfig, embConfigured)}
-          </CollapsibleContent>
-        </View>
-      </View>
+      <SettingsSection
+        icon={<Sparkles size={18} color={theme.text} />}
+        title={t('settings.aiConfig')}
+        summary={statusText}
+        expanded={showAISettings}
+        onToggle={() => toggleSectionWithAnimation(setShowAISettings)}
+        contentStyle={styles.aiSettings}
+      >
+        {renderModelCard(t('settings.botModel'), botConfig, botConfigured, [
+          { text: t('settings.supportsVision'), show: Boolean(botConfig?.supportsVision) },
+          { text: t('settings.supportsThinking'), show: Boolean(botConfig?.supportsThinking) },
+        ])}
+        <View style={[styles.aiDivider, { backgroundColor: theme.border }]} />
+        {renderModelCard(t('settings.embeddingModel'), embConfig, embConfigured)}
+      </SettingsSection>
     )
   }
 
   const renderPermissionSection = () => (
-    <View style={[styles.section]}>
-      <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => toggleSectionWithAnimation(setShowPermissionSettings)}
-        >
-          <ShieldCheck size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>
-            {t('settings.permissions')}
+    <SettingsSection
+      icon={<ShieldCheck size={18} color={theme.text} />}
+      title={t('settings.permissions')}
+      summary={showPermissionSettings ? t('settings.collapsed') : t('settings.expanded')}
+      expanded={showPermissionSettings}
+      onToggle={() => toggleSectionWithAnimation(setShowPermissionSettings)}
+      contentStyle={styles.permissionSettings}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <View>
+          <Text style={{ fontSize: 14, color: theme.text }}>{t('settings.pushMessages')}</Text>
+          <Text style={{ marginTop: 2, fontSize: 12, color: theme.textSecondary }}>
+            {pushPermissionGranted
+              ? pushEnabled
+                ? t('settings.pushEnabled')
+                : t('settings.pushDisabled')
+              : t('settings.pushNoPermission')}
           </Text>
-          <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              {showPermissionSettings ? t('settings.collapsed') : t('settings.expanded')}
-            </Text>
-          </View>
-        </TouchableOpacity>
-        <CollapsibleContent
-          expanded={showPermissionSettings}
-          style={[styles.permissionSettings, { borderTopColor: theme.border }]}
-        >
-          <View>
-            <View
-              style={{
-                display: 'flex',
-                flex: 1,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <View>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: theme.text,
-                  }}
-                >
-                  {t('settings.pushMessages')}
-                </Text>
-                <Text
-                  style={{
-                    marginTop: 2,
-                    fontSize: 12,
-                    color: theme.textSecondary,
-                  }}
-                >
-                  {pushPermissionGranted
-                    ? pushEnabled
-                      ? t('settings.pushEnabled')
-                      : t('settings.pushDisabled')
-                    : t('settings.pushNoPermission')}
-                </Text>
-              </View>
-              <SwitchBtn value={pushEnabled} onValueChange={handleTogglePush} />
-            </View>
-          </View>
-        </CollapsibleContent>
+        </View>
+        <SwitchBtn value={pushEnabled} onValueChange={handleTogglePush} />
       </View>
-    </View>
+    </SettingsSection>
   )
 
   const renderAboutSection = () => (
-    <View style={[styles.section]}>
-      <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={appUpdate.hasUpdate ? appUpdate.downloadAndInstall : appUpdate.checkForUpdate}
-          disabled={appUpdate.downloading}
-        >
-          <Info size={18} color={theme.text} />
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={[styles.menuItemText, { color: theme.text, marginLeft: 0 }]}>
-              Mosaic v{appVersion}
+    <SettingsSection
+      icon={<Info size={18} color={theme.text} />}
+      title={t('settings.about')}
+      summary={showAboutSettings ? t('settings.collapsed') : `v${appVersion}`}
+      expanded={showAboutSettings}
+      onToggle={() => toggleSectionWithAnimation(setShowAboutSettings)}
+      badge={
+        appUpdate.hasUpdate && !appUpdate.downloading ? (
+          <View
+            style={[
+              styles.updateBadge,
+              { backgroundColor: theme.primary, borderRadius: theme.radius.small },
+            ]}
+          >
+            <Text style={[styles.updateBadgeText, { color: theme.onPrimary }]}>
+              {t('settings.update')}
             </Text>
-            {appUpdate.checking && (
-              <Text style={[styles.updateHint, { color: theme.textSecondary }]}>
-                {t('settings.checkingUpdate')}
-              </Text>
-            )}
-            {appUpdate.hasUpdate && !appUpdate.downloading && (
-              <Text style={[styles.updateHint, { color: theme.primary }]}>
-                v{appUpdate.latestVersion} {t('settings.updateAvailable')}
-              </Text>
-            )}
-            {appUpdate.downloading && appUpdate.downloadProgress !== null && (
-              <View style={styles.progressContainer}>
+          </View>
+        ) : undefined
+      }
+    >
+      <View style={styles.aboutRow}>
+        <Text style={[styles.aboutLabel, { color: theme.textSecondary }]}>
+          {t('settings.version')}
+        </Text>
+        <Text style={[styles.aboutValue, { color: theme.text }]}>Mosaic v{appVersion}</Text>
+      </View>
+      <View
+        style={[
+          styles.aboutRow,
+          { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border },
+        ]}
+      >
+        <Text style={[styles.aboutLabel, { color: theme.textSecondary }]}>
+          {t('settings.updateStatus')}
+        </Text>
+        <View style={{ flex: 1, alignItems: 'flex-end' }}>
+          {appUpdate.checking && (
+            <Text style={[styles.aboutValue, { color: theme.textSecondary }]}>
+              {t('settings.checkingUpdate')}
+            </Text>
+          )}
+          {appUpdate.hasUpdate && !appUpdate.downloading && (
+            <Text style={[styles.aboutValue, { color: theme.primary }]}>
+              v{appUpdate.latestVersion} {t('settings.updateAvailable')}
+            </Text>
+          )}
+          {appUpdate.downloading && appUpdate.downloadProgress !== null && (
+            <View style={styles.progressContainer}>
+              <View
+                style={[
+                  styles.progressBar,
+                  { backgroundColor: theme.surfaceMuted, borderRadius: 2 },
+                ]}
+              >
                 <View
                   style={[
-                    styles.progressBar,
+                    styles.progressFill,
                     {
-                      backgroundColor: theme.surfaceMuted,
+                      backgroundColor: theme.primary,
+                      width: `${appUpdate.downloadProgress}%`,
                       borderRadius: 2,
                     },
                   ]}
-                >
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        backgroundColor: theme.primary,
-                        width: `${appUpdate.downloadProgress}%`,
-                        borderRadius: 2,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={[styles.progressText, { color: theme.textSecondary }]}>
-                  {appUpdate.downloadProgress}%
-                </Text>
+                />
               </View>
-            )}
-            {!appUpdate.checking && !appUpdate.hasUpdate && !appUpdate.downloading && (
-              <Text style={[styles.updateHint, { color: theme.textSecondary }]}>
-                {t('settings.upToDate')}
-              </Text>
-            )}
-          </View>
-          {appUpdate.hasUpdate && !appUpdate.downloading && (
-            <View
-              style={[
-                styles.updateBadge,
-                { backgroundColor: theme.primary, borderRadius: theme.radius.small },
-              ]}
-            >
-              <Text style={[styles.updateBadgeText, { color: theme.onPrimary }]}>
-                {t('settings.update')}
+              <Text style={[styles.progressText, { color: theme.textSecondary }]}>
+                {appUpdate.downloadProgress}%
               </Text>
             </View>
           )}
-        </TouchableOpacity>
+          {!appUpdate.checking && !appUpdate.hasUpdate && !appUpdate.downloading && (
+            <Text style={[styles.aboutValue, { color: theme.textSecondary }]}>
+              {t('settings.upToDate')}
+            </Text>
+          )}
+        </View>
       </View>
-    </View>
+      {(appUpdate.hasUpdate || (!appUpdate.checking && !appUpdate.downloading)) && (
+        <TouchableOpacity
+          style={[
+            styles.aboutActionBtn,
+            { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border },
+          ]}
+          onPress={appUpdate.hasUpdate ? appUpdate.downloadAndInstall : appUpdate.checkForUpdate}
+          disabled={appUpdate.downloading}
+        >
+          <Text style={[styles.aboutActionText, { color: theme.primary }]}>
+            {appUpdate.hasUpdate ? t('settings.installUpdate') : t('settings.checkUpdate')}
+          </Text>
+        </TouchableOpacity>
+      )}
+    </SettingsSection>
   )
 
   const handleLogout = async () => {
@@ -719,66 +725,55 @@ export default function SettingsScreen() {
   }
 
   const renderStorageSection = () => (
-    <View style={[styles.section]}>
-      <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <TouchableOpacity
-          style={[styles.menuItem, showStorageSettings && { borderBottomColor: theme.border }]}
-          onPress={() => toggleSectionWithAnimation(setShowStorageSettings)}
+    <SettingsSection
+      icon={<Trash size={18} color={theme.text} />}
+      title={t('settings.storage')}
+      summary={
+        (showStorageSettings ? t('settings.collapsed') : t('settings.expanded')) +
+        ' · ' +
+        t('settings.storageTotal', {
+          size: isLoadingStorage ? '...' : formatBytes(totalStorageSize),
+        })
+      }
+      expanded={showStorageSettings}
+      onToggle={() => toggleSectionWithAnimation(setShowStorageSettings)}
+      contentStyle={styles.storageSettings}
+    >
+      {storageItems.map(item => (
+        <View
+          key={item.id}
+          style={[
+            styles.storageItem,
+            item !== storageItems[0] && {
+              borderTopWidth: StyleSheet.hairlineWidth,
+              borderTopColor: theme.border,
+            },
+          ]}
         >
-          <Trash size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>{t('settings.storage')}</Text>
-          <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
-              {showStorageSettings ? t('settings.collapsed') : t('settings.expanded')} ·{' '}
-              {t('settings.storageTotal', {
-                size: isLoadingStorage ? '...' : formatBytes(totalStorageSize),
-              })}
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, color: theme.text, fontWeight: '500' }}>{item.label}</Text>
+            <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
+              {item.description}
+            </Text>
+            <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
+              {item.size > 0 ? formatBytes(item.size) : '—'}
+              {item.itemCount != null && item.itemCount > 0
+                ? ` · ${item.itemCount} ${t('settings.items')}`
+                : ''}
             </Text>
           </View>
-        </TouchableOpacity>
-        <CollapsibleContent
-          expanded={showStorageSettings}
-          style={[styles.storageSettings, { borderTopColor: theme.border }]}
-        >
-          {storageItems.map(item => (
-            <View
-              key={item.id}
-              style={[
-                styles.storageItem,
-                item !== storageItems[0] && {
-                  borderTopWidth: StyleSheet.hairlineWidth,
-                  borderTopColor: theme.border,
-                },
-              ]}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, color: theme.text, fontWeight: '500' }}>
-                  {item.label}
-                </Text>
-                <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
-                  {item.description}
-                </Text>
-                <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
-                  {item.size > 0 ? formatBytes(item.size) : '—'}
-                  {item.itemCount != null && item.itemCount > 0
-                    ? ` · ${item.itemCount} ${t('settings.items')}`
-                    : ''}
-                </Text>
-              </View>
-              {item.clearable && (
-                <Button
-                  variant="ghost"
-                  size="small"
-                  onPress={() => handleClearStorage(item)}
-                  disabled={clearingId === item.id}
-                  title={clearingId === item.id ? t('settings.clearing') : t('settings.clear')}
-                />
-              )}
-            </View>
-          ))}
-        </CollapsibleContent>
-      </View>
-    </View>
+          {item.clearable && (
+            <Button
+              variant="ghost"
+              size="small"
+              onPress={() => handleClearStorage(item)}
+              disabled={clearingId === item.id}
+              title={clearingId === item.id ? t('settings.clearing') : t('settings.clear')}
+            />
+          )}
+        </View>
+      ))}
+    </SettingsSection>
   )
 
   return (
@@ -859,10 +854,6 @@ const styles = StyleSheet.create({
   menuItemSubText: {
     fontSize: 12,
     flex: 1,
-  },
-  appearanceSettings: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    gap: 0,
   },
   appearanceRow: {
     flexDirection: 'row',
@@ -996,9 +987,6 @@ const styles = StyleSheet.create({
   testResultText: {
     fontSize: 13,
   },
-  botSettings: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
   botItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1042,10 +1030,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  updateHint: {
-    fontSize: 12,
-    marginTop: 2,
-  },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1070,6 +1054,28 @@ const styles = StyleSheet.create({
   },
   updateBadgeText: {
     fontSize: 12,
+    fontWeight: '500',
+  },
+  aboutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  aboutLabel: {
+    fontSize: 13,
+  },
+  aboutValue: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  aboutActionBtn: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  aboutActionText: {
+    fontSize: 14,
     fontWeight: '500',
   },
 })
