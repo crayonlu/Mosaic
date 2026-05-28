@@ -14,6 +14,8 @@ use uuid::Uuid;
 struct Claims {
     sub: String,
     role: String,
+    #[serde(default)]
+    mcp: bool, // must_change_password
     exp: usize,
     iat: usize,
 }
@@ -103,8 +105,18 @@ impl AuthService {
             return Err(AppError::Unauthorized);
         }
 
-        let access_token = self.generate_token(&user.id.to_string(), &user.role, 3600 * 24)?;
-        let refresh_token = self.generate_token(&user.id.to_string(), &user.role, 3600 * 24 * 7)?;
+        let access_token = self.generate_token(
+            &user.id.to_string(),
+            &user.role,
+            user.must_change_password,
+            900,
+        )?; // 15 min
+        let refresh_token = self.generate_token(
+            &user.id.to_string(),
+            &user.role,
+            user.must_change_password,
+            3600 * 24 * 7,
+        )?;
 
         let must_change_password = user.must_change_password;
 
@@ -131,6 +143,12 @@ impl AuthService {
 
         if !is_valid {
             return Err(AppError::Unauthorized);
+        }
+
+        if req.new_password.len() < 8 {
+            return Err(AppError::InvalidInput(
+                "Password must be at least 8 characters".to_string(),
+            ));
         }
 
         let new_hash = hash(&req.new_password, DEFAULT_COST)
@@ -265,8 +283,14 @@ impl AuthService {
             return Err(AppError::Forbidden("Account is disabled".to_string()));
         }
 
-        let new_access_token = self.generate_token(&user_id, &user.role, 3600 * 24)?;
-        let new_refresh_token = self.generate_token(&user_id, &user.role, 3600 * 24 * 7)?;
+        let new_access_token =
+            self.generate_token(&user_id, &user.role, user.must_change_password, 900)?; // 15 min
+        let new_refresh_token = self.generate_token(
+            &user_id,
+            &user.role,
+            user.must_change_password,
+            3600 * 24 * 7,
+        )?;
 
         Ok(RefreshTokenResponse {
             access_token: new_access_token,
@@ -280,6 +304,17 @@ impl AuthService {
         &self,
         req: CreateUserRequest,
     ) -> Result<ManagedUserResponse, AppError> {
+        if req.username.trim().is_empty() {
+            return Err(AppError::InvalidInput(
+                "Username cannot be empty".to_string(),
+            ));
+        }
+        if req.password.len() < 8 {
+            return Err(AppError::InvalidInput(
+                "Password must be at least 8 characters".to_string(),
+            ));
+        }
+
         let exists: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE username = $1")
             .bind(&req.username)
             .fetch_one(&self.pool)
@@ -330,12 +365,19 @@ impl AuthService {
         let target_uuid = Uuid::parse_str(target_user_id)?;
         let admin_uuid = Uuid::parse_str(admin_user_id)?;
 
-        // Prevent admin from disabling themselves
+        // Prevent admin from disabling or demoting themselves
         if target_uuid == admin_uuid {
             if let Some(false) = req.is_active {
                 return Err(AppError::InvalidInput(
                     "Cannot disable your own account".to_string(),
                 ));
+            }
+            if let Some(ref role) = req.role {
+                if role != "admin" {
+                    return Err(AppError::InvalidInput(
+                        "Cannot demote your own account".to_string(),
+                    ));
+                }
             }
         }
 
@@ -390,6 +432,7 @@ impl AuthService {
         &self,
         user_id: &str,
         role: &str,
+        mcp: bool,
         exp_seconds: i64,
     ) -> Result<String, AppError> {
         let now = Utc::now().timestamp() as usize;
@@ -398,6 +441,7 @@ impl AuthService {
         let claims = Claims {
             sub: user_id.to_string(),
             role: role.to_string(),
+            mcp,
             exp,
             iat: now,
         };

@@ -529,7 +529,7 @@ impl ResourceService {
             }
         };
 
-        let now = Utc::now().timestamp_millis();
+        let now = Utc::now().timestamp();
         sqlx::query("UPDATE users SET avatar_url = $1, updated_at = $2 WHERE id = $3")
             .bind(&url)
             .bind(now)

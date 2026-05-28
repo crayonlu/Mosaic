@@ -14,6 +14,8 @@ pub struct Claims {
     pub sub: String,
     #[serde(default)]
     pub role: String,
+    #[serde(default)]
+    pub mcp: bool, // must_change_password
 }
 
 #[derive(Clone)]

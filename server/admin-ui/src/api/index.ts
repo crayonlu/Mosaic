@@ -44,6 +44,8 @@ function buildUrl(basePath: string, request: FetchRequest): FetchRequest {
   return server ? `${server}${basePath}${request}` : `${basePath}${request}`
 }
 
+let refreshPromise: Promise<void> | null = null
+
 function onResponseError({
   response,
   request,
@@ -56,25 +58,34 @@ function onResponseError({
   if (response.status === 401) {
     const refresh = localStorage.getItem(REFRESH_KEY)
     if (refresh) {
-      return (async () => {
-        try {
-          const server = getServerUrl()
-          const refreshUrl = server
-            ? `${server}/api/auth/refresh`
-            : "/api/auth/refresh"
-          const res: RefreshTokenResponse = await ofetch(refreshUrl, {
-            method: "POST",
-            body: { refreshToken: refresh },
-          })
-          setToken(res.accessToken, res.refreshToken)
+      if (!refreshPromise) {
+        refreshPromise = (async () => {
+          try {
+            const server = getServerUrl()
+            const refreshUrl = server
+              ? `${server}/api/auth/refresh`
+              : "/api/auth/refresh"
+            const res: RefreshTokenResponse = await ofetch(refreshUrl, {
+              method: "POST",
+              body: { refreshToken: refresh },
+            })
+            setToken(res.accessToken, res.refreshToken)
+          } catch {
+            clearToken()
+            window.location.href = "/admin/login"
+          } finally {
+            refreshPromise = null
+          }
+        })()
+      }
+      return refreshPromise.then(() => {
+        const token = getToken()
+        if (token) {
           options.headers = new Headers(options.headers)
-          options.headers.set("Authorization", `Bearer ${res.accessToken}`)
+          options.headers.set("Authorization", `Bearer ${token}`)
           return ofetch(request, options)
-        } catch {
-          clearToken()
-          window.location.href = "/admin/login"
         }
-      })()
+      })
     }
     clearToken()
     window.location.href = "/admin/login"

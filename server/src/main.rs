@@ -14,7 +14,9 @@ use admin::{activity_log::ActivityLog, api::StartedAt};
 use anyhow::anyhow;
 use config::Config;
 use database::{create_pool, run_migrations};
-use middleware::{configure_cors, configure_logging, AuthMiddleware, RequireAdmin};
+use middleware::{
+    configure_cors, configure_logging, AuthMiddleware, RequireAdmin, RequirePasswordChanged,
+};
 use services::{
     AiClient, AiDiaryService, AppSettingsService, AuthService, BotMemoryContextService, BotService,
     ClipService, DiaryService, HybridSearchService, MemoService, MemoryEmbeddingService,
@@ -202,6 +204,7 @@ async fn main() -> anyhow::Result<()> {
             .service(
                 web::scope("/api")
                     .wrap(auth_middleware.clone())
+                    .wrap(RequirePasswordChanged)
                     .configure(routes::configure_memo_routes)
                     .configure(routes::configure_diary_routes)
                     .configure(routes::configure_resource_routes)
