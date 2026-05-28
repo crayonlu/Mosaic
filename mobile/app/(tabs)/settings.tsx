@@ -1,21 +1,21 @@
 import { router } from 'expo-router'
-import { Button, SwitchBtn } from '@/components/ui'
+import { BotEditorSheet } from '@/components/bot/BotEditorSheet'
+import { Button, Input, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { SlidingSegmentedControl } from '@/components/ui/SlidingSegmentedControl'
 import { toast } from '@/components/ui/Toast'
 import { useAppUpdate } from '@/hooks/useAppUpdate'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { useBots, useUpdateBot } from '@/lib/query'
-import { useAdminAIConfig } from '@/lib/query/hooks/useAdminAIConfig'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
 import { formatBytes, getStorageSummary, type StorageItem } from '@/lib/storage/storageManager'
 import { useAuthStore } from '@/stores/authStore'
 import { useLocaleStore } from '@/stores/localeStore'
 import { useThemeStore } from '@/stores/themeStore'
-import { resourcesApi } from '@mosaic/api'
+import { authApi, resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
-import { Bot, Cog, Info, LogOut, Plus, ShieldCheck, Sparkles, Trash } from 'lucide-react-native'
+import { Bot, Cog, Info, Lock, LogOut, Plus, ShieldCheck, Sparkles, Trash } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -154,8 +154,13 @@ export default function SettingsScreen() {
   // const { data: customPushCount = 0 } = useCustomPushCount()
   const [showBotSettings, setShowBotSettings] = useState(false)
   const [showAppearanceSettings, setShowAppearanceSettings] = useState(false)
-  const [showAISettings, setShowAISettings] = useState(false)
   const [showAboutSettings, setShowAboutSettings] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [changePwdOld, setChangePwdOld] = useState('')
+  const [changePwdNew, setChangePwdNew] = useState('')
+  const [changePwdSaving, setChangePwdSaving] = useState(false)
+  const [botEditorVisible, setBotEditorVisible] = useState(false)
+  const [editingBot, setEditingBot] = useState<import('@mosaic/api').Bot | undefined>(undefined)
   const { data: bots = [] } = useBots()
   const { mutateAsync: updateBot } = useUpdateBot()
   const [showPermissionSettings, setShowPermissionSettings] = useState(false)
@@ -166,7 +171,6 @@ export default function SettingsScreen() {
   const [totalStorageSize, setTotalStorageSize] = useState(0)
   const [isLoadingStorage, setIsLoadingStorage] = useState(false)
   const [clearingId, setClearingId] = useState<string | null>(null)
-  const { data: adminAiConfig } = useAdminAIConfig()
 
   useEffect(() => {
     loadPushStatus()
@@ -500,85 +504,56 @@ export default function SettingsScreen() {
     </SettingsSection>
   )
 
-  const maskKey = (key: string) => {
-    if (!key) return t('settings.notConfigured')
-    if (key.length <= 8) return '••••••••'
-    return `${key.slice(0, 4)}••••${key.slice(-4)}`
-  }
-
-  const renderAISettings = () => {
-    const botConfig = adminAiConfig?.bot
-    const embConfig = adminAiConfig?.embedding
-    const botConfigured = Boolean(botConfig?.model && botConfig?.apiKey)
-    const embConfigured = Boolean(embConfig?.model && embConfig?.apiKey)
-
-    const statusText = showAISettings
-      ? t('settings.collapsed')
-      : botConfigured && embConfigured
-        ? t('settings.configured')
-        : botConfigured || embConfigured
-          ? t('settings.partialConfig')
-          : t('settings.notConfigured')
-
-    const renderModelCard = (
-      label: string,
-      config: typeof botConfig,
-      configured: boolean,
-      pills?: { text: string; show: boolean }[]
-    ) => {
-      if (!configured) {
-        return (
-          <View style={styles.aiModelCard}>
-            <Text style={[styles.aiCardTypeLabel, { color: theme.textTertiary }]}>{label}</Text>
-            <Text style={[styles.aiEmptyText, { color: theme.textTertiary }]}>
-              {t('settings.notConfigured')}
-            </Text>
-          </View>
-        )
+  const renderChangePasswordSection = () => {
+    const handleChangePwd = async () => {
+      if (!changePwdOld || !changePwdNew) {
+        toast.error(t('changePassword.fillAll'))
+        return
       }
-
-      const metaParts = [config!.provider]
-      if (config!.apiKey) metaParts.push(maskKey(config!.apiKey))
-      if (config!.embeddingDim) metaParts.push(`${config!.embeddingDim}${t('settings.dimensions')}`)
-      const metaLine = metaParts.filter(Boolean).join('  ·  ')
-
-      const activePills = (pills ?? []).filter(p => p.show)
-
-      return (
-        <View style={styles.aiModelCard}>
-          <Text style={[styles.aiCardTypeLabel, { color: theme.textSecondary }]}>{label}</Text>
-          <View style={styles.aiModelRow}>
-            <View style={styles.aiModelLeft}>
-              <Text style={[styles.aiModelName, { color: theme.text }]}>{config!.model}</Text>
-              {metaLine ? (
-                <Text style={[styles.aiModelMeta, { color: theme.textSecondary }]}>{metaLine}</Text>
-              ) : null}
-            </View>
-            {activePills.length > 0 && (
-              <Text style={[styles.aiPillText, { color: theme.textSecondary }]}>
-                {activePills.map(p => p.text).join('\n')}
-              </Text>
-            )}
-          </View>
-        </View>
-      )
+      if (changePwdNew.length < 8) {
+        toast.error(t('changePassword.passwordTooShort'))
+        return
+      }
+      setChangePwdSaving(true)
+      try {
+        await authApi.changePassword({ oldPassword: changePwdOld, newPassword: changePwdNew })
+        toast.success(t('changePassword.passwordChanged'))
+        setChangePwdOld('')
+        setChangePwdNew('')
+        toggleSectionWithAnimation(setShowChangePassword)
+      } catch {
+        toast.error(t('changePassword.changeFailed'))
+      } finally {
+        setChangePwdSaving(false)
+      }
     }
 
     return (
       <SettingsSection
-        icon={<Sparkles size={18} color={theme.text} />}
-        title={t('settings.aiConfig')}
-        summary={statusText}
-        expanded={showAISettings}
-        onToggle={() => toggleSectionWithAnimation(setShowAISettings)}
-        contentStyle={styles.aiSettings}
+        icon={<Lock size={18} color={theme.text} />}
+        title={t('changePassword.title')}
+        summary={showChangePassword ? t('settings.collapsed') : ''}
+        expanded={showChangePassword}
+        onToggle={() => toggleSectionWithAnimation(setShowChangePassword)}
+        contentStyle={{ padding: 12, gap: 10 }}
       >
-        {renderModelCard(t('settings.botModel'), botConfig, botConfigured, [
-          { text: t('settings.supportsVision'), show: Boolean(botConfig?.supportsVision) },
-          { text: t('settings.supportsThinking'), show: Boolean(botConfig?.supportsThinking) },
-        ])}
-        <View style={[styles.aiDivider, { backgroundColor: theme.border }]} />
-        {renderModelCard(t('settings.embeddingModel'), embConfig, embConfigured)}
+        <Input
+          placeholder={t('changePassword.oldPassword')}
+          value={changePwdOld}
+          onChangeText={setChangePwdOld}
+          secureTextEntry
+        />
+        <Input
+          placeholder={t('changePassword.newPassword')}
+          value={changePwdNew}
+          onChangeText={setChangePwdNew}
+          secureTextEntry
+        />
+        <Button
+          title={changePwdSaving ? t('common.saving') : t('changePassword.submit')}
+          onPress={handleChangePwd}
+          disabled={changePwdSaving}
+        />
       </SettingsSection>
     )
   }
@@ -772,7 +747,7 @@ export default function SettingsScreen() {
         {renderAccountSection()}
         {renderGeneralSection()}
         {renderBotSection()}
-        {renderAISettings()}
+        {renderChangePasswordSection()}
         {renderPermissionSection()}
         {renderStorageSection()}
         {renderAboutSection()}

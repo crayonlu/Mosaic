@@ -14,12 +14,12 @@ use admin::{activity_log::ActivityLog, api::StartedAt};
 use anyhow::anyhow;
 use config::Config;
 use database::{create_pool, run_migrations};
-use middleware::{configure_cors, configure_logging, AuthMiddleware};
+use middleware::{configure_cors, configure_logging, AuthMiddleware, RequireAdmin};
 use services::{
     AiClient, AiDiaryService, AppSettingsService, AuthService, BotMemoryContextService, BotService,
     ClipService, DiaryService, HybridSearchService, MemoService, MemoryEmbeddingService,
     MemoryRetrievalService, ResourceService, ServerAiConfigService, StatsService, SyncService,
-    TimelineMemoryService,
+    TimelineMemoryService, UserAiConfigService,
 };
 use storage::create_storage;
 
@@ -78,6 +78,7 @@ async fn main() -> anyhow::Result<()> {
     log::info!("[OK] Auth service initialized");
 
     let server_ai_config_service = ServerAiConfigService::new(pool.clone());
+    let user_ai_config_service = UserAiConfigService::new(pool.clone());
 
     let memory_embedding_service =
         MemoryEmbeddingService::new(pool.clone(), server_ai_config_service.clone());
@@ -99,11 +100,13 @@ async fn main() -> anyhow::Result<()> {
     let bot_service = BotService::new(pool.clone(), storage.clone())
         .with_memory_context_service(bot_memory_context_service)
         .with_server_ai_config_service(server_ai_config_service.clone())
+        .with_user_ai_config_service(user_ai_config_service.clone())
         .with_app_settings_service(app_settings_service.clone());
     let memo_service = MemoService::new(pool.clone())
         .with_memory_services(memory_embedding_service.clone())
         .with_bot_service(bot_service.clone())
         .with_server_ai_config_service(server_ai_config_service.clone())
+        .with_user_ai_config_service(user_ai_config_service.clone())
         .with_ai_client(ai_client.clone())
         .with_app_settings_service(app_settings_service.clone())
         .with_ai_diary_service(ai_diary_service.clone());
@@ -165,6 +168,7 @@ async fn main() -> anyhow::Result<()> {
             .app_data(web::Data::new(hybrid_search_service.clone()))
             .app_data(web::Data::new(app_settings_service.clone()))
             .app_data(web::Data::new(clip_service.clone()))
+            .app_data(web::Data::new(user_ai_config_service.clone()))
             .app_data(activity_log.clone())
             .app_data(started_at.clone())
             .route("/health", web::route().to(health_check))
@@ -205,11 +209,13 @@ async fn main() -> anyhow::Result<()> {
                     .configure(routes::configure_bot_routes)
                     .configure(routes::configure_memory_routes)
                     .configure(routes::configure_sync_routes)
-                    .configure(routes::configure_ai_routes),
+                    .configure(routes::configure_ai_routes)
+                    .configure(routes::configure_user_ai_config_routes),
             )
             .service(
                 web::scope("/admin/api")
                     .wrap(auth_middleware.clone())
+                    .wrap(RequireAdmin)
                     .route("/health", web::get().to(admin::api::health))
                     .route("/stats", web::get().to(admin::api::stats))
                     .route("/activity", web::get().to(admin::api::list_activity))
@@ -225,7 +231,16 @@ async fn main() -> anyhow::Result<()> {
                         web::post().to(admin::api::backfill_memory),
                     )
                     .route("/settings", web::get().to(admin::api::get_settings))
-                    .route("/settings", web::put().to(admin::api::update_settings)),
+                    .route("/settings", web::put().to(admin::api::update_settings))
+                    .route(
+                        "/users",
+                        web::post().to(routes::user_management::create_user),
+                    )
+                    .route("/users", web::get().to(routes::user_management::list_users))
+                    .route(
+                        "/users/{id}",
+                        web::patch().to(routes::user_management::update_user),
+                    ),
             )
             .service(fs::Files::new("/admin/static", "static/admin").prefer_utf8(true))
             .route(

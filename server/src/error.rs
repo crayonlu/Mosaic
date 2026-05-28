@@ -35,6 +35,9 @@ pub enum AppError {
     #[error("Not found: {0}")]
     NotFound(String),
 
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+
     #[error("Invalid input: {0}")]
     InvalidInput(String),
 
@@ -68,6 +71,7 @@ impl ResponseError for AppError {
             AppError::ResourceNotFound => StatusCode::NOT_FOUND,
             AppError::DiaryNotFound => StatusCode::NOT_FOUND,
             AppError::NotFound(_) => StatusCode::NOT_FOUND,
+            AppError::Forbidden(_) => StatusCode::FORBIDDEN,
             AppError::InvalidInput(_) => StatusCode::BAD_REQUEST,
             AppError::Storage(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,

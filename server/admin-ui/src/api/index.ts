@@ -103,6 +103,7 @@ export interface LoginResponse {
   accessToken: string
   refreshToken: string
   user: UserResponse
+  mustChangePassword: boolean
 }
 
 export interface RefreshTokenResponse {
@@ -114,8 +115,31 @@ export interface UserResponse {
   id: string
   username: string
   avatarUrl: string | null
+  role: string
   createdAt: number
   updatedAt: number
+}
+
+export interface ManagedUser {
+  id: string
+  username: string
+  avatarUrl: string | null
+  role: string
+  isActive: boolean
+  mustChangePassword: boolean
+  createdAt: number
+  updatedAt: number
+}
+
+export interface CreateUserRequest {
+  username: string
+  password: string
+}
+
+export interface UpdateManagedUserRequest {
+  isActive?: boolean
+  role?: string
+  resetPassword?: string
 }
 
 export interface StatsSummary {

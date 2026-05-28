@@ -15,6 +15,9 @@
   "layout": {
     "user": "User",
     "logout": "Log out",
+    "dashboard": "Dashboard",
+    "bots": "Bots",
+    "users": "Users",
     "themeCleanSlate": "Switch to Clean Slate",
     "themeQuietPaper": "Switch to Quiet Paper",
     "switchLanguage": "Switch language",
@@ -161,6 +164,47 @@
   "common": {
     "error": "Error",
     "close": "Close",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "cancel": "Cancel",
+    "saving": "Saving…"
+  },
+  "users": {
+    "title": "Users",
+    "create": "Create User",
+    "username": "Username",
+    "password": "Password",
+    "role": "Role",
+    "status": "Status",
+    "active": "Active",
+    "disabled": "Disabled",
+    "admin": "Admin",
+    "user": "User",
+    "createdAt": "Created",
+    "actions": "Actions",
+    "disable": "Disable",
+    "enable": "Enable",
+    "changeRole": "Change Role",
+    "resetPassword": "Reset Password",
+    "newPassword": "New Password",
+    "createSuccess": "User created successfully",
+    "createFailed": "Failed to create user",
+    "updateSuccess": "User updated successfully",
+    "updateFailed": "Failed to update user",
+    "loadFailed": "Failed to load users",
+    "cannotDisableSelf": "Cannot disable your own account",
+    "noAccess": "You do not have permission to view this page."
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "subtitle": "You must change your password before continuing.",
+    "oldPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "submit": "Change Password",
+    "success": "Password changed successfully",
+    "failed": "Failed to change password",
+    "mismatch": "Passwords do not match",
+    "tooShort": "Password must be at least 8 characters",
+    "fillAll": "Please fill in all fields"
   }
 }

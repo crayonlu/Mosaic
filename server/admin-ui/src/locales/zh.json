@@ -15,6 +15,9 @@
   "layout": {
     "user": "用户",
     "logout": "退出登录",
+    "dashboard": "仪表盘",
+    "bots": "Bot",
+    "users": "用户管理",
     "themeCleanSlate": "切换 Clean Slate",
     "themeQuietPaper": "切换 Quiet Paper",
     "switchLanguage": "切换语言",
@@ -161,6 +164,47 @@
   "common": {
     "error": "错误",
     "close": "关闭",
-    "loading": "加载中…"
+    "loading": "加载中…",
+    "cancel": "取消",
+    "saving": "保存中…"
+  },
+  "users": {
+    "title": "用户管理",
+    "create": "创建用户",
+    "username": "用户名",
+    "password": "密码",
+    "role": "角色",
+    "status": "状态",
+    "active": "启用",
+    "disabled": "已禁用",
+    "admin": "管理员",
+    "user": "用户",
+    "createdAt": "创建时间",
+    "actions": "操作",
+    "disable": "禁用",
+    "enable": "启用",
+    "changeRole": "更改角色",
+    "resetPassword": "重置密码",
+    "newPassword": "新密码",
+    "createSuccess": "用户创建成功",
+    "createFailed": "用户创建失败",
+    "updateSuccess": "用户更新成功",
+    "updateFailed": "用户更新失败",
+    "loadFailed": "加载用户列表失败",
+    "cannotDisableSelf": "不能禁用自己的账号",
+    "noAccess": "你没有权限查看此页面。"
+  },
+  "changePassword": {
+    "title": "修改密码",
+    "subtitle": "首次登录需要修改密码后才能继续使用。",
+    "oldPassword": "当前密码",
+    "newPassword": "新密码",
+    "confirmPassword": "确认新密码",
+    "submit": "修改密码",
+    "success": "密码修改成功",
+    "failed": "密码修改失败",
+    "mismatch": "两次输入的密码不一致",
+    "tooShort": "密码至少需要8个字符",
+    "fillAll": "请填写所有字段"
   }
 }

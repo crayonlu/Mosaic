@@ -7,6 +7,7 @@ export interface User {
   id: string
   username: string
   avatarUrl?: string
+  role: string
   createdAt: number
   updatedAt: number
 }
@@ -20,6 +21,7 @@ export interface LoginRequest {
 
 export interface LoginResponse extends AuthTokens {
   user: User
+  mustChangePassword: boolean
 }
 
 export interface RefreshTokenRequest {

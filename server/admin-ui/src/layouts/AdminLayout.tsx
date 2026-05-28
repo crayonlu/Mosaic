@@ -1,18 +1,55 @@
-import { ChevronDown, LogOut, Palette, User } from "lucide-react"
+import {
+  Bot,
+  ChevronDown,
+  LayoutDashboard,
+  LogOut,
+  Palette,
+  User,
+  Users,
+} from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link, Outlet } from "react-router-dom"
+import { Link, Outlet, useLocation } from "react-router-dom"
 import i18n from "../lib/i18n"
 import { useAuthStore } from "../stores/authStore"
 import { useThemeStore } from "../stores/themeStore"
+
+function NavLink({
+  to,
+  icon: Icon,
+  label,
+  active,
+}: {
+  to: string
+  icon: React.FC<{ size?: number; className?: string }>
+  label: string
+  active: boolean
+}) {
+  return (
+    <Link
+      to={to}
+      className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium no-underline transition-colors ${
+        active
+          ? "bg-muted text-foreground"
+          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+      }`}
+    >
+      <Icon size={14} />
+      <span className="hidden sm:inline">{label}</span>
+    </Link>
+  )
+}
 
 export default function AdminLayout() {
   const { t } = useTranslation()
   const auth = useAuthStore()
   const themeStore = useThemeStore()
+  const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  const isAdmin = auth.user?.role === "admin"
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -56,24 +93,49 @@ export default function AdminLayout() {
         className={`sticky top-0 z-100 bg-background transition-colors ${scrolled ? "border-b border-border" : "border-b border-transparent"}`}
       >
         <div className="mx-auto flex h-11 max-w-300 items-center justify-between px-4 sm:px-6">
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-2 text-base font-bold tracking-[-0.3px] text-primary no-underline"
-          >
-            <svg
-              className="size-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
+          <div className="flex items-center gap-4">
+            <Link
+              to="/dashboard"
+              className="flex items-center gap-2 text-base font-bold tracking-[-0.3px] text-primary no-underline"
             >
-              <rect x={3} y={3} width={7} height={7} rx={1.5} />
-              <rect x={14} y={3} width={7} height={7} rx={1.5} />
-              <rect x={3} y={14} width={7} height={7} rx={1.5} />
-              <rect x={14} y={14} width={7} height={7} rx={1.5} />
-            </svg>
-            <span>Mosaic</span>
-          </Link>
+              <svg
+                className="size-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <rect x={3} y={3} width={7} height={7} rx={1.5} />
+                <rect x={14} y={3} width={7} height={7} rx={1.5} />
+                <rect x={3} y={14} width={7} height={7} rx={1.5} />
+                <rect x={14} y={14} width={7} height={7} rx={1.5} />
+              </svg>
+              <span>Mosaic</span>
+            </Link>
+
+            <nav className="flex items-center gap-1">
+              <NavLink
+                to="/dashboard"
+                icon={LayoutDashboard}
+                label={t("layout.dashboard")}
+                active={location.pathname === "/dashboard"}
+              />
+              <NavLink
+                to="/bots"
+                icon={Bot}
+                label={t("layout.bots")}
+                active={location.pathname === "/bots"}
+              />
+              {isAdmin && (
+                <NavLink
+                  to="/users"
+                  icon={Users}
+                  label={t("layout.users")}
+                  active={location.pathname === "/users"}
+                />
+              )}
+            </nav>
+          </div>
 
           <div className="flex items-center gap-2">
             <button

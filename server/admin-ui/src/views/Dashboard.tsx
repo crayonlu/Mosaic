@@ -87,6 +87,7 @@ export default function Dashboard() {
   const { t } = useTranslation()
   const auth = useAuthStore()
   const toast = useToast()
+  const isAdmin = auth.user?.role === "admin"
 
   const actionLabels: Record<string, string> = useMemo(
     () => ({
@@ -162,9 +163,11 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void Promise.all([loadStats(), loadActivity(), loadHealth()])
-  }, [loadStats, loadActivity, loadHealth])
+    if (isAdmin) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void Promise.all([loadStats(), loadActivity(), loadHealth()])
+    }
+  }, [loadStats, loadActivity, loadHealth, isAdmin])
 
   async function changePwd(e: React.FormEvent) {
     e.preventDefault()
@@ -186,77 +189,83 @@ export default function Dashboard() {
 
   return (
     <div className="mx-auto max-w-300 space-y-3 py-4">
-      <div className="overflow-hidden border-b border-border">
-        <div className="grid grid-cols-2 lg:grid-cols-4">
-          {kpiDefs.map((def, i) => (
-            <KpiItem
-              key={def.label}
-              def={def}
-              value={kpiValues[i]}
-              borderRight={i === 0 || i === 2 || i < 3}
-              borderBottom={i < 2}
-            />
-          ))}
-        </div>
+      {isAdmin && (
+        <>
+          <div className="overflow-hidden border-b border-border">
+            <div className="grid grid-cols-2 lg:grid-cols-4">
+              {kpiDefs.map((def, i) => (
+                <KpiItem
+                  key={def.label}
+                  def={def}
+                  value={kpiValues[i]}
+                  borderRight={i === 0 || i === 2 || i < 3}
+                  borderBottom={i < 2}
+                />
+              ))}
+            </div>
 
-        <div className="flex min-h-11 items-start gap-3 px-4 py-3">
-          <span className="shrink-0 pt-px text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-            {t("dashboard.activity")}
-          </span>
-          <div className="min-w-0 flex-1">
-            {activityLoading ? (
-              <div className="flex gap-3">
-                <div className="skeleton h-4 w-40 rounded" />
-                <div className="skeleton h-4 w-32 rounded" />
-              </div>
-            ) : activityEntries.length === 0 ? (
-              <span className="text-[12px] text-muted-foreground">
-                {t("dashboard.noActivity")}
+            <div className="flex min-h-11 items-start gap-3 px-4 py-3">
+              <span className="shrink-0 pt-px text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                {t("dashboard.activity")}
               </span>
-            ) : (
-              <div className="flex flex-col gap-1.5 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-5 lg:gap-y-1">
-                {activityEntries.slice(0, 5).map((e, i) => (
-                  <div
-                    key={`${e.timestamp}-${e.action}-${i}`}
-                    className="flex min-w-0 items-center gap-1.5"
-                  >
-                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                      {fmtTime(e.timestamp)}
-                    </span>
-                    <span
-                      className={`shrink-0 rounded px-1.5 py-px text-[10px] font-semibold uppercase ${levelColors[e.level] || levelColors.info}`}
-                    >
-                      {e.level}
-                    </span>
-                    <span className="truncate text-[12px] text-foreground">
-                      {actionLabels[e.action] || e.action}
-                    </span>
+              <div className="min-w-0 flex-1">
+                {activityLoading ? (
+                  <div className="flex gap-3">
+                    <div className="skeleton h-4 w-40 rounded" />
+                    <div className="skeleton h-4 w-32 rounded" />
                   </div>
-                ))}
+                ) : activityEntries.length === 0 ? (
+                  <span className="text-[12px] text-muted-foreground">
+                    {t("dashboard.noActivity")}
+                  </span>
+                ) : (
+                  <div className="flex flex-col gap-1.5 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-5 lg:gap-y-1">
+                    {activityEntries.slice(0, 5).map((e, i) => (
+                      <div
+                        key={`${e.timestamp}-${e.action}-${i}`}
+                        className="flex min-w-0 items-center gap-1.5"
+                      >
+                        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                          {fmtTime(e.timestamp)}
+                        </span>
+                        <span
+                          className={`shrink-0 rounded px-1.5 py-px text-[10px] font-semibold uppercase ${levelColors[e.level] || levelColors.info}`}
+                        >
+                          {e.level}
+                        </span>
+                        <span className="truncate text-[12px] text-foreground">
+                          {actionLabels[e.action] || e.action}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+              <button
+                onClick={loadActivity}
+                className="flex size-6 shrink-0 items-center justify-center rounded border-none bg-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title={t("dashboard.refresh")}
+              >
+                <RefreshCw size={12} />
+              </button>
+            </div>
           </div>
-          <button
-            onClick={loadActivity}
-            className="flex size-6 shrink-0 items-center justify-center rounded border-none bg-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            title={t("dashboard.refresh")}
-          >
-            <RefreshCw size={12} />
-          </button>
-        </div>
-      </div>
 
-      <AIConfigPanel />
+          <AIConfigPanel />
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <AutomationPanel />
-        <MemoryPanel />
-      </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <AutomationPanel />
+            <MemoryPanel />
+          </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <BotManager />
-        <SystemCard health={health} onRefresh={loadHealth} />
-      </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <BotManager />
+            <SystemCard health={health} onRefresh={loadHealth} />
+          </div>
+        </>
+      )}
+
+      {!isAdmin && <BotManager />}
 
       <AccountCard
         username={auth.user?.username}

@@ -7,7 +7,7 @@ use crate::models::{
 };
 use crate::services::{
     AiClient, AiDiaryService, AppSettingsService, BotService, MemoryEmbeddingService,
-    ServerAiConfigService,
+    ServerAiConfigService, UserAiConfigService,
 };
 use chrono::{Datelike, NaiveDate, TimeZone, Utc};
 use chrono_tz::Tz;
@@ -24,6 +24,7 @@ pub struct MemoService {
     memory_embedding_service: Option<MemoryEmbeddingService>,
     bot_service: Option<BotService>,
     server_ai_config_service: Option<ServerAiConfigService>,
+    user_ai_config_service: Option<UserAiConfigService>,
     ai_client: Option<AiClient>,
     app_settings_service: Option<AppSettingsService>,
     ai_diary_service: Option<AiDiaryService>,
@@ -36,6 +37,7 @@ impl MemoService {
             memory_embedding_service: None,
             bot_service: None,
             server_ai_config_service: None,
+            user_ai_config_service: None,
             ai_client: None,
             app_settings_service: None,
             ai_diary_service: None,
@@ -60,6 +62,14 @@ impl MemoService {
         server_ai_config_service: ServerAiConfigService,
     ) -> Self {
         self.server_ai_config_service = Some(server_ai_config_service);
+        self
+    }
+
+    pub fn with_user_ai_config_service(
+        mut self,
+        user_ai_config_service: UserAiConfigService,
+    ) -> Self {
+        self.user_ai_config_service = Some(user_ai_config_service);
         self
     }
 
@@ -531,7 +541,7 @@ impl MemoService {
         let user_id = memo.user_id;
         let user_id_str = user_id.to_string();
         let bot_service = self.bot_service.clone();
-        let server_ai_config_service = self.server_ai_config_service.clone();
+        let user_ai_config_service = self.user_ai_config_service.clone();
         let ai_client = self.ai_client.clone();
         let app_settings_service = self.app_settings_service.clone();
         let pool = self.pool.clone();
@@ -539,7 +549,7 @@ impl MemoService {
         tokio::spawn(async move {
             let result = tokio::time::timeout(std::time::Duration::from_secs(600), async {
                 // Phase 1: Load data concurrently — one failure doesn't abort others
-                let (memo_images, config_svc, client, (auto_tag, auto_summary), (revisions, revision_context)) = tokio::join!(
+                let (memo_images, user_ai_cfg, client, (auto_tag, auto_summary), (revisions, revision_context)) = tokio::join!(
                     async {
                         if let Some(bot_svc) = &bot_service {
                             bot_svc
@@ -550,7 +560,12 @@ impl MemoService {
                             vec![]
                         }
                     },
-                    async { server_ai_config_service.clone() },
+                    async {
+                        match &user_ai_config_service {
+                            Some(svc) => svc.get(&user_id).await.ok().flatten(),
+                            None => None,
+                        }
+                    },
                     async { ai_client.clone() },
                     async {
                         match &app_settings_service {
@@ -569,7 +584,7 @@ impl MemoService {
                     },
                 );
 
-                let (Some(config_svc), Some(client)) = (config_svc, client) else {
+                let (Some(user_cfg), Some(client)) = (user_ai_cfg, client) else {
                     // No AI config or client: run embedding first, then bot replies.
                     // Bot replies must run AFTER embedding so the anchor embedding
                     // exists when the RAG similarity search executes.
@@ -608,6 +623,22 @@ impl MemoService {
                     return;
                 };
 
+                // Build a ServerAiConfig-like struct from user's config for generate_tags_ai/generate_summary_ai
+                let user_server_config = crate::models::ServerAiConfig {
+                    key: "bot".to_string(),
+                    provider: user_cfg.provider,
+                    base_url: user_cfg.base_url,
+                    api_key: user_cfg.api_key,
+                    model: user_cfg.model,
+                    temperature: user_cfg.temperature,
+                    max_tokens: user_cfg.max_tokens,
+                    timeout_seconds: user_cfg.timeout_seconds,
+                    supports_vision: user_cfg.supports_vision,
+                    supports_thinking: user_cfg.supports_thinking,
+                    embedding_dim: user_cfg.embedding_dim,
+                    updated_at: user_cfg.updated_at,
+                };
+
                 let needs_tags = content_changed
                     && memo
                         .tags
@@ -621,7 +652,7 @@ impl MemoService {
                 // Phase 2: Run AI tasks concurrently with per-task retry
                 let tag_fut = {
                     let pool = pool.clone();
-                    let config_svc = config_svc.clone();
+                    let config = user_server_config.clone();
                     let client = client.clone();
                     let user_id_str = user_id_str.clone();
                     let memo = memo.clone();
@@ -638,7 +669,7 @@ impl MemoService {
                         let result = with_retry(
                             move || {
                                 let pool = pool.clone();
-                                let config_svc = config_svc.clone();
+                                let config = config.clone();
                                 let client = client.clone();
                                 let user_id_str = user_id_str.clone();
                                 let memo = memo.clone();
@@ -646,7 +677,7 @@ impl MemoService {
                                 let revision_context = revision_context.clone();
                                 async move {
                                     MemoService::generate_tags_ai(
-                                        &pool, &config_svc, &client, &user_id_str,
+                                        &pool, &config, &client, &user_id_str,
                                         &memo, &memo_images, &revision_context,
                                     ).await
                                 }
@@ -686,7 +717,7 @@ impl MemoService {
 
                 let summary_fut = {
                     let pool = pool.clone();
-                    let config_svc = config_svc.clone();
+                    let config = user_server_config.clone();
                     let client = client.clone();
                     let memo = memo.clone();
                     let memo_images = memo_images.clone();
@@ -701,14 +732,14 @@ impl MemoService {
                         let result = with_retry(
                             move || {
                                 let pool = pool.clone();
-                                let config_svc = config_svc.clone();
+                                let config = config.clone();
                                 let client = client.clone();
                                 let memo = memo.clone();
                                 let memo_images = memo_images.clone();
                                 let revision_context = revision_context.clone();
                                 async move {
                                     MemoService::generate_summary_ai(
-                                        &pool, &config_svc, &client,
+                                        &pool, &config, &client,
                                         &memo, &memo_images, &revision_context,
                                     ).await
                                 }
@@ -838,7 +869,7 @@ impl MemoService {
     #[allow(dead_code)]
     async fn auto_generate_tags(
         pool: &PgPool,
-        config_svc: &ServerAiConfigService,
+        config: &crate::models::ServerAiConfig,
         ai_client: &AiClient,
         user_id: &str,
         memo: &Memo,
@@ -847,7 +878,7 @@ impl MemoService {
     ) {
         match Self::generate_tags_ai(
             pool,
-            config_svc,
+            config,
             ai_client,
             user_id,
             memo,
@@ -893,17 +924,13 @@ impl MemoService {
 impl MemoService {
     async fn generate_tags_ai(
         pool: &PgPool,
-        config_svc: &ServerAiConfigService,
+        config: &crate::models::ServerAiConfig,
         ai_client: &AiClient,
         user_id: &str,
         memo: &Memo,
         images: &[crate::services::ai_client::AiImageInput],
         revision_context: &str,
     ) -> Result<serde_json::Value, AppError> {
-        let config = config_svc.get("bot").await.map_err(|e| {
-            AppError::Internal(format!("[AutoTag] failed to get bot config: {}", e))
-        })?;
-
         if config.api_key.trim().is_empty()
             || config.model.trim().is_empty()
             || config.base_url.trim().is_empty()
@@ -999,13 +1026,13 @@ impl MemoService {
     #[allow(dead_code)]
     async fn auto_generate_summary(
         pool: &PgPool,
-        config_svc: &ServerAiConfigService,
+        config: &crate::models::ServerAiConfig,
         ai_client: &AiClient,
         memo: &Memo,
         images: &[crate::services::ai_client::AiImageInput],
         revision_context: &str,
     ) {
-        match Self::generate_summary_ai(pool, config_svc, ai_client, memo, images, revision_context)
+        match Self::generate_summary_ai(pool, config, ai_client, memo, images, revision_context)
             .await
         {
             Ok(summary) => {
@@ -1035,16 +1062,12 @@ impl MemoService {
 
     async fn generate_summary_ai(
         _pool: &PgPool,
-        config_svc: &ServerAiConfigService,
+        config: &crate::models::ServerAiConfig,
         ai_client: &AiClient,
         memo: &Memo,
         images: &[crate::services::ai_client::AiImageInput],
         revision_context: &str,
     ) -> Result<String, AppError> {
-        let config = config_svc.get("bot").await.map_err(|e| {
-            AppError::Internal(format!("[AutoSummary] failed to get bot config: {}", e))
-        })?;
-
         if config.api_key.trim().is_empty()
             || config.model.trim().is_empty()
             || config.base_url.trim().is_empty()

@@ -12,6 +12,8 @@ use std::{future::Future, pin::Pin, rc::Rc};
 #[derive(Debug, Deserialize, Clone)]
 pub struct Claims {
     pub sub: String,
+    #[serde(default)]
+    pub role: String,
 }
 
 #[derive(Clone)]
@@ -101,5 +103,12 @@ pub fn get_user_id(req: &HttpRequest) -> Result<String, Error> {
     req.extensions()
         .get::<Claims>()
         .map(|claims| claims.sub.clone())
+        .ok_or_else(|| ErrorUnauthorized("Unauthorized".to_string()).into())
+}
+
+pub fn get_user_role(req: &HttpRequest) -> Result<String, Error> {
+    req.extensions()
+        .get::<Claims>()
+        .map(|claims| claims.role.clone())
         .ok_or_else(|| ErrorUnauthorized("Unauthorized".to_string()).into())
 }
