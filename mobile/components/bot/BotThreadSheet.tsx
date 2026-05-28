@@ -7,7 +7,11 @@ import {
   uploadSelectedMedia,
   type SelectedMediaItem,
 } from '@/lib/media/upload'
-import { SafeKeyboardAwareScrollView, SafeKeyboardStickyView } from '@/lib/native/safeProviders'
+import {
+  SafeKeyboardAwareScrollView,
+  SafeKeyboardProvider,
+  SafeKeyboardStickyView,
+} from '@/lib/native/safeProviders'
 import { useBotThread, useReplyToBot } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type BotReply } from '@mosaic/api'
@@ -274,208 +278,210 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.content}>
-          <View
-            style={[
-              styles.header,
-              { borderBottomColor: theme.border, paddingTop: insets.top + 12 },
-            ]}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.title, { color: theme.text }]}>{bot?.name ?? 'Bot'}</Text>
-              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                {t('botThread.continueChat')}
-              </Text>
+      <SafeKeyboardProvider>
+        <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+          <View style={styles.content}>
+            <View
+              style={[
+                styles.header,
+                { borderBottomColor: theme.border, paddingTop: insets.top + 12 },
+              ]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.title, { color: theme.text }]}>{bot?.name ?? 'Bot'}</Text>
+                <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+                  {t('botThread.continueChat')}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={onClose} hitSlop={12}>
+                <X size={22} color={theme.textSecondary} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={onClose} hitSlop={12}>
-              <X size={22} color={theme.textSecondary} />
-            </TouchableOpacity>
-          </View>
 
-          <SafeKeyboardAwareScrollView
-            ref={scrollViewRef}
-            style={styles.body}
-            contentContainerStyle={styles.messages}
-            keyboardShouldPersistTaps="handled"
-          >
-            {isLoading ? (
-              <SkeletonBubbles />
-            ) : (
-              <>
-                {messages.map((message, index) => {
-                  const isUser = message.role === 'user'
-                  return (
-                    <View
-                      key={`${message.id}-${message.role}-${index}`}
-                      style={[styles.messageRow, isUser && styles.userMessageRow]}
-                    >
+            <SafeKeyboardAwareScrollView
+              ref={scrollViewRef}
+              style={styles.body}
+              contentContainerStyle={styles.messages}
+              keyboardShouldPersistTaps="handled"
+            >
+              {isLoading ? (
+                <SkeletonBubbles />
+              ) : (
+                <>
+                  {messages.map((message, index) => {
+                    const isUser = message.role === 'user'
+                    return (
                       <View
-                        style={[
-                          styles.messageBubble,
-                          {
-                            backgroundColor: isUser ? theme.primary : theme.surface,
-                            borderRadius: theme.radius.medium,
-                          },
-                        ]}
+                        key={`${message.id}-${message.role}-${index}`}
+                        style={[styles.messageRow, isUser && styles.userMessageRow]}
                       >
-                        <Text
+                        <View
                           style={[
-                            styles.messageText,
-                            { color: isUser ? theme.onPrimary : theme.text },
+                            styles.messageBubble,
+                            {
+                              backgroundColor: isUser ? theme.primary : theme.surface,
+                              borderRadius: theme.radius.medium,
+                            },
                           ]}
                         >
-                          {message.content}
-                        </Text>
-                        {!isUser && 'thinkingContent' in message && message.thinkingContent && (
-                          <ThinkingContentBlock content={message.thinkingContent} theme={theme} />
-                        )}
-                        {'resourceIds' in message && message.resourceIds.length > 0 && (
-                          <View style={styles.messageImages}>
-                            {message.resourceIds.map(resourceId => (
-                              <Image
-                                key={resourceId}
-                                source={{
-                                  uri: resourcesApi.getDownloadUrl(resourceId, 'thumb'),
-                                  headers: authHeaders,
-                                }}
-                                style={styles.messageImage}
-                                contentFit="cover"
-                              />
-                            ))}
-                          </View>
-                        )}
-                        {'previewUris' in message &&
-                          message.previewUris &&
-                          message.previewUris.length > 0 && (
+                          <Text
+                            style={[
+                              styles.messageText,
+                              { color: isUser ? theme.onPrimary : theme.text },
+                            ]}
+                          >
+                            {message.content}
+                          </Text>
+                          {!isUser && 'thinkingContent' in message && message.thinkingContent && (
+                            <ThinkingContentBlock content={message.thinkingContent} theme={theme} />
+                          )}
+                          {'resourceIds' in message && message.resourceIds.length > 0 && (
                             <View style={styles.messageImages}>
-                              {message.previewUris.map(uri => (
+                              {message.resourceIds.map(resourceId => (
                                 <Image
-                                  key={uri}
-                                  source={{ uri }}
+                                  key={resourceId}
+                                  source={{
+                                    uri: resourcesApi.getDownloadUrl(resourceId, 'thumb'),
+                                    headers: authHeaders,
+                                  }}
                                   style={styles.messageImage}
                                   contentFit="cover"
                                 />
                               ))}
                             </View>
                           )}
+                          {'previewUris' in message &&
+                            message.previewUris &&
+                            message.previewUris.length > 0 && (
+                              <View style={styles.messageImages}>
+                                {message.previewUris.map(uri => (
+                                  <Image
+                                    key={uri}
+                                    source={{ uri }}
+                                    style={styles.messageImage}
+                                    contentFit="cover"
+                                  />
+                                ))}
+                              </View>
+                            )}
+                        </View>
+                      </View>
+                    )
+                  })}
+                  {isPending && (
+                    <View style={styles.messageRow}>
+                      <View
+                        style={[
+                          styles.messageBubble,
+                          {
+                            backgroundColor: theme.surface,
+                            borderRadius: theme.radius.medium,
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.messageText, { color: theme.textSecondary }]}>
+                          {t('botThread.replying')}
+                        </Text>
                       </View>
                     </View>
-                  )
-                })}
-                {isPending && (
-                  <View style={styles.messageRow}>
-                    <View
-                      style={[
-                        styles.messageBubble,
-                        {
-                          backgroundColor: theme.surface,
-                          borderRadius: theme.radius.medium,
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.messageText, { color: theme.textSecondary }]}>
-                        {t('botThread.replying')}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-              </>
-            )}
-          </SafeKeyboardAwareScrollView>
-          <SafeKeyboardStickyView>
-            <View
-              style={[
-                styles.replyBar,
-                {
-                  backgroundColor: theme.background,
-                  borderColor: theme.border,
-                  height: isFocused ? undefined : 48,
-                  paddingVertical: 28,
-                  borderWidth: 1,
-                },
-              ]}
-            >
-              {mediaItems.length > 0 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.mediaStrip}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  {mediaItems.map(item => (
-                    <View key={item.key} style={styles.mediaThumb}>
-                      <Image
-                        source={{ uri: item.uri }}
-                        style={styles.mediaThumbImage}
-                        contentFit="cover"
-                      />
-                      {uploadProgressById[item.key] != null && (
-                        <View style={styles.uploadProgressOverlay}>
-                          <Text style={styles.uploadProgressText}>
-                            {uploadProgressById[item.key]}%
-                          </Text>
-                        </View>
-                      )}
-                      <TouchableOpacity
-                        style={[styles.mediaRemoveBtn, { backgroundColor: theme.surface }]}
-                        onPress={() => removeMediaItem(item.key)}
-                        hitSlop={8}
-                      >
-                        <X size={12} color={theme.text} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </ScrollView>
+                  )}
+                </>
               )}
-              <View style={styles.inputRow}>
-                <TouchableOpacity
-                  style={styles.imageBtn}
-                  onPress={handlePickImages}
-                  disabled={isPending || mediaItems.length >= 4}
-                >
-                  <ImagePlus size={18} color={theme.textSecondary} />
-                </TouchableOpacity>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { color: theme.text, fontSize: theme.typography.bodyLarge.fontSize },
-                    !isFocused && styles.inputCollapsed,
-                  ]}
-                  value={text}
-                  onChangeText={setText}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
-                  placeholder={t('botThread.askPlaceholder')}
-                  placeholderTextColor={theme.textSecondary}
-                  multiline={isFocused}
-                  textAlignVertical={isFocused ? 'top' : 'center'}
-                  maxLength={500}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.sendBtn,
-                    {
-                      backgroundColor:
-                        text.trim() || mediaItems.length > 0 ? theme.primary : theme.surfaceMuted,
-                    },
-                  ]}
-                  onPress={handleSend}
-                  disabled={(!text.trim() && mediaItems.length === 0) || isPending}
-                >
-                  <Send
-                    size={18}
-                    color={
-                      text.trim() || mediaItems.length > 0 ? theme.onPrimary : theme.textSecondary
-                    }
+            </SafeKeyboardAwareScrollView>
+            <SafeKeyboardStickyView>
+              <View
+                style={[
+                  styles.replyBar,
+                  {
+                    backgroundColor: theme.background,
+                    borderColor: theme.border,
+                    height: isFocused ? undefined : 48,
+                    paddingVertical: 28,
+                    borderWidth: 1,
+                  },
+                ]}
+              >
+                {mediaItems.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.mediaStrip}
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    {mediaItems.map(item => (
+                      <View key={item.key} style={styles.mediaThumb}>
+                        <Image
+                          source={{ uri: item.uri }}
+                          style={styles.mediaThumbImage}
+                          contentFit="cover"
+                        />
+                        {uploadProgressById[item.key] != null && (
+                          <View style={styles.uploadProgressOverlay}>
+                            <Text style={styles.uploadProgressText}>
+                              {uploadProgressById[item.key]}%
+                            </Text>
+                          </View>
+                        )}
+                        <TouchableOpacity
+                          style={[styles.mediaRemoveBtn, { backgroundColor: theme.surface }]}
+                          onPress={() => removeMediaItem(item.key)}
+                          hitSlop={8}
+                        >
+                          <X size={12} color={theme.text} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                )}
+                <View style={styles.inputRow}>
+                  <TouchableOpacity
+                    style={styles.imageBtn}
+                    onPress={handlePickImages}
+                    disabled={isPending || mediaItems.length >= 4}
+                  >
+                    <ImagePlus size={18} color={theme.textSecondary} />
+                  </TouchableOpacity>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: theme.text, fontSize: theme.typography.bodyLarge.fontSize },
+                      !isFocused && styles.inputCollapsed,
+                    ]}
+                    value={text}
+                    onChangeText={setText}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    placeholder={t('botThread.askPlaceholder')}
+                    placeholderTextColor={theme.textSecondary}
+                    multiline={isFocused}
+                    textAlignVertical={isFocused ? 'top' : 'center'}
+                    maxLength={500}
                   />
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.sendBtn,
+                      {
+                        backgroundColor:
+                          text.trim() || mediaItems.length > 0 ? theme.primary : theme.surfaceMuted,
+                      },
+                    ]}
+                    onPress={handleSend}
+                    disabled={(!text.trim() && mediaItems.length === 0) || isPending}
+                  >
+                    <Send
+                      size={18}
+                      color={
+                        text.trim() || mediaItems.length > 0 ? theme.onPrimary : theme.textSecondary
+                      }
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          </SafeKeyboardStickyView>
+            </SafeKeyboardStickyView>
+          </View>
         </View>
-      </View>
+      </SafeKeyboardProvider>
     </Modal>
   )
 }
