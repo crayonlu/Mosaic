@@ -4,7 +4,11 @@ import {
   upsertMemos,
   upsertResources,
   listMemos as localListMemos,
+  countMemos as localCountMemos,
   listDiaries as localListDiaries,
+  countDiaries as localCountDiaries,
+  countSearchMemos as localCountSearchMemos,
+  getAllTags as localGetAllTags,
   getDiary as localGetDiary,
   getDiaryWithMemos as localGetDiaryWithMemos,
   getMemo as localGetMemo,
@@ -94,13 +98,28 @@ export async function syncDiariesPage(response: PaginatedResponse<Diary>) {
   }
 }
 
+export async function syncSingleDiary(diary: Diary) {
+  try {
+    await upsertDiaries([diary])
+  } catch (error) {
+    console.warn('[syncSingleDiary] Failed to sync:', error)
+  }
+}
+
 // ─── Offline fallback helpers ───
 
 export async function fallbackMemosList(
   query: LocalMemoQuery
 ): Promise<PaginatedResponse<MemoWithResources> | undefined> {
-  const memos = await localListMemos(query)
-  if (memos.length === 0) return undefined
+  const pageSize = query.pageSize ?? 20
+  const page = query.page ?? 1
+
+  const [memos, total] = await Promise.all([
+    localListMemos(query),
+    localCountMemos({ archived: query.archived, diaryDate: query.diaryDate, tag: query.tag }),
+  ])
+
+  if (memos.length === 0 && page === 1) return undefined
 
   const resourcesByMemoId = await getResourcesByMemoIds(memos.map(m => m.id))
   const memosWithResources: MemoWithResources[] = memos.map(m => ({
@@ -110,10 +129,10 @@ export async function fallbackMemosList(
 
   return {
     items: memosWithResources,
-    total: memosWithResources.length,
-    page: query.page ?? 1,
-    pageSize: query.pageSize ?? 20,
-    totalPages: 1,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
   }
 }
 
@@ -136,15 +155,22 @@ export async function fallbackSingleMemo(id: string): Promise<MemoWithResources 
 export async function fallbackDiariesList(
   query: LocalDiaryQuery
 ): Promise<PaginatedResponse<Diary> | undefined> {
-  const diaries = await localListDiaries(query)
-  if (diaries.length === 0) return undefined
+  const pageSize = query.pageSize ?? 20
+  const page = query.page ?? 1
+
+  const [diaries, total] = await Promise.all([
+    localListDiaries(query),
+    localCountDiaries({ startDate: query.startDate, endDate: query.endDate }),
+  ])
+
+  if (diaries.length === 0 && page === 1) return undefined
 
   return {
     items: diaries,
-    total: diaries.length,
-    page: query.page ?? 1,
-    pageSize: query.pageSize ?? 20,
-    totalPages: 1,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
   }
 }
 
@@ -155,8 +181,21 @@ export async function fallbackSingleDiary(date: string): Promise<any | undefined
 export async function fallbackSearchMemos(
   query: LocalMemoSearchQuery
 ): Promise<SearchMemosResponse | undefined> {
-  const memos = await localSearchMemos(query)
-  if (memos.length === 0) return undefined
+  const pageSize = query.pageSize ?? 20
+  const page = query.page ?? 1
+
+  const [memos, total] = await Promise.all([
+    localSearchMemos(query),
+    localCountSearchMemos({
+      query: query.query,
+      tags: query.tags,
+      startDate: query.startDate,
+      endDate: query.endDate,
+      isArchived: query.isArchived,
+    }),
+  ])
+
+  if (memos.length === 0 && page === 1) return undefined
 
   const resourcesByMemoId = await getResourcesByMemoIds(memos.map(m => m.id))
   const memosWithResources: MemoWithResources[] = memos.map(m => ({
@@ -166,9 +205,17 @@ export async function fallbackSearchMemos(
 
   return {
     memos: memosWithResources,
-    total: memosWithResources.length,
-    page: query.page ?? 1,
-    pageSize: query.pageSize ?? 20,
+    total,
+    page,
+    pageSize,
     semanticEnabled: false,
   }
+}
+
+// ─── Tags fallback ───
+
+export async function fallbackMemoTags(): Promise<{ tag: string; count: number }[] | undefined> {
+  const tags = await localGetAllTags()
+  if (tags.length === 0) return undefined
+  return tags
 }

@@ -170,6 +170,19 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Protected guard={__DEV__}>
+        <Tabs.Screen
+          name="dev"
+          options={{
+            title: 'Dev',
+            tabBarIcon: ({ focused, color }) => (
+              <TabIconWithDot focused={focused}>
+                <Settings size={24} color={color} strokeWidth={focused ? 2.5 : 2} />
+              </TabIconWithDot>
+            ),
+          }}
+        />
+      </Tabs.Protected>
     </Tabs>
   )
 }

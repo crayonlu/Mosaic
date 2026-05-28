@@ -1,7 +1,12 @@
 import type { SearchMemosQuery } from '@mosaic/api'
 import { memosApi } from '@mosaic/api'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { withOfflineFallback, syncMemosPage, fallbackSearchMemos } from '../offlineSync'
+import {
+  withOfflineFallback,
+  syncMemosPage,
+  fallbackSearchMemos,
+  fallbackMemoTags,
+} from '../offlineSync'
 
 export function useSearchMemos(query: SearchMemosQuery, options?: { enabled?: boolean }) {
   const hasSearchCriteria = Boolean(
@@ -43,6 +48,8 @@ export function useSearchMemos(query: SearchMemosQuery, options?: { enabled?: bo
 export function useMemoTags() {
   return useQuery({
     queryKey: ['memos', 'tags'],
-    queryFn: () => memosApi.getAllTags(),
+    queryFn: withOfflineFallback(() => memosApi.getAllTags(), {
+      fallback: () => fallbackMemoTags(),
+    }),
   })
 }

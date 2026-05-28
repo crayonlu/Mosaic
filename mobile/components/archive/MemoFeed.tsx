@@ -1,4 +1,4 @@
-import { MemoListSkeleton } from '@/components/ui'
+import { BrandLoader } from '@/components/ui'
 import { useInfiniteMemos, useMemo as useMemoQuery, useMemos, useMemosByDate } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { MemoWithResources } from '@mosaic/api'
@@ -181,9 +181,9 @@ export function MemoFeed({
 
   if (isLoading) {
     return (
-      <View>
+      <View style={{ flex: 1 }}>
         {headerComponent}
-        <MemoListSkeleton count={6} />
+        <BrandLoader loading />
       </View>
     )
   }

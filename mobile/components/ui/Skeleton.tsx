@@ -136,6 +136,43 @@ export function MemoListSkeleton({ count = 5 }: { count?: number }) {
   )
 }
 
+/** Simplified skeleton card — lighter, no tags row */
+export function SimpleMemoCardSkeleton({
+  shimmerStyle,
+}: {
+  shimmerStyle?: ReturnType<typeof useAnimatedStyle>
+}) {
+  const { theme } = useThemeStore()
+  const fallbackShimmer = useShimmerAnimation()
+  const animStyle = shimmerStyle ?? fallbackShimmer
+
+  return (
+    <View style={[styles.card, { borderBottomColor: theme.border }]}>
+      <SkeletonLineInner width={60} height={10} shimmerStyle={animStyle} />
+      <SkeletonLineInner
+        width="85%"
+        height={14}
+        style={{ marginTop: 10, marginBottom: 6 }}
+        shimmerStyle={animStyle}
+      />
+      <SkeletonLineInner width="60%" height={12} shimmerStyle={animStyle} />
+    </View>
+  )
+}
+
+/** Simplified skeleton list — fewer cards, no tags */
+export function SimpleMemoListSkeleton({ count = 3 }: { count?: number }) {
+  const shimmerStyle = useShimmerAnimation()
+
+  return (
+    <View>
+      {Array.from({ length: count }).map((_, i) => (
+        <SimpleMemoCardSkeleton key={i} shimmerStyle={shimmerStyle} />
+      ))}
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
   card: {
     paddingHorizontal: 16,

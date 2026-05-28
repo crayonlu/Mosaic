@@ -4,6 +4,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
   withOfflineFallback,
   syncDiariesPage,
+  syncSingleDiary,
   fallbackDiariesList,
   fallbackSingleDiary,
 } from '../offlineSync'
@@ -38,6 +39,7 @@ export function useDiary(date: string) {
   return useQuery({
     queryKey: ['diary', date],
     queryFn: withOfflineFallback(() => diariesApi.get(date), {
+      writeThrough: syncSingleDiary,
       fallback: () => fallbackSingleDiary(date),
     }),
     enabled: !!date,

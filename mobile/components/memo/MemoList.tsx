@@ -1,4 +1,4 @@
-import { MemoListSkeleton } from '@/components/ui'
+import { SimpleMemoListSkeleton } from '@/components/ui'
 import { useInfiniteMemos, useMemo as useMemoQuery, useMemosByDate } from '@/lib/query'
 import { stringUtils } from '@/lib/utils/string'
 import { useThemeStore } from '@/stores/themeStore'
@@ -232,7 +232,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
     return (
       <View>
         {Header}
-        <MemoListSkeleton count={5} />
+        <SimpleMemoListSkeleton count={3} />
       </View>
     )
   }

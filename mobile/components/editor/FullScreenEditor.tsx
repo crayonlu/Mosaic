@@ -2,6 +2,7 @@ import { Loading, toast } from '@/components/ui'
 import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { DraggableImageGrid } from '@/components/ui/DraggableImageGrid'
 import { useAISummary } from '@/hooks/useAISummary'
+import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { useConnection } from '@/hooks/useConnection'
 import {
   createSelectedMediaItems,
@@ -69,6 +70,7 @@ export function FullScreenEditor({
   const { theme } = useThemeStore()
   const insets = useSafeAreaInsets()
   const { canUseNetwork } = useConnection()
+  const { headers: authHeaders } = useAuthHeaders()
   const {
     summary,
     loading: summaryLoading,
@@ -378,6 +380,7 @@ export function FullScreenEditor({
                   </Text>
                   <DraggableImageGrid
                     items={mediaItems}
+                    authHeaders={authHeaders}
                     uploadProgressById={uploadProgressById}
                     onItemsChange={handleMediaItemsChange}
                     onDragActivate={() => setIsDraggingMedia(true)}

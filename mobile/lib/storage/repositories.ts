@@ -163,6 +163,39 @@ export async function listMemos(query?: LocalMemoQuery): Promise<Memo[]> {
   return rows.map(row => rowToMemoFromJoin(row))
 }
 
+export async function countMemos(
+  query?: Omit<LocalMemoQuery, 'page' | 'pageSize'>
+): Promise<number> {
+  const db = await getDatabase()
+
+  const conditions: string[] = []
+  const params: any[] = []
+
+  if (query?.archived !== undefined) {
+    conditions.push('is_archived = ?')
+    params.push(query.archived ? 1 : 0)
+  }
+  if (query?.diaryDate) {
+    conditions.push('diary_date = ?')
+    params.push(query.diaryDate)
+  }
+  if (query?.tag) {
+    conditions.push(
+      'EXISTS (SELECT 1 FROM memo_tags mt2 WHERE mt2.memo_id = memos.id AND mt2.tag = ?)'
+    )
+    params.push(query.tag)
+  }
+
+  const where = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : ''
+
+  const row = await db.getFirstAsync<{ cnt: number }>(
+    `SELECT COUNT(*) as cnt FROM memos${where}`,
+    ...params
+  )
+
+  return row?.cnt ?? 0
+}
+
 export async function searchMemos(query: LocalMemoSearchQuery): Promise<Memo[]> {
   const db = await getDatabase()
   const page = query.page ?? 1
@@ -354,6 +387,83 @@ export async function listDiaries(query?: LocalDiaryQuery): Promise<Diary[]> {
   )
 
   return rows.map(rowToDiary)
+}
+
+export async function countDiaries(
+  query?: Omit<LocalDiaryQuery, 'page' | 'pageSize'>
+): Promise<number> {
+  const db = await getDatabase()
+
+  const conditions: string[] = []
+  const params: any[] = []
+
+  if (query?.startDate) {
+    conditions.push('date >= ?')
+    params.push(query.startDate)
+  }
+  if (query?.endDate) {
+    conditions.push('date <= ?')
+    params.push(query.endDate)
+  }
+
+  const where = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : ''
+
+  const row = await db.getFirstAsync<{ cnt: number }>(
+    `SELECT COUNT(*) as cnt FROM diaries${where}`,
+    ...params
+  )
+
+  return row?.cnt ?? 0
+}
+
+export async function countSearchMemos(
+  query: Omit<LocalMemoSearchQuery, 'page' | 'pageSize'>
+): Promise<number> {
+  const db = await getDatabase()
+
+  const conditions: string[] = []
+  const params: any[] = []
+
+  if (query.query) {
+    conditions.push('content LIKE ?')
+    params.push(`%${query.query}%`)
+  }
+  if (query.tags && query.tags.length > 0) {
+    const placeholders = query.tags.map(() => '?').join(', ')
+    conditions.push(
+      `EXISTS (SELECT 1 FROM memo_tags mt2 WHERE mt2.memo_id = memos.id AND mt2.tag IN (${placeholders}))`
+    )
+    params.push(...query.tags)
+  }
+  if (query.startDate !== undefined) {
+    conditions.push('created_at >= ?')
+    params.push(query.startDate)
+  }
+  if (query.endDate !== undefined) {
+    conditions.push('created_at <= ?')
+    params.push(query.endDate)
+  }
+  if (query.isArchived !== undefined) {
+    conditions.push('is_archived = ?')
+    params.push(query.isArchived ? 1 : 0)
+  }
+
+  const where = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : ''
+
+  const row = await db.getFirstAsync<{ cnt: number }>(
+    `SELECT COUNT(*) as cnt FROM memos${where}`,
+    ...params
+  )
+
+  return row?.cnt ?? 0
+}
+
+export async function getAllTags(): Promise<{ tag: string; count: number }[]> {
+  const db = await getDatabase()
+  const rows = await db.getAllAsync<{ tag: string; cnt: number }>(
+    `SELECT tag, COUNT(*) as cnt FROM memo_tags GROUP BY tag ORDER BY cnt DESC`
+  )
+  return rows.map(r => ({ tag: r.tag, count: r.cnt }))
 }
 
 export async function deleteDiary(date: string): Promise<void> {

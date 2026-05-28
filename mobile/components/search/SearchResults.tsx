@@ -1,5 +1,5 @@
 import { MemoCard } from '@/components/memo/MemoCard'
-import { MemoListSkeleton } from '@/components/ui'
+import { BrandLoader } from '@/components/ui'
 import { useMemo as useMemoQuery } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { Memo } from '@mosaic/api'
@@ -128,7 +128,7 @@ export function SearchResults({
   }, [t, hasMore, results.length, refreshing, theme.textSecondary, theme.primary])
 
   if (loading && results.length === 0) {
-    return <MemoListSkeleton count={6} />
+    return <BrandLoader loading />
   }
 
   if (results.length === 0) {
