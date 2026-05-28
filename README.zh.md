@@ -1,8 +1,16 @@
-# Mosaic📔
+<p align="center">
+  <img src="./mobile/assets/images/android-icon-foreground.png" width="120" alt="Mosaic Icon" />
+</p>
 
-[English](./README.md) | 简体中文
+<h1 align="center">Mosaic</h1>
 
-[![wakatime](https://wakatime.com/badge/user/493754fa-a87a-40a4-afc6-62a4b8f68adf/project/710ea744-a133-41a8-aa19-785c3c6a1355.svg)](https://wakatime.com/badge/user/493754fa-a87a-40a4-afc6-62a4b8f68adf/project/710ea744-a133-41a8-aa19-785c3c6a1355)
+<p align="center">
+  <a href="./README.md">English</a> | 简体中文
+</p>
+
+<p align="center">
+  <a href="https://wakatime.com/badge/user/493754fa-a87a-40a4-afc6-62a4b8f68adf/project/710ea744-a133-41a8-aa19-785c3c6a1355"><img src="https://wakatime.com/badge/user/493754fa-a87a-40a4-afc6-62a4b8f68adf/project/710ea744-a133-41a8-aa19-785c3c6a1355.svg" alt="wakatime" /></a>
+</p>
 
 > "整合自己散落的碎片"
 
@@ -34,7 +42,7 @@
 - 移动端：iOS、Android
 - 数据云端同步，随时随地访问
 
-> 受限于开发者设备因素，目前只支持 Android 平台
+> iOS 已完成适配测试，待加入 Apple Developer Program 后发布。Will do.
 
 ---
 
