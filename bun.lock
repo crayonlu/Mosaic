@@ -35,6 +35,7 @@
         "expo-image": "~3.0.11",
         "expo-image-manipulator": "~14.0.8",
         "expo-image-picker": "~17.0.10",
+        "expo-intent-launcher": "^56.0.4",
         "expo-linear-gradient": "~15.0.8",
         "expo-linking": "~8.0.11",
         "expo-localization": "~17.0.8",
@@ -1418,6 +1419,8 @@
     "expo-image-manipulator": ["expo-image-manipulator@14.0.8", "", { "dependencies": { "expo-image-loader": "~6.0.0" }, "peerDependencies": { "expo": "*" } }, "sha512-sXsXjm7rIxLWZe0j2A41J/Ph53PpFJRdyzJ3EQ/qetxLUvS2m3K1sP5xy37px43qCf0l79N/i6XgFgenFV36/Q=="],
 
     "expo-image-picker": ["expo-image-picker@17.0.11", "", { "dependencies": { "expo-image-loader": "~6.0.0" }, "peerDependencies": { "expo": "*" } }, "sha512-/apkoyukDvsCHHb9fzP+F34A1uQqSzUtYH/2P/xJACNEwq+mwEXjXvVU8bzlJq6ih0Qo1+tpVivIa7B9kYSwOQ=="],
+
+    "expo-intent-launcher": ["expo-intent-launcher@56.0.4", "", { "peerDependencies": { "expo": "*" } }, "sha512-ZqRMuPunNSucK9kRbtX+I8bD/OhY0moGNnHKHCWx//1BZ+HyKBCVw6OX12gWHjowz1AhcSVeAasYt48Y+tXPwQ=="],
 
     "expo-keep-awake": ["expo-keep-awake@15.0.8", "", { "peerDependencies": { "expo": "*", "react": "*" } }, "sha512-YK9M1VrnoH1vLJiQzChZgzDvVimVoriibiDIFLbQMpjYBnvyfUeHJcin/Gx1a+XgupNXy92EQJLgI/9ZuXajYQ=="],
 

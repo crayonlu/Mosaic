@@ -3,6 +3,7 @@ import { Button, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { SlidingSegmentedControl } from '@/components/ui/SlidingSegmentedControl'
 import { toast } from '@/components/ui/Toast'
+import { useAppUpdate } from '@/hooks/useAppUpdate'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { useBots, useUpdateBot } from '@/lib/query'
 import { useAdminAIConfig } from '@/lib/query/hooks/useAdminAIConfig'
@@ -99,6 +100,7 @@ export default function SettingsScreen() {
   const { theme, themeName, setThemeName } = useThemeStore()
   const { locale, setLocale } = useLocaleStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
+  const appUpdate = useAppUpdate()
   // const { data: customPushCount = 0 } = useCustomPushCount()
   const [showBotSettings, setShowBotSettings] = useState(false)
   const [showAppearanceSettings, setShowAppearanceSettings] = useState(false)
@@ -642,14 +644,71 @@ export default function SettingsScreen() {
   const renderAboutSection = () => (
     <View style={[styles.section]}>
       <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={appUpdate.hasUpdate ? appUpdate.downloadAndInstall : appUpdate.checkForUpdate}
+          disabled={appUpdate.downloading}
+        >
           <Info size={18} color={theme.text} />
-          <Text style={[styles.menuItemText, { color: theme.text }]}>{t('settings.about')}</Text>
-          <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={[styles.menuItemText, { color: theme.text, marginLeft: 0 }]}>
               Mosaic v{appVersion}
             </Text>
+            {appUpdate.checking && (
+              <Text style={[styles.updateHint, { color: theme.textSecondary }]}>
+                {t('settings.checkingUpdate')}
+              </Text>
+            )}
+            {appUpdate.hasUpdate && !appUpdate.downloading && (
+              <Text style={[styles.updateHint, { color: theme.primary }]}>
+                v{appUpdate.latestVersion} {t('settings.updateAvailable')}
+              </Text>
+            )}
+            {appUpdate.downloading && appUpdate.downloadProgress !== null && (
+              <View style={styles.progressContainer}>
+                <View
+                  style={[
+                    styles.progressBar,
+                    {
+                      backgroundColor: theme.surfaceMuted,
+                      borderRadius: 2,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {
+                        backgroundColor: theme.primary,
+                        width: `${appUpdate.downloadProgress}%`,
+                        borderRadius: 2,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.progressText, { color: theme.textSecondary }]}>
+                  {appUpdate.downloadProgress}%
+                </Text>
+              </View>
+            )}
+            {!appUpdate.checking && !appUpdate.hasUpdate && !appUpdate.downloading && (
+              <Text style={[styles.updateHint, { color: theme.textSecondary }]}>
+                {t('settings.upToDate')}
+              </Text>
+            )}
           </View>
+          {appUpdate.hasUpdate && !appUpdate.downloading && (
+            <View
+              style={[
+                styles.updateBadge,
+                { backgroundColor: theme.primary, borderRadius: theme.radius.small },
+              ]}
+            >
+              <Text style={[styles.updateBadgeText, { color: theme.onPrimary }]}>
+                {t('settings.update')}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -981,6 +1040,36 @@ const styles = StyleSheet.create({
   },
   addBotText: {
     fontSize: 14,
+    fontWeight: '500',
+  },
+  updateHint: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  progressBar: {
+    flex: 1,
+    height: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+  },
+  progressText: {
+    fontSize: 11,
+    minWidth: 32,
+  },
+  updateBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  updateBadgeText: {
+    fontSize: 12,
     fontWeight: '500',
   },
 })
