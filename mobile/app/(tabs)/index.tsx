@@ -13,14 +13,12 @@ import { router } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Platform, StyleSheet, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const TAB_BAR_HEIGHT = 54
 
 export default function HomeScreen() {
   const { t } = useTranslation()
   const { theme } = useThemeStore()
-  const insets = useSafeAreaInsets()
   const { canUseNetwork } = useConnection()
   const handleError = useErrorHandler()
   const { confirm } = useToastConfirm()
@@ -29,8 +27,6 @@ export default function HomeScreen() {
   const [inputFocused, setInputFocused] = useState(false)
 
   const isPending = isCreating || isDeleting
-
-  console.log('[HomeScreen] insets.bottom:', insets.bottom, 'Platform:', Platform.OS)
 
   const handleMemoPress = (memo: MemoWithResources) => {
     router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
