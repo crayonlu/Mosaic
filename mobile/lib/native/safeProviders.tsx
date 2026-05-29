@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { ScrollView, View } from 'react-native'
+import { Animated, ScrollView, View } from 'react-native'
 
 // ─── Safe BootSplash ─────────────────────────────────────────────
 
@@ -124,24 +124,56 @@ export function useSafeShareIntent() {
 }
 
 // ─── Safe KeyboardStickyView ─────────────────────────────────────
+// Custom implementation using RN Animated API (useNativeDriver) instead of
+// the library's v1.21+ Reanimated-based KeyboardStickyView, which causes
+// frame drops during keyboard animation on Android.
+
+function NativeKeyboardStickyView({
+  children,
+  style,
+  closed = 0,
+  opened = 0,
+}: {
+  children: ReactNode
+  style?: object
+  closed?: number
+  opened?: number
+}) {
+  const { height, progress } = keyboardControllerModule!.useKeyboardAnimation()
+
+  const offsetInterpolation = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [closed, opened],
+  })
+
+  const stickyStyle = {
+    transform: [{ translateY: Animated.add(height, offsetInterpolation) }],
+  }
+
+  return <Animated.View style={[style, stickyStyle]}>{children}</Animated.View>
+}
 
 export function SafeKeyboardStickyView({
   children,
   style,
-  ...props
+  offset,
 }: {
   children: ReactNode
   style?: object
-  offset?: { closed: number; opened: number }
+  offset?: { closed?: number; opened?: number }
 }) {
   if (!keyboardControllerModule) {
     return <View style={style}>{children}</View>
   }
-  const KSV = keyboardControllerModule.KeyboardStickyView
+
   return (
-    <KSV style={style} {...props}>
+    <NativeKeyboardStickyView
+      style={style}
+      closed={offset?.closed ?? 0}
+      opened={offset?.opened ?? 0}
+    >
       {children}
-    </KSV>
+    </NativeKeyboardStickyView>
   )
 }
 

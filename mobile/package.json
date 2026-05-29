@@ -54,7 +54,7 @@
     "react-native-draggable-grid": "^2.2.2",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-infinite-pager": "^0.3.18",
-    "react-native-keyboard-controller": "1.18.5",
+    "react-native-keyboard-controller": "^1.21.8",
     "react-native-markdown-display": "^7.0.2",
     "react-native-mmkv": "^4.2.0",
     "react-native-pager-view": "6.9.1",

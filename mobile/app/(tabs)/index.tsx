@@ -12,7 +12,8 @@ import { type MemoWithResources } from '@mosaic/api'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Platform, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const TAB_BAR_HEIGHT = 54
 
@@ -25,6 +26,7 @@ export default function HomeScreen() {
   const { mutateAsync: createMemo, isPending: isCreating } = useCreateMemo()
   const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
   const [inputFocused, setInputFocused] = useState(false)
+  const insets = useSafeAreaInsets()
 
   const isPending = isCreating || isDeleting
 
@@ -87,9 +89,7 @@ export default function HomeScreen() {
         />
       </View>
 
-      <SafeKeyboardStickyView
-        offset={{ closed: 0, opened: Platform.OS === 'ios' ? 2 * TAB_BAR_HEIGHT : TAB_BAR_HEIGHT }}
-      >
+      <SafeKeyboardStickyView offset={{ closed: 0, opened: TAB_BAR_HEIGHT + insets.bottom }}>
         <View
           style={[
             styles.inputContainer,

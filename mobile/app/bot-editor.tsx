@@ -3,7 +3,7 @@ import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { toast } from '@/components/ui/Toast'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
-import { SafeKeyboardAwareScrollView } from '@/lib/native/safeProviders'
+import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
 import { useCreateBot, useDeleteBot, useUpdateBot } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type Bot } from '@mosaic/api'
@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -136,7 +137,10 @@ export default function BotEditorScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeKeyboardAvoidingView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      behavior="padding"
+    >
       <ScreenHeader
         title={bot ? t('bot.editBot') : t('bot.newBot')}
         left={
@@ -155,10 +159,11 @@ export default function BotEditorScreen() {
         }
       />
 
-      <SafeKeyboardAwareScrollView
+      <ScrollView
         style={styles.bodyScroll}
         contentContainerStyle={[styles.body, { paddingBottom: 16 }]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         <TouchableOpacity
           style={styles.avatarRow}
@@ -272,8 +277,8 @@ export default function BotEditorScreen() {
             </TouchableOpacity>
           </View>
         )}
-      </SafeKeyboardAwareScrollView>
-    </View>
+      </ScrollView>
+    </SafeKeyboardAvoidingView>
   )
 }
 
