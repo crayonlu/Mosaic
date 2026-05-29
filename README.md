@@ -46,6 +46,12 @@ I realized that even though I have memorable moments every day, they gradually f
 
 ---
 
+## Demo
+
+https://github.com/crayonlu/Mosaic/raw/main/assets/demo.mp4
+
+---
+
 ## Directory Structure
 
 ```

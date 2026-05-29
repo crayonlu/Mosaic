@@ -46,6 +46,12 @@
 
 ---
 
+## 演示
+
+https://github.com/crayonlu/Mosaic/raw/main/assets/demo.mp4
+
+---
+
 ## 目录结构
 
 ```
