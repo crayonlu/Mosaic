@@ -193,6 +193,13 @@ export default function RootLayout() {
                             <Stack.Screen name="setup" options={{ headerShown: false }} />
                             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                             <Stack.Screen
+                              name="bot-editor"
+                              options={{
+                                animation: 'slide_from_bottom',
+                                headerShown: false,
+                              }}
+                            />
+                            <Stack.Screen
                               name="share"
                               options={{
                                 presentation: 'modal',

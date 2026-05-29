@@ -23,8 +23,7 @@ interface ExpandablePanelProps {
  * (content overflows → scrollable). Without `maxHeight`, the panel expands to full content
  * height (no scrolling) — suitable for short content like settings sections.
  *
- * Handles: content height measurement → (optional `Math.min(measured, maxHeight)` capping) →
- * animated expand/collapse with nestedScrollEnabled ScrollView.
+ * Collapse is instant (no animation) to avoid layout thrashing when bottom edge is visible.
  */
 export function ExpandablePanel({ expanded, children, maxHeight }: ExpandablePanelProps) {
   const [contentHeight, setContentHeight] = useState(0)
@@ -38,10 +37,8 @@ export function ExpandablePanel({ expanded, children, maxHeight }: ExpandablePan
         easing: Easing.out(Easing.cubic),
       })
     } else if (!expanded) {
-      animHeight.value = withTiming(0, {
-        duration: 220,
-        easing: Easing.out(Easing.cubic),
-      })
+      // Collapse instantly to avoid layout thrashing
+      animHeight.value = 0
     }
   }, [expanded, contentHeight, maxHeight, animHeight])
 
@@ -51,7 +48,7 @@ export function ExpandablePanel({ expanded, children, maxHeight }: ExpandablePan
   }))
 
   return (
-    <Animated.View style={[contentHeight > 0 ? { height: contentHeight } : undefined, expandStyle]}>
+    <Animated.View style={expandStyle}>
       <ScrollView
         style={maxHeight != null ? { maxHeight, height: maxHeight } : undefined}
         showsVerticalScrollIndicator

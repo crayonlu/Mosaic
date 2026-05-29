@@ -1,4 +1,4 @@
-import { BotEditorSheet } from '@/components/bot/BotEditorSheet'
+import { router } from 'expo-router'
 import { Button, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { SlidingSegmentedControl } from '@/components/ui/SlidingSegmentedControl'
@@ -15,7 +15,6 @@ import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
-// import { router } from 'expo-router'
 import { Bot, Cog, Info, LogOut, Plus, ShieldCheck, Sparkles, Trash } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -157,8 +156,6 @@ export default function SettingsScreen() {
   const [showAppearanceSettings, setShowAppearanceSettings] = useState(false)
   const [showAISettings, setShowAISettings] = useState(false)
   const [showAboutSettings, setShowAboutSettings] = useState(false)
-  const [botEditorVisible, setBotEditorVisible] = useState(false)
-  const [editingBot, setEditingBot] = useState<import('@mosaic/api').Bot | undefined>(undefined)
   const { data: bots = [] } = useBots()
   const { mutateAsync: updateBot } = useUpdateBot()
   const [showPermissionSettings, setShowPermissionSettings] = useState(false)
@@ -390,8 +387,7 @@ export default function SettingsScreen() {
             ]}
             activeOpacity={1}
             onPress={() => {
-              setEditingBot(bot)
-              setBotEditorVisible(true)
+              router.push({ pathname: '/bot-editor', params: { bot: JSON.stringify(bot) } })
             }}
           >
             <View style={[styles.botAvatar, { backgroundColor: theme.primary }]}>
@@ -428,19 +424,13 @@ export default function SettingsScreen() {
             },
           ]}
           onPress={() => {
-            setEditingBot(undefined)
-            setBotEditorVisible(true)
+            router.push('/bot-editor')
           }}
         >
           <Plus size={16} color={theme.primary} />
           <Text style={[styles.addBotText, { color: theme.primary }]}>{t('settings.addBot')}</Text>
         </TouchableOpacity>
       </SettingsSection>
-      <BotEditorSheet
-        visible={botEditorVisible}
-        bot={editingBot}
-        onClose={() => setBotEditorVisible(false)}
-      />
     </>
   )
 

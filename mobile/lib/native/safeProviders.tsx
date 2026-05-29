@@ -162,6 +162,9 @@ export function SafeKeyboardAwareScrollView({
   ...props
 }: KeyboardAwareScrollViewProps) {
   if (!keyboardControllerModule) {
+    console.warn(
+      '[KeyboardAwareScrollView] react-native-keyboard-controller not available in Expo Go, using regular ScrollView.'
+    )
     return (
       <ScrollView style={style} {...(props as any)}>
         {children}
