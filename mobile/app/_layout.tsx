@@ -1,4 +1,5 @@
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { DevFpsOverlay } from '@/components/dev/FPSMonitor'
 import { MoodBackground } from '@/components/layout/MoodBackground'
 import { QueryProvider } from '@/components/QueryProvider'
 import ThemeAwareSplash from '@/components/splash/ThemeAwareSplash'
@@ -199,6 +200,12 @@ export default function RootLayout() {
                               }}
                             />
                             <Stack.Screen
+                              name="bot-editor-description"
+                              options={{
+                                headerShown: false,
+                              }}
+                            />
+                            <Stack.Screen
                               name="share"
                               options={{
                                 presentation: 'modal',
@@ -236,6 +243,7 @@ export default function RootLayout() {
           </ShareIntentHandler>
         </SafeShareIntentProvider>
       </ErrorBoundary>
+      {__DEV__ && <DevFpsOverlay />}
     </GestureHandlerRootView>
   )
 }

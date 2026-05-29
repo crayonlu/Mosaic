@@ -3,28 +3,26 @@ import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { toast } from '@/components/ui/Toast'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
-import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
+import { SafeKeyboardAwareScrollView } from '@/lib/native/safeProviders'
 import { useCreateBot, useDeleteBot, useUpdateBot } from '@/lib/query'
+import { consumeOutbound, openDescriptionEditor } from '@/lib/transient/descriptionEditorBridge'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type Bot } from '@mosaic/api'
 import { Image } from 'expo-image'
-import { router, useLocalSearchParams } from 'expo-router'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { Camera, ChevronRight, X } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function BotEditorScreen() {
   const { t } = useTranslation()
@@ -39,7 +37,6 @@ export default function BotEditorScreen() {
   const [model, setModel] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [descEditorVisible, setDescEditorVisible] = useState(false)
 
   const { mutateAsync: createBot, isPending: isCreating } = useCreateBot()
   const { mutateAsync: updateBot, isPending: isUpdating } = useUpdateBot()
@@ -58,6 +55,21 @@ export default function BotEditorScreen() {
     setAvatarUrl(bot?.avatarUrl)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Pick up edits returned from the description editor route (if any).
+  useFocusEffect(
+    useCallback(() => {
+      const next = consumeOutbound()
+      if (next !== null) {
+        setDescription(next)
+      }
+    }, [])
+  )
+
+  const handleOpenDescriptionEditor = () => {
+    openDescriptionEditor(description)
+    router.push('/bot-editor-description')
+  }
 
   const parsedTags = tagsInput
     .split(/[\s,，]+/)
@@ -160,7 +172,18 @@ export default function BotEditorScreen() {
         }
       />
 
-      <View style={styles.body}>
+      {/*
+        Official-recommended pattern for forms with bottom-pinned button:
+        - mode="layout" with flex: 1 + justifyContent: "space-between"
+        - bottomOffset: distance between keyboard and focused input caret
+        See: https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/keyboard-aware-scroll-view
+      */}
+      <SafeKeyboardAwareScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.body}
+        bottomOffset={50}
+        mode="layout"
+      >
         {/* Avatar */}
         <TouchableOpacity
           style={styles.avatarRow}
@@ -250,7 +273,7 @@ export default function BotEditorScreen() {
         >
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => setDescEditorVisible(true)}
+            onPress={handleOpenDescriptionEditor}
             style={styles.descHeader}
           >
             <Text style={[styles.label, { color: theme.textSecondary }]}>
@@ -269,7 +292,7 @@ export default function BotEditorScreen() {
           )}
         </View>
 
-        {/* Delete button — pinned to bottom */}
+        {/* Delete button — pinned to bottom via flex space-between */}
         {bot && (
           <TouchableOpacity
             style={[styles.deleteBtn, { borderColor: theme.error }]}
@@ -279,87 +302,8 @@ export default function BotEditorScreen() {
             <Text style={[styles.deleteBtnText, { color: theme.error }]}>{t('bot.delete')}</Text>
           </TouchableOpacity>
         )}
-      </View>
-
-      {/* Fullscreen description editor modal */}
-      <DescriptionEditorModal
-        visible={descEditorVisible}
-        value={description}
-        onSave={val => {
-          setDescription(val)
-          setDescEditorVisible(false)
-        }}
-        onClose={() => setDescEditorVisible(false)}
-      />
+      </SafeKeyboardAwareScrollView>
     </View>
-  )
-}
-
-/** Fullscreen text editor for bot description */
-function DescriptionEditorModal({
-  visible,
-  value,
-  onSave,
-  onClose,
-}: {
-  visible: boolean
-  value: string
-  onSave: (text: string) => void
-  onClose: () => void
-}) {
-  const { t } = useTranslation()
-  const { theme } = useThemeStore()
-  const insets = useSafeAreaInsets()
-  const [text, setText] = useState(value)
-
-  useEffect(() => {
-    if (visible) setText(value)
-  }, [visible, value])
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="fullScreen"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
-      <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
-      <SafeKeyboardAvoidingView
-        style={[
-          styles.modalContainer,
-          { backgroundColor: theme.background, paddingTop: insets.top },
-        ]}
-        behavior="padding"
-      >
-        <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
-          <Pressable onPress={onClose} hitSlop={12}>
-            <X size={22} color={theme.textSecondary} />
-          </Pressable>
-          <Text style={[styles.modalTitle, { color: theme.text }]}>{t('bot.personalityDesc')}</Text>
-          <Pressable onPress={() => onSave(text)} hitSlop={12}>
-            <Text style={[styles.saveBtn, { color: theme.primary }]}>{t('bot.save')}</Text>
-          </Pressable>
-        </View>
-        <ScrollView
-          style={styles.modalScrollView}
-          contentContainerStyle={styles.modalScrollContent}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-        >
-          <TextInput
-            style={[styles.modalInput, { color: theme.text }]}
-            value={text}
-            onChangeText={setText}
-            placeholder={t('bot.descPlaceholder')}
-            placeholderTextColor={theme.textSecondary}
-            multiline
-            textAlignVertical="top"
-            autoFocus
-          />
-        </ScrollView>
-      </SafeKeyboardAvoidingView>
-    </Modal>
   )
 }
 
@@ -367,12 +311,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  flex: {
+    flex: 1,
+  },
   saveBtn: {
     fontSize: 15,
     fontWeight: '600',
   },
   body: {
-    flex: 1,
+    flexGrow: 1,
     padding: 16,
     gap: 12,
   },
@@ -465,35 +412,5 @@ const styles = StyleSheet.create({
   deleteBtnText: {
     fontSize: 15,
     fontWeight: '500',
-  },
-  // Modal styles
-  modalContainer: {
-    flex: 1,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalInput: {
-    fontSize: 15,
-    lineHeight: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    textAlignVertical: 'top',
-    minHeight: 300,
-  },
-  modalScrollView: {
-    flex: 1,
-  },
-  modalScrollContent: {
-    flexGrow: 1,
   },
 })

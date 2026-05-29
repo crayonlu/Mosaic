@@ -185,6 +185,7 @@ type KeyboardAwareScrollViewProps = {
   contentContainerStyle?: object
   keyboardShouldPersistTaps?: 'always' | 'never' | 'handled'
   bottomOffset?: number
+  mode?: 'insets' | 'layout'
   ref?: React.Ref<any>
 }
 
