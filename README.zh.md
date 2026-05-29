@@ -48,7 +48,7 @@
 
 ## 演示
 
-https://github.com/crayonlu/Mosaic/raw/main/assets/demo.mp4
+https://github.com/user-attachments/assets/982fb136-55f1-4412-96c6-8d2d3e9937e2
 
 ---
 
