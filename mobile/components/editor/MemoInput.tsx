@@ -7,7 +7,6 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withTiming,
 } from 'react-native-reanimated'
 import { FullScreenEditor } from './FullScreenEditor'
@@ -55,20 +54,14 @@ export function MemoInput({
     })
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       inputRef.current?.blur()
-      wrapperHeight.value = withDelay(
-        150,
-        withTiming(COLLAPSED_HEIGHT, {
-          duration: ANIM_DURATION,
-          easing: Easing.out(Easing.cubic),
-        })
-      )
-      expandProgress.value = withDelay(
-        150,
-        withTiming(0, {
-          duration: ANIM_DURATION,
-          easing: Easing.out(Easing.cubic),
-        })
-      )
+      wrapperHeight.value = withTiming(COLLAPSED_HEIGHT, {
+        duration: ANIM_DURATION,
+        easing: Easing.out(Easing.cubic),
+      })
+      expandProgress.value = withTiming(0, {
+        duration: ANIM_DURATION,
+        easing: Easing.out(Easing.cubic),
+      })
     })
     return () => {
       showSub.remove()
