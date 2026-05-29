@@ -132,7 +132,7 @@ impl AuthService {
         &self,
         user_id: &str,
         req: ChangePasswordRequest,
-    ) -> Result<(), AppError> {
+    ) -> Result<RefreshTokenResponse, AppError> {
         let user = self
             .find_user_by_id(user_id)
             .await?
@@ -165,7 +165,15 @@ impl AuthService {
         .execute(&self.pool)
         .await?;
 
-        Ok(())
+        // Return fresh tokens with mcp=false so clients don't need a separate refresh call
+        let new_access_token = self.generate_token(&user.id.to_string(), &user.role, false, 900)?;
+        let new_refresh_token =
+            self.generate_token(&user.id.to_string(), &user.role, false, 3600 * 24 * 7)?;
+
+        Ok(RefreshTokenResponse {
+            access_token: new_access_token,
+            refresh_token: new_refresh_token,
+        })
     }
 
     pub async fn get_current_user(&self, user_id: &str) -> Result<UserResponse, AppError> {
@@ -345,15 +353,32 @@ impl AuthService {
         Ok(ManagedUserResponse::from(user))
     }
 
-    pub async fn list_users(&self) -> Result<Vec<ManagedUserResponse>, AppError> {
+    pub async fn list_users(
+        &self,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<ManagedUserResponse>, i64), AppError> {
+        let page = page.max(1);
+        let page_size = page_size.clamp(1, 100);
+        let offset = (page - 1) * page_size;
+
+        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
+            .fetch_one(&self.pool)
+            .await?;
+
         let users = sqlx::query_as::<_, User>(
             "SELECT id, username, password_hash, avatar_url, role, must_change_password, is_active, created_at, updated_at
-             FROM users ORDER BY created_at ASC",
+             FROM users ORDER BY created_at ASC LIMIT $1 OFFSET $2",
         )
+        .bind(page_size)
+        .bind(offset)
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(users.into_iter().map(ManagedUserResponse::from).collect())
+        Ok((
+            users.into_iter().map(ManagedUserResponse::from).collect(),
+            total,
+        ))
     }
 
     pub async fn update_managed_user(

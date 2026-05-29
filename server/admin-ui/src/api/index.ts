@@ -45,6 +45,7 @@ function buildUrl(basePath: string, request: FetchRequest): FetchRequest {
 }
 
 let refreshPromise: Promise<void> | null = null
+const RETRY_FLAG = "__retried"
 
 function onResponseError({
   response,
@@ -53,9 +54,16 @@ function onResponseError({
 }: {
   response: Response
   request: FetchRequest
-  options: FetchOptions
+  options: FetchOptions & { [RETRY_FLAG]?: boolean }
 }) {
   if (response.status === 401) {
+    // Prevent infinite retry: if this request was already a retry, bail out
+    if (options[RETRY_FLAG]) {
+      clearToken()
+      window.location.href = "/admin/login"
+      return
+    }
+
     const refresh = localStorage.getItem(REFRESH_KEY)
     if (refresh) {
       if (!refreshPromise) {
@@ -81,10 +89,19 @@ function onResponseError({
       return refreshPromise.then(() => {
         const token = getToken()
         if (token) {
-          options.headers = new Headers(options.headers)
-          options.headers.set("Authorization", `Bearer ${token}`)
-          return ofetch(request, options)
+          const retryOptions: FetchOptions & { [RETRY_FLAG]?: boolean } = {
+            ...options,
+            [RETRY_FLAG]: true,
+          }
+          retryOptions.headers = new Headers(options.headers)
+          ;(retryOptions.headers as Headers).set(
+            "Authorization",
+            `Bearer ${token}`
+          )
+          return ofetch(request, retryOptions)
         }
+        clearToken()
+        window.location.href = "/admin/login"
       })
     }
     clearToken()

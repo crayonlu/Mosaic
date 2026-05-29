@@ -192,7 +192,8 @@
     "updateFailed": "用户更新失败",
     "loadFailed": "加载用户列表失败",
     "cannotDisableSelf": "不能禁用自己的账号",
-    "noAccess": "你没有权限查看此页面。"
+    "noAccess": "你没有权限查看此页面。",
+    "total": "共 {{count}} 个用户"
   },
   "changePassword": {
     "title": "修改密码",

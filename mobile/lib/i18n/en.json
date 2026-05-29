@@ -127,6 +127,7 @@
   "settings": {
     "notLoggedIn": "Not logged in",
     "noServer": "No server configured",
+    "adminRole": "Admin",
     "confirmLogout": "Confirm logout",
     "appearance": "Appearance",
     "theme": "Theme",

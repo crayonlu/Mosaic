@@ -57,10 +57,16 @@ pub struct UserAiConfigResponse {
 
 impl From<UserAiConfig> for UserAiConfigResponse {
     fn from(c: UserAiConfig) -> Self {
+        // Mask the stored API key — show only last 4 chars prefixed with "****"
+        let masked_key = if c.api_key.len() > 4 {
+            format!("****{}", &c.api_key[c.api_key.len() - 4..])
+        } else {
+            "****".to_string()
+        };
         UserAiConfigResponse {
             provider: c.provider,
             base_url: c.base_url,
-            api_key: c.api_key,
+            api_key: masked_key,
             model: c.model,
             temperature: c.temperature,
             max_tokens: c.max_tokens,

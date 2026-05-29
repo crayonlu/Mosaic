@@ -1,4 +1,13 @@
-import { Loader, Plus, RotateCcw, ShieldCheck, User, UserX } from "lucide-react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader,
+  Plus,
+  RotateCcw,
+  ShieldCheck,
+  User,
+  UserX,
+} from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
@@ -27,6 +36,9 @@ export default function Users() {
 
   const [users, setUsers] = useState<ManagedUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const pageSize = 50
 
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState<CreateUserRequest>({
@@ -43,14 +55,22 @@ export default function Users() {
   const loadUsers = useCallback(async () => {
     setLoading(true)
     try {
-      const data = (await adminApi("/users")) as ManagedUser[]
-      setUsers(data)
+      const data = (await adminApi(
+        `/users?page=${page}&page_size=${pageSize}`
+      )) as {
+        users: ManagedUser[]
+        total: number
+        page: number
+        pageSize: number
+      }
+      setUsers(data.users)
+      setTotal(data.total)
     } catch {
       toast.error(t("users.loadFailed"))
     } finally {
       setLoading(false)
     }
-  }, [t, toast])
+  }, [t, toast, page])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -59,8 +79,12 @@ export default function Users() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!createForm.username || !createForm.password) {
+    if (!createForm.username.trim() || !createForm.password) {
       toast.error(t("changePassword.fillAll"))
+      return
+    }
+    if (createForm.password.length < 8) {
+      toast.error(t("changePassword.tooShort"))
       return
     }
     setCreating(true)
@@ -109,6 +133,10 @@ export default function Users() {
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault()
     if (!resetTarget || !resetPassword) return
+    if (resetPassword.length < 8) {
+      toast.error(t("changePassword.tooShort"))
+      return
+    }
     setResetting(true)
     try {
       await adminApi(`/users/${resetTarget.id}`, {
@@ -245,6 +273,32 @@ export default function Users() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {total > pageSize && (
+        <div className="flex items-center justify-between pt-2 text-sm text-muted-foreground">
+          <span>{t("users.total", { count: total })}</span>
+          <div className="flex items-center gap-1">
+            <button
+              className="rounded p-1 hover:bg-muted disabled:opacity-40"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span>
+              {page} / {Math.ceil(total / pageSize)}
+            </span>
+            <button
+              className="rounded p-1 hover:bg-muted disabled:opacity-40"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= Math.ceil(total / pageSize)}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       )}
 

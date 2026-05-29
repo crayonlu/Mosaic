@@ -1,8 +1,24 @@
 use crate::admin::activity_log::ActivityLog;
 use crate::middleware::get_user_id;
-use crate::models::{CreateUserRequest, UpdateManagedUserRequest};
+use crate::models::{CreateUserRequest, PaginatedUsersResponse, UpdateManagedUserRequest};
 use crate::services::AuthService;
 use actix_web::{web, HttpRequest, HttpResponse};
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+pub struct ListUsersQuery {
+    #[serde(default = "default_page")]
+    pub page: i64,
+    #[serde(default = "default_page_size")]
+    pub page_size: i64,
+}
+
+fn default_page() -> i64 {
+    1
+}
+fn default_page_size() -> i64 {
+    50
+}
 
 pub async fn create_user(
     req: HttpRequest,
@@ -29,9 +45,17 @@ pub async fn create_user(
     }
 }
 
-pub async fn list_users(auth_service: web::Data<AuthService>) -> HttpResponse {
-    match auth_service.list_users().await {
-        Ok(users) => HttpResponse::Ok().json(users),
+pub async fn list_users(
+    query: web::Query<ListUsersQuery>,
+    auth_service: web::Data<AuthService>,
+) -> HttpResponse {
+    match auth_service.list_users(query.page, query.page_size).await {
+        Ok((users, total)) => HttpResponse::Ok().json(PaginatedUsersResponse {
+            page: query.page,
+            page_size: query.page_size,
+            total,
+            users,
+        }),
         Err(e) => HttpResponse::from_error(e),
     }
 }

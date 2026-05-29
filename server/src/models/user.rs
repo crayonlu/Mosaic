@@ -22,6 +22,7 @@ pub struct UserResponse {
     pub username: String,
     pub avatar_url: Option<String>,
     pub role: String,
+    pub must_change_password: bool,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -97,10 +98,20 @@ impl From<User> for UserResponse {
             username: user.username,
             avatar_url: user.avatar_url,
             role: user.role,
+            must_change_password: user.must_change_password,
             created_at: user.created_at,
             updated_at: user.updated_at,
         }
     }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginatedUsersResponse {
+    pub users: Vec<ManagedUserResponse>,
+    pub total: i64,
+    pub page: i64,
+    pub page_size: i64,
 }
 
 impl From<User> for ManagedUserResponse {

@@ -127,6 +127,7 @@
   "settings": {
     "notLoggedIn": "未登录",
     "noServer": "未配置服务器",
+    "adminRole": "管理员",
     "confirmLogout": "确认退出登录",
     "appearance": "外观",
     "theme": "主题",

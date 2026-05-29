@@ -97,6 +97,7 @@ export const useAuthStore = create<AuthStore>()(
               isLoading: false,
               user,
               serverUrl,
+              mustChangePassword: user.mustChangePassword ?? false,
               error: null,
             })
           } catch (error) {
@@ -178,7 +179,7 @@ export const useAuthStore = create<AuthStore>()(
       refreshUser: async () => {
         try {
           const user = await authApi.me()
-          set({ user })
+          set({ user, mustChangePassword: user.mustChangePassword ?? false })
         } catch (error) {
           const apiError = error as ApiError
           if (apiError.status === 401) {

@@ -61,5 +61,6 @@ pub use stats::{
 };
 pub use user::{
     ChangePasswordRequest, CreateUserRequest, LoginRequest, LoginResponse, ManagedUserResponse,
-    RefreshTokenRequest, RefreshTokenResponse, UpdateManagedUserRequest, User, UserResponse,
+    PaginatedUsersResponse, RefreshTokenRequest, RefreshTokenResponse, UpdateManagedUserRequest,
+    User, UserResponse,
 };

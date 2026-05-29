@@ -52,14 +52,14 @@ pub async fn change_password(
         .change_password(&user_id, payload.into_inner())
         .await
     {
-        Ok(()) => {
+        Ok(tokens) => {
             activity_log.record_info(
                 "change_password",
                 "user",
                 Some(user_id.clone()),
                 "User changed password".to_string(),
             );
-            HttpResponse::Ok().finish()
+            HttpResponse::Ok().json(tokens)
         }
         Err(e) => HttpResponse::from_error(e),
     }

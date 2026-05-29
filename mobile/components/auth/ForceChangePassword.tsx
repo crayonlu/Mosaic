@@ -1,5 +1,6 @@
 import { Button, Input } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
+import { tokenStorage } from '@/lib/services/tokenStorage'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { authApi } from '@mosaic/api'
@@ -35,7 +36,11 @@ export default function ForceChangePassword() {
 
     setSaving(true)
     try {
-      await authApi.changePassword({ oldPassword, newPassword })
+      const tokens = await authApi.changePassword({
+        oldPassword: oldPassword.trim(),
+        newPassword: newPassword.trim(),
+      })
+      await tokenStorage.setTokens(tokens.accessToken, tokens.refreshToken)
       toast.success(t('changePassword.passwordChanged'))
       clearMustChangePassword()
     } catch {

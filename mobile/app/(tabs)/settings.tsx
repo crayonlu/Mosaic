@@ -1,5 +1,4 @@
 import { router } from 'expo-router'
-import { BotEditorSheet } from '@/components/bot/BotEditorSheet'
 import { Button, Input, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { SlidingSegmentedControl } from '@/components/ui/SlidingSegmentedControl'
@@ -8,6 +7,7 @@ import { useAppUpdate } from '@/hooks/useAppUpdate'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { useBots, useUpdateBot } from '@/lib/query'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
+import { tokenStorage } from '@/lib/services/tokenStorage'
 import { formatBytes, getStorageSummary, type StorageItem } from '@/lib/storage/storageManager'
 import { useAuthStore } from '@/stores/authStore'
 import { useLocaleStore } from '@/stores/localeStore'
@@ -15,7 +15,17 @@ import { useThemeStore } from '@/stores/themeStore'
 import { authApi, resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
-import { Bot, Cog, Info, Lock, LogOut, Plus, ShieldCheck, Sparkles, Trash } from 'lucide-react-native'
+import {
+  Bot,
+  Cog,
+  Info,
+  Lock,
+  LogOut,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  Trash,
+} from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -337,9 +347,25 @@ export default function SettingsScreen() {
               )}
             </View>
             <View style={styles.userInfo}>
-              <Text style={[styles.username, { color: theme.text }]}>
-                {user?.username || t('settings.notLoggedIn')}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.username, { color: theme.text }]}>
+                  {user?.username || t('settings.notLoggedIn')}
+                </Text>
+                {user?.role === 'admin' && (
+                  <View
+                    style={{
+                      backgroundColor: theme.primary,
+                      borderRadius: 4,
+                      paddingHorizontal: 5,
+                      paddingVertical: 1,
+                    }}
+                  >
+                    <Text style={{ color: theme.onPrimary, fontSize: 10, fontWeight: '600' }}>
+                      {t('settings.adminRole')}
+                    </Text>
+                  </View>
+                )}
+              </View>
               <Text style={[styles.serverUrl, { color: theme.textSecondary }]}>
                 {serverUrl || t('settings.noServer')}
               </Text>
@@ -516,7 +542,11 @@ export default function SettingsScreen() {
       }
       setChangePwdSaving(true)
       try {
-        await authApi.changePassword({ oldPassword: changePwdOld, newPassword: changePwdNew })
+        const tokens = await authApi.changePassword({
+          oldPassword: changePwdOld.trim(),
+          newPassword: changePwdNew.trim(),
+        })
+        await tokenStorage.setTokens(tokens.accessToken, tokens.refreshToken)
         toast.success(t('changePassword.passwordChanged'))
         setChangePwdOld('')
         setChangePwdNew('')

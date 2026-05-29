@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
-import { api } from "../api"
+import { api, setToken } from "../api"
 import { Button } from "../components/ui/button"
 import { Card } from "../components/ui/card"
 import { Input } from "../components/ui/input"
@@ -37,10 +37,11 @@ export default function ChangePassword() {
 
     setSaving(true)
     try {
-      await api("/auth/change-password", {
+      const tokens = (await api("/auth/change-password", {
         method: "POST",
         body: { oldPassword, newPassword },
-      })
+      })) as { accessToken: string; refreshToken: string }
+      setToken(tokens.accessToken, tokens.refreshToken)
       toast.success(t("changePassword.success"))
       clearMustChangePassword()
       navigate("/dashboard", { replace: true })

@@ -192,7 +192,8 @@
     "updateFailed": "Failed to update user",
     "loadFailed": "Failed to load users",
     "cannotDisableSelf": "Cannot disable your own account",
-    "noAccess": "You do not have permission to view this page."
+    "noAccess": "You do not have permission to view this page.",
+    "total": "{{count}} users total"
   },
   "changePassword": {
     "title": "Change Password",

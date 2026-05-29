@@ -192,12 +192,16 @@ async fn main() -> anyhow::Result<()> {
                                     .route(web::post().to(routes::auth::change_password)),
                             )
                             .service(
-                                web::resource("/update-user")
-                                    .route(web::put().to(routes::auth::update_user)),
-                            )
-                            .service(
-                                web::resource("/update-avatar")
-                                    .route(web::post().to(routes::auth::update_avatar)),
+                                web::scope("")
+                                    .wrap(RequirePasswordChanged)
+                                    .service(
+                                        web::resource("/update-user")
+                                            .route(web::put().to(routes::auth::update_user)),
+                                    )
+                                    .service(
+                                        web::resource("/update-avatar")
+                                            .route(web::post().to(routes::auth::update_avatar)),
+                                    ),
                             ),
                     ),
             )

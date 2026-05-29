@@ -41,8 +41,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   fetchMe: async () => {
     try {
-      const res = (await api("/auth/me")) as AuthUser
-      set({ user: res })
+      const res = (await api("/auth/me")) as AuthUser & {
+        mustChangePassword?: boolean
+      }
+      set({ user: res, mustChangePassword: res.mustChangePassword ?? false })
     } catch {
       clearToken()
       set({ user: null })
