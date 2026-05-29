@@ -3,7 +3,7 @@ import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { toast } from '@/components/ui/Toast'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
-import { SafeKeyboardAwareScrollView } from '@/lib/native/safeProviders'
+import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
 import { useCreateBot, useDeleteBot, useUpdateBot } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type Bot } from '@mosaic/api'
@@ -325,11 +325,12 @@ function DescriptionEditorModal({
       onRequestClose={onClose}
     >
       <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
-      <View
+      <SafeKeyboardAvoidingView
         style={[
           styles.modalContainer,
           { backgroundColor: theme.background, paddingTop: insets.top },
         ]}
+        behavior="padding"
       >
         <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
           <Pressable onPress={onClose} hitSlop={12}>
@@ -340,10 +341,11 @@ function DescriptionEditorModal({
             <Text style={[styles.saveBtn, { color: theme.primary }]}>{t('bot.save')}</Text>
           </Pressable>
         </View>
-        <SafeKeyboardAwareScrollView
+        <ScrollView
           style={styles.modalScrollView}
           contentContainerStyle={styles.modalScrollContent}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
         >
           <TextInput
             style={[styles.modalInput, { color: theme.text }]}
@@ -355,8 +357,8 @@ function DescriptionEditorModal({
             textAlignVertical="top"
             autoFocus
           />
-        </SafeKeyboardAwareScrollView>
-      </View>
+        </ScrollView>
+      </SafeKeyboardAvoidingView>
     </Modal>
   )
 }
