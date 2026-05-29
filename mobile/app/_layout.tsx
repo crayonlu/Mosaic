@@ -195,7 +195,6 @@ export default function RootLayout() {
                             <Stack.Screen
                               name="bot-editor"
                               options={{
-                                animation: 'slide_from_bottom',
                                 headerShown: false,
                               }}
                             />

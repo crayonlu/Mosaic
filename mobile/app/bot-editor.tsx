@@ -3,25 +3,28 @@ import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { toast } from '@/components/ui/Toast'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
-import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
+import { SafeKeyboardAwareScrollView } from '@/lib/native/safeProviders'
 import { useCreateBot, useDeleteBot, useUpdateBot } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type Bot } from '@mosaic/api'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
-import { Camera, X } from 'lucide-react-native'
+import { Camera, ChevronRight, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function BotEditorScreen() {
   const { t } = useTranslation()
@@ -36,6 +39,7 @@ export default function BotEditorScreen() {
   const [model, setModel] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [descEditorVisible, setDescEditorVisible] = useState(false)
 
   const { mutateAsync: createBot, isPending: isCreating } = useCreateBot()
   const { mutateAsync: updateBot, isPending: isUpdating } = useUpdateBot()
@@ -137,10 +141,7 @@ export default function BotEditorScreen() {
   }
 
   return (
-    <SafeKeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      behavior="padding"
-    >
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ScreenHeader
         title={bot ? t('bot.editBot') : t('bot.newBot')}
         left={
@@ -159,12 +160,8 @@ export default function BotEditorScreen() {
         }
       />
 
-      <ScrollView
-        style={styles.bodyScroll}
-        contentContainerStyle={[styles.body, { paddingBottom: 16 }]}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-      >
+      <View style={styles.body}>
+        {/* Avatar */}
         <TouchableOpacity
           style={styles.avatarRow}
           onPress={handleAvatarPress}
@@ -194,6 +191,7 @@ export default function BotEditorScreen() {
           </Text>
         </TouchableOpacity>
 
+        {/* Form fields */}
         <View
           style={[
             styles.section,
@@ -223,11 +221,6 @@ export default function BotEditorScreen() {
             />
           </View>
 
-          <View style={styles.fieldRow}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>{t('bot.autoReply')}</Text>
-            <SwitchBtn value={autoReply} onValueChange={setAutoReply} />
-          </View>
-
           <View style={[styles.field, { borderBottomColor: theme.border }]}>
             <Text style={[styles.label, { color: theme.textSecondary }]}>{t('bot.model')}</Text>
             <TextInput
@@ -239,46 +232,132 @@ export default function BotEditorScreen() {
               maxLength={50}
             />
           </View>
+
+          <View style={styles.fieldRow}>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>{t('bot.autoReply')}</Text>
+            <SwitchBtn value={autoReply} onValueChange={setAutoReply} />
+          </View>
         </View>
 
+        {/* Description — header row taps to edit, preview scrolls independently */}
         <View
           style={[
             styles.section,
+            styles.descSection,
+            styles.descSectionFlex,
             { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
           ]}
         >
-          <Text style={[styles.label, styles.descLabel, { color: theme.textSecondary }]}>
-            {t('bot.personalityDesc')}
-          </Text>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => setDescEditorVisible(true)}
+            style={styles.descHeader}
+          >
+            <Text style={[styles.label, { color: theme.textSecondary }]}>
+              {t('bot.personalityDesc')}
+            </Text>
+            <ChevronRight size={16} color={theme.textSecondary} />
+          </TouchableOpacity>
+          {description ? (
+            <ScrollView style={styles.descPreviewScroll} nestedScrollEnabled>
+              <Text style={[styles.descPreviewText, { color: theme.text }]}>{description}</Text>
+            </ScrollView>
+          ) : (
+            <Text style={[styles.descPlaceholder, { color: theme.textSecondary }]}>
+              {t('bot.descPlaceholder')}
+            </Text>
+          )}
+        </View>
+
+        {/* Delete button — pinned to bottom */}
+        {bot && (
+          <TouchableOpacity
+            style={[styles.deleteBtn, { borderColor: theme.error }]}
+            onPress={handleDelete}
+            disabled={isDeleting}
+          >
+            <Text style={[styles.deleteBtnText, { color: theme.error }]}>{t('bot.delete')}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Fullscreen description editor modal */}
+      <DescriptionEditorModal
+        visible={descEditorVisible}
+        value={description}
+        onSave={val => {
+          setDescription(val)
+          setDescEditorVisible(false)
+        }}
+        onClose={() => setDescEditorVisible(false)}
+      />
+    </View>
+  )
+}
+
+/** Fullscreen text editor for bot description */
+function DescriptionEditorModal({
+  visible,
+  value,
+  onSave,
+  onClose,
+}: {
+  visible: boolean
+  value: string
+  onSave: (text: string) => void
+  onClose: () => void
+}) {
+  const { t } = useTranslation()
+  const { theme } = useThemeStore()
+  const insets = useSafeAreaInsets()
+  const [text, setText] = useState(value)
+
+  useEffect(() => {
+    if (visible) setText(value)
+  }, [visible, value])
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="fullScreen"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
+      <View
+        style={[
+          styles.modalContainer,
+          { backgroundColor: theme.background, paddingTop: insets.top },
+        ]}
+      >
+        <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+          <Pressable onPress={onClose} hitSlop={12}>
+            <X size={22} color={theme.textSecondary} />
+          </Pressable>
+          <Text style={[styles.modalTitle, { color: theme.text }]}>{t('bot.personalityDesc')}</Text>
+          <Pressable onPress={() => onSave(text)} hitSlop={12}>
+            <Text style={[styles.saveBtn, { color: theme.primary }]}>{t('bot.save')}</Text>
+          </Pressable>
+        </View>
+        <SafeKeyboardAwareScrollView
+          style={styles.modalScrollView}
+          contentContainerStyle={styles.modalScrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           <TextInput
-            style={[styles.descInput, { color: theme.text, borderColor: theme.border }]}
-            value={description}
-            onChangeText={setDescription}
+            style={[styles.modalInput, { color: theme.text }]}
+            value={text}
+            onChangeText={setText}
             placeholder={t('bot.descPlaceholder')}
             placeholderTextColor={theme.textSecondary}
             multiline
             textAlignVertical="top"
+            autoFocus
           />
-        </View>
-
-        {bot && (
-          <View
-            style={[
-              styles.section,
-              { backgroundColor: theme.surface, borderRadius: theme.radius.medium },
-            ]}
-          >
-            <TouchableOpacity
-              style={[styles.deleteBtn, { borderColor: theme.error }]}
-              onPress={handleDelete}
-              disabled={isDeleting}
-            >
-              <Text style={[styles.deleteBtnText, { color: theme.error }]}>{t('bot.delete')}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </ScrollView>
-    </SafeKeyboardAvoidingView>
+        </SafeKeyboardAwareScrollView>
+      </View>
+    </Modal>
   )
 }
 
@@ -291,11 +370,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   body: {
+    flex: 1,
     padding: 16,
     gap: 12,
-  },
-  bodyScroll: {
-    flex: 1,
   },
   avatarRow: {
     alignItems: 'center',
@@ -354,20 +431,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     paddingVertical: 0,
   },
-  descLabel: {
+  descSection: {
     padding: 14,
-    paddingBottom: 4,
+    gap: 8,
   },
-  descInput: {
-    fontSize: 14,
-    lineHeight: 22,
-    minHeight: 160,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    margin: 10,
-    marginTop: 0,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
+  descSectionFlex: {
+    flex: 1,
+  },
+  descHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  descPreviewScroll: {
+    flex: 1,
+  },
+  descPreviewText: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  descPlaceholder: {
+    fontSize: 13,
+    lineHeight: 20,
   },
   deleteBtn: {
     borderWidth: StyleSheet.hairlineWidth,
@@ -378,5 +463,35 @@ const styles = StyleSheet.create({
   deleteBtnText: {
     fontSize: 15,
     fontWeight: '500',
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalInput: {
+    fontSize: 15,
+    lineHeight: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    textAlignVertical: 'top',
+    minHeight: 300,
+  },
+  modalScrollView: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    flexGrow: 1,
   },
 })
