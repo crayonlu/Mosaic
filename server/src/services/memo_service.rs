@@ -562,7 +562,15 @@ impl MemoService {
                     },
                     async {
                         match &user_ai_config_service {
-                            Some(svc) => svc.get(&user_id).await.ok().flatten(),
+                            Some(svc) => {
+                                match svc.get(&user_id).await {
+                                    Ok(config) => config,
+                                    Err(e) => {
+                                        log::error!("[MemoService] Failed to fetch user AI config: {}", e);
+                                        None
+                                    }
+                                }
+                            },
                             None => None,
                         }
                     },

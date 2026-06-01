@@ -9,7 +9,8 @@ use std::{future::Future, pin::Pin, rc::Rc};
 use super::auth::Claims;
 
 /// Middleware that rejects requests from users who have `must_change_password = true`.
-/// Only `/api/auth/change-password` and `/api/auth/me` are allowed through.
+/// Excluded paths (`/api/auth/change-password`, `/api/auth/me`) are handled via
+/// Actix scope nesting — they sit outside this middleware's scope.
 pub struct RequirePasswordChanged;
 
 impl<S, B> Transform<S, ServiceRequest> for RequirePasswordChanged
@@ -51,16 +52,20 @@ where
         let service = self.service.clone();
 
         Box::pin(async move {
-            let must_change = req
-                .extensions()
-                .get::<Claims>()
-                .map(|c| c.mcp)
-                .unwrap_or(false);
+            let must_change = req.extensions().get::<Claims>().map(|c| c.mcp);
 
-            if must_change {
-                return Err(ErrorForbidden(
-                    "Password change required before accessing this resource",
-                ));
+            match must_change {
+                None => {
+                    return Err(ErrorForbidden(
+                        "Authentication required before accessing this resource",
+                    ));
+                }
+                Some(true) => {
+                    return Err(ErrorForbidden(
+                        "Password change required before accessing this resource",
+                    ));
+                }
+                _ => {}
             }
 
             service.call(req).await

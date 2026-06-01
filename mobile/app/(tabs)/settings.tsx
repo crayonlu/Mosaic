@@ -15,17 +15,7 @@ import { useThemeStore } from '@/stores/themeStore'
 import { authApi, resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
-import {
-  Bot,
-  Cog,
-  Info,
-  Lock,
-  LogOut,
-  Plus,
-  ShieldCheck,
-  Sparkles,
-  Trash,
-} from 'lucide-react-native'
+import { Bot, Cog, Info, Lock, LogOut, Plus, ShieldCheck, Trash } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -169,8 +159,6 @@ export default function SettingsScreen() {
   const [changePwdOld, setChangePwdOld] = useState('')
   const [changePwdNew, setChangePwdNew] = useState('')
   const [changePwdSaving, setChangePwdSaving] = useState(false)
-  const [botEditorVisible, setBotEditorVisible] = useState(false)
-  const [editingBot, setEditingBot] = useState<import('@mosaic/api').Bot | undefined>(undefined)
   const { data: bots = [] } = useBots()
   const { mutateAsync: updateBot } = useUpdateBot()
   const [showPermissionSettings, setShowPermissionSettings] = useState(false)

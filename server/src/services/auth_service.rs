@@ -13,6 +13,7 @@ use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
     sub: String,
+    #[serde(default)]
     role: String,
     #[serde(default)]
     mcp: bool, // must_change_password
@@ -422,6 +423,11 @@ impl AuthService {
         }
 
         let new_password_hash = if let Some(ref new_pass) = req.reset_password {
+            if new_pass.len() < 8 {
+                return Err(AppError::InvalidInput(
+                    "Password must be at least 8 characters".to_string(),
+                ));
+            }
             Some(
                 bcrypt::hash(new_pass, bcrypt::DEFAULT_COST)
                     .map_err(|_| AppError::Internal("Password hashing failed".to_string()))?,
