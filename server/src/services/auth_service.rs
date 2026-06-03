@@ -1,4 +1,5 @@
 use crate::error::AppError;
+use crate::middleware::auth::Claims;
 use crate::models::{
     ChangePasswordRequest, CreateUserRequest, LoginRequest, ManagedUserResponse,
     RefreshTokenResponse, UpdateManagedUserRequest, User, UserResponse,
@@ -6,20 +7,8 @@ use crate::models::{
 use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    sub: String,
-    #[serde(default)]
-    role: String,
-    #[serde(default)]
-    mcp: bool, // must_change_password
-    exp: usize,
-    iat: usize,
-}
 
 #[derive(Clone)]
 pub struct AuthService {

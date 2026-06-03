@@ -14,6 +14,7 @@ export default function ForceChangePassword() {
   const { t } = useTranslation()
   const { theme } = useThemeStore()
   const clearMustChangePassword = useAuthStore(s => s.clearMustChangePassword)
+  const refreshUser = useAuthStore(s => s.refreshUser)
 
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -42,6 +43,7 @@ export default function ForceChangePassword() {
       })
       await tokenStorage.setTokens(tokens.accessToken, tokens.refreshToken)
       toast.success(t('changePassword.passwordChanged'))
+      await refreshUser()
       clearMustChangePassword()
     } catch {
       toast.error(t('changePassword.changeFailed'))

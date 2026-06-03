@@ -177,8 +177,11 @@ export default function Dashboard() {
     }
     setPwdSaving(true)
     try {
-      await api("/auth/change-password", { method: "POST", body: pwdForm })
-      toast.success(t("dashboard.passwordChanged"))
+      const tokens = (await api("/auth/change-password", {
+        method: "POST",
+        body: pwdForm,
+      })) as { accessToken: string; refreshToken: string }
+      setToken(tokens.accessToken, tokens.refreshToken)
       setPwdForm({ oldPassword: "", newPassword: "" })
     } catch {
       toast.error(t("dashboard.changeFailed"))

@@ -207,8 +207,8 @@ async fn main() -> anyhow::Result<()> {
             )
             .service(
                 web::scope("/api")
-                    .wrap(auth_middleware.clone())
                     .wrap(RequirePasswordChanged)
+                    .wrap(auth_middleware.clone())
                     .configure(routes::configure_memo_routes)
                     .configure(routes::configure_diary_routes)
                     .configure(routes::configure_resource_routes)
@@ -221,8 +221,8 @@ async fn main() -> anyhow::Result<()> {
             )
             .service(
                 web::scope("/admin/api")
-                    .wrap(auth_middleware.clone())
                     .wrap(RequireAdmin)
+                    .wrap(auth_middleware.clone())
                     .route("/health", web::get().to(admin::api::health))
                     .route("/stats", web::get().to(admin::api::stats))
                     .route("/activity", web::get().to(admin::api::list_activity))
