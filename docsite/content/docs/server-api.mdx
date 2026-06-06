@@ -5,7 +5,7 @@ description: Complete Mosaic server API documentation
 
 # API Reference
 
-> Version: v2.6 | Updated: 2026-05-16
+> Version: v2.6 | Updated: 2026-06-06
 
 ## Base URL
 
@@ -56,12 +56,28 @@ Returns current user info.
 { "oldPassword": "old", "newPassword": "new" }
 ```
 
+### PUT /api/auth/update-user
+
+Update username and/or avatar URL.
+
+```json
+{ "username": "new-name", "avatarUrl": "/api/avatars/{id}/download" }
+```
+
+### POST /api/auth/update-avatar
+
+Update avatar by URL (non-upload).
+
+```json
+{ "avatarUrl": "/api/avatars/{id}/download" }
+```
+
 ## Memos
 
 ### POST /api/memos
 
 ```json
-{ "content": "# My note", "tags": ["work"], "diaryDate": "2026-05-16" }
+{ "content": "# My note", "tags": ["work"], "diaryDate": "2026-05-16", "resourceIds": [], "aiSummary": null }
 ```
 
 ### GET /api/memos
@@ -70,11 +86,19 @@ Query: `page`, `pageSize`, `archived`, `diaryDate`, `search`
 
 ### GET /api/memos/:id
 
+Returns `MemoWithResources`.
+
+### GET /api/memos/:id/detail
+
+Returns memo with revision history and bot replies.
+
 ### PUT /api/memos/:id
 
 ```json
-{ "content": "updated", "tags": ["edited"], "isArchived": false }
+{ "content": "updated", "tags": ["edited"], "isArchived": false, "diaryDate": null }
 ```
+
+Supports `null` to clear `diaryDate` and `aiSummary`.
 
 ### DELETE /api/memos/:id
 
@@ -94,6 +118,8 @@ Query: `archived`
 
 Query: `query`, `tags`, `startDate`, `endDate`, `isArchived`, `page`, `pageSize`
 
+Returns `{ memos, total, page, pageSize, semanticEnabled }` with scoring fields.
+
 ### GET /api/memos/tags
 
 Returns all user tags with counts.
@@ -102,9 +128,17 @@ Returns all user tags with counts.
 
 Clip web content into a memo.
 
+```json
+{ "clipType": "url", "url": "https://example.com/article", "userNote": null }
+```
+
 ### GET /api/memos/:id/revisions
 
 View memo version history.
+
+### DELETE /api/memos/:id/revisions/:revisionId
+
+Delete a specific revision.
 
 ## Bot System
 
@@ -115,24 +149,28 @@ List all configured bots.
 ### POST /api/bots
 
 ```json
-{ "name": "Assistant", "provider": "openai", "model": "gpt-4o", "systemPrompt": "You are helpful" }
+{ "name": "Assistant", "description": "My bot", "tags": ["helper"], "autoReply": true }
 ```
+
+### GET /api/bots/:id
+
+Get bot detail.
 
 ### PUT /api/bots/:id
 
-Update bot configuration.
+Update bot configuration. Supports `null` to clear `avatarUrl`, `model`, `aiConfig`.
 
 ### DELETE /api/bots/:id
 
 ### PUT /api/bots/reorder
 
 ```json
-{ "botIds": ["id1", "id2", "id3"] }
+{ "order": ["bot-id-1", "bot-id-2"] }
 ```
 
 ### GET /api/memos/:id/bot-replies
 
-Get bot responses for a memo.
+Get bot responses for a memo (nested tree with thread counts).
 
 ### GET /api/bot-replies/:id/thread
 
@@ -142,25 +180,43 @@ Get full conversation thread with thinking content.
 
 Manually trigger auto-replies for a memo.
 
+### POST /api/bot-replies/:id/reply
+
+Reply to a bot in a thread.
+
+```json
+{ "question": "Tell me more", "resourceIds": ["img-uuid"] }
+```
+
 ## Memory System
 
 ### GET /api/memory/stats
 
-Embedding statistics (indexed memos, total memos).
+Embedding statistics (`totalMemos`, `indexedMemos`).
 
 ### GET /api/memory/activity
 
-Memory retrieval activity log.
+Memory retrieval activity log. Query: `limit` (default 20).
 
 ### GET /api/memory/context
 
-Retrieved memos for debugging (with relevance scores).
+Retrieved memos for debugging. Query: `memoId`, `botId` (required), `limit`.
+
+### GET /api/memos/:id/memory-contexts
+
+Consolidated memory contexts for all bots that replied to a memo. Query: `limit`.
 
 ## Sync
 
 ### POST /api/sync/pull
 
 Pull changes with cursor-based pagination.
+
+```json
+{ "clientId": "device-id", "cursors": { "memo": 0, "diary": 0 } }
+```
+
+Returns changes for memo, diary, resource, bot entity types.
 
 ## Diaries
 
@@ -175,12 +231,28 @@ Returns diary with memos for that date.
 ### POST /api/diaries/:date
 
 ```json
-{ "moodKey": "happy", "moodScore": 80, "summary": "Great day!" }
+{ "moodKey": "joy", "moodScore": 80, "summary": "Great day!" }
 ```
 
 ### PUT /api/diaries/:date
 
-Partial update. Fields: `summary`, `moodKey`, `moodScore`, `coverImageId`
+Partial update. Fields: `summary`, `moodKey`, `moodScore`.
+
+### PUT /api/diaries/:date/summary
+
+Update diary summary only.
+
+```json
+{ "summary": "New summary" }
+```
+
+### PUT /api/diaries/:date/mood
+
+Update diary mood only.
+
+```json
+{ "moodKey": "calm", "moodScore": 72 }
+```
 
 ## Resources
 
@@ -190,21 +262,111 @@ Query: `page`, `pageSize`
 
 ### POST /api/resources/upload
 
-Multipart upload. Returns resource metadata.
+Multipart upload (max 100MB). Returns resource metadata.
 
-### GET /api/resources/:id
+### POST /api/resources/presigned-upload
 
-Download resource file.
+Get R2 presigned upload URL (r2 storage only).
+
+```json
+{ "filename": "image.png", "mimeType": "image/png", "fileSize": 12345 }
+```
+
+### POST /api/resources/confirm-upload
+
+Confirm presigned upload and get metadata.
+
+```json
+{ "resourceId": "uuid" }
+```
+
+### POST /api/resources/upload-avatar
+
+Multipart avatar upload (max 10MB). Returns updated user.
+
+### GET /api/resources/:id/download
+
+Download resource (supports Range, ETag, `?variant=thumb|opt`).
+
+### GET /api/resources/:id/thumbnail
+
+Download resource thumbnail.
+
+### GET /api/avatars/:id/download
+
+Download avatar.
 
 ### DELETE /api/resources/:id
 
+## AI
+
+### POST /api/ai/summarize
+
+AI summarization.
+
+```json
+{ "content": "Long text to summarize" }
+```
+
+Returns: `{ "summary": "..." }`
+
+### POST /api/ai/suggest-tags
+
+AI tag suggestion.
+
+```json
+{ "content": "Memo content", "existingTags": ["work"] }
+```
+
+Returns: `{ "tags": ["tag1", "tag2"] }`
+
 ## Stats
 
-### GET /api/stats
+### GET /api/stats/heatmap
 
-Returns usage statistics for the authenticated user.
+Query: `startDate`, `endDate`. Returns mood and count heatmap data.
+
+### GET /api/stats/timeline
+
+Query: `startDate`, `endDate`. Returns timeline entries.
+
+### GET /api/stats/trends
+
+Query: `startDate`, `endDate`. Returns mood and tag trends.
+
+### GET /api/stats/summary
+
+Query: `year`, `month`. Returns monthly totals (memos, diaries, resources).
 
 ## Admin
+
+### GET /admin/api/health
+
+Admin health with uptime, storage, DB stats.
+
+### GET /admin/api/stats
+
+Admin usage statistics.
+
+### GET /admin/api/activity
+
+Recent activity log. Query: `limit`.
+
+### GET /admin/api/config
+
+Server config (port, storage type).
+
+### GET /admin/api/ai-config
+
+Get AI provider configs (`bot` and `embedding` keys).
+
+### PUT /admin/api/ai-config/:key
+
+Update AI config. Key: `bot` or `embedding`.
+
+### POST /admin/api/clear-cache
+
+Clear server cache.
 
 ### POST /admin/api/backfill-memory
 
@@ -212,7 +374,7 @@ Backfill memory embeddings (admin only).
 
 ### GET /admin/api/settings
 
-Get app settings.
+Get app settings (auto-tag, auto-diary, timezone, etc.).
 
 ### PUT /admin/api/settings
 
