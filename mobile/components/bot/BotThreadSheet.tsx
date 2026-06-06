@@ -47,6 +47,7 @@ interface PendingMessage {
 
 function ThinkingContentBlock({ content, theme }: { content: string; theme: any }) {
   const [expanded, setExpanded] = useState(false)
+  const { t } = useTranslation()
   return (
     <View style={[styles.thinkingContainer, { backgroundColor: theme.surfaceMuted }]}>
       <TouchableOpacity
