@@ -87,6 +87,7 @@ pub struct ResourceResponse {
     pub url: String,
     pub thumbnail_url: Option<String>,
     pub metadata: Value,
+    pub ai_description: Option<String>,
     pub created_at: i64,
 }
 

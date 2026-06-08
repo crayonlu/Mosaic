@@ -56,6 +56,7 @@ pub struct Resource {
     pub storage_path: String,
     pub metadata: Value,
     pub is_deleted: bool,
+    pub ai_description: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -74,6 +75,7 @@ impl FromRow<'_, sqlx::postgres::PgRow> for Resource {
             storage_path: row.try_get("storage_path")?,
             metadata: row.try_get("metadata")?,
             is_deleted: row.try_get("is_deleted")?,
+            ai_description: row.try_get("ai_description")?,
             created_at: row.try_get("created_at")?,
             updated_at: row.try_get("updated_at")?,
         })
@@ -93,6 +95,7 @@ pub struct ResourceResponse {
     pub url: String,
     pub thumbnail_url: Option<String>,
     pub metadata: Value,
+    pub ai_description: Option<String>,
     pub created_at: i64,
 }
 

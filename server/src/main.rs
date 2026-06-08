@@ -107,7 +107,9 @@ async fn main() -> anyhow::Result<()> {
         .with_ai_client(ai_client.clone())
         .with_app_settings_service(app_settings_service.clone())
         .with_ai_diary_service(ai_diary_service.clone());
-    let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone());
+    let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone())
+        .with_ai_client(ai_client.clone())
+        .with_server_ai_config_service(server_ai_config_service.clone());
     let diary_service = DiaryService::new(pool.clone());
     let stats_service =
         StatsService::new(pool.clone()).with_app_settings_service(app_settings_service.clone());

@@ -1,12 +1,14 @@
 use crate::error::AppError;
-use crate::models::{Diary, Memo};
-use crate::services::ai_client::AiConfig;
+use crate::models::{Diary, Memo, Resource};
+use crate::services::ai_client::{AiConfig, AiImageInput};
+use crate::services::bot_service::is_supported_ai_image_resource;
 use crate::services::{AiClient, AppSettingsService, ServerAiConfigService};
 use crate::storage::traits::Storage;
 use chrono::{DateTime, Datelike, Duration, NaiveDate, TimeZone, Utc};
 use chrono_tz::Tz;
 use serde::Deserialize;
 use sqlx::PgPool;
+use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -17,7 +19,21 @@ const AI_DIARY_JOB_BATCH_SIZE: i64 = 16;
 const AI_DIARY_RETRY_DELAY_MS: i64 = 5 * 60 * 1000;
 const AUTO_DIARY_ENABLED_KEY: &str = "auto_diary_enabled";
 const AUTO_DIARY_MIN_MEMOS_KEY: &str = "auto_diary_min_memos";
+const MAX_DIARY_IMAGES_PER_MEMO: usize = 2;
+const MAX_DIARY_IMAGES_TOTAL: usize = 6;
 const AUTO_DIARY_MIN_CHARS_KEY: &str = "auto_diary_min_chars";
+
+/// An image that couldn't be sent inline due to budget limits.
+/// Carries an optional stored AI description — when present, the diary service
+/// uses it directly instead of calling the vision model on-demand.
+#[derive(Debug, Clone)]
+struct OverflowImage {
+    memo_id: Uuid,
+    storage_path: String,
+    mime_type: String,
+    filename: String,
+    ai_description: Option<String>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AiDiaryPayload {
@@ -198,23 +214,74 @@ impl AiDiaryService {
             ));
         }
 
+        let ai_config = AiConfig {
+            provider: config.provider.clone(),
+            base_url: config.base_url.clone(),
+            api_key: config.api_key.clone(),
+            model: config.model.clone(),
+            max_tokens: config.max_tokens,
+        };
+
+        // Load memo images: inline (sent as image blocks) + overflow (described as text)
+        // inline_descriptions: stored ai_description from inline resources (used when vision off)
+        let (inline_images, overflow_images, inline_descriptions) = self
+            .load_diary_memo_images(&memos)
+            .await
+            .unwrap_or_else(|e| {
+                log::warn!("[AiDiary] Failed to load memo images: {}", e);
+                (HashMap::new(), vec![], HashMap::new())
+            });
+
+        // Build overflow descriptions: prefer stored ai_description, fall back to on-demand AI
+        let mut overflow_descriptions: HashMap<Uuid, Vec<String>> = HashMap::new();
+        let mut needs_ai: Vec<OverflowImage> = Vec::new();
+
+        for img in overflow_images {
+            if let Some(desc) = img.ai_description {
+                overflow_descriptions
+                    .entry(img.memo_id)
+                    .or_default()
+                    .push(desc);
+            } else {
+                needs_ai.push(img);
+            }
+        }
+
+        // When vision is unavailable, merge inline descriptions as text context too
+        if !config.supports_vision {
+            for (memo_id, descs) in inline_descriptions {
+                overflow_descriptions
+                    .entry(memo_id)
+                    .or_default()
+                    .extend(descs);
+            }
+        }
+
+        if config.supports_vision && !needs_ai.is_empty() {
+            let ai_descriptions = self.describe_overflow_images(&ai_config, &needs_ai).await;
+            for (memo_id, descs) in ai_descriptions {
+                overflow_descriptions
+                    .entry(memo_id)
+                    .or_default()
+                    .extend(descs);
+            }
+        }
+
+        // Build per-memo messages: each memo gets its own user message with its inline images
+        let messages = build_diary_messages(
+            target_date,
+            &memos,
+            tz,
+            &inline_images,
+            &overflow_descriptions,
+            &config.provider,
+            config.supports_vision,
+        );
+
         let system_prompt = build_diary_system_prompt();
-        let prompt = build_diary_prompt(target_date, &memos, tz);
-        let message = AiClient::build_user_message(&prompt, &[], &config.provider);
         let ai_reply = self
             .ai_client
-            .send_ai_messages(
-                &AiConfig {
-                    provider: config.provider.clone(),
-                    base_url: config.base_url.clone(),
-                    api_key: config.api_key.clone(),
-                    model: config.model.clone(),
-                    max_tokens: config.max_tokens,
-                },
-                system_prompt,
-                vec![message],
-                None,
-            )
+            .send_ai_messages(&ai_config, system_prompt, messages, None)
             .await
             .map_err(|error| AppError::Processing(error.to_string()))?;
 
@@ -267,6 +334,230 @@ impl AiDiaryService {
         .fetch_all(&self.pool)
         .await
         .map_err(AppError::Database)
+    }
+
+    /// Loads image resources for all candidate memos, splitting into inline and overflow.
+    ///
+    /// Returns:
+    /// - `inline_images`: downloaded image data, keyed by memo_id (for vision-capable providers)
+    /// - `overflow_images`: resources that exceeded budget or failed inline download
+    /// - `inline_descriptions`: stored ai_description from inline resources (used as text
+    ///    context when vision is unavailable)
+    async fn load_diary_memo_images(
+        &self,
+        memos: &[Memo],
+    ) -> Result<
+        (
+            HashMap<Uuid, Vec<AiImageInput>>,
+            Vec<OverflowImage>,
+            HashMap<Uuid, Vec<String>>,
+        ),
+        AppError,
+    > {
+        if memos.is_empty() {
+            return Ok((HashMap::new(), vec![], HashMap::new()));
+        }
+
+        let memo_ids: Vec<Uuid> = memos.iter().map(|m| m.id).collect();
+
+        // Batch-load image resources for all memos with user ownership verification
+        let resources = sqlx::query_as::<_, Resource>(
+            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, \
+             r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, \
+             r.ai_description, r.created_at, r.updated_at
+             FROM resources r
+             JOIN memos m ON m.id = r.memo_id
+             WHERE r.memo_id = ANY($1) AND r.resource_type = 'image' AND r.is_deleted = FALSE
+             ORDER BY r.created_at ASC",
+        )
+        .bind(&memo_ids)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(AppError::Database)?;
+
+        // Separate into inline (fits budget) and overflow (exceeds budget)
+        let mut inline_resources: HashMap<Uuid, Vec<&Resource>> = HashMap::new();
+        let mut overflow_resources: Vec<&Resource> = Vec::new();
+        let mut total_inline = 0usize;
+
+        for memo in memos {
+            // Collect this memo's resources in original order
+            let memo_resources: Vec<&Resource> = resources
+                .iter()
+                .filter(|r| r.memo_id == Some(memo.id))
+                .collect();
+
+            let mut memo_inline_count = 0usize;
+            for resource in memo_resources {
+                if memo_inline_count < MAX_DIARY_IMAGES_PER_MEMO
+                    && total_inline < MAX_DIARY_IMAGES_TOTAL
+                {
+                    inline_resources.entry(memo.id).or_default().push(resource);
+                    memo_inline_count += 1;
+                    total_inline += 1;
+                } else {
+                    overflow_resources.push(resource);
+                }
+            }
+        }
+
+        // Download inline images from storage.
+        // Resources that fail download or format checks are promoted to overflow
+        // if they carry a stored ai_description — the text is still useful context.
+        // Successful inline images' descriptions are also collected so they can
+        // be used as text fallback when the provider lacks vision support.
+        let mut promoted_to_overflow: Vec<&Resource> = Vec::new();
+        let mut inline_images: HashMap<Uuid, Vec<AiImageInput>> = HashMap::new();
+        let mut inline_descriptions: HashMap<Uuid, Vec<String>> = HashMap::new();
+        for (memo_id, res_list) in &inline_resources {
+            let mut images = Vec::with_capacity(res_list.len());
+            for resource in res_list {
+                // Collect stored description regardless of whether the image
+                // can be sent inline — text context always works.
+                if let Some(ref desc) = resource.ai_description {
+                    inline_descriptions
+                        .entry(*memo_id)
+                        .or_default()
+                        .push(desc.clone());
+                }
+
+                if !is_supported_ai_image_resource(resource) {
+                    if resource.ai_description.is_some() {
+                        promoted_to_overflow.push(resource);
+                    }
+                    continue;
+                }
+                match self.storage.download(&resource.storage_path).await {
+                    Ok(data) => {
+                        images.push(AiImageInput {
+                            mime_type: resource.mime_type.clone(),
+                            data: data.to_vec(),
+                        });
+                    }
+                    Err(e) => {
+                        log::warn!(
+                            "[AiDiary] Failed to download inline image {} for memo {:?}: {}",
+                            resource.id,
+                            resource.memo_id,
+                            e
+                        );
+                        if resource.ai_description.is_some() {
+                            promoted_to_overflow.push(resource);
+                        }
+                    }
+                }
+            }
+            if !images.is_empty() {
+                inline_images.insert(*memo_id, images);
+            }
+        }
+        // Build overflow list — include any resource that can contribute context:
+        //   • Has stored ai_description → used directly (no AI call needed)
+        //   • No description but format is AI-compatible → will get on-demand description
+        //   • Neither → dropped (nothing to say)
+        let overflow: Vec<OverflowImage> = overflow_resources
+            .iter()
+            .chain(promoted_to_overflow.iter())
+            .filter(|r| r.ai_description.is_some() || is_supported_ai_image_resource(r))
+            .map(|r| OverflowImage {
+                memo_id: r.memo_id.unwrap_or_default(),
+                storage_path: r.storage_path.clone(),
+                mime_type: r.mime_type.clone(),
+                filename: r.filename.clone(),
+                ai_description: r.ai_description.clone(),
+            })
+            .collect();
+
+        Ok((inline_images, overflow, inline_descriptions))
+    }
+
+    /// Downloads an overflow image from storage and asks the AI to describe it
+    /// in 1-2 sentences.  Falls back to the filename on any failure.
+    async fn describe_image(&self, config: &AiConfig, image: &OverflowImage) -> String {
+        let data = match self.storage.download(&image.storage_path).await {
+            Ok(d) => d,
+            Err(e) => {
+                log::warn!(
+                    "[AiDiary] Failed to download overflow image {}: {}",
+                    image.storage_path,
+                    e
+                );
+                return format!("{} (image could not be downloaded)", image.filename);
+            }
+        };
+
+        let ai_image = AiImageInput {
+            mime_type: image.mime_type.clone(),
+            data: data.to_vec(),
+        };
+
+        let prompt = "Describe this image in 1-2 sentences. \
+            Focus on visible content and its likely context for a personal journal. \
+            Be concise and objective.";
+
+        let message = AiClient::build_user_message(prompt, &[ai_image], &config.provider);
+
+        match self
+            .ai_client
+            .send_ai_messages(config, String::new(), vec![message], None)
+            .await
+        {
+            Ok(reply) => {
+                let desc = reply.content.trim().to_string();
+                if desc.is_empty() {
+                    format!("{} (no description produced)", image.filename)
+                } else {
+                    desc
+                }
+            }
+            Err(e) => {
+                log::warn!(
+                    "[AiDiary] Failed to describe overflow image {}: {}",
+                    image.storage_path,
+                    e
+                );
+                format!("{} (image could not be described)", image.filename)
+            }
+        }
+    }
+
+    /// Describes all overflow images in parallel, grouping results by memo_id.
+    /// Each image gets a separate vision call; failures fall back to filename-only.
+    async fn describe_overflow_images(
+        &self,
+        config: &AiConfig,
+        images: &[OverflowImage],
+    ) -> HashMap<Uuid, Vec<String>> {
+        let mut handles = Vec::with_capacity(images.len());
+        for img in images {
+            let memo_id = img.memo_id;
+            let service = self.clone();
+            let img = img.clone();
+            let cfg = AiConfig {
+                provider: config.provider.clone(),
+                base_url: config.base_url.clone(),
+                api_key: config.api_key.clone(),
+                model: config.model.clone(),
+                max_tokens: config.max_tokens,
+            };
+            handles.push(tokio::spawn(async move {
+                let desc = service.describe_image(&cfg, &img).await;
+                (memo_id, desc)
+            }));
+        }
+
+        let mut map: HashMap<Uuid, Vec<String>> = HashMap::new();
+        for handle in handles {
+            match handle.await {
+                Ok((memo_id, desc)) => {
+                    map.entry(memo_id).or_default().push(desc);
+                }
+                Err(e) => {
+                    log::warn!("[AiDiary] Overflow description task panicked: {}", e);
+                }
+            }
+        }
+        map
     }
 
     async fn persist_generated_diary(
@@ -420,6 +711,7 @@ fn build_diary_system_prompt() -> String {
         "You are an insightful personal diary assistant. The user provides their day's memos with timestamps so you can understand the emotional flow of their day — when energy shifted, how ideas developed, what led to what.\n\n\
          Your job: write a concise, reflective daily summary. The timestamps are for YOUR understanding, not for the reader.\n\n\
          CRITICAL RULE — Never violate: Write your response in the SAME LANGUAGE as the user's memos. If memos are in Chinese, write in Chinese. If in Japanese, write in Japanese. And so on.\n\n\
+         Each memo is a separate message. Memo images are shown inline with their memo. When image limits were exceeded, text descriptions are substituted — treat these as equivalent context for the memo they accompany.\n\n\
          Rules:\n\
          1. Identify 2-3 themes or emotional threads that run through the day. Do not list events chronologically.\n\
          2. Notice connections: which ideas built on each other? where did the mood shift? what seems unresolved?\n\
@@ -433,25 +725,65 @@ fn build_diary_system_prompt() -> String {
     )
 }
 
-fn build_diary_prompt(target_date: NaiveDate, memos: &[Memo], tz: Tz) -> String {
-    let memo_lines = memos
-        .iter()
-        .map(|memo| {
-            let time = time_label(memo.created_at, tz);
-            let summary = memo
-                .ai_summary
-                .as_ref()
-                .map(|text| format!("\nAI Summary: {}", text.trim()))
-                .unwrap_or_default();
-            format!("- [{}] {}{}", time, memo.content.trim(), summary)
-        })
-        .collect::<Vec<_>>()
-        .join("\n\n");
+/// Builds one user message per memo, each with its own inline images attached.
+/// Overflow image descriptions are appended as text context to the corresponding memo.
+fn build_diary_messages(
+    target_date: NaiveDate,
+    memos: &[Memo],
+    tz: Tz,
+    inline_images: &HashMap<Uuid, Vec<AiImageInput>>,
+    overflow_descriptions: &HashMap<Uuid, Vec<String>>,
+    provider: &str,
+    supports_vision: bool,
+) -> Vec<serde_json::Value> {
+    let mut messages = Vec::with_capacity(memos.len() + 1);
 
-    format!(
-        "Target date: {}\n\nMemos (timestamps for context — understand the rhythm, but don't replay chronologically):\n{}\n\nWrite a theme-based daily summary. Return JSON only.",
-        target_date, memo_lines
-    )
+    // Preamble: target date and instructions
+    messages.push(serde_json::json!({
+        "role": "user",
+        "content": format!(
+            "Target date: {}. Below are the day's memos, one per message. \
+             Each may include inline images or text descriptions of images. \
+             Write a theme-based daily summary. Return JSON only.",
+            target_date
+        )
+    }));
+
+    for memo in memos {
+        let time = time_label(memo.created_at, tz);
+        let summary = memo
+            .ai_summary
+            .as_ref()
+            .map(|text| format!("\nAI Summary: {}", text.trim()))
+            .unwrap_or_default();
+
+        let mut text = format!("[{}] {}{}", time, memo.content.trim(), summary);
+
+        // Append overflow image descriptions as text context
+        if let Some(descs) = overflow_descriptions.get(&memo.id) {
+            if !descs.is_empty() {
+                text.push_str("\n[Additional image context:");
+                for desc in descs {
+                    text.push_str(&format!("\n • {}", desc));
+                }
+                text.push(']');
+            }
+        }
+
+        // Get inline images for this memo
+        let images = if supports_vision {
+            inline_images
+                .get(&memo.id)
+                .map(|v| v.as_slice())
+                .unwrap_or(&[])
+        } else {
+            &[]
+        };
+
+        messages.push(AiClient::build_user_message(&text, images, provider));
+    }
+
+    messages
 }
 
 fn extract_json_object(raw: &str) -> Result<&str, AppError> {

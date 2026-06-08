@@ -1,3 +1,4 @@
+import { useImageQualityStore } from '@/stores/imageQualityStore'
 import { useMediaPreviewStore } from '@/stores/mediaPreviewStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { Image } from 'expo-image'
@@ -54,12 +55,13 @@ export function ImagePreviewContent({
   const rotationTarget = useSharedValue(0)
   const isZoomedShared = useSharedValue(false)
   const [scaleLabel, setScaleLabel] = useState(100)
-  const initialUri = lowQualityUri ?? uri
-  const initialHeaders = lowQualityUri ? lowQualityHeaders : headers
+  const useHighQuality = useImageQualityStore(state => state.useHighQualityImages)
+  const initialUri = useHighQuality ? uri : (lowQualityUri ?? uri)
+  const initialHeaders = useHighQuality ? headers : lowQualityUri ? lowQualityHeaders : headers
   const canLoadOriginal = Boolean(lowQualityUri && lowQualityUri !== uri)
   const hasViewedOriginal = useMediaPreviewStore(state => state.hasViewedOriginalImage(uri))
   const markOriginalViewed = useMediaPreviewStore(state => state.markOriginalImageViewed)
-  const shouldStartWithOriginal = !canLoadOriginal || hasViewedOriginal
+  const shouldStartWithOriginal = !canLoadOriginal || useHighQuality || hasViewedOriginal
   const [shouldLoadOriginal, setShouldLoadOriginal] = useState(shouldStartWithOriginal)
   const [isOriginalLoaded, setIsOriginalLoaded] = useState(shouldStartWithOriginal)
   const [isOriginalLoading, setIsOriginalLoading] = useState(false)

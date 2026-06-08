@@ -5,7 +5,8 @@ use crate::models::{
     with_thumbnail_metadata, ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse,
     Resource, ResourceResponse,
 };
-use crate::services::{ImageProcessor, VideoProcessor};
+use crate::services::ai_client::{AiClient, AiConfig, AiImageInput};
+use crate::services::{ImageProcessor, ServerAiConfigService, VideoProcessor};
 use crate::storage::traits::Storage;
 use bytes::Bytes;
 use chrono::Utc;
@@ -19,12 +20,13 @@ use uuid::Uuid;
 fn empty_metadata() -> Value {
     Value::Object(Map::new())
 }
-
 #[derive(Clone)]
 pub struct ResourceService {
     pool: PgPool,
     storage: Arc<dyn Storage>,
     config: Config,
+    ai_client: Option<AiClient>,
+    server_ai_config_service: Option<ServerAiConfigService>,
 }
 
 impl ResourceService {
@@ -33,7 +35,22 @@ impl ResourceService {
             pool,
             storage,
             config,
+            ai_client: None,
+            server_ai_config_service: None,
         }
+    }
+
+    pub fn with_ai_client(mut self, ai_client: AiClient) -> Self {
+        self.ai_client = Some(ai_client);
+        self
+    }
+
+    pub fn with_server_ai_config_service(
+        mut self,
+        server_ai_config_service: ServerAiConfigService,
+    ) -> Self {
+        self.server_ai_config_service = Some(server_ai_config_service);
+        self
     }
 
     fn build_thumbnail_url(&self, resource: &Resource) -> Option<String> {
@@ -125,6 +142,7 @@ impl ResourceService {
             url,
             thumbnail_url,
             metadata: resource.metadata,
+            ai_description: resource.ai_description,
             created_at: resource.created_at,
         })
     }
@@ -245,6 +263,102 @@ impl ResourceService {
         Some(thumbnail_path)
     }
 
+    /// Generates an AI description for an uploaded image by downloading it from storage,
+    /// sending it to the vision model, and storing the result in the DB.
+    /// Designed to run as a fire-and-forget task — errors are logged, never surfaced.
+    async fn generate_ai_description(
+        ai_client: AiClient,
+        config_svc: ServerAiConfigService,
+        pool: PgPool,
+        storage: Arc<dyn Storage>,
+        resource_id: Uuid,
+        storage_path: String,
+        mime_type: String,
+    ) {
+        let config = match config_svc.get("bot").await {
+            Ok(c) => c,
+            Err(e) => {
+                log::warn!("[ResourceService] Cannot generate AI description: {}", e);
+                return;
+            }
+        };
+
+        if !config.supports_vision {
+            return;
+        }
+
+        let data = match storage.download(&storage_path).await {
+            Ok(d) => d,
+            Err(e) => {
+                log::warn!(
+                    "[ResourceService] Failed to download image {} for description: {}",
+                    resource_id,
+                    e
+                );
+                return;
+            }
+        };
+
+        let image = AiImageInput {
+            mime_type: mime_type.clone(),
+            data: data.to_vec(),
+        };
+
+        let prompt = "Describe this image in 1-2 sentences. \
+            Focus on visible content and its likely context for a personal journal. \
+            Be concise and objective.";
+
+        let message = AiClient::build_user_message(prompt, &[image], &config.provider);
+
+        let ai_config = AiConfig {
+            provider: config.provider,
+            base_url: config.base_url,
+            api_key: config.api_key,
+            model: config.model,
+            max_tokens: config.max_tokens,
+        };
+
+        let description = match ai_client
+            .send_ai_messages(&ai_config, String::new(), vec![message], None)
+            .await
+        {
+            Ok(reply) => {
+                let desc = reply.content.trim().to_string();
+                if desc.is_empty() {
+                    None
+                } else {
+                    Some(desc)
+                }
+            }
+            Err(e) => {
+                log::warn!(
+                    "[ResourceService] AI description failed for resource {}: {}",
+                    resource_id,
+                    e
+                );
+                None
+            }
+        };
+
+        if let Some(desc) = description {
+            if let Err(e) = sqlx::query(
+                "UPDATE resources SET ai_description = $1, updated_at = $2 WHERE id = $3",
+            )
+            .bind(&desc)
+            .bind(chrono::Utc::now().timestamp_millis())
+            .bind(resource_id)
+            .execute(&pool)
+            .await
+            {
+                log::warn!(
+                    "[ResourceService] Failed to persist AI description for resource {}: {}",
+                    resource_id,
+                    e
+                );
+            }
+        }
+    }
+
     pub async fn upload_resource(
         &self,
         user_id: &str,
@@ -304,8 +418,8 @@ impl ResourceService {
         let now = Utc::now().timestamp_millis();
 
         let resource = sqlx::query_as::<_, Resource>(
-              "INSERT INTO resources (id, memo_id, user_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, created_at, updated_at)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+              "INSERT INTO resources (id, memo_id, user_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, ai_description, created_at, updated_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULL, $11, $12)
              RETURNING *",
         )
         .bind(resource_id)
@@ -326,6 +440,24 @@ impl ResourceService {
         .fetch_one(&self.pool)
         .await?;
 
+        // Spawn async AI description generation for images (fire-and-forget)
+        if req.mime_type.starts_with("image/")
+            && self.ai_client.is_some()
+            && self.server_ai_config_service.is_some()
+        {
+            let ai_client = self.ai_client.clone().unwrap();
+            let config_svc = self.server_ai_config_service.clone().unwrap();
+            let pool = self.pool.clone();
+            let storage = self.storage.clone();
+            let rid = resource_id;
+            let sp = storage_path.clone();
+            let mime = req.mime_type.clone();
+            tokio::spawn(async move {
+                Self::generate_ai_description(ai_client, config_svc, pool, storage, rid, sp, mime)
+                    .await;
+            });
+        }
+
         self.build_resource_response(resource).await
     }
 
@@ -337,7 +469,7 @@ impl ResourceService {
         let user_uuid = Uuid::parse_str(user_id)?;
         let storage_prefix = format!("resources/{}/%", user_uuid);
         let mut resource = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
+            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.ai_description, r.created_at, r.updated_at
              FROM resources r
              LEFT JOIN memos m ON m.id = r.memo_id
              WHERE r.id = $1 AND (m.user_id = $2 OR r.storage_path LIKE $3) AND r.is_deleted = FALSE",
@@ -372,7 +504,7 @@ impl ResourceService {
         let user_uuid = Uuid::parse_str(user_id)?;
         let storage_prefix = format!("resources/{}/%", user_uuid);
         let resource = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
+            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.ai_description, r.created_at, r.updated_at
              FROM resources r
              LEFT JOIN memos m ON m.id = r.memo_id
              WHERE r.id = $1 AND (m.user_id = $2 OR r.storage_path LIKE $3) AND r.is_deleted = FALSE",
@@ -464,7 +596,7 @@ impl ResourceService {
         let user_uuid = Uuid::parse_str(user_id)?;
         let storage_prefix = format!("resources/{}/%", user_uuid);
         let resource = sqlx::query_as::<_, Resource>(
-              "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
+              "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.ai_description, r.created_at, r.updated_at
              FROM resources r
              LEFT JOIN memos m ON m.id = r.memo_id
              WHERE r.id = $1 AND (m.user_id = $2 OR r.storage_path LIKE $3)",
@@ -648,7 +780,7 @@ impl ResourceService {
         let offset = (page - 1) * page_size;
 
         let resources = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
+            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.ai_description, r.created_at, r.updated_at
              FROM resources r
              JOIN memos m ON r.memo_id = m.id
              WHERE m.user_id = $1 AND r.is_deleted = FALSE
@@ -686,7 +818,7 @@ impl ResourceService {
     ) -> Result<ResourceResponse, AppError> {
         let user_uuid = Uuid::parse_str(user_id)?;
         let resource = sqlx::query_as::<_, Resource>(
-            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.created_at, r.updated_at
+            "SELECT r.id, r.memo_id, r.user_id, r.filename, r.resource_type, r.mime_type, r.file_size, r.storage_type, r.storage_path, r.metadata, r.is_deleted, r.ai_description, r.created_at, r.updated_at
              FROM resources r
              JOIN memos m ON r.memo_id = m.id
              WHERE r.id = $1 AND m.user_id = $2 AND r.is_deleted = FALSE",

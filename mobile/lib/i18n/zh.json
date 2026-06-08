@@ -177,7 +177,8 @@
     "clearItemMsg": "确定要清除「{{label}}」吗？",
     "storageTotal": "共 {{size}}",
     "languageZh": "中文",
-    "general": "通用"
+    "general": "通用",
+    "highQualityImages": "高清图片"
   },
   "archive": {
     "archive": "归档",

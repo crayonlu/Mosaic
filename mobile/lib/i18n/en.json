@@ -177,7 +177,8 @@
     "clearItemMsg": "Are you sure you want to clear \"{{label}}\"?",
     "storageTotal": "{{size}} total",
     "languageZh": "中文",
-    "general": "General"
+    "general": "General",
+    "highQualityImages": "High-Quality Images"
   },
   "archive": {
     "archive": "Archive",

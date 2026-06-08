@@ -247,7 +247,7 @@ impl MemoService {
     async fn get_memo_resources(&self, memo_id: Uuid) -> Result<Vec<ResourceResponse>, AppError> {
         log::debug!("[MemoService] Getting resources for memo {}", memo_id);
         let resources = sqlx::query_as::<_, Resource>(
-            "SELECT id, memo_id, user_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, is_deleted, created_at, updated_at
+            "SELECT id, memo_id, user_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, is_deleted, ai_description, created_at, updated_at
              FROM resources WHERE memo_id = $1 AND is_deleted = FALSE ORDER BY created_at ASC",
         )
         .bind(memo_id)
@@ -284,6 +284,7 @@ impl MemoService {
                         None
                     },
                     metadata: r.metadata,
+                    ai_description: r.ai_description,
                     created_at: r.created_at,
                 }
             })
@@ -302,7 +303,7 @@ impl MemoService {
         }
 
         let resources = sqlx::query_as::<_, Resource>(
-            "SELECT id, memo_id, user_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, is_deleted, created_at, updated_at
+            "SELECT id, memo_id, user_id, filename, resource_type, mime_type, file_size, storage_type, storage_path, metadata, is_deleted, ai_description, created_at, updated_at
              FROM resources WHERE memo_id = ANY($1) AND is_deleted = FALSE ORDER BY created_at ASC",
         )
         .bind(memo_ids)
@@ -330,6 +331,7 @@ impl MemoService {
                     None
                 },
                 metadata: r.metadata,
+                ai_description: r.ai_description,
                 created_at: r.created_at,
             };
             map.entry(memo_id).or_default().push(response);

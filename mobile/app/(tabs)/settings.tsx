@@ -12,6 +12,7 @@ import { formatBytes, getStorageSummary, type StorageItem } from '@/lib/storage/
 import { useAuthStore } from '@/stores/authStore'
 import { useLocaleStore } from '@/stores/localeStore'
 import { useThemeStore } from '@/stores/themeStore'
+import { useImageQualityStore } from '@/stores/imageQualityStore'
 import { resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
@@ -149,6 +150,7 @@ export default function SettingsScreen() {
   const { t } = useTranslation()
   const { theme, themeName, setThemeName } = useThemeStore()
   const { locale, setLocale } = useLocaleStore()
+  const { useHighQualityImages, setUseHighQualityImages } = useImageQualityStore()
   const { user, serverUrl, logout, refreshUser } = useAuthStore()
   const appUpdate = useAppUpdate()
   // const { data: customPushCount = 0 } = useCustomPushCount()
@@ -495,6 +497,24 @@ export default function SettingsScreen() {
             textMuted={theme.textSecondary}
             radius={theme.radius.small}
           />
+        </View>
+      </View>
+      <View
+        style={[
+          styles.appearanceRow,
+          {
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: theme.border,
+            paddingTop: 14,
+            marginTop: 4,
+          },
+        ]}
+      >
+        <Text style={[styles.appearanceLabel, { color: theme.textSecondary }]}>
+          {t('settings.highQualityImages')}
+        </Text>
+        <View style={styles.appearanceControl}>
+          <SwitchBtn value={useHighQualityImages} onValueChange={setUseHighQualityImages} />
         </View>
       </View>
     </SettingsSection>
