@@ -3034,7 +3034,7 @@ dependencies = [
 
 [[package]]
 name = "server"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "actix-cors",
  "actix-files",
