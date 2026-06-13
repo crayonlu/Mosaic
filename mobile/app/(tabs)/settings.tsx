@@ -1,11 +1,10 @@
-import { router } from 'expo-router'
 import { Button, SwitchBtn } from '@/components/ui'
 import { pickAndCropAvatar } from '@/components/ui/AvatarCropper'
 import { SlidingSegmentedControl } from '@/components/ui/SlidingSegmentedControl'
 import { toast } from '@/components/ui/Toast'
 import { useAppUpdate } from '@/hooks/useAppUpdate'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
-import { useBots, useUpdateBot } from '@/lib/query'
+import { useBots } from '@/lib/query'
 import { useAdminAIConfig } from '@/lib/query/hooks/useAdminAIConfig'
 // import { useCustomPushCount } from '@/lib/query/hooks/useCustomPush'
 import { formatBytes, getStorageSummary, type StorageItem } from '@/lib/storage/storageManager'
@@ -16,7 +15,7 @@ import { useImageQualityStore } from '@/stores/imageQualityStore'
 import { resourcesApi } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
-import { Bot, Cog, Info, LogOut, Plus, ShieldCheck, Sparkles, Trash } from 'lucide-react-native'
+import { Bot, Cog, Info, LogOut, ShieldCheck, Sparkles, Trash } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -159,7 +158,6 @@ export default function SettingsScreen() {
   const [showAISettings, setShowAISettings] = useState(false)
   const [showAboutSettings, setShowAboutSettings] = useState(false)
   const { data: bots = [] } = useBots()
-  const { mutateAsync: updateBot } = useUpdateBot()
   const [showPermissionSettings, setShowPermissionSettings] = useState(false)
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushPermissionGranted, setPushPermissionGranted] = useState(false)
@@ -378,7 +376,7 @@ export default function SettingsScreen() {
         onToggle={() => toggleSectionWithAnimation(setShowBotSettings)}
       >
         {bots.map((bot, index) => (
-          <TouchableOpacity
+          <View
             key={bot.id}
             style={[
               styles.botItem,
@@ -387,10 +385,6 @@ export default function SettingsScreen() {
                 borderTopColor: theme.border,
               },
             ]}
-            activeOpacity={1}
-            onPress={() => {
-              router.push({ pathname: '/bot-editor', params: { bot: JSON.stringify(bot) } })
-            }}
           >
             <View style={[styles.botAvatar, { backgroundColor: theme.primary }]}>
               {bot.avatarUrl ? (
@@ -409,29 +403,36 @@ export default function SettingsScreen() {
                 </Text>
               )}
             </View>
-            <View onStartShouldSetResponder={() => true}>
-              <SwitchBtn
-                value={bot.autoReply}
-                onValueChange={v => updateBot({ id: bot.id, data: { autoReply: v } })}
+            <View
+              style={[
+                styles.botStatusPill,
+                {
+                  backgroundColor: bot.autoReply ? theme.primary + '18' : theme.surfaceMuted,
+                  borderColor: bot.autoReply ? theme.primary + '30' : theme.border,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.botStatusDot,
+                  {
+                    backgroundColor: bot.autoReply ? theme.primary : theme.textTertiary,
+                  },
+                ]}
               />
+              <Text
+                style={[
+                  styles.botStatusText,
+                  {
+                    color: bot.autoReply ? theme.primary : theme.textSecondary,
+                  },
+                ]}
+              >
+                {bot.autoReply ? t('settings.auto') : t('settings.manual')}
+              </Text>
             </View>
-          </TouchableOpacity>
+          </View>
         ))}
-        <TouchableOpacity
-          style={[
-            styles.addBotBtn,
-            {
-              borderTopColor: theme.border,
-              borderTopWidth: bots.length > 0 ? StyleSheet.hairlineWidth : 0,
-            },
-          ]}
-          onPress={() => {
-            router.push('/bot-editor')
-          }}
-        >
-          <Plus size={16} color={theme.primary} />
-          <Text style={[styles.addBotText, { color: theme.primary }]}>{t('settings.addBot')}</Text>
-        </TouchableOpacity>
       </SettingsSection>
     </>
   )
@@ -1029,16 +1030,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  addBotBtn: {
+  botStatusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 6,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 99,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  addBotText: {
-    fontSize: 14,
-    fontWeight: '500',
+  botStatusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  botStatusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
   },
   progressContainer: {
     flexDirection: 'row',

@@ -194,18 +194,6 @@ export default function RootLayout() {
                             <Stack.Screen name="setup" options={{ headerShown: false }} />
                             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                             <Stack.Screen
-                              name="bot-editor"
-                              options={{
-                                headerShown: false,
-                              }}
-                            />
-                            <Stack.Screen
-                              name="bot-editor-description"
-                              options={{
-                                headerShown: false,
-                              }}
-                            />
-                            <Stack.Screen
                               name="share"
                               options={{
                                 presentation: 'modal',
