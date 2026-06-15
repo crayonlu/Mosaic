@@ -323,7 +323,11 @@
     "zoomIn": "Zoom in",
     "rotate": "Rotate image",
     "maximize": "Maximize image",
-    "reset": "Reset image"
+    "reset": "Reset image",
+    "saveToGallery": "Save to Gallery",
+    "savedToGallery": "Saved to Gallery",
+    "downloadFailed": "Download failed",
+    "permissionDenied": "Permission denied"
   },
   "moodHeatMap": {
     "title": "Mood Heatmap"

@@ -323,7 +323,11 @@
     "zoomIn": "放大图片",
     "rotate": "旋转图片",
     "maximize": "最大化图片",
-    "reset": "复位图片"
+    "reset": "复位图片",
+    "saveToGallery": "保存到相册",
+    "savedToGallery": "已保存到相册",
+    "downloadFailed": "下载失败",
+    "permissionDenied": "权限被拒绝"
   },
   "moodHeatMap": {
     "title": "情绪热力图"
