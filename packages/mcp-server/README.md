@@ -1,13 +1,13 @@
-# mosaic-mcp-server
+# mosaic-mcp
 
 [MCP server](https://modelcontextprotocol.io) for [Mosaic](https://github.com/crayonlu/Mosaic) — a journaling and diary app. Exposes 35 tools for querying memos, diaries, AI bots, memory, stats, and admin features via the Model Context Protocol (stdio transport).
 
 ## Installation
 
 ```bash
-npm install mosaic-mcp-server
+npm install mosaic-mcp
 # or
-bun add mosaic-mcp-server
+bun add mosaic-mcp
 ```
 
 ## Configuration

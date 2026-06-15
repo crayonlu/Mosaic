@@ -1,5 +1,5 @@
 {
-  "name": "mosaic-mcp-server",
+  "name": "mosaic-mcp",
   "version": "0.1.0",
   "private": false,
   "description": "MCP server for Mosaic — journaling, diary, and memory app. Query memos, diaries, bots, stats, and AI features via Model Context Protocol.",
