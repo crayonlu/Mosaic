@@ -96,7 +96,7 @@
     "deleteFailed": "删除失败",
     "count": "{{count}} 个 · {{auto}} 自动",
     "model": "模型配置",
-    "modelPlaceholder": "覆盖默认模型（留空使用系统默认）",
+    "modelPlaceholder": "覆盖默认模型（留空使用系统默认）"
   },
   "botManager": {
     "title": "Bot 概览",

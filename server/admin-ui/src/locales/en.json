@@ -96,7 +96,7 @@
     "deleteFailed": "Delete failed",
     "count": "{{count}} · {{auto}} auto",
     "model": "Model",
-    "modelPlaceholder": "Override default model (leave empty for system default)",
+    "modelPlaceholder": "Override default model (leave empty for system default)"
   },
   "botManager": {
     "title": "Bot Overview",
