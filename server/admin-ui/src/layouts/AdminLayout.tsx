@@ -11,6 +11,11 @@ import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, Outlet, useLocation } from "react-router-dom"
 import i18n from "../lib/i18n"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useAuthStore } from "../stores/authStore"
 import { useThemeStore } from "../stores/themeStore"
 
@@ -148,17 +153,28 @@ export default function AdminLayout() {
                 : t("layout.languageZh")}
             </button>
 
-            <button
-              className="flex size-7 items-center justify-center rounded-md border-none bg-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              onClick={toggleTheme}
-              title={
-                themeStore.themeName === "quietPaper"
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    className="flex size-7 items-center justify-center rounded-md border-none bg-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    onClick={toggleTheme}
+                    title={
+                      themeStore.themeName === "quietPaper"
+                        ? t("layout.themeCleanSlate")
+                        : t("layout.themeQuietPaper")
+                    }
+                  >
+                    <Palette size={15} />
+                  </button>
+                }
+              />
+              <TooltipContent>
+                {themeStore.themeName === "quietPaper"
                   ? t("layout.themeCleanSlate")
-                  : t("layout.themeQuietPaper")
-              }
-            >
-              <Palette size={15} />
-            </button>
+                  : t("layout.themeQuietPaper")}
+              </TooltipContent>
+            </Tooltip>
 
             <div ref={menuRef} className="relative">
               <button

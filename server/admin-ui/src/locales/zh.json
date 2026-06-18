@@ -187,6 +187,8 @@
     "enable": "启用",
     "changeRole": "更改角色",
     "resetPassword": "重置密码",
+    "prevPage": "上一页",
+    "nextPage": "下一页",
     "newPassword": "新密码",
     "createSuccess": "用户创建成功",
     "createFailed": "用户创建失败",

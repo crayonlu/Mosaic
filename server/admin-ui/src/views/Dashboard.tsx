@@ -21,6 +21,11 @@ import AIConfigPanel from "../components/AIConfigPanel"
 import AutomationPanel from "../components/AutomationPanel"
 import BotManager from "../components/BotManager"
 import MemoryPanel from "../components/MemoryPanel"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { setToken } from "../api"
 import { useToast } from "../hooks/useToast"
 import { useAuthStore } from "../stores/authStore"
@@ -245,16 +250,23 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-              <button
-                onClick={loadActivity}
-                className="flex size-6 shrink-0 items-center justify-center rounded border-none bg-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                title={t("dashboard.refresh")}
-              >
-                <RefreshCw
-                  size={12}
-                  className={activityLoading ? "spin" : ""}
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <button
+                      onClick={loadActivity}
+                      className="flex size-6 shrink-0 items-center justify-center rounded border-none bg-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      title={t("dashboard.refresh")}
+                    >
+                      <RefreshCw
+                        size={12}
+                        className={activityLoading ? "spin" : ""}
+                      />
+                    </button>
+                  }
                 />
-              </button>
+                <TooltipContent>{t("dashboard.refresh")}</TooltipContent>
+              </Tooltip>
             </div>
           </div>
 

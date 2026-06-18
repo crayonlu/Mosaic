@@ -5,6 +5,11 @@ import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { api } from "../api"
 import AdminImage from "../components/AdminImage"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useToast } from "../hooks/useToast"
 
 interface BotData {
@@ -295,14 +300,21 @@ export default function Bots() {
                       </div>
                     </button>
 
-                    <button
-                      className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => handleDelete(bot)}
-                      title={t("bots.delete")}
-                      type="button"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <button
+                            className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => handleDelete(bot)}
+                            title={t("bots.delete")}
+                            type="button"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        }
+                      />
+                      <TooltipContent>{t("bots.delete")}</TooltipContent>
+                    </Tooltip>
                   </div>
                 )
               })}

@@ -187,6 +187,8 @@
     "enable": "Enable",
     "changeRole": "Change Role",
     "resetPassword": "Reset Password",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
     "newPassword": "New Password",
     "createSuccess": "User created successfully",
     "createFailed": "Failed to create user",

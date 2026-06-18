@@ -18,6 +18,11 @@ import {
 } from "../api"
 import Modal from "../components/Modal"
 import { Badge } from "../components/ui/badge"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
@@ -236,37 +241,66 @@ export default function Users() {
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center justify-end gap-1">
-                      <button
-                        className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        onClick={() => toggleActive(user)}
-                        title={
-                          user.isActive ? t("users.disable") : t("users.enable")
-                        }
-                      >
-                        {user.isActive ? (
-                          <UserX size={14} />
-                        ) : (
-                          <User size={14} />
-                        )}
-                      </button>
-                      <button
-                        className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        onClick={() => toggleRole(user)}
-                        title={t("users.changeRole")}
-                      >
-                        <ShieldCheck size={14} />
-                      </button>
-                      <button
-                        className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        onClick={() => {
-                          setResetTarget(user)
-                          setResetPassword("")
-                          setResetOpen(true)
-                        }}
-                        title={t("users.resetPassword")}
-                      >
-                        <RotateCcw size={14} />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <button
+                              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              onClick={() => toggleActive(user)}
+                              title={
+                                user.isActive
+                                  ? t("users.disable")
+                                  : t("users.enable")
+                              }
+                            >
+                              {user.isActive ? (
+                                <UserX size={14} />
+                              ) : (
+                                <User size={14} />
+                              )}
+                            </button>
+                          }
+                        />
+                        <TooltipContent>
+                          {user.isActive
+                            ? t("users.disable")
+                            : t("users.enable")}
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <button
+                              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              onClick={() => toggleRole(user)}
+                              title={t("users.changeRole")}
+                            >
+                              <ShieldCheck size={14} />
+                            </button>
+                          }
+                        />
+                        <TooltipContent>{t("users.changeRole")}</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <button
+                              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              onClick={() => {
+                                setResetTarget(user)
+                                setResetPassword("")
+                                setResetOpen(true)
+                              }}
+                              title={t("users.resetPassword")}
+                            >
+                              <RotateCcw size={14} />
+                            </button>
+                          }
+                        />
+                        <TooltipContent>
+                          {t("users.resetPassword")}
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   </td>
                 </tr>
@@ -281,23 +315,37 @@ export default function Users() {
         <div className="flex items-center justify-between pt-2 text-sm text-muted-foreground">
           <span>{t("users.total", { count: total })}</span>
           <div className="flex items-center gap-1">
-            <button
-              className="rounded p-1 hover:bg-muted disabled:opacity-40"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-            >
-              <ChevronLeft size={16} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    className="rounded p-1 hover:bg-muted disabled:opacity-40"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                }
+              />
+              <TooltipContent>{t("users.prevPage")}</TooltipContent>
+            </Tooltip>
             <span>
               {page} / {Math.ceil(total / pageSize)}
             </span>
-            <button
-              className="rounded p-1 hover:bg-muted disabled:opacity-40"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page >= Math.ceil(total / pageSize)}
-            >
-              <ChevronRight size={16} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    className="rounded p-1 hover:bg-muted disabled:opacity-40"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={page >= Math.ceil(total / pageSize)}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                }
+              />
+              <TooltipContent>{t("users.nextPage")}</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       )}
