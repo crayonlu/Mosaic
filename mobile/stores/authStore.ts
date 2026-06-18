@@ -14,6 +14,7 @@ interface AuthState {
   user: User | null
   serverUrl: string | null
   error: string | null
+  mustChangePassword: boolean
 }
 
 interface AuthActions {
@@ -23,6 +24,7 @@ interface AuthActions {
   refreshUser: () => Promise<void>
   testConnection: (url: string) => Promise<boolean>
   clearError: () => void
+  clearMustChangePassword: () => void
 }
 
 type AuthStore = AuthState & AuthActions
@@ -34,6 +36,7 @@ const initialState: AuthState = {
   user: null,
   serverUrl: null,
   error: null,
+  mustChangePassword: false,
 }
 
 apiClient.setTokenStorage({
@@ -94,6 +97,7 @@ export const useAuthStore = create<AuthStore>()(
               isLoading: false,
               user,
               serverUrl,
+              mustChangePassword: user.mustChangePassword ?? false,
               error: null,
             })
           } catch (error) {
@@ -152,6 +156,7 @@ export const useAuthStore = create<AuthStore>()(
             user: response.user,
             serverUrl: normalizedUrl,
             error: null,
+            mustChangePassword: response.mustChangePassword ?? false,
           })
         } catch (error) {
           const apiError = error as ApiError
@@ -174,7 +179,7 @@ export const useAuthStore = create<AuthStore>()(
       refreshUser: async () => {
         try {
           const user = await authApi.me()
-          set({ user })
+          set({ user, mustChangePassword: user.mustChangePassword ?? false })
         } catch (error) {
           const apiError = error as ApiError
           if (apiError.status === 401) {
@@ -189,6 +194,10 @@ export const useAuthStore = create<AuthStore>()(
 
       clearError: () => {
         set({ error: null })
+      },
+
+      clearMustChangePassword: () => {
+        set({ mustChangePassword: false })
       },
     }),
     {

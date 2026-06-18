@@ -1,5 +1,6 @@
 import { apiClient } from './client'
 import type {
+  AuthTokens,
   ChangePasswordRequest,
   LoginRequest,
   LoginResponse,
@@ -28,8 +29,8 @@ export const authApi = {
     return apiClient.get<UserResponse>('/api/auth/me')
   },
 
-  changePassword(data: ChangePasswordRequest): Promise<void> {
-    return apiClient.post<void>('/api/auth/change-password', data)
+  changePassword(data: ChangePasswordRequest): Promise<AuthTokens> {
+    return apiClient.post<AuthTokens>('/api/auth/change-password', data)
   },
 
   updateUser(data: UpdateUserRequest): Promise<UserResponse> {

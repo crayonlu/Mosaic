@@ -110,7 +110,6 @@ export default function MemoDetailScreen() {
     const doDeleteMemo = async () => {
       try {
         await deleteMemo(memo.id)
-        toast.show({ type: 'success', title: t('memo.deleted') })
         router.back()
       } catch {
         toast.show({ type: 'error', title: t('memo.deleteFailed') })

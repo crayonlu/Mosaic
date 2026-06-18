@@ -127,6 +127,7 @@
   "settings": {
     "notLoggedIn": "Not logged in",
     "noServer": "No server configured",
+    "adminRole": "Admin",
     "confirmLogout": "Confirm logout",
     "appearance": "Appearance",
     "theme": "Theme",
@@ -449,5 +450,19 @@
   },
   "textEditor": {
     "placeholder": "Start writing…"
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "forceTitle": "Change Password",
+    "forceSubtitle": "You must change your password before continuing.",
+    "oldPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "submit": "Change Password",
+    "passwordChanged": "Password changed successfully",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "changeFailed": "Failed to change password",
+    "fillAll": "Please fill in all fields"
   }
 }

@@ -36,6 +36,7 @@ pub mod resource;
 pub mod server_ai_config;
 pub mod stats;
 pub mod user;
+pub mod user_ai_config;
 
 pub use bot::{
     Bot, BotMemoryStats, BotReplyResponse, BotResponse, BotSummary, BotThreadMessage,
@@ -59,6 +60,7 @@ pub use stats::{
     HeatMapData, MoodData, SummaryData, TagData, TimelineData, TimelineEntry, TrendsData,
 };
 pub use user::{
-    ChangePasswordRequest, LoginRequest, LoginResponse, RefreshTokenRequest, RefreshTokenResponse,
+    ChangePasswordRequest, CreateUserRequest, LoginRequest, LoginResponse, ManagedUserResponse,
+    PaginatedUsersResponse, RefreshTokenRequest, RefreshTokenResponse, UpdateManagedUserRequest,
     User, UserResponse,
 };

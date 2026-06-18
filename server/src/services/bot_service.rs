@@ -7,7 +7,9 @@ use crate::models::{
 };
 use crate::services::ai_client::{AiClient, AiConfig, AiImageInput, AiReply};
 use crate::services::retry::with_retry;
-use crate::services::{AppSettingsService, BotMemoryContextService, ServerAiConfigService};
+use crate::services::{
+    AppSettingsService, BotMemoryContextService, ServerAiConfigService, UserAiConfigService,
+};
 use crate::storage::traits::Storage;
 use chrono::Utc;
 use chrono_tz::Tz;
@@ -40,6 +42,7 @@ pub struct BotService {
     storage: Arc<dyn Storage>,
     memory_context_service: Option<BotMemoryContextService>,
     server_ai_config_service: Option<ServerAiConfigService>,
+    user_ai_config_service: Option<UserAiConfigService>,
     app_settings_service: Option<AppSettingsService>,
     ai_client: AiClient,
 }
@@ -51,6 +54,7 @@ impl BotService {
             storage,
             memory_context_service: None,
             server_ai_config_service: None,
+            user_ai_config_service: None,
             app_settings_service: None,
             ai_client: AiClient::new(),
         }
@@ -69,6 +73,14 @@ impl BotService {
         server_ai_config_service: ServerAiConfigService,
     ) -> Self {
         self.server_ai_config_service = Some(server_ai_config_service);
+        self
+    }
+
+    pub fn with_user_ai_config_service(
+        mut self,
+        user_ai_config_service: UserAiConfigService,
+    ) -> Self {
+        self.user_ai_config_service = Some(user_ai_config_service);
         self
     }
 
@@ -398,9 +410,9 @@ impl BotService {
     }
 
     pub async fn trigger_replies(&self, user_id: &str, memo_id: Uuid) -> Result<(), AppError> {
-        let ai_config = self.load_server_ai_config("bot").await?;
         let user_uuid = Uuid::parse_str(user_id)
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
+        let ai_config = self.load_user_ai_config(&user_uuid).await?;
 
         let memo: Option<Memo> = sqlx::query_as::<_, Memo>(
             "SELECT id, user_id, content, tags, is_archived, is_deleted, diary_date, ai_summary, created_at, updated_at, revision_count
@@ -560,9 +572,9 @@ impl BotService {
         parent_reply_id: Uuid,
         req: ReplyToBotRequest,
     ) -> Result<BotReplyResponse, AppError> {
-        let ai_config = self.load_server_ai_config("bot").await?;
         let user_uuid = Uuid::parse_str(user_id)
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
+        let ai_config = self.load_user_ai_config(&user_uuid).await?;
 
         #[derive(sqlx::FromRow)]
         struct ParentRow {
@@ -750,6 +762,14 @@ impl BotService {
             model: config.model,
             max_tokens: config.max_tokens,
         })
+    }
+
+    async fn load_user_ai_config(&self, user_id: &Uuid) -> Result<AiConfig, AppError> {
+        let service = self
+            .user_ai_config_service
+            .as_ref()
+            .ok_or_else(|| AppError::Internal("User AI config service unavailable".to_string()))?;
+        service.to_ai_config(user_id).await
     }
 
     async fn load_thread(&self, user_uuid: Uuid, reply_id: Uuid) -> Result<ThreadData, AppError> {

@@ -1,3 +1,4 @@
+import ForceChangePassword from '@/components/auth/ForceChangePassword'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { DevFpsOverlay } from '@/components/dev/FPSMonitor'
 import { MoodBackground } from '@/components/layout/MoodBackground'
@@ -79,6 +80,7 @@ export default function RootLayout() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated)
   const isInitialized = useAuthStore(s => s.isInitialized)
   const isLoading = useAuthStore(s => s.isLoading)
+  const mustChangePassword = useAuthStore(s => s.mustChangePassword)
   const initAuth = useAuthStore(s => s.initialize)
   const segments = useSegments()
   const router = useRouter()
@@ -182,26 +184,30 @@ export default function RootLayout() {
                               </Text>
                             </View>
                           )}
-                          <Stack
-                            screenOptions={{
-                              headerShown: false,
-                              contentStyle: {
-                                backgroundColor: isDiariesTab ? 'transparent' : theme.background,
-                              },
-                            }}
-                          >
-                            <Stack.Screen name="theme-picker" options={{ headerShown: false }} />
-                            <Stack.Screen name="setup" options={{ headerShown: false }} />
-                            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                            <Stack.Screen
-                              name="share"
-                              options={{
-                                presentation: 'modal',
-                                animation: 'slide_from_bottom',
+                          {isAuthenticated && mustChangePassword ? (
+                            <ForceChangePassword />
+                          ) : (
+                            <Stack
+                              screenOptions={{
                                 headerShown: false,
+                                contentStyle: {
+                                  backgroundColor: isDiariesTab ? 'transparent' : theme.background,
+                                },
                               }}
-                            />
-                          </Stack>
+                            >
+                              <Stack.Screen name="theme-picker" options={{ headerShown: false }} />
+                              <Stack.Screen name="setup" options={{ headerShown: false }} />
+                              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                              <Stack.Screen
+                                name="share"
+                                options={{
+                                  presentation: 'modal',
+                                  animation: 'slide_from_bottom',
+                                  headerShown: false,
+                                }}
+                              />
+                            </Stack>
+                          )}
                           {themeName !== 'cleanSlate' &&
                             (segments[0] as string) !== 'theme-picker' && (
                               <View

@@ -6,12 +6,18 @@ use actix_web::{
 };
 use futures_util::future::Ready;
 use jsonwebtoken::{decode, DecodingKey, Validation};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{future::Future, pin::Pin, rc::Rc};
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub sub: String,
+    #[serde(default)]
+    pub role: String,
+    #[serde(default)]
+    pub mcp: bool, // must_change_password
+    pub exp: usize,
+    pub iat: usize,
 }
 
 #[derive(Clone)]

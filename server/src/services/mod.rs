@@ -19,6 +19,7 @@ pub mod stats_service;
 pub mod sync_service;
 pub mod time_formatter;
 pub mod timeline_memory_service;
+pub mod user_ai_config_service;
 pub mod video_processor;
 
 pub use ai_client::build_ai_system_prompt;
@@ -41,4 +42,5 @@ pub use server_ai_config_service::ServerAiConfigService;
 pub use stats_service::StatsService;
 pub use sync_service::SyncService;
 pub use timeline_memory_service::TimelineMemoryService;
+pub use user_ai_config_service::UserAiConfigService;
 pub use video_processor::VideoProcessor;

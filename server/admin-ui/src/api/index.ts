@@ -44,6 +44,9 @@ function buildUrl(basePath: string, request: FetchRequest): FetchRequest {
   return server ? `${server}${basePath}${request}` : `${basePath}${request}`
 }
 
+let refreshPromise: Promise<void> | null = null
+const RETRY_FLAG = "__retried"
+
 function onResponseError({
   response,
   request,
@@ -51,30 +54,55 @@ function onResponseError({
 }: {
   response: Response
   request: FetchRequest
-  options: FetchOptions
+  options: FetchOptions & { [RETRY_FLAG]?: boolean }
 }) {
   if (response.status === 401) {
+    // Prevent infinite retry: if this request was already a retry, bail out
+    if (options[RETRY_FLAG]) {
+      clearToken()
+      window.location.href = "/admin/login"
+      return
+    }
+
     const refresh = localStorage.getItem(REFRESH_KEY)
     if (refresh) {
-      return (async () => {
-        try {
-          const server = getServerUrl()
-          const refreshUrl = server
-            ? `${server}/api/auth/refresh`
-            : "/api/auth/refresh"
-          const res: RefreshTokenResponse = await ofetch(refreshUrl, {
-            method: "POST",
-            body: { refreshToken: refresh },
-          })
-          setToken(res.accessToken, res.refreshToken)
-          options.headers = new Headers(options.headers)
-          options.headers.set("Authorization", `Bearer ${res.accessToken}`)
-          return ofetch(request, options)
-        } catch {
-          clearToken()
-          window.location.href = "/admin/login"
+      if (!refreshPromise) {
+        refreshPromise = (async () => {
+          try {
+            const server = getServerUrl()
+            const refreshUrl = server
+              ? `${server}/api/auth/refresh`
+              : "/api/auth/refresh"
+            const res: RefreshTokenResponse = await ofetch(refreshUrl, {
+              method: "POST",
+              body: { refreshToken: refresh },
+            })
+            setToken(res.accessToken, res.refreshToken)
+          } catch {
+            clearToken()
+            window.location.href = "/admin/login"
+          } finally {
+            refreshPromise = null
+          }
+        })()
+      }
+      return refreshPromise.then(() => {
+        const token = getToken()
+        if (token) {
+          const retryOptions: FetchOptions & { [RETRY_FLAG]?: boolean } = {
+            ...options,
+            [RETRY_FLAG]: true,
+          }
+          retryOptions.headers = new Headers(options.headers)
+          ;(retryOptions.headers as Headers).set(
+            "Authorization",
+            `Bearer ${token}`
+          )
+          return ofetch(request, retryOptions)
         }
-      })()
+        clearToken()
+        window.location.href = "/admin/login"
+      })
     }
     clearToken()
     window.location.href = "/admin/login"
@@ -103,6 +131,7 @@ export interface LoginResponse {
   accessToken: string
   refreshToken: string
   user: UserResponse
+  mustChangePassword: boolean
 }
 
 export interface RefreshTokenResponse {
@@ -114,8 +143,31 @@ export interface UserResponse {
   id: string
   username: string
   avatarUrl: string | null
+  role: string
   createdAt: number
   updatedAt: number
+}
+
+export interface ManagedUser {
+  id: string
+  username: string
+  avatarUrl: string | null
+  role: string
+  isActive: boolean
+  mustChangePassword: boolean
+  createdAt: number
+  updatedAt: number
+}
+
+export interface CreateUserRequest {
+  username: string
+  password: string
+}
+
+export interface UpdateManagedUserRequest {
+  isActive?: boolean
+  role?: string
+  resetPassword?: string
 }
 
 export interface StatsSummary {

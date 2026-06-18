@@ -127,6 +127,7 @@
   "settings": {
     "notLoggedIn": "未登录",
     "noServer": "未配置服务器",
+    "adminRole": "管理员",
     "confirmLogout": "确认退出登录",
     "appearance": "外观",
     "theme": "主题",
@@ -449,5 +450,19 @@
   },
   "textEditor": {
     "placeholder": "开始输入…"
+  },
+  "changePassword": {
+    "title": "修改密码",
+    "forceTitle": "修改密码",
+    "forceSubtitle": "首次登录需要修改密码后才能继续使用。",
+    "oldPassword": "当前密码",
+    "newPassword": "新密码",
+    "confirmPassword": "确认新密码",
+    "submit": "修改密码",
+    "passwordChanged": "密码修改成功",
+    "passwordMismatch": "两次输入的密码不一致",
+    "passwordTooShort": "密码至少需要8个字符",
+    "changeFailed": "密码修改失败",
+    "fillAll": "请填写所有字段"
   }
 }

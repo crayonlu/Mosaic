@@ -2,8 +2,12 @@
 export {
   adminApi,
   type AdminAiConfigResponse,
+  type CreateUserRequest as AdminCreateUserRequest,
+  type ManagedUser,
+  type PaginatedUsersResponse,
   type ServerAiConfig,
   type ServerAiConfigPayload,
+  type UpdateManagedUserRequest,
 } from './admin'
 export { aiApi, type SuggestTagsResponse, type SummarizeResponse } from './ai'
 export { authApi } from './auth'
