@@ -133,6 +133,8 @@
     "theme": "Theme",
     "aiBot": "Bots",
     "addBot": "Add Bot",
+    "auto": "Auto",
+    "manual": "Manual",
     "aiConfig": "AI Configuration",
     "configured": "Configured",
     "partialConfig": "Partial config",
@@ -178,7 +180,8 @@
     "clearItemMsg": "Are you sure you want to clear \"{{label}}\"?",
     "storageTotal": "{{size}} total",
     "languageZh": "中文",
-    "general": "General"
+    "general": "General",
+    "highQualityImages": "High-Quality Images"
   },
   "archive": {
     "archive": "Archive",
@@ -229,31 +232,6 @@
     "aiRecommendFailed": "AI recommendation failed",
     "noRecommendations": "No recommendations",
     "placeholder": "Add tags…"
-  },
-  "bot": {
-    "editBot": "Edit Bot",
-    "newBot": "New Bot",
-    "delete": "Delete",
-    "deleteConfirm": "Confirm delete",
-    "deleteFailed": "Delete failed",
-    "save": "Save",
-    "saveFailed": "Save failed",
-    "saving": "Saving...",
-    "avatarUploadFailed": "Avatar upload failed",
-    "nameRequired": "Name required",
-    "nameRequiredMsg": "Bot name cannot be empty",
-    "name": "Name",
-    "namePlaceholder": "Give your Bot a name...",
-    "tags": "Tags",
-    "tagsPlaceholder": "witty humorous gentle (space separated)",
-    "autoReply": "Auto Reply",
-    "model": "Model",
-    "modelPlaceholder": "Override default model (leave empty for system default)",
-    "personalityDesc": "Personality Description",
-    "descPlaceholder": "Describe the Bot's personality, speaking style and behavior traits in natural language.",
-    "changeAvatar": "Change avatar",
-    "uploadAvatar": "Upload avatar",
-    "deleteConfirmMsg": "Are you sure you want to delete \"{{name}}\"?"
   },
   "botThread": {
     "continueChat": "Continue conversation",
@@ -346,7 +324,11 @@
     "zoomIn": "Zoom in",
     "rotate": "Rotate image",
     "maximize": "Maximize image",
-    "reset": "Reset image"
+    "reset": "Reset image",
+    "saveToGallery": "Save to Gallery",
+    "savedToGallery": "Saved to Gallery",
+    "downloadFailed": "Download failed",
+    "permissionDenied": "Permission denied"
   },
   "moodHeatMap": {
     "title": "Mood Heatmap"

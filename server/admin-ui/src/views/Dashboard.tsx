@@ -21,6 +21,7 @@ import AIConfigPanel from "../components/AIConfigPanel"
 import AutomationPanel from "../components/AutomationPanel"
 import BotManager from "../components/BotManager"
 import MemoryPanel from "../components/MemoryPanel"
+import { setToken } from "../api"
 import { useToast } from "../hooks/useToast"
 import { useAuthStore } from "../stores/authStore"
 
@@ -212,7 +213,7 @@ export default function Dashboard() {
                 {t("dashboard.activity")}
               </span>
               <div className="min-w-0 flex-1">
-                {activityLoading ? (
+                {activityLoading && activityEntries.length === 0 ? (
                   <div className="flex gap-3">
                     <div className="skeleton h-4 w-40 rounded" />
                     <div className="skeleton h-4 w-32 rounded" />
@@ -249,7 +250,10 @@ export default function Dashboard() {
                 className="flex size-6 shrink-0 items-center justify-center rounded border-none bg-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 title={t("dashboard.refresh")}
               >
-                <RefreshCw size={12} />
+                <RefreshCw
+                  size={12}
+                  className={activityLoading ? "spin" : ""}
+                />
               </button>
             </div>
           </div>

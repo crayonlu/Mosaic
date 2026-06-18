@@ -15,6 +15,7 @@ import {
 import { useBotThread, useReplyToBot } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { resourcesApi, type BotReply } from '@mosaic/api'
+import { useImageQualityStore } from '@/stores/imageQualityStore'
 import { Image } from 'expo-image'
 import { ChevronDown, ChevronUp, ImagePlus, Lightbulb, Send, X } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -47,6 +48,7 @@ interface PendingMessage {
 
 function ThinkingContentBlock({ content, theme }: { content: string; theme: any }) {
   const [expanded, setExpanded] = useState(false)
+  const { t } = useTranslation()
   return (
     <View style={[styles.thinkingContainer, { backgroundColor: theme.surfaceMuted }]}>
       <TouchableOpacity
@@ -136,6 +138,7 @@ interface BotThreadSheetProps {
 export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps) {
   const { t } = useTranslation()
   const { theme } = useThemeStore()
+  const useHighQuality = useImageQualityStore(state => state.useHighQualityImages)
   const insets = useSafeAreaInsets()
   const { data: thread, isLoading } = useBotThread(reply?.latestReplyId ?? reply?.id)
   const { mutateAsync: replyToBot, isPending } = useReplyToBot()
@@ -342,7 +345,9 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                                 <Image
                                   key={resourceId}
                                   source={{
-                                    uri: resourcesApi.getDownloadUrl(resourceId, 'thumb'),
+                                    uri: useHighQuality
+                                      ? resourcesApi.getDownloadUrl(resourceId)
+                                      : resourcesApi.getDownloadUrl(resourceId, 'thumb'),
                                     headers: authHeaders,
                                   }}
                                   style={styles.messageImage}

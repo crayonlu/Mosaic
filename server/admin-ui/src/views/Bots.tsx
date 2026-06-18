@@ -14,6 +14,7 @@ interface BotData {
   autoReply: boolean
   tags: string[]
   avatarUrl: string
+  model?: string
 }
 
 const emptyForm = {
@@ -22,6 +23,7 @@ const emptyForm = {
   autoReply: true,
   tags: [] as string[],
   avatarUrl: "",
+  model: "",
 }
 
 export default function Bots() {
@@ -73,6 +75,7 @@ export default function Bots() {
       autoReply: bot?.autoReply ?? true,
       tags: bot?.tags ? [...bot.tags] : [],
       avatarUrl: bot?.avatarUrl || "",
+      model: bot?.model || "",
     })
     setTagInput("")
   }
@@ -90,6 +93,7 @@ export default function Bots() {
         autoReply: form.autoReply,
         tags: form.tags,
         avatarUrl: form.avatarUrl || undefined,
+        model: form.model || undefined,
       }
       if (editing) {
         const updated = (await api(`/bots/${editing.id}`, {
@@ -455,6 +459,20 @@ export default function Bots() {
                   </p>
                 </div>
               </label>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  {t("bots.model")}
+                </label>
+                <input
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 font-sans text-[13px] text-foreground transition-colors outline-none focus:border-ring"
+                  placeholder={t("bots.modelPlaceholder")}
+                  value={form.model}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, model: e.target.value }))
+                  }
+                />
+              </div>
 
               <button
                 className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2.5 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"

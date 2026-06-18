@@ -1,7 +1,7 @@
 {
   "name": "@mosaic/mobile",
   "main": "expo-router/entry",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -31,6 +31,7 @@
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
     "expo-localization": "~17.0.8",
+    "expo-media-library": "~16.0.0",
     "expo-notifications": "~0.32.16",
     "expo-router": "~6.0.23",
     "expo-secure-store": "~15.0.8",

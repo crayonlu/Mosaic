@@ -5,7 +5,59 @@ description: Release history
 
 # Changelog
 
-## v1.0.2 (2026-05-28)
+
+## v1.0.5 (2026-06-15)
+
+### 📱 Mobile
+
+- **Fix: AI summary font size consistency.** The non-editable AI summary title in history/revision pager views now matches the editable variant (`fontSize: 12`).
+- **New: Download image on long press.** Long-press an image in full-screen preview to reveal a "Save to Gallery" button. Downloads the original quality image and saves it to your device's photo library. Requires photo library permission.
+
+---
+
+## v1.0.4 (2026-06-13)
+
+### 🖥 Dashboard
+
+- **Bot configuration management.** Bot editing has been fully migrated from the mobile app to the Dashboard (`/bots`). All bot fields — name, description, tags, auto-reply, avatar, and model — are now managed in one place.
+- **Model override field.** Added `model` field to the bot editor, allowing per-bot model override (empty = use system default).
+- **Activity refresh polish.** Clicking refresh no longer flashes skeleton placeholders — the existing activity list stays visible while new data loads.
+- **Color contrast fix.** Clean Slate theme: accent foreground text changed from near-black to white for readability on the green accent background.
+
+### 📱 Mobile
+
+- **Bot list is now read-only.** Bot editing has been removed from Settings. The bot list displays name, avatar, tags, and auto-reply status with a compact pill badge (filled for Auto, outline for Manual).
+
+---
+
+## v1.0.3 (2026-06-08)
+
+
+
+### 🤖 AI Diary Archive
+
+- **Memo images now reach the AI.** The daily diary archive now sends memo images alongside text. Each memo gets its own AI message with its inline images, so the model can associate photos with the correct context. Budget: max 2 images per memo, 6 per diary.
+- **Overflow images described as text.** When image limits are exceeded, remaining images get AI-generated text descriptions appended as context — no image vanishes silently.
+- **Persistent image descriptions.** Uploaded images now receive an AI-generated description (`resources.ai_description` column). The diary archive reuses these stored descriptions instead of calling the vision model redundantly.
+
+### 📱 Display
+
+- **High-Quality Images toggle.** Settings → General. When on, memo card grids and full-screen previews show original-resolution images immediately — no thumbnails, no "View Original" step. When off, the original blur-to-clear LQIP flow is preserved. Persisted via on-device storage.
+
+### 🤖 Bot Editor
+
+- FPS monitor for performance profiling
+- Description editor
+
+### 🐛 Fixes
+
+- Keyboard handling improvements in HomeScreen and BotEditor
+- SafeKeyboardProvider edge cases
+- Frame drops during keyboard toggle and fold transitions
+
+---
+
+ ## v1.0.2 (2026-05-28)
 
 ### ⚡ Performance
 

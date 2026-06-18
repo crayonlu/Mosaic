@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   aiSummaryTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     marginBottom: 4,
   },

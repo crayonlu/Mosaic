@@ -1,8 +1,12 @@
+import { useImageQualityStore } from '@/stores/imageQualityStore'
 import { useMediaPreviewStore } from '@/stores/mediaPreviewStore'
 import { useThemeStore } from '@/stores/themeStore'
+import { toast } from '@/components/ui/Toast'
 import { Image } from 'expo-image'
-import { Maximize2, Minus, Plus, RotateCcw } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { Paths, File } from 'expo-file-system'
+import * as MediaLibrary from 'expo-media-library'
+import { Download, Maximize2, Minus, Plus, RotateCcw } from 'lucide-react-native'
+import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -54,16 +58,18 @@ export function ImagePreviewContent({
   const rotationTarget = useSharedValue(0)
   const isZoomedShared = useSharedValue(false)
   const [scaleLabel, setScaleLabel] = useState(100)
-  const initialUri = lowQualityUri ?? uri
-  const initialHeaders = lowQualityUri ? lowQualityHeaders : headers
+  const useHighQuality = useImageQualityStore(state => state.useHighQualityImages)
+  const initialUri = useHighQuality ? uri : (lowQualityUri ?? uri)
+  const initialHeaders = useHighQuality ? headers : lowQualityUri ? lowQualityHeaders : headers
   const canLoadOriginal = Boolean(lowQualityUri && lowQualityUri !== uri)
   const hasViewedOriginal = useMediaPreviewStore(state => state.hasViewedOriginalImage(uri))
   const markOriginalViewed = useMediaPreviewStore(state => state.markOriginalImageViewed)
-  const shouldStartWithOriginal = !canLoadOriginal || hasViewedOriginal
+  const shouldStartWithOriginal = !canLoadOriginal || useHighQuality || hasViewedOriginal
   const [shouldLoadOriginal, setShouldLoadOriginal] = useState(shouldStartWithOriginal)
   const [isOriginalLoaded, setIsOriginalLoaded] = useState(shouldStartWithOriginal)
   const [isOriginalLoading, setIsOriginalLoading] = useState(false)
   const [isZoomedJS, setIsZoomedJS] = useState(false)
+  const [showDownloadAction, setShowDownloadAction] = useState(false)
 
   useEffect(() => {
     setIsInitialLoading(true)
@@ -189,11 +195,20 @@ export function ImagePreviewContent({
     })
 
   // Split into two layers:
-  // - outer: doubleTap alone, so its ~300ms wait window does NOT hold the touch
+  // - outer: doubleTap + longPress, so their ~300ms/~500ms wait windows do NOT hold the touch
   //   stream that PagerView's native swipe needs
   // - inner: pinch + pan simultaneously
+  const longPressGesture = Gesture.LongPress()
+    .enabled(isActive)
+    .minDuration(500)
+    .onEnd((_event, success) => {
+      if (success) {
+        runOnJS(setShowDownloadAction)(true)
+      }
+    })
+
   const zoomGesture = Gesture.Simultaneous(pinchGesture, panGesture)
-  const composedGesture = doubleTapGesture
+  const composedGesture = Gesture.Race(doubleTapGesture, longPressGesture)
 
   const animatedImageStyle = useAnimatedStyle(() => ({
     transform: [
@@ -242,6 +257,37 @@ export function ImagePreviewContent({
     setIsOriginalLoading(true)
     setShouldLoadOriginal(true)
   }
+
+  const handleDownload = useCallback(async () => {
+    setShowDownloadAction(false)
+
+    try {
+      const targetUri = shouldLoadOriginal ? uri : (lowQualityUri ?? uri)
+      const targetHeaders = shouldLoadOriginal
+        ? headers
+        : lowQualityUri
+          ? lowQualityHeaders
+          : headers
+
+      const { status } = await MediaLibrary.requestPermissionsAsync()
+      if (status !== 'granted') {
+        toast.error(t('imagePreview.permissionDenied'))
+        return
+      }
+
+      const downloadOptions =
+        targetHeaders && Object.keys(targetHeaders).length > 0
+          ? { headers: targetHeaders as Record<string, string>, idempotent: true }
+          : { idempotent: true }
+
+      const file = await File.downloadFileAsync(targetUri, Paths.cache, downloadOptions)
+
+      await MediaLibrary.saveToLibraryAsync(file.uri)
+      toast.show({ type: 'success', title: t('imagePreview.savedToGallery') })
+    } catch {
+      toast.error(t('imagePreview.downloadFailed'))
+    }
+  }, [uri, lowQualityUri, lowQualityHeaders, headers, shouldLoadOriginal, t])
 
   return (
     <View style={styles.container}>
@@ -322,6 +368,36 @@ export function ImagePreviewContent({
               <Text style={[styles.originalButtonText, { color: theme.text }]}>
                 {t('imagePreview.viewOriginal')}
               </Text>
+            </Pressable>
+          ) : null}
+
+          {showDownloadAction ? (
+            <Pressable
+              style={[
+                styles.downloadOverlay,
+                {
+                  backgroundColor: withAlpha(theme.background, 0.6),
+                },
+              ]}
+              onPress={() => setShowDownloadAction(false)}
+            >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('imagePreview.saveToGallery')}
+                style={[
+                  styles.downloadButton,
+                  {
+                    backgroundColor: withAlpha(theme.surface, 0.92),
+                    borderColor: withAlpha(theme.text, 0.1),
+                  },
+                ]}
+                onPress={handleDownload}
+              >
+                <Download size={18} color={theme.text} />
+                <Text style={[styles.downloadButtonText, { color: theme.text }]}>
+                  {t('imagePreview.saveToGallery')}
+                </Text>
+              </Pressable>
             </Pressable>
           ) : null}
 
@@ -468,5 +544,24 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  downloadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 44,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 18,
+  },
+  downloadButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 })

@@ -7,6 +7,7 @@ import { MediaPreviewModal } from './media/MediaPreviewModal'
 import { getMediaTileSize, resolveMediaSource } from './media/mediaPreviewUtils'
 import type { MediaGridItem } from './media/types'
 import { useMediaPreviewStore } from '@/stores/mediaPreviewStore'
+import { useImageQualityStore } from '@/stores/imageQualityStore'
 
 export type { MediaGridItem } from './media/types'
 
@@ -44,16 +45,21 @@ export function DraggableImageGrid({
   )
   const originalImageKeys = useMediaPreviewStore(state => state.originalImageKeys)
 
+  const useHighQuality = useImageQualityStore(state => state.useHighQualityImages)
+
   const resolvedMediaSources = useMemo(
     () =>
       items.map(item => {
         const source = resolveMediaSource(item, authHeaders)
-        if (item.type === 'image' && originalImageKeys[source.previewUri]) {
-          return { ...source, gridUri: source.previewUri, gridHeaders: source.previewHeaders }
+        // Show full-quality in grid if: setting enabled, or image was previously viewed at full resolution
+        if (item.type === 'image') {
+          if (useHighQuality || originalImageKeys[source.previewUri]) {
+            return { ...source, gridUri: source.previewUri, gridHeaders: source.previewHeaders }
+          }
         }
         return source
       }),
-    [authHeaders, items, originalImageKeys]
+    [authHeaders, items, originalImageKeys, useHighQuality]
   )
   const showRemoveButton = Boolean(onItemsChange)
 
