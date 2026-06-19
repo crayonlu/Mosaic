@@ -7,9 +7,7 @@ use crate::models::{
 };
 use crate::services::ai_client::{AiClient, AiConfig, AiImageInput, AiReply};
 use crate::services::retry::with_retry;
-use crate::services::{
-    AppSettingsService, BotMemoryContextService, ServerAiConfigService, UserAiConfigService,
-};
+use crate::services::{AppSettingsService, BotMemoryContextService, UserAiConfigService};
 use crate::storage::traits::Storage;
 use chrono::Utc;
 use chrono_tz::Tz;
@@ -41,7 +39,6 @@ pub struct BotService {
     pool: PgPool,
     storage: Arc<dyn Storage>,
     memory_context_service: Option<BotMemoryContextService>,
-    server_ai_config_service: Option<ServerAiConfigService>,
     user_ai_config_service: Option<UserAiConfigService>,
     app_settings_service: Option<AppSettingsService>,
     ai_client: AiClient,
@@ -53,7 +50,6 @@ impl BotService {
             pool,
             storage,
             memory_context_service: None,
-            server_ai_config_service: None,
             user_ai_config_service: None,
             app_settings_service: None,
             ai_client: AiClient::new(),
@@ -65,14 +61,6 @@ impl BotService {
         memory_context_service: BotMemoryContextService,
     ) -> Self {
         self.memory_context_service = Some(memory_context_service);
-        self
-    }
-
-    pub fn with_server_ai_config_service(
-        mut self,
-        server_ai_config_service: ServerAiConfigService,
-    ) -> Self {
-        self.server_ai_config_service = Some(server_ai_config_service);
         self
     }
 
@@ -649,7 +637,7 @@ impl BotService {
             service
                 .build_for_memo(&memo)
                 .await
-                .map(|ctx| {
+                .inspect(|ctx| {
                     let _ = tokio::spawn({
                         let svc = service.clone();
                         let bot_id = parent.bot_id;
@@ -660,7 +648,6 @@ impl BotService {
                                 .await;
                         }
                     });
-                    ctx
                 })
                 .ok()
         } else {
@@ -741,26 +728,6 @@ impl BotService {
             children: vec![],
             thread_count: thread.replies.len() as i64 + 1,
             latest_reply_id: new_id,
-        })
-    }
-
-    async fn load_server_ai_config(&self, key: &str) -> Result<AiConfig, AppError> {
-        let service = self.server_ai_config_service.as_ref().ok_or_else(|| {
-            AppError::Internal("Server AI config service unavailable".to_string())
-        })?;
-        let config = service.get(key).await?;
-        if config.api_key.trim().is_empty() || config.model.trim().is_empty() {
-            return Err(AppError::InvalidInput(format!(
-                "Server AI config '{}' is incomplete",
-                key
-            )));
-        }
-        Ok(AiConfig {
-            provider: config.provider,
-            base_url: config.base_url,
-            api_key: config.api_key,
-            model: config.model,
-            max_tokens: config.max_tokens,
         })
     }
 

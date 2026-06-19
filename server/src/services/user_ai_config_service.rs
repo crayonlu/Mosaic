@@ -17,7 +17,7 @@ impl UserAiConfigService {
     pub async fn get(&self, user_id: &Uuid) -> Result<Option<UserAiConfig>, AppError> {
         let config = sqlx::query_as::<_, UserAiConfig>(
             "SELECT id, user_id, provider, base_url, api_key, model, temperature, max_tokens,
-                    timeout_seconds, supports_vision, supports_thinking, embedding_model, embedding_dim,
+                    timeout_seconds, supports_vision, supports_thinking,
                     created_at, updated_at
              FROM user_ai_configs WHERE user_id = $1",
         )
@@ -56,8 +56,8 @@ impl UserAiConfigService {
 
         let config = sqlx::query_as::<_, UserAiConfig>(
             "INSERT INTO user_ai_configs (user_id, provider, base_url, api_key, model, temperature, max_tokens,
-                    timeout_seconds, supports_vision, supports_thinking, embedding_model, embedding_dim, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $13)
+                    timeout_seconds, supports_vision, supports_thinking, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)
              ON CONFLICT (user_id) DO UPDATE SET
                 provider = EXCLUDED.provider,
                 base_url = EXCLUDED.base_url,
@@ -68,11 +68,9 @@ impl UserAiConfigService {
                 timeout_seconds = EXCLUDED.timeout_seconds,
                 supports_vision = EXCLUDED.supports_vision,
                 supports_thinking = EXCLUDED.supports_thinking,
-                embedding_model = EXCLUDED.embedding_model,
-                embedding_dim = EXCLUDED.embedding_dim,
                 updated_at = EXCLUDED.updated_at
              RETURNING id, user_id, provider, base_url, api_key, model, temperature, max_tokens,
-                    timeout_seconds, supports_vision, supports_thinking, embedding_model, embedding_dim,
+                    timeout_seconds, supports_vision, supports_thinking,
                     created_at, updated_at",
         )
         .bind(user_id)
@@ -85,8 +83,6 @@ impl UserAiConfigService {
         .bind(req.timeout_seconds)
         .bind(req.supports_vision.unwrap_or(false))
         .bind(req.supports_thinking.unwrap_or(false))
-        .bind(&req.embedding_model)
-        .bind(req.embedding_dim)
         .bind(now)
         .fetch_one(&self.pool)
         .await?;

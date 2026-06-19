@@ -108,6 +108,8 @@
   "aiConfig": {
     "title": "AI Model Configuration",
     "refresh": "Refresh",
+    "user": "User",
+    "self": "you",
     "botModel": "Bot Model",
     "embeddingModel": "Embedding Model",
     "apiSpec": "API Spec",

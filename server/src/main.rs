@@ -97,11 +97,11 @@ async fn main() -> anyhow::Result<()> {
         server_ai_config_service.clone(),
         ai_client.clone(),
         app_settings_service.clone(),
-    );
+    )
+    .with_user_ai_config_service(user_ai_config_service.clone());
 
     let bot_service = BotService::new(pool.clone(), storage.clone())
         .with_memory_context_service(bot_memory_context_service)
-        .with_server_ai_config_service(server_ai_config_service.clone())
         .with_user_ai_config_service(user_ai_config_service.clone())
         .with_app_settings_service(app_settings_service.clone());
     let memo_service = MemoService::new(pool.clone())
@@ -114,7 +114,8 @@ async fn main() -> anyhow::Result<()> {
         .with_ai_diary_service(ai_diary_service.clone());
     let resource_service = ResourceService::new(pool.clone(), storage.clone(), config.clone())
         .with_ai_client(ai_client.clone())
-        .with_server_ai_config_service(server_ai_config_service.clone());
+        .with_server_ai_config_service(server_ai_config_service.clone())
+        .with_user_ai_config_service(user_ai_config_service.clone());
     let diary_service = DiaryService::new(pool.clone());
     let stats_service =
         StatsService::new(pool.clone()).with_app_settings_service(app_settings_service.clone());
@@ -125,9 +126,9 @@ async fn main() -> anyhow::Result<()> {
         pool.clone(),
         storage.clone(),
         ai_client.clone(),
-        server_ai_config_service.clone(),
         config.html2llm_url.clone(),
-    );
+    )
+    .with_user_ai_config_service(user_ai_config_service.clone());
     ai_diary_service.spawn_job_sweeper();
     log::info!("[OK] Business services initialized");
 
@@ -233,6 +234,14 @@ async fn main() -> anyhow::Result<()> {
                     .route(
                         "/ai-config/{key}",
                         web::put().to(admin::api::update_ai_config),
+                    )
+                    .route(
+                        "/users/{userId}/ai-config",
+                        web::get().to(admin::api::get_user_ai_config),
+                    )
+                    .route(
+                        "/users/{userId}/ai-config",
+                        web::put().to(admin::api::upsert_user_ai_config),
                     )
                     .route("/clear-cache", web::post().to(admin::api::clear_cache))
                     .route(

@@ -52,7 +52,7 @@ impl DiaryService {
             req.date
         );
 
-        let diary = if let Some(_) = existing {
+        let diary = if existing.is_some() {
             sqlx::query_as::<_, Diary>(
                 "UPDATE diaries SET
                  summary = $1,
@@ -347,7 +347,7 @@ impl DiaryService {
         )
         .bind(&summary)
         .bind(now)
-        .bind(&date)
+        .bind(date)
         .bind(user_uuid)
         .fetch_optional(&self.pool)
         .await?
@@ -374,7 +374,7 @@ impl DiaryService {
         .bind(&mood_key)
         .bind(mood_score)
         .bind(now)
-        .bind(&date)
+        .bind(date)
         .bind(user_uuid)
         .fetch_optional(&self.pool)
         .await?

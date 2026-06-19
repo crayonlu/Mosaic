@@ -1,10 +1,11 @@
 use crate::error::AppError;
 use crate::services::ai_client::{AiClient, AiConfig, AiImageInput};
-use crate::services::ServerAiConfigService;
+use crate::services::UserAiConfigService;
 use crate::storage::traits::Storage;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -41,7 +42,7 @@ pub struct ClipService {
     pool: PgPool,
     storage: Arc<dyn Storage>,
     ai_client: AiClient,
-    server_ai_config_service: ServerAiConfigService,
+    user_ai_config_service: Option<UserAiConfigService>,
     html2llm_url: String,
 }
 
@@ -50,43 +51,52 @@ impl ClipService {
         pool: PgPool,
         storage: Arc<dyn Storage>,
         ai_client: AiClient,
-        server_ai_config_service: ServerAiConfigService,
         html2llm_url: String,
     ) -> Self {
         Self {
             pool,
             storage,
             ai_client,
-            server_ai_config_service,
+            user_ai_config_service: None,
             html2llm_url,
         }
     }
 
-    async fn load_ai_config(&self) -> Result<AiConfig, AppError> {
-        let config = self.server_ai_config_service.get("bot").await?;
-        if config.api_key.trim().is_empty() || config.model.trim().is_empty() {
-            return Err(AppError::InvalidInput(
-                "Server AI config 'bot' is incomplete".to_string(),
-            ));
-        }
-        Ok(AiConfig {
-            provider: config.provider,
-            base_url: config.base_url,
-            api_key: config.api_key,
-            model: config.model,
-            max_tokens: config.max_tokens,
-        })
+    pub fn with_user_ai_config_service(
+        mut self,
+        user_ai_config_service: UserAiConfigService,
+    ) -> Self {
+        self.user_ai_config_service = Some(user_ai_config_service);
+        self
     }
 
-    pub async fn process_clip(&self, request: ClipRequest) -> Result<ClipResult, AppError> {
+    async fn load_ai_config(&self, user_id: &Uuid) -> Result<AiConfig, AppError> {
+        let service = self
+            .user_ai_config_service
+            .as_ref()
+            .ok_or_else(|| AppError::Internal("User AI config service unavailable".to_string()))?;
+        service.to_ai_config(user_id).await
+    }
+
+    pub async fn process_clip(
+        &self,
+        user_id: &str,
+        request: ClipRequest,
+    ) -> Result<ClipResult, AppError> {
+        let user_uuid = Uuid::parse_str(user_id)
+            .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
         match request.clip_type {
-            ClipType::Url => self.process_url_clip(request).await,
-            ClipType::Text => self.process_text_clip(request).await,
-            ClipType::Image => self.process_image_clip(request).await,
+            ClipType::Url => self.process_url_clip(&user_uuid, request).await,
+            ClipType::Text => self.process_text_clip(&user_uuid, request).await,
+            ClipType::Image => self.process_image_clip(&user_uuid, request).await,
         }
     }
 
-    async fn process_url_clip(&self, request: ClipRequest) -> Result<ClipResult, AppError> {
+    async fn process_url_clip(
+        &self,
+        user_id: &Uuid,
+        request: ClipRequest,
+    ) -> Result<ClipResult, AppError> {
         let url = request
             .url
             .ok_or_else(|| AppError::InvalidInput("URL is required for url clip".to_string()))?;
@@ -104,7 +114,7 @@ impl ClipService {
             )
         };
 
-        let config = self.load_ai_config().await?;
+        let config = self.load_ai_config(user_id).await?;
         let result = call_ai_for_clip(&config, &ai_input, "url", &self.ai_client).await?;
 
         Ok(ClipResult {
@@ -115,7 +125,11 @@ impl ClipService {
         })
     }
 
-    async fn process_text_clip(&self, request: ClipRequest) -> Result<ClipResult, AppError> {
+    async fn process_text_clip(
+        &self,
+        user_id: &Uuid,
+        request: ClipRequest,
+    ) -> Result<ClipResult, AppError> {
         let content = request.content.ok_or_else(|| {
             AppError::InvalidInput("Content is required for text clip".to_string())
         })?;
@@ -127,7 +141,7 @@ impl ClipService {
             format!("{}\n\n---\n\nUser note: {}", content, user_note)
         };
 
-        let config = self.load_ai_config().await?;
+        let config = self.load_ai_config(user_id).await?;
         let result = call_ai_for_clip(&config, &ai_input, "text", &self.ai_client).await?;
 
         Ok(ClipResult {
@@ -136,7 +150,11 @@ impl ClipService {
         })
     }
 
-    async fn process_image_clip(&self, request: ClipRequest) -> Result<ClipResult, AppError> {
+    async fn process_image_clip(
+        &self,
+        user_id: &Uuid,
+        request: ClipRequest,
+    ) -> Result<ClipResult, AppError> {
         let resource_id = request.resource_id.ok_or_else(|| {
             AppError::InvalidInput("resource_id is required for image clip".to_string())
         })?;
@@ -152,7 +170,7 @@ impl ClipService {
         };
 
         let image_data = self.load_image_data(&resource_id).await?;
-        let config = self.load_ai_config().await?;
+        let config = self.load_ai_config(user_id).await?;
 
         let images = if image_data.is_empty() {
             vec![]
@@ -308,7 +326,7 @@ fn parse_ai_clip_response(raw: &str) -> ClipResult {
     let body = extract_field(trimmed, "CONTENT").unwrap_or_else(|| trimmed.to_string());
 
     let tags: Vec<String> = tags_str
-        .split(|c: char| c == ',' || c == '，' || c == ' ')
+        .split([',', '，', ' '])
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
         .collect();

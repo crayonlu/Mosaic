@@ -1,9 +1,9 @@
 use crate::middleware::get_user_id;
-use crate::services::ai_client::AiConfig;
 use crate::services::build_ai_system_prompt;
-use crate::services::{AiClient, ServerAiConfigService};
+use crate::services::{AiClient, UserAiConfigService};
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct SummarizeRequest {
@@ -31,31 +31,28 @@ pub async fn summarize(
     req: HttpRequest,
     payload: web::Json<SummarizeRequest>,
     ai_client: web::Data<AiClient>,
-    config_svc: web::Data<ServerAiConfigService>,
+    user_ai_config_service: web::Data<UserAiConfigService>,
 ) -> HttpResponse {
-    let _user_id = match get_user_id(&req) {
+    let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(e) => return HttpResponse::from_error(e),
     };
+    let user_uuid = match Uuid::parse_str(&user_id) {
+        Ok(u) => u,
+        Err(_) => {
+            return HttpResponse::BadRequest()
+                .json(serde_json::json!({ "error": "Invalid user ID" }))
+        }
+    };
 
-    let config = match config_svc.get("bot").await {
+    let ai_config = match user_ai_config_service.to_ai_config(&user_uuid).await {
         Ok(c) => c,
-        Err(e) => {
-            log::warn!("[AISummarize] failed to get bot config: {}", e);
-            return HttpResponse::InternalServerError().json(serde_json::json!({
+        Err(_) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({
                 "error": "AI service not configured"
             }));
         }
     };
-
-    if config.api_key.trim().is_empty()
-        || config.model.trim().is_empty()
-        || config.base_url.trim().is_empty()
-    {
-        return HttpResponse::BadRequest().json(serde_json::json!({
-            "error": "AI service not configured"
-        }));
-    }
 
     let prompt = format!(
         "Summarize the following content in 1-2 sentences. \
@@ -65,15 +62,7 @@ pub async fn summarize(
         payload.content
     );
 
-    let ai_config = AiConfig {
-        provider: config.provider.clone(),
-        base_url: config.base_url.clone(),
-        api_key: config.api_key.clone(),
-        model: config.model.clone(),
-        max_tokens: config.max_tokens,
-    };
-
-    let user_message = AiClient::build_user_message(&prompt, &[], &config.provider);
+    let user_message = AiClient::build_user_message(&prompt, &[], &ai_config.provider);
     let system_prompt = build_ai_system_prompt();
 
     let reply = match ai_client
@@ -103,31 +92,28 @@ pub async fn suggest_tags(
     req: HttpRequest,
     payload: web::Json<SuggestTagsRequest>,
     ai_client: web::Data<AiClient>,
-    config_svc: web::Data<ServerAiConfigService>,
+    user_ai_config_service: web::Data<UserAiConfigService>,
 ) -> HttpResponse {
-    let _user_id = match get_user_id(&req) {
+    let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(e) => return HttpResponse::from_error(e),
     };
+    let user_uuid = match Uuid::parse_str(&user_id) {
+        Ok(u) => u,
+        Err(_) => {
+            return HttpResponse::BadRequest()
+                .json(serde_json::json!({ "error": "Invalid user ID" }))
+        }
+    };
 
-    let config = match config_svc.get("bot").await {
+    let ai_config = match user_ai_config_service.to_ai_config(&user_uuid).await {
         Ok(c) => c,
-        Err(e) => {
-            log::warn!("[AISuggestTags] failed to get bot config: {}", e);
-            return HttpResponse::InternalServerError().json(serde_json::json!({
+        Err(_) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({
                 "error": "AI service not configured"
             }));
         }
     };
-
-    if config.api_key.trim().is_empty()
-        || config.model.trim().is_empty()
-        || config.base_url.trim().is_empty()
-    {
-        return HttpResponse::BadRequest().json(serde_json::json!({
-            "error": "AI service not configured"
-        }));
-    }
 
     let existing_tags_hint = if payload.existing_tags.is_empty() {
         String::from("(no existing tags yet)")
@@ -147,15 +133,7 @@ pub async fn suggest_tags(
         existing_tags_hint, payload.content
     );
 
-    let ai_config = AiConfig {
-        provider: config.provider.clone(),
-        base_url: config.base_url.clone(),
-        api_key: config.api_key.clone(),
-        model: config.model.clone(),
-        max_tokens: config.max_tokens,
-    };
-
-    let user_message = AiClient::build_user_message(&prompt, &[], &config.provider);
+    let user_message = AiClient::build_user_message(&prompt, &[], &ai_config.provider);
     let system_prompt = build_ai_system_prompt();
 
     let reply = match ai_client
@@ -194,7 +172,7 @@ pub async fn suggest_tags(
         Err(_) => {
             // Fallback: split by common delimiters
             let mut fallback: Vec<String> = raw
-                .split(|c: char| c == ',' || c == '\n')
+                .split([',', '\n'])
                 .map(|s| s.trim().trim_matches('"').trim().to_string())
                 .filter(|s| !s.is_empty())
                 .collect();

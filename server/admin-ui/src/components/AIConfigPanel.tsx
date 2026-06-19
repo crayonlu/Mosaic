@@ -1,7 +1,8 @@
-import { Check, Eye, EyeOff, Loader, Sparkles } from "lucide-react"
+import { Check, Eye, EyeOff, Loader, Sparkles, User } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { adminApi } from "../api"
+import { useAuthStore } from "../stores/authStore"
 import { useToast } from "../hooks/useToast"
 
 type ConfigKey = "bot" | "embedding"
@@ -42,10 +43,23 @@ interface ModelListResponse {
   data?: Array<{ id: string }>
 }
 
+interface UserListItem {
+  id: string
+  username: string
+  role: string
+}
+
+interface UsersResponse {
+  users: UserListItem[]
+}
+
 export default function AIConfigPanel() {
   const { t } = useTranslation()
   const toast = useToast()
+  const currentUser = useAuthStore((s) => s.user)
   const [loading, setLoading] = useState(false)
+  const [users, setUsers] = useState<UserListItem[]>([])
+  const [selectedUserId, setSelectedUserId] = useState<string>("")
 
   const [showKeys, setShowKeys] = useState({ bot: false, embedding: false })
   const [saving, setSaving] = useState({ bot: false, embedding: false })
@@ -99,28 +113,65 @@ export default function AIConfigPanel() {
     return modelLists[key].filter((m) => m.toLowerCase().includes(q))
   }
 
+  async function loadUsers() {
+    try {
+      const data = (await adminApi(
+        "/users?page=1&page_size=200"
+      )) as UsersResponse
+      setUsers(data.users || [])
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function loadBotConfig(userId: string) {
+    if (!userId) return
+    try {
+      const item = (await adminApi(
+        `/users/${userId}/ai-config`
+      )) as ConfigResponseItem
+      setForm((f) => ({
+        ...f,
+        bot: {
+          ...f.bot,
+          provider: item.provider || "openai",
+          baseUrl: item.baseUrl || "",
+          apiKey: item.apiKey || "",
+          model: item.model || "",
+          maxTokens: item.maxTokens ?? undefined,
+          supportsVision: item.supportsVision || false,
+          supportsThinking: item.supportsThinking || false,
+        },
+      }))
+    } catch {
+      /* ignore */
+    }
+  }
+
   async function loadConfig() {
     setLoading(true)
     try {
       const data = (await adminApi("/ai-config")) as ConfigResponse
-      for (const k of ["bot", "embedding"] as ConfigKey[]) {
-        const item = data[k]
-        if (!item) continue
+      // Embedding is global; load it directly.
+      const emb = data.embedding
+      if (emb) {
         setForm((f) => ({
           ...f,
-          [k]: {
-            ...f[k],
-            provider: item.provider || "openai",
-            baseUrl: item.baseUrl || "",
-            apiKey: item.apiKey || "",
-            model: item.model || "",
-            embeddingDim: item.embeddingDim ?? undefined,
-            maxTokens: item.maxTokens ?? undefined,
-            supportsVision: item.supportsVision || false,
-            supportsThinking: item.supportsThinking || false,
+          embedding: {
+            ...f.embedding,
+            provider: emb.provider || "openai",
+            baseUrl: emb.baseUrl || "",
+            apiKey: emb.apiKey || "",
+            model: emb.model || "",
+            embeddingDim: emb.embeddingDim ?? undefined,
+            maxTokens: emb.maxTokens ?? undefined,
+            supportsVision: false,
+            supportsThinking: false,
           },
         }))
       }
+      // Bot is per-user: load the selected user's config.
+      await loadBotConfig(selectedUserId)
     } catch {
       /* ignore */
     } finally {
@@ -194,19 +245,41 @@ export default function AIConfigPanel() {
     setSaving((s) => ({ ...s, [key]: true }))
     try {
       const f = form[key]
-      await adminApi(`/ai-config/${key}`, {
-        method: "PUT",
-        body: {
-          provider: f.provider,
-          baseUrl: f.baseUrl,
-          apiKey: f.apiKey,
-          model: f.model,
-          embeddingDim: f.embeddingDim,
-          maxTokens: f.maxTokens,
-          supportsVision: f.supportsVision,
-          supportsThinking: f.supportsThinking,
-        },
-      })
+      if (key === "bot") {
+        // Per-user chat config for the selected user.
+        const uid = selectedUserId || currentUser?.id || ""
+        if (!uid) {
+          toast.error(t("aiConfig.saveFailed"))
+          return
+        }
+        await adminApi(`/users/${uid}/ai-config`, {
+          method: "PUT",
+          body: {
+            provider: f.provider,
+            baseUrl: f.baseUrl,
+            apiKey: f.apiKey,
+            model: f.model,
+            maxTokens: f.maxTokens,
+            supportsVision: f.supportsVision,
+            supportsThinking: f.supportsThinking,
+          },
+        })
+      } else {
+        // Global embedding config.
+        await adminApi(`/ai-config/${key}`, {
+          method: "PUT",
+          body: {
+            provider: f.provider,
+            baseUrl: f.baseUrl,
+            apiKey: f.apiKey,
+            model: f.model,
+            embeddingDim: f.embeddingDim,
+            maxTokens: f.maxTokens,
+            supportsVision: f.supportsVision,
+            supportsThinking: f.supportsThinking,
+          },
+        })
+      }
       toast.success(t("aiConfig.saved"))
     } catch {
       toast.error(t("aiConfig.saveFailed"))
@@ -223,25 +296,27 @@ export default function AIConfigPanel() {
       try {
         const data = (await adminApi("/ai-config")) as ConfigResponse
         if (!active) return
-
-        for (const k of ["bot", "embedding"] as ConfigKey[]) {
-          const item = data[k]
-          if (!item) continue
+        const emb = data.embedding
+        if (emb) {
           setForm((f) => ({
             ...f,
-            [k]: {
-              ...f[k],
-              provider: item.provider || "openai",
-              baseUrl: item.baseUrl || "",
-              apiKey: item.apiKey || "",
-              model: item.model || "",
-              embeddingDim: item.embeddingDim ?? undefined,
-              maxTokens: item.maxTokens ?? undefined,
-              supportsVision: item.supportsVision || false,
-              supportsThinking: item.supportsThinking || false,
+            embedding: {
+              ...f.embedding,
+              provider: emb.provider || "openai",
+              baseUrl: emb.baseUrl || "",
+              apiKey: emb.apiKey || "",
+              model: emb.model || "",
+              embeddingDim: emb.embeddingDim ?? undefined,
+              maxTokens: emb.maxTokens ?? undefined,
+              supportsVision: false,
+              supportsThinking: false,
             },
           }))
         }
+        await loadUsers()
+        // Bot is per-user: load the current admin's config by default.
+        const uid = selectedUserId || currentUser?.id || ""
+        if (uid) await loadBotConfig(uid)
       } catch {
         /* ignore */
       } finally {
@@ -252,7 +327,13 @@ export default function AIConfigPanel() {
     return () => {
       active = false
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  function onSelectUser(id: string) {
+    setSelectedUserId(id)
+    void loadBotConfig(id)
+  }
 
   function renderCard(key: ConfigKey, title: string) {
     const f = form[key]
@@ -491,6 +572,27 @@ export default function AIConfigPanel() {
           <div className="skeleton h-30" />
         ) : (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <User size={14} className="text-muted-foreground" />
+                <label className="text-[11px] font-medium text-muted-foreground">
+                  {t("aiConfig.user")}
+                </label>
+              </div>
+              <select
+                className="w-full rounded-md border border-border bg-card px-3 py-2 font-sans text-[13px] text-foreground outline-none focus:border-ring"
+                value={selectedUserId || currentUser?.id || ""}
+                onChange={(e) => onSelectUser(e.target.value)}
+              >
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.username}
+                    {u.id === currentUser?.id ? ` (${t("aiConfig.self")})` : ""}
+                    {u.role === "admin" ? " · admin" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
             {renderCard("bot", t("aiConfig.botModel"))}
             {renderCard("embedding", t("aiConfig.embeddingModel"))}
           </div>

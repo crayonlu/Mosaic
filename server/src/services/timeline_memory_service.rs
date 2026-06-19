@@ -28,7 +28,7 @@ impl TimelineMemoryService {
         }
 
         let mut lines = Vec::new();
-        for (_date, memos) in &by_date {
+        for memos in by_date.values() {
             let sample_ts = memos.first().map(|m| m.created_at).unwrap_or(0);
             let label = time_formatter::date_label(sample_ts, tz);
 

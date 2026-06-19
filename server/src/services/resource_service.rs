@@ -6,7 +6,7 @@ use crate::models::{
     Resource, ResourceResponse,
 };
 use crate::services::ai_client::{AiClient, AiConfig, AiImageInput};
-use crate::services::{ImageProcessor, ServerAiConfigService, VideoProcessor};
+use crate::services::{ImageProcessor, ServerAiConfigService, UserAiConfigService, VideoProcessor};
 use crate::storage::traits::Storage;
 use bytes::Bytes;
 use chrono::Utc;
@@ -27,6 +27,7 @@ pub struct ResourceService {
     config: Config,
     ai_client: Option<AiClient>,
     server_ai_config_service: Option<ServerAiConfigService>,
+    user_ai_config_service: Option<UserAiConfigService>,
 }
 
 impl ResourceService {
@@ -37,6 +38,7 @@ impl ResourceService {
             config,
             ai_client: None,
             server_ai_config_service: None,
+            user_ai_config_service: None,
         }
     }
 
@@ -50,6 +52,14 @@ impl ResourceService {
         server_ai_config_service: ServerAiConfigService,
     ) -> Self {
         self.server_ai_config_service = Some(server_ai_config_service);
+        self
+    }
+
+    pub fn with_user_ai_config_service(
+        mut self,
+        user_ai_config_service: UserAiConfigService,
+    ) -> Self {
+        self.user_ai_config_service = Some(user_ai_config_service);
         self
     }
 
@@ -268,15 +278,22 @@ impl ResourceService {
     /// Designed to run as a fire-and-forget task — errors are logged, never surfaced.
     async fn generate_ai_description(
         ai_client: AiClient,
-        config_svc: ServerAiConfigService,
+        user_ai_config_service: UserAiConfigService,
         pool: PgPool,
         storage: Arc<dyn Storage>,
         resource_id: Uuid,
         storage_path: String,
         mime_type: String,
+        user_id: Uuid,
     ) {
-        let config = match config_svc.get("bot").await {
-            Ok(c) => c,
+        let config = match user_ai_config_service.get(&user_id).await {
+            Ok(Some(c)) => c,
+            Ok(None) => {
+                log::warn!(
+                    "[ResourceService] Cannot generate AI description: user AI config not set"
+                );
+                return;
+            }
             Err(e) => {
                 log::warn!("[ResourceService] Cannot generate AI description: {}", e);
                 return;
@@ -443,18 +460,28 @@ impl ResourceService {
         // Spawn async AI description generation for images (fire-and-forget)
         if req.mime_type.starts_with("image/")
             && self.ai_client.is_some()
-            && self.server_ai_config_service.is_some()
+            && self.user_ai_config_service.is_some()
         {
             let ai_client = self.ai_client.clone().unwrap();
-            let config_svc = self.server_ai_config_service.clone().unwrap();
+            let user_ai_config_service = self.user_ai_config_service.clone().unwrap();
             let pool = self.pool.clone();
             let storage = self.storage.clone();
             let rid = resource_id;
             let sp = storage_path.clone();
             let mime = req.mime_type.clone();
+            let uid = user_uuid;
             tokio::spawn(async move {
-                Self::generate_ai_description(ai_client, config_svc, pool, storage, rid, sp, mime)
-                    .await;
+                Self::generate_ai_description(
+                    ai_client,
+                    user_ai_config_service,
+                    pool,
+                    storage,
+                    rid,
+                    sp,
+                    mime,
+                    uid,
+                )
+                .await;
             });
         }
 

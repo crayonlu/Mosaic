@@ -379,12 +379,15 @@ pub async fn clip_content(
     payload: web::Json<ClipRequest>,
     clip_service: web::Data<ClipService>,
 ) -> HttpResponse {
-    let _user_id = match get_user_id(&req) {
+    let user_id = match get_user_id(&req) {
         Ok(id) => id,
         Err(e) => return HttpResponse::from_error(e),
     };
 
-    match clip_service.process_clip(payload.into_inner()).await {
+    match clip_service
+        .process_clip(&user_id, payload.into_inner())
+        .await
+    {
         Ok(result) => HttpResponse::Ok().json(result),
         Err(e) => HttpResponse::from_error(e),
     }

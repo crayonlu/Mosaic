@@ -2,7 +2,7 @@ use crate::error::AppError;
 use crate::models::{Diary, Memo, Resource};
 use crate::services::ai_client::{AiConfig, AiImageInput};
 use crate::services::bot_service::is_supported_ai_image_resource;
-use crate::services::{AiClient, AppSettingsService, ServerAiConfigService};
+use crate::services::{AiClient, AppSettingsService, ServerAiConfigService, UserAiConfigService};
 use crate::storage::traits::Storage;
 use chrono::{DateTime, Datelike, Duration, NaiveDate, TimeZone, Utc};
 use chrono_tz::Tz;
@@ -62,6 +62,7 @@ pub struct AiDiaryService {
     #[allow(dead_code)]
     storage: Arc<dyn Storage>,
     server_ai_config_service: ServerAiConfigService,
+    user_ai_config_service: Option<UserAiConfigService>,
     ai_client: AiClient,
     app_settings_service: AppSettingsService,
 }
@@ -78,9 +79,18 @@ impl AiDiaryService {
             pool,
             storage,
             server_ai_config_service,
+            user_ai_config_service: None,
             ai_client,
             app_settings_service,
         }
+    }
+
+    pub fn with_user_ai_config_service(
+        mut self,
+        user_ai_config_service: UserAiConfigService,
+    ) -> Self {
+        self.user_ai_config_service = Some(user_ai_config_service);
+        self
     }
 
     pub fn spawn_job_sweeper(&self) {
@@ -204,7 +214,27 @@ impl AiDiaryService {
             return Ok(DiaryJobOutcome::Skipped);
         }
 
-        let config = self.server_ai_config_service.get("bot").await?;
+        let config = if let Some(svc) = &self.user_ai_config_service {
+            let user_cfg = svc.get(&user_id).await?.ok_or(AppError::Processing(
+                "AI diary generation requires a configured AI model".to_string(),
+            ))?;
+            crate::models::ServerAiConfig {
+                key: "bot".to_string(),
+                provider: user_cfg.provider,
+                base_url: user_cfg.base_url,
+                api_key: user_cfg.api_key,
+                model: user_cfg.model,
+                temperature: user_cfg.temperature,
+                max_tokens: user_cfg.max_tokens,
+                timeout_seconds: user_cfg.timeout_seconds,
+                supports_vision: user_cfg.supports_vision,
+                supports_thinking: user_cfg.supports_thinking,
+                embedding_dim: None,
+                updated_at: user_cfg.updated_at,
+            }
+        } else {
+            self.server_ai_config_service.get("bot").await?
+        };
         if config.api_key.trim().is_empty()
             || config.model.trim().is_empty()
             || config.base_url.trim().is_empty()

@@ -1,11 +1,17 @@
 use crate::config::Config;
-use crate::models::{Memo, ServerAiConfigPayload, ServerAiConfigResponse};
-use crate::services::{AppSettingsService, MemoryEmbeddingService, ServerAiConfigService};
+use crate::middleware::get_user_id;
+use crate::models::{
+    Memo, ServerAiConfigPayload, ServerAiConfigResponse, UpsertUserAiConfigRequest,
+};
+use crate::services::{
+    AppSettingsService, MemoryEmbeddingService, ServerAiConfigService, UserAiConfigService,
+};
 use actix_web::{web, HttpRequest, HttpResponse};
 use chrono::{Datelike, NaiveDate, TimeZone};
 use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use super::activity_log::ActivityLog;
 
@@ -263,12 +269,54 @@ pub async fn config_endpoint(config: web::Data<Config>) -> HttpResponse {
     })
 }
 
+/// Convert a per-user UserAiConfig into the admin response shape (full api_key,
+/// since admins manage these). key is always "bot" for the chat model.
+fn user_config_to_response(c: crate::models::UserAiConfig) -> ServerAiConfigResponse {
+    ServerAiConfigResponse {
+        key: "bot".to_string(),
+        provider: c.provider,
+        base_url: c.base_url,
+        api_key: c.api_key,
+        model: c.model,
+        temperature: c.temperature,
+        max_tokens: c.max_tokens,
+        timeout_seconds: c.timeout_seconds,
+        supports_vision: c.supports_vision,
+        supports_thinking: c.supports_thinking,
+        embedding_dim: None,
+        updated_at: c.updated_at,
+    }
+}
+
+fn payload_to_user_upsert(p: ServerAiConfigPayload) -> UpsertUserAiConfigRequest {
+    UpsertUserAiConfigRequest {
+        provider: p.provider,
+        base_url: p.base_url,
+        api_key: p.api_key,
+        model: p.model,
+        temperature: p.temperature,
+        max_tokens: p.max_tokens,
+        timeout_seconds: p.timeout_seconds,
+        supports_vision: p.supports_vision,
+        supports_thinking: p.supports_thinking,
+    }
+}
+
 pub async fn get_ai_config(
+    req: HttpRequest,
     server_ai_config_service: web::Data<ServerAiConfigService>,
+    user_ai_config_service: web::Data<UserAiConfigService>,
 ) -> HttpResponse {
-    let bot = match server_ai_config_service.get("bot").await {
-        Ok(config) => ServerAiConfigResponse::from_config(config),
-        Err(e) => return HttpResponse::from_error(e),
+    // bot = the admin's own per-user chat config (None → empty default).
+    let bot = match get_user_id(&req) {
+        Ok(id) => match Uuid::parse_str(&id) {
+            Ok(uuid) => match user_ai_config_service.get(&uuid).await {
+                Ok(Some(c)) => user_config_to_response(c),
+                _ => empty_bot_response(),
+            },
+            Err(_) => empty_bot_response(),
+        },
+        Err(_) => empty_bot_response(),
     };
     let embedding = match server_ai_config_service.get("embedding").await {
         Ok(config) => ServerAiConfigResponse::from_config(config).without_runtime_capabilities(),
@@ -277,10 +325,29 @@ pub async fn get_ai_config(
     HttpResponse::Ok().json(AdminAiConfigResponse { bot, embedding })
 }
 
+fn empty_bot_response() -> ServerAiConfigResponse {
+    ServerAiConfigResponse {
+        key: "bot".to_string(),
+        provider: "openai".to_string(),
+        base_url: String::new(),
+        api_key: String::new(),
+        model: String::new(),
+        temperature: None,
+        max_tokens: None,
+        timeout_seconds: None,
+        supports_vision: false,
+        supports_thinking: false,
+        embedding_dim: None,
+        updated_at: 0,
+    }
+}
+
 pub async fn update_ai_config(
+    req: HttpRequest,
     path: web::Path<String>,
     payload: web::Json<ServerAiConfigPayload>,
     server_ai_config_service: web::Data<ServerAiConfigService>,
+    user_ai_config_service: web::Data<UserAiConfigService>,
 ) -> HttpResponse {
     let key = path.into_inner();
     if key != "bot" && key != "embedding" {
@@ -290,18 +357,63 @@ pub async fn update_ai_config(
         }));
     }
 
-    match server_ai_config_service
-        .upsert(&key, payload.into_inner())
+    if key == "embedding" {
+        return match server_ai_config_service
+            .upsert(&key, payload.into_inner())
+            .await
+        {
+            Ok(config) => HttpResponse::Ok()
+                .json(ServerAiConfigResponse::from_config(config).without_runtime_capabilities()),
+            Err(e) => HttpResponse::from_error(e),
+        };
+    }
+
+    // key == "bot" → upsert the admin's own per-user chat config.
+    let user_id = match get_user_id(&req) {
+        Ok(id) => id,
+        Err(e) => return HttpResponse::from_error(e),
+    };
+    let uuid = match Uuid::parse_str(&user_id) {
+        Ok(u) => u,
+        Err(_) => {
+            return HttpResponse::BadRequest()
+                .json(serde_json::json!({ "error": "Invalid user ID" }))
+        }
+    };
+    match user_ai_config_service
+        .upsert(&uuid, payload_to_user_upsert(payload.into_inner()))
         .await
     {
-        Ok(config) => {
-            let response = ServerAiConfigResponse::from_config(config);
-            if key == "embedding" {
-                HttpResponse::Ok().json(response.without_runtime_capabilities())
-            } else {
-                HttpResponse::Ok().json(response)
-            }
-        }
+        Ok(config) => HttpResponse::Ok().json(user_config_to_response(config)),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+/// Admin: get any user's chat (bot) AI config.
+pub async fn get_user_ai_config(
+    path: web::Path<Uuid>,
+    user_ai_config_service: web::Data<UserAiConfigService>,
+) -> HttpResponse {
+    let user_id = path.into_inner();
+    match user_ai_config_service.get(&user_id).await {
+        Ok(Some(c)) => HttpResponse::Ok().json(user_config_to_response(c)),
+        Ok(None) => HttpResponse::Ok().json(empty_bot_response()),
+        Err(e) => HttpResponse::from_error(e),
+    }
+}
+
+/// Admin: upsert any user's chat (bot) AI config.
+pub async fn upsert_user_ai_config(
+    path: web::Path<Uuid>,
+    payload: web::Json<ServerAiConfigPayload>,
+    user_ai_config_service: web::Data<UserAiConfigService>,
+) -> HttpResponse {
+    let user_id = path.into_inner();
+    match user_ai_config_service
+        .upsert(&user_id, payload_to_user_upsert(payload.into_inner()))
+        .await
+    {
+        Ok(config) => HttpResponse::Ok().json(user_config_to_response(config)),
         Err(e) => HttpResponse::from_error(e),
     }
 }

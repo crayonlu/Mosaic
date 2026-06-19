@@ -90,15 +90,13 @@ where
                             return service.call(req).await;
                         }
                         Err(_) => {
-                            return Err(
-                                ErrorUnauthorized(AppError::InvalidToken.to_string()).into()
-                            );
+                            return Err(ErrorUnauthorized(AppError::InvalidToken.to_string()));
                         }
                     }
                 }
             }
 
-            Err(ErrorUnauthorized("Unauthorized".to_string()).into())
+            Err(ErrorUnauthorized("Unauthorized".to_string()))
         })
     }
 }
@@ -107,5 +105,5 @@ pub fn get_user_id(req: &HttpRequest) -> Result<String, Error> {
     req.extensions()
         .get::<Claims>()
         .map(|claims| claims.sub.clone())
-        .ok_or_else(|| ErrorUnauthorized("Unauthorized".to_string()).into())
+        .ok_or_else(|| ErrorUnauthorized("Unauthorized".to_string()))
 }

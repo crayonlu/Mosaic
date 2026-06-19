@@ -108,6 +108,8 @@
   "aiConfig": {
     "title": "AI 模型配置",
     "refresh": "刷新",
+    "user": "用户",
+    "self": "你",
     "botModel": "Bot 模型",
     "embeddingModel": "Embedding 模型",
     "apiSpec": "API 规范",

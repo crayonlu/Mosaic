@@ -645,7 +645,7 @@ impl MemoService {
                     timeout_seconds: user_cfg.timeout_seconds,
                     supports_vision: user_cfg.supports_vision,
                     supports_thinking: user_cfg.supports_thinking,
-                    embedding_dim: user_cfg.embedding_dim,
+                    embedding_dim: None,
                     updated_at: user_cfg.updated_at,
                 };
 

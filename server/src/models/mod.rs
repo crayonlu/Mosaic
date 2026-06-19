@@ -64,3 +64,4 @@ pub use user::{
     PaginatedUsersResponse, RefreshTokenRequest, RefreshTokenResponse, UpdateManagedUserRequest,
     User, UserResponse,
 };
+pub use user_ai_config::{UpsertUserAiConfigRequest, UserAiConfig};

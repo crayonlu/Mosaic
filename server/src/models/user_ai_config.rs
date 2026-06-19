@@ -16,8 +16,6 @@ pub struct UserAiConfig {
     pub timeout_seconds: Option<i32>,
     pub supports_vision: bool,
     pub supports_thinking: bool,
-    pub embedding_model: Option<String>,
-    pub embedding_dim: Option<i32>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -34,8 +32,6 @@ pub struct UpsertUserAiConfigRequest {
     pub timeout_seconds: Option<i32>,
     pub supports_vision: Option<bool>,
     pub supports_thinking: Option<bool>,
-    pub embedding_model: Option<String>,
-    pub embedding_dim: Option<i32>,
 }
 
 #[derive(Debug, Serialize)]
@@ -50,8 +46,6 @@ pub struct UserAiConfigResponse {
     pub timeout_seconds: Option<i32>,
     pub supports_vision: bool,
     pub supports_thinking: bool,
-    pub embedding_model: Option<String>,
-    pub embedding_dim: Option<i32>,
     pub updated_at: i64,
 }
 
@@ -73,8 +67,6 @@ impl From<UserAiConfig> for UserAiConfigResponse {
             timeout_seconds: c.timeout_seconds,
             supports_vision: c.supports_vision,
             supports_thinking: c.supports_thinking,
-            embedding_model: c.embedding_model,
-            embedding_dim: c.embedding_dim,
             updated_at: c.updated_at,
         }
     }

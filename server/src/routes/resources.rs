@@ -105,7 +105,7 @@ pub async fn upload_resource(
                                 serde_json::json!({"error": "File too large, maximum size is 100MB"})
                             );
                         }
-                        if let Err(_) = temp_file.write_all(&bytes) {
+                        if temp_file.write_all(&bytes).is_err() {
                             return HttpResponse::InternalServerError().finish();
                         }
                     }
@@ -146,7 +146,7 @@ pub async fn upload_resource(
     }
 
     // Flush temp file to disk before reading
-    if let Err(_) = temp_file.flush() {
+    if temp_file.flush().is_err() {
         return HttpResponse::InternalServerError().finish();
     }
 
