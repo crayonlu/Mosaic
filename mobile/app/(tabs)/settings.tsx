@@ -1079,6 +1079,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 12,
+    gap: 12,
   },
   aboutLabel: {
     fontSize: 13,

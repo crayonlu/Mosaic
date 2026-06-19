@@ -1,4 +1,5 @@
 import { File, Paths } from 'expo-file-system'
+import { createDownloadResumable } from 'expo-file-system/legacy'
 import * as IntentLauncher from 'expo-intent-launcher'
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
@@ -78,8 +79,9 @@ export async function checkLatestRelease(): Promise<ReleaseInfo | null> {
 }
 
 /**
- * Download APK to local filesystem with real progress tracking
- * Uses fetch + ReadableStream to report download progress
+ * Download APK to local filesystem with real progress tracking.
+ * Uses expo-file-system's createDownloadResumable, whose native callback fires
+ * incremental progress (RN's fetch ReadableStream is unreliable and hangs at 0%).
  */
 export async function downloadApk(
   url: string,
@@ -92,57 +94,28 @@ export async function downloadApk(
     if (destination.exists) {
       destination.delete()
     }
-  } catch {}
-
-  // Fetch with streaming to track progress
-  const response = await fetch(url, {
-    headers: { Accept: 'application/octet-stream' },
-  })
-
-  if (!response.ok) {
-    throw new Error(`Download failed: HTTP ${response.status}`)
+  } catch {
+    // ignore — createDownloadResumable with idempotent handles overwrite
   }
 
-  const contentLength = Number(response.headers.get('content-length') || 0)
-  const reader = response.body?.getReader()
-
-  if (!reader) {
-    // Fallback: no streaming support, download without progress
-    const blob = await response.blob()
-    const arrayBuffer = await blob.arrayBuffer()
-    destination.write(new Uint8Array(arrayBuffer))
-    onProgress?.(100)
-    return destination
-  }
-
-  // Stream download with progress
-  const chunks: Uint8Array[] = []
-  let receivedBytes = 0
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    chunks.push(value)
-    receivedBytes += value.byteLength
-
-    if (contentLength > 0) {
-      const percent = Math.round((receivedBytes / contentLength) * 100)
-      onProgress?.(percent)
+  const resumable = createDownloadResumable(
+    url,
+    destination.uri,
+    {},
+    ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
+      if (totalBytesExpectedToWrite > 0) {
+        const percent = Math.round((totalBytesWritten / totalBytesExpectedToWrite) * 100)
+        onProgress?.(percent)
+      }
     }
+  )
+
+  const result = await resumable.downloadAsync()
+  if (!result || result.status < 200 || result.status >= 300) {
+    throw new Error(`Download failed: HTTP ${result?.status ?? 'unknown'}`)
   }
 
-  // Combine chunks and write to file
-  const fullBuffer = new Uint8Array(receivedBytes)
-  let offset = 0
-  for (const chunk of chunks) {
-    fullBuffer.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-
-  destination.write(fullBuffer)
   onProgress?.(100)
-
   return destination
 }
 
