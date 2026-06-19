@@ -110,7 +110,9 @@ function SettingsSection({
           {icon}
           <Text style={[styles.menuItemText, { color: theme.text }]}>{title}</Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <Text style={[styles.menuItemSubText, { color: theme.textSecondary }]}>{summary}</Text>
+            <View style={styles.menuItemSubText}>
+              <Text style={[{ color: theme.textSecondary, fontSize: 12 }]}>{summary}</Text>
+            </View>
           </View>
           {badge}
         </TouchableOpacity>
@@ -572,7 +574,7 @@ export default function SettingsScreen() {
       <SettingsSection
         icon={<Lock size={18} color={theme.text} />}
         title={t('changePassword.title')}
-        summary={showChangePassword ? t('settings.collapsed') : ''}
+        summary={showChangePassword ? t('settings.collapsed') : t('settings.expanded')}
         expanded={showChangePassword}
         onToggle={() => toggleSectionWithAnimation(setShowChangePassword)}
         contentStyle={{ padding: 12, gap: 10 }}
@@ -857,8 +859,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   menuItemSubText: {
-    fontSize: 12,
     flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
   },
   appearanceRow: {
     flexDirection: 'row',
