@@ -99,14 +99,14 @@ impl AuthService {
             &user.id.to_string(),
             &user.role,
             user.must_change_password,
-            900,
-        )?; // 15 min
+            3600 * 24 * 7,
+        )?; // 7 days
         let refresh_token = self.generate_token(
             &user.id.to_string(),
             &user.role,
             user.must_change_password,
-            3600 * 24 * 7,
-        )?;
+            3600 * 24 * 30,
+        )?; // 30 days;
 
         let must_change_password = user.must_change_password;
 
@@ -156,9 +156,10 @@ impl AuthService {
         .await?;
 
         // Return fresh tokens with mcp=false so clients don't need a separate refresh call
-        let new_access_token = self.generate_token(&user.id.to_string(), &user.role, false, 900)?;
-        let new_refresh_token =
+        let new_access_token =
             self.generate_token(&user.id.to_string(), &user.role, false, 3600 * 24 * 7)?;
+        let new_refresh_token =
+            self.generate_token(&user.id.to_string(), &user.role, false, 3600 * 24 * 30)?;
 
         Ok(RefreshTokenResponse {
             access_token: new_access_token,
@@ -281,14 +282,18 @@ impl AuthService {
             return Err(AppError::Forbidden("Account is disabled".to_string()));
         }
 
-        let new_access_token =
-            self.generate_token(&user_id, &user.role, user.must_change_password, 900)?; // 15 min
-        let new_refresh_token = self.generate_token(
+        let new_access_token = self.generate_token(
             &user_id,
             &user.role,
             user.must_change_password,
             3600 * 24 * 7,
-        )?;
+        )?; // 7 days
+        let new_refresh_token = self.generate_token(
+            &user_id,
+            &user.role,
+            user.must_change_password,
+            3600 * 24 * 30,
+        )?; // 30 days;
 
         Ok(RefreshTokenResponse {
             access_token: new_access_token,
