@@ -52,7 +52,8 @@ export function useSaveCustomPush() {
           day: triggerDateObj.getDate(),
           hour: triggerDateObj.getHours(),
           minute: triggerDateObj.getMinutes(),
-        }
+        },
+        data.name
       )
     },
     onSuccess: () => {

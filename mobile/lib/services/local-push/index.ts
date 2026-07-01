@@ -105,7 +105,8 @@ export class LocalPushService {
 
   registerNotification = async (
     content: NotificationContentInput,
-    trigger: SchedulableNotificationTriggerInput
+    trigger: SchedulableNotificationTriggerInput,
+    identifier?: string
   ) => {
     if (this.isPushDisabledByUser()) return
 
@@ -114,7 +115,11 @@ export class LocalPushService {
       if (!isGranted) throw new Error('Notification permission not granted')
     }
 
+    // A stable identifier makes scheduling idempotent: re-registering the same
+    // reminder (app boot, settings toggle) replaces the pending one instead of
+    // stacking a new duplicate on top of it.
     await getNotifications().scheduleNotificationAsync({
+      identifier,
       content,
       trigger,
     })

@@ -63,14 +63,20 @@ export const registerSystemNotifications = async () => {
   if (!archived && memoed) {
     await pushService.registerNotification(
       systemPushSchedule['archive-reminder'].content,
-      systemPushSchedule['archive-reminder'].trigger
+      systemPushSchedule['archive-reminder'].trigger,
+      'archive-reminder'
     )
+  } else {
+    await pushService.cancelNotification('archive-reminder')
   }
 
   if (!memoed) {
     await pushService.registerNotification(
       systemPushSchedule['memo-reminder'].content,
-      systemPushSchedule['memo-reminder'].trigger
+      systemPushSchedule['memo-reminder'].trigger,
+      'memo-reminder'
     )
+  } else {
+    await pushService.cancelNotification('memo-reminder')
   }
 }

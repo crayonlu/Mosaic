@@ -80,7 +80,8 @@ export const registerCustomNotifications = async () => {
         day,
         hour,
         minute,
-      }
+      },
+      data.name
     )
   }
 }
