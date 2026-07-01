@@ -640,16 +640,17 @@ export default function SettingsScreen() {
       onToggle={() => toggleSectionWithAnimation(setShowAboutSettings)}
       badge={
         appUpdate.hasUpdate && !appUpdate.downloading ? (
-          <View
+          <TouchableOpacity
             style={[
               styles.updateBadge,
               { backgroundColor: theme.primary, borderRadius: theme.radius.small },
             ]}
+            onPress={appUpdate.downloadAndInstall}
           >
             <Text style={[styles.updateBadgeText, { color: theme.onPrimary }]}>
               {t('settings.update')}
             </Text>
-          </View>
+          </TouchableOpacity>
         ) : undefined
       }
     >
@@ -680,7 +681,7 @@ export default function SettingsScreen() {
             </Text>
           )}
           {appUpdate.downloading && appUpdate.downloadProgress !== null && (
-            <View style={styles.progressContainer}>
+            <View style={[styles.progressContainer, { alignSelf: 'stretch' }]}>
               <View
                 style={[
                   styles.progressBar,
