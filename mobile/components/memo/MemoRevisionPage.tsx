@@ -6,6 +6,7 @@ import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { useTranslation } from 'react-i18next'
 import { stringUtils } from '@/lib/utils/string'
+import { useLocalResourceUriStore } from '@/stores/localResourceUriStore'
 import { useThemeStore } from '@/stores/themeStore'
 import type { BotReply, MemoRevision, MemoWithResources } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
@@ -34,6 +35,7 @@ export function MemoRevisionPage({
   const { t } = useTranslation()
   const { theme } = useThemeStore()
   const { headers: authHeaders } = useAuthHeaders()
+  const localUriByResourceId = useLocalResourceUriStore(state => state.localUriByResourceId)
 
   const content = isLatest ? memo.content : (revision?.content ?? '')
   const tags = isLatest ? memo.tags : (revision?.tags ?? [])
@@ -52,8 +54,9 @@ export function MemoRevisionPage({
         uri: resourcesApi.getDownloadUrl(r.id),
         type: r.resourceType,
         thumbnailUri: r.resourceType === 'video' ? resourcesApi.getThumbnailUrl(r.id) : undefined,
+        localUri: localUriByResourceId[r.id],
       })),
-    [memo.resources]
+    [memo.resources, localUriByResourceId]
   )
 
   return (

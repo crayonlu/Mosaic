@@ -34,11 +34,19 @@ export function MediaGridTile({
 }: MediaGridTileProps) {
   const { theme } = useThemeStore()
   const [imageError, setImageError] = useState(false)
+  const [localError, setLocalError] = useState(false)
+  const [remoteReady, setRemoteReady] = useState(false)
 
   // Reset error state when previewUri or previewHeaders change (e.g., auth headers loaded asynchronously)
   useEffect(() => {
     setImageError(false)
   }, [previewUri, previewHeaders])
+
+  // Reset local-optimistic state when the local asset changes (different resource)
+  useEffect(() => {
+    setLocalError(false)
+    setRemoteReady(false)
+  }, [item.localUri])
 
   const uploadOverlayColor = useMemo(() => withAlpha(theme.background, 0.14), [theme.background])
   const progressTrackColor = useMemo(() => withAlpha(theme.surface, 0.9), [theme.surface])
@@ -46,6 +54,22 @@ export function MediaGridTile({
   const videoBadgeIconColor = useMemo(() => withAlpha(theme.text, 0.98), [theme.text])
   const loadingBgColor = useMemo(() => withAlpha(theme.surface, 0.9), [theme.surface])
   const isUploading = typeof uploadProgress === 'number'
+
+  // Optimistic local-first: show the picker's local URI immediately while the
+  // remote thumbnail preloads in the background. Once the remote loads (or if
+  // there is no local URI), fall back to the remote `previewUri`.
+  const localUri = item.localUri
+  const hasLocal = Boolean(localUri) && !localError
+  const showLocal = hasLocal && !remoteReady
+  const displayUri = showLocal ? (localUri as string) : previewUri
+  const displayHeaders = showLocal ? undefined : previewHeaders
+  const remoteHeadersReady = isRemoteUri(previewUri)
+    ? Boolean(previewHeaders && Object.keys(previewHeaders).length > 0)
+    : true
+  const shouldPreloadRemote = showLocal && remoteHeadersReady && Boolean(previewUri)
+  const canRenderDisplay =
+    Boolean(displayUri) &&
+    (!isRemoteUri(displayUri) || (displayHeaders && Object.keys(displayHeaders).length > 0))
 
   const content = (
     <View style={styles.imageContainer}>
@@ -55,16 +79,34 @@ export function MediaGridTile({
           <View style={[styles.loadingDot, { backgroundColor: theme.textSecondary }]} />
           <View style={[styles.loadingDot, { backgroundColor: theme.textSecondary }]} />
         </View>
-      ) : previewUri &&
-        !imageError &&
-        (!isRemoteUri(previewUri) || (previewHeaders && Object.keys(previewHeaders).length > 0)) ? (
-        <Image
-          source={{ uri: previewUri, headers: previewHeaders }}
-          style={styles.image}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          onError={() => setImageError(true)}
-        />
+      ) : canRenderDisplay && !imageError ? (
+        <>
+          <Image
+            source={{ uri: displayUri, headers: displayHeaders }}
+            style={styles.image}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            onError={() => {
+              if (showLocal) {
+                // Local asset unavailable — fall back to remote immediately.
+                setLocalError(true)
+              } else {
+                setImageError(true)
+              }
+            }}
+          />
+          {/* Hidden remote preloader: warms the cache so the swap to the
+              remote URL is instant once it loads. */}
+          {shouldPreloadRemote && (
+            <Image
+              source={{ uri: previewUri, headers: previewHeaders }}
+              style={styles.preloadStub}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              onLoad={() => setRemoteReady(true)}
+            />
+          )}
+        </>
       ) : (
         <View style={[styles.errorFallback, { backgroundColor: theme.surface }]}>
           {item.type === 'image' ? (
@@ -143,6 +185,16 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+  // Full-size but fully transparent — exists only to trigger the remote
+  // image load at the tile's decode resolution so the swap is instant.
+  preloadStub: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0,
   },
   uploadOverlay: {
     ...StyleSheet.absoluteFillObject,

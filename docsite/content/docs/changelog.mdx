@@ -5,6 +5,23 @@ description: Release history
 
 # Changelog
 
+## v1.0.7 (2026-07-05)
+
+### 📱 Mobile
+
+- **Fix: Instant image display on new memos.** When you create a memo with images, the photos now render immediately from the local album URI instead of waiting for the server to serve them (which previously caused blank/broken thumbnails due to network + CORS latency). The grid tile shows the local asset right away, silently preloads the remote thumbnail in the background, and swaps to the remote URL the moment it finishes loading — so the image is always visible and the switch is seamless.
+
+---
+
+## v1.0.6 (2026-06-22)
+
+### 📱 Mobile
+
+- **Fix: Deduplicated local push notifications.** Repeated local notifications no longer stack up for the same event.
+- **Fix: Android install-package permission.** Granted `REQUEST_INSTALL_PACKAGES` so in-app update APK installation works without manual permission grants.
+- **Fix: Update badge & progress bar alignment.** The in-app update badge tap target and progress bar layout were corrected.
+
+---
 
 ## v1.0.5 (2026-06-15)
 
@@ -32,8 +49,6 @@ description: Release history
 
 ## v1.0.3 (2026-06-08)
 
-
-
 ### 🤖 AI Diary Archive
 
 - **Memo images now reach the AI.** The daily diary archive now sends memo images alongside text. Each memo gets its own AI message with its inline images, so the model can associate photos with the correct context. Budget: max 2 images per memo, 6 per diary.
@@ -57,7 +72,7 @@ description: Release history
 
 ---
 
- ## v1.0.2 (2026-05-28)
+## v1.0.2 (2026-05-28)
 
 ### ⚡ Performance
 

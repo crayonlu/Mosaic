@@ -4,6 +4,7 @@ import type { MediaGridItem } from '@/components/ui/DraggableImageGrid'
 import { useAuthHeaders } from '@/hooks/useAuthHeaders'
 import { normalizeContent } from '@/lib/utils/content'
 import { stringUtils } from '@/lib/utils/string'
+import { useLocalResourceUriStore } from '@/stores/localResourceUriStore'
 import { useThemeStore } from '@/stores/themeStore'
 import type { Memo } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
@@ -48,6 +49,7 @@ export const MemoCard = React.memo(
     const { t } = useTranslation()
     const { headers: authHeaders, ready: authReady } = useAuthHeaders()
     const [isOverflowing, setIsOverflowing] = useState(false)
+    const localUriByResourceId = useLocalResourceUriStore(state => state.localUriByResourceId)
 
     // Press scale animation
     const scale = useSharedValue(1)
@@ -90,8 +92,9 @@ export const MemoCard = React.memo(
             resource.resourceType === 'video'
               ? resourcesApi.getThumbnailUrl(resource.id)
               : undefined,
+          localUri: localUriByResourceId[resource.id],
         })),
-      [memo.resources]
+      [memo.resources, localUriByResourceId]
     )
 
     const handleDelete = useCallback(() => {

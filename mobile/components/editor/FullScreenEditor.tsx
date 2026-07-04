@@ -11,6 +11,7 @@ import {
 } from '@/lib/media/upload'
 import { SafeKeyboardAvoidingView } from '@/lib/native/safeProviders'
 import { normalizeContent } from '@/lib/utils/content'
+import { useLocalResourceUriStore } from '@/stores/localResourceUriStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { Share as ShareIcon, X } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -71,6 +72,7 @@ export function FullScreenEditor({
   const insets = useSafeAreaInsets()
   const { canUseNetwork } = useConnection()
   const { headers: authHeaders } = useAuthHeaders()
+  const setLocalUri = useLocalResourceUriStore(state => state.setLocalUri)
   const {
     summary,
     loading: summaryLoading,
@@ -189,6 +191,12 @@ export function FullScreenEditor({
                 entry.id === item.key ? { ...entry, progress: progress.percent } : entry
               )
             )
+          },
+          // Remember each freshly-uploaded resource's local asset URI so the
+          // memo card can show it instantly and swap to the remote URL once
+          // the server image actually loads.
+          onFileComplete: (item, resource) => {
+            setLocalUri(resource.id, item.uri)
           },
         })
         uploadedResourceIds.push(...uploadedResources.map(resource => resource.id))
