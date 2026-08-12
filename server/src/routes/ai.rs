@@ -1,8 +1,10 @@
 use crate::middleware::get_user_id;
 use crate::services::build_ai_system_prompt;
+use crate::services::retry::with_retry;
 use crate::services::{AiClient, UserAiConfigService};
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 use uuid::Uuid;
 
 #[derive(Deserialize)]
@@ -65,9 +67,23 @@ pub async fn summarize(
     let user_message = AiClient::build_user_message(&prompt, &[], &ai_config.provider);
     let system_prompt = build_ai_system_prompt();
 
-    let reply = match ai_client
-        .send_ai_messages(&ai_config, system_prompt, vec![user_message], None)
-        .await
+    let reply = match with_retry(
+        || {
+            let client = ai_client.clone();
+            let config = ai_config.clone();
+            let system_prompt = system_prompt.clone();
+            let user_message = user_message.clone();
+            async move {
+                client
+                    .send_ai_messages(&config, system_prompt, vec![user_message], None)
+                    .await
+                    .map_err(|error| crate::error::AppError::Internal(error.to_string()))
+            }
+        },
+        2,
+        Duration::from_secs(60),
+    )
+    .await
     {
         Ok(r) => r,
         Err(e) => {
@@ -136,9 +152,23 @@ pub async fn suggest_tags(
     let user_message = AiClient::build_user_message(&prompt, &[], &ai_config.provider);
     let system_prompt = build_ai_system_prompt();
 
-    let reply = match ai_client
-        .send_ai_messages(&ai_config, system_prompt, vec![user_message], None)
-        .await
+    let reply = match with_retry(
+        || {
+            let client = ai_client.clone();
+            let config = ai_config.clone();
+            let system_prompt = system_prompt.clone();
+            let user_message = user_message.clone();
+            async move {
+                client
+                    .send_ai_messages(&config, system_prompt, vec![user_message], None)
+                    .await
+                    .map_err(|error| crate::error::AppError::Internal(error.to_string()))
+            }
+        },
+        2,
+        Duration::from_secs(60),
+    )
+    .await
     {
         Ok(r) => r,
         Err(e) => {
@@ -149,41 +179,15 @@ pub async fn suggest_tags(
         }
     };
 
-    let mut raw = reply.content.trim().to_string();
-    if raw.is_empty() {
-        return HttpResponse::Ok().json(SuggestTagsResponse { tags: vec![] });
-    }
-
-    // Strip markdown code fences if present
-    raw = raw
-        .trim_start_matches("```json")
-        .trim_start_matches("```")
-        .trim_end_matches("```")
-        .trim()
-        .to_string();
-
-    // Extract JSON array brackets for robust parsing (handles text before/after array)
-    let start = raw.find('[').unwrap_or(0);
-    let end = raw.rfind(']').map(|i| i + 1).unwrap_or(raw.len());
-
-    // Try to parse JSON array from response
-    let mut tags: Vec<String> = match serde_json::from_str(&raw[start..end]) {
-        Ok(t) => t,
-        Err(_) => {
-            // Fallback: split by common delimiters
-            let mut fallback: Vec<String> = raw
-                .split([',', '\n'])
-                .map(|s| s.trim().trim_matches('"').trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect();
-            fallback.sort();
-            fallback.dedup();
-            fallback
+    let tags = match AiClient::parse_tag_list(&reply.content) {
+        Ok(tags) => tags,
+        Err(error) => {
+            log::warn!("[AISuggestTags] failed to parse AI response: {}", error);
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "AI returned an invalid tag response"
+            }));
         }
     };
-
-    tags.sort();
-    tags.dedup();
 
     HttpResponse::Ok().json(SuggestTagsResponse { tags })
 }

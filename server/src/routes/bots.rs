@@ -183,7 +183,10 @@ pub async fn trigger_replies(
     };
 
     let memo_id = path.into_inner();
-    match bot_service.trigger_replies(&user_id, memo_id).await {
+    match bot_service
+        .trigger_replies_manually(&user_id, memo_id)
+        .await
+    {
         Ok(_) => {
             activity_log.record_info(
                 "trigger_replies",

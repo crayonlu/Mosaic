@@ -59,6 +59,22 @@ impl MemoryEmbeddingService {
         memo: &Memo,
         revision_context: Option<&str>,
     ) -> Result<(), AppError> {
+        self.refresh_for_memo_at_version(
+            memo,
+            revision_context,
+            memo.revision_count,
+            memo.updated_at,
+        )
+        .await
+    }
+
+    pub async fn refresh_for_memo_at_version(
+        &self,
+        memo: &Memo,
+        revision_context: Option<&str>,
+        expected_revision: i32,
+        expected_updated_at: i64,
+    ) -> Result<(), AppError> {
         let source_text = self.build_source_text(memo, revision_context);
         let now = chrono::Utc::now().timestamp_millis();
         let config = self.server_ai_config_service.get("embedding").await.ok();
@@ -73,6 +89,35 @@ impl MemoryEmbeddingService {
             .as_ref()
             .map(|config| config.model.clone())
             .unwrap_or_else(|| "fallback".to_string());
+
+        // The vector is generated outside the transaction because the network
+        // call can take seconds. Lock the memo only for the final compare-and-
+        // swap so an older generation can never replace a newer embedding.
+        let mut tx = self.pool.begin().await.map_err(AppError::Database)?;
+        let current = sqlx::query_as::<_, (i32, i64)>(
+            "SELECT revision_count, updated_at
+             FROM memos
+             WHERE id = $1 AND is_deleted = false
+             FOR UPDATE",
+        )
+        .bind(memo.id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(AppError::Database)?;
+
+        let is_current = current
+            .map(|(revision, updated_at)| {
+                revision == expected_revision && updated_at == expected_updated_at
+            })
+            .unwrap_or(false);
+        if !is_current {
+            log::info!(
+                "[MemoryEmbeddingService] discarded stale embedding for memo {} revision {}",
+                memo.id,
+                expected_revision
+            );
+            return Ok(());
+        }
 
         sqlx::query(
             "INSERT INTO memo_embeddings (memo_id, source_text, provider, model, embedding, updated_at)
@@ -90,9 +135,11 @@ impl MemoryEmbeddingService {
         .bind(model)
         .bind(Vector::from(embedding))
         .bind(now)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .map_err(AppError::Database)?;
+
+        tx.commit().await.map_err(AppError::Database)?;
 
         Ok(())
     }

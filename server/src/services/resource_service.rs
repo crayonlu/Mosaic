@@ -6,6 +6,7 @@ use crate::models::{
     Resource, ResourceResponse,
 };
 use crate::services::ai_client::{AiClient, AiConfig, AiImageInput};
+use crate::services::retry::with_retry;
 use crate::services::{ImageProcessor, ServerAiConfigService, UserAiConfigService, VideoProcessor};
 use crate::storage::traits::Storage;
 use bytes::Bytes;
@@ -14,6 +15,7 @@ use serde_json::{Map, Value};
 use sqlx::PgPool;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::process::Command;
 use uuid::Uuid;
 
@@ -335,23 +337,37 @@ impl ResourceService {
             max_tokens: config.max_tokens,
         };
 
-        let description = match ai_client
-            .send_ai_messages(&ai_config, String::new(), vec![message], None)
-            .await
-        {
-            Ok(reply) => {
-                let desc = reply.content.trim().to_string();
-                if desc.is_empty() {
-                    None
-                } else {
-                    Some(desc)
+        let description = match with_retry(
+            || {
+                let client = ai_client.clone();
+                let config = ai_config.clone();
+                let message = message.clone();
+                async move {
+                    let reply = client
+                        .send_ai_messages(&config, String::new(), vec![message], None)
+                        .await
+                        .map_err(|error| AppError::Internal(error.to_string()))?;
+                    let description = reply.content.trim().to_string();
+                    if description.is_empty() {
+                        Err(AppError::Internal(
+                            "AI returned an empty image description".to_string(),
+                        ))
+                    } else {
+                        Ok(description)
+                    }
                 }
-            }
-            Err(e) => {
+            },
+            2,
+            Duration::from_secs(60),
+        )
+        .await
+        {
+            Ok(description) => Some(description),
+            Err(error) => {
                 log::warn!(
-                    "[ResourceService] AI description failed for resource {}: {}",
+                    "[ResourceService] AI description failed for resource {} after retries: {}",
                     resource_id,
-                    e
+                    error
                 );
                 None
             }
@@ -359,11 +375,15 @@ impl ResourceService {
 
         if let Some(desc) = description {
             if let Err(e) = sqlx::query(
-                "UPDATE resources SET ai_description = $1, updated_at = $2 WHERE id = $3",
+                "UPDATE resources
+                 SET ai_description = $1, updated_at = $2
+                 WHERE id = $3 AND user_id = $4 AND is_deleted = false
+                   AND ai_description IS NULL",
             )
             .bind(&desc)
             .bind(chrono::Utc::now().timestamp_millis())
             .bind(resource_id)
+            .bind(user_id)
             .execute(&pool)
             .await
             {

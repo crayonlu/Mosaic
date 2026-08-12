@@ -12,7 +12,8 @@ use crate::storage::traits::Storage;
 use chrono::Utc;
 use chrono_tz::Tz;
 use serde_json::json;
-use sqlx::PgPool;
+use sqlx::{pool::PoolConnection, PgPool, Postgres};
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 use uuid::Uuid;
@@ -330,16 +331,12 @@ impl BotService {
             created_at: i64,
             bot_name: String,
             bot_avatar_url: Option<String>,
-            thread_count: i64,
-            latest_reply_id: Uuid,
         }
 
         let rows = sqlx::query_as::<_, ReplyRow>(
             "SELECT br.id, br.memo_id, br.bot_id, br.content, br.thinking_content, br.parent_reply_id,
                     br.user_question, br.revision_number, br.created_at,
-                    b.name as bot_name, b.avatar_url as bot_avatar_url,
-                    COUNT(*) OVER (PARTITION BY br.memo_id, br.bot_id) as thread_count,
-                    FIRST_VALUE(br.id) OVER (PARTITION BY br.memo_id, br.bot_id ORDER BY br.created_at DESC) as latest_reply_id
+                    b.name as bot_name, b.avatar_url as bot_avatar_url
              FROM bot_replies br
              JOIN bots b ON b.id = br.bot_id
              WHERE br.memo_id = $1 AND b.user_id = $2
@@ -351,9 +348,58 @@ impl BotService {
         .await
         .map_err(AppError::Database)?;
 
+        // The old implementation could create two automatic roots for one
+        // memo/bot/revision. Keep those rows for auditability, but expose only
+        // one root (and its descendants) so old data does not look duplicated.
+        let parent_by_id: HashMap<Uuid, Option<Uuid>> = rows
+            .iter()
+            .map(|row| (row.id, row.parent_reply_id))
+            .collect();
+        let mut canonical_root_keys = HashSet::new();
+        let mut duplicate_root_ids = HashSet::new();
+        for row in &rows {
+            if row.parent_reply_id.is_none() && row.user_question.is_none() {
+                let key = (row.memo_id, row.bot_id, row.revision_number);
+                if !canonical_root_keys.insert(key) {
+                    duplicate_root_ids.insert(row.id);
+                }
+            }
+        }
+
+        let discarded_ids: HashSet<Uuid> = rows
+            .iter()
+            .filter(|row| {
+                is_descendant_of_discarded_root(row.id, &parent_by_id, &duplicate_root_ids)
+            })
+            .map(|row| row.id)
+            .collect();
+        let mut thread_counts: HashMap<(Uuid, Uuid, Option<i32>), i64> = HashMap::new();
+        let mut latest_replies: HashMap<(Uuid, Uuid, Option<i32>), (i64, Uuid)> = HashMap::new();
+        for row in &rows {
+            if discarded_ids.contains(&row.id) {
+                continue;
+            }
+            let key = (row.memo_id, row.bot_id, row.revision_number);
+            *thread_counts.entry(key).or_default() += 1;
+            let latest = latest_replies
+                .entry(key)
+                .or_insert((row.created_at, row.id));
+            if (row.created_at, row.id) > *latest {
+                *latest = (row.created_at, row.id);
+            }
+        }
+
         let all_replies: Vec<BotReplyResponse> = rows
             .into_iter()
+            .filter(|row| !discarded_ids.contains(&row.id))
             .map(|r| BotReplyResponse {
+                thread_count: *thread_counts
+                    .get(&(r.memo_id, r.bot_id, r.revision_number))
+                    .unwrap_or(&1),
+                latest_reply_id: latest_replies
+                    .get(&(r.memo_id, r.bot_id, r.revision_number))
+                    .map(|(_, id)| *id)
+                    .unwrap_or(r.id),
                 id: r.id,
                 memo_id: r.memo_id,
                 bot: BotSummary {
@@ -368,8 +414,6 @@ impl BotService {
                 revision_number: r.revision_number,
                 created_at: r.created_at,
                 children: vec![],
-                thread_count: r.thread_count,
-                latest_reply_id: r.latest_reply_id,
             })
             .collect();
 
@@ -398,6 +442,18 @@ impl BotService {
     }
 
     pub async fn trigger_replies(&self, user_id: &str, memo_id: Uuid) -> Result<(), AppError> {
+        self.trigger_replies_internal(user_id, memo_id).await
+    }
+
+    pub async fn trigger_replies_manually(
+        &self,
+        user_id: &str,
+        memo_id: Uuid,
+    ) -> Result<(), AppError> {
+        self.trigger_replies_internal(user_id, memo_id).await
+    }
+
+    async fn trigger_replies_internal(&self, user_id: &str, memo_id: Uuid) -> Result<(), AppError> {
         let user_uuid = Uuid::parse_str(user_id)
             .map_err(|e| AppError::InvalidInput(format!("Invalid user_id: {}", e)))?;
         let ai_config = self.load_user_ai_config(&user_uuid).await?;
@@ -417,9 +473,12 @@ impl BotService {
         let memo_content = if memo.revision_count > 1 {
             let revisions = sqlx::query_as::<_, crate::models::MemoRevision>(
                 "SELECT id, memo_id, user_id, revision_number, content, tags, ai_summary, is_deleted, created_at
-                 FROM memo_revisions WHERE memo_id = $1 AND is_deleted = false ORDER BY revision_number ASC",
+                 FROM memo_revisions
+                 WHERE memo_id = $1 AND revision_number <= $2 AND is_deleted = false
+                 ORDER BY revision_number ASC",
             )
             .bind(memo_id)
+            .bind(memo.revision_count)
             .fetch_all(&self.pool)
             .await
             .map_err(|e| {
@@ -470,13 +529,26 @@ impl BotService {
             None => chrono_tz::Asia::Shanghai,
         };
 
+        // Acquire the session-level advisory lock only after all fallible setup
+        // work is complete. This prevents an early return from handing a
+        // pooled connection back with the lock still held.
+        let Some(generation_connection) = self.try_acquire_generation_lock(memo_id).await? else {
+            log::info!(
+                "[BotService] skipped duplicate trigger for memo {} because another generation is running",
+                memo_id
+            );
+            return Ok(());
+        };
+
         let pool = self.pool.clone();
         let memo_content = memo_content.clone();
         let ai_config = std::sync::Arc::new(ai_config);
         let ai_client = self.ai_client.clone();
         let memory_context_service = self.memory_context_service.clone();
+        let generation_key = memo_id.to_string();
 
         tokio::spawn(async move {
+            let mut generation_connection = generation_connection;
             let mut handles = vec![];
             for bot in bots {
                 let pool = pool.clone();
@@ -487,8 +559,33 @@ impl BotService {
                 let ai_client = ai_client.clone();
                 let memory_context_service = memory_context_service.clone();
                 let memo_user_id = memo.user_id;
+                let revision_number = memo.revision_count;
 
                 handles.push(tokio::spawn(async move {
+                    let already_generated: bool = sqlx::query_scalar(
+                        "SELECT EXISTS(
+                            SELECT 1 FROM bot_replies
+                            WHERE memo_id = $1 AND bot_id = $2
+                              AND parent_reply_id IS NULL AND user_question IS NULL
+                              AND revision_number = $3
+                        )",
+                    )
+                    .bind(memo_id)
+                    .bind(bot.id)
+                    .bind(revision_number)
+                    .fetch_one(&pool)
+                    .await
+                    .unwrap_or(false);
+                    if already_generated {
+                        log::info!(
+                            "[BotService] skipped existing auto reply for memo {} bot {} revision {}",
+                            memo_id,
+                            bot.id,
+                            revision_number
+                        );
+                        return;
+                    }
+
                     if let (Some(svc), Some(ctx)) = (&memory_context_service, &memory_context) {
                         let _ = svc
                             .persist_for_bot(memo_user_id, memo_id, bot.id, ctx)
@@ -529,19 +626,48 @@ impl BotService {
 
                     if let Ok(reply) = retry_result {
                         let now = Utc::now().timestamp_millis();
-                        let _ = sqlx::query(
-                            "INSERT INTO bot_replies (id, memo_id, bot_id, content, thinking_content, parent_reply_id, user_question, revision_number, created_at)
-                             VALUES ($1, $2, $3, $4, $5, NULL, NULL, $6, $7)",
+                        match sqlx::query(
+                            "INSERT INTO bot_replies
+                                (id, memo_id, bot_id, content, thinking_content,
+                                 parent_reply_id, user_question, revision_number, created_at)
+                             SELECT $1, $2, $3, $4, $5, NULL, NULL, $6, $7
+                             WHERE EXISTS (
+                                 SELECT 1 FROM memos
+                                 WHERE id = $2 AND user_id = $8 AND is_deleted = false
+                                   AND revision_count = $6
+                             )
+                               AND NOT EXISTS (
+                                   SELECT 1 FROM bot_replies
+                                   WHERE memo_id = $2 AND bot_id = $3
+                                     AND parent_reply_id IS NULL AND user_question IS NULL
+                                     AND revision_number = $6
+                               )",
                         )
                         .bind(Uuid::new_v4())
                         .bind(memo_id)
                         .bind(bot.id)
                         .bind(&reply.content)
                         .bind(&reply.thinking_content)
-                        .bind(memo.revision_count)
+                        .bind(revision_number)
                         .bind(now)
+                        .bind(memo_user_id)
                         .execute(&pool)
-                        .await;
+                        .await
+                        {
+                            Ok(result) if result.rows_affected() == 1 => {}
+                            Ok(_) => log::info!(
+                                "[BotService] discarded stale/duplicate auto reply for memo {} bot {} revision {}",
+                                memo_id,
+                                bot.id,
+                                revision_number
+                            ),
+                            Err(error) => log::error!(
+                                "[BotService] failed to persist auto reply for memo {} bot {}: {}",
+                                memo_id,
+                                bot.id,
+                                error
+                            ),
+                        }
                     }
                 }));
             }
@@ -549,9 +675,33 @@ impl BotService {
             for handle in handles {
                 let _ = handle.await;
             }
+
+            let _ = sqlx::query("SELECT pg_advisory_unlock(hashtextextended($1::text, 0))")
+                .bind(generation_key)
+                .execute(&mut *generation_connection)
+                .await;
         });
 
         Ok(())
+    }
+
+    async fn try_acquire_generation_lock(
+        &self,
+        memo_id: Uuid,
+    ) -> Result<Option<PoolConnection<Postgres>>, AppError> {
+        let mut connection = self.pool.acquire().await.map_err(AppError::Database)?;
+        let acquired: bool =
+            sqlx::query_scalar("SELECT pg_try_advisory_lock(hashtextextended($1::text, 0))")
+                .bind(memo_id.to_string())
+                .fetch_one(&mut *connection)
+                .await
+                .map_err(AppError::Database)?;
+
+        if acquired {
+            Ok(Some(connection))
+        } else {
+            Ok(None)
+        }
     }
 
     pub async fn reply_to_bot(
@@ -568,6 +718,8 @@ impl BotService {
         struct ParentRow {
             memo_id: Uuid,
             bot_id: Uuid,
+            parent_revision_number: Option<i32>,
+            current_revision_number: i32,
             memo_content: String,
             bot_name: String,
             bot_avatar_url: Option<String>,
@@ -576,7 +728,8 @@ impl BotService {
         }
 
         let parent = sqlx::query_as::<_, ParentRow>(
-            "SELECT br.memo_id, br.bot_id,
+            "SELECT br.memo_id, br.bot_id, br.revision_number as parent_revision_number,
+                    m.revision_count as current_revision_number,
                     m.content as memo_content,
                     b.name as bot_name, b.avatar_url as bot_avatar_url, b.description as bot_description,
                     b.model as bot_model
@@ -677,10 +830,15 @@ impl BotService {
 
         let now = Utc::now().timestamp_millis();
         let new_id = Uuid::new_v4();
+        let revision_number = parent
+            .parent_revision_number
+            .unwrap_or(parent.current_revision_number);
 
         sqlx::query(
-            "INSERT INTO bot_replies (id, memo_id, bot_id, content, thinking_content, parent_reply_id, user_question, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            "INSERT INTO bot_replies
+                (id, memo_id, bot_id, content, thinking_content, parent_reply_id,
+                 user_question, revision_number, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
         )
         .bind(new_id)
         .bind(parent.memo_id)
@@ -689,6 +847,7 @@ impl BotService {
         .bind(&reply.thinking_content)
         .bind(parent_reply_id)
         .bind(&req.question)
+        .bind(revision_number)
         .bind(now)
         .execute(&self.pool)
         .await
@@ -723,7 +882,7 @@ impl BotService {
             thinking_content: reply.thinking_content,
             parent_reply_id: Some(parent_reply_id),
             user_question: Some(req.question),
-            revision_number: None,
+            revision_number: Some(revision_number),
             created_at: now,
             children: vec![],
             thread_count: thread.replies.len() as i64 + 1,
@@ -762,7 +921,22 @@ impl BotService {
         .ok_or(AppError::NotFound("Bot reply not found".into()))?;
 
         let replies = sqlx::query_as::<_, ThreadReplyRow>(
-            "SELECT br.id, br.content, br.thinking_content, br.user_question,
+            "WITH RECURSIVE thread_edges AS (
+                    SELECT id, parent_reply_id AS connected_id
+                    FROM bot_replies
+                    WHERE memo_id = $1 AND bot_id = $2 AND parent_reply_id IS NOT NULL
+                    UNION ALL
+                    SELECT parent_reply_id AS id, id AS connected_id
+                    FROM bot_replies
+                    WHERE memo_id = $1 AND bot_id = $2 AND parent_reply_id IS NOT NULL
+                ), thread_replies(id) AS (
+                    SELECT $3::uuid
+                    UNION
+                    SELECT edges.connected_id
+                    FROM thread_replies current
+                    JOIN thread_edges edges ON edges.id = current.id
+                )
+             SELECT br.id, br.content, br.thinking_content, br.user_question,
                     COALESCE(
                         ARRAY_AGG(brr.resource_id ORDER BY brr.sort_order)
                             FILTER (WHERE brr.resource_id IS NOT NULL),
@@ -772,11 +946,13 @@ impl BotService {
              FROM bot_replies br
              LEFT JOIN bot_reply_resources brr ON brr.reply_id = br.id
              WHERE br.memo_id = $1 AND br.bot_id = $2
+               AND br.id IN (SELECT id FROM thread_replies)
              GROUP BY br.id, br.content, br.thinking_content, br.user_question, br.created_at
              ORDER BY br.created_at ASC",
         )
         .bind(seed.memo_id)
         .bind(seed.bot_id)
+        .bind(reply_id)
         .fetch_all(&self.pool)
         .await
         .map_err(AppError::Database)?;
@@ -988,13 +1164,42 @@ fn build_reply_tree(replies: Vec<BotReplyResponse>) -> Vec<BotReplyResponse> {
         }
     }
 
-    for root in &mut roots {
-        if let Some(children) = children_map.remove(&root.id) {
-            root.children = children;
-        }
-    }
-
     roots
+        .into_iter()
+        .map(|root| attach_reply_children(root, &mut children_map))
+        .collect()
+}
+
+fn attach_reply_children(
+    mut reply: BotReplyResponse,
+    children_map: &mut std::collections::HashMap<Uuid, Vec<BotReplyResponse>>,
+) -> BotReplyResponse {
+    if let Some(children) = children_map.remove(&reply.id) {
+        reply.children = children
+            .into_iter()
+            .map(|child| attach_reply_children(child, children_map))
+            .collect();
+    }
+    reply
+}
+
+fn is_descendant_of_discarded_root(
+    reply_id: Uuid,
+    parent_by_id: &HashMap<Uuid, Option<Uuid>>,
+    discarded_root_ids: &HashSet<Uuid>,
+) -> bool {
+    let mut current = Some(reply_id);
+    let mut visited = HashSet::new();
+    while let Some(id) = current {
+        if discarded_root_ids.contains(&id) {
+            return true;
+        }
+        if !visited.insert(id) {
+            break;
+        }
+        current = parent_by_id.get(&id).copied().flatten();
+    }
+    false
 }
 
 #[derive(sqlx::FromRow, Clone)]
