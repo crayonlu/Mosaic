@@ -1,19 +1,21 @@
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { ArrowUp, Maximize2 } from 'lucide-react-native'
-import { useEffect, useRef, useState } from 'react'
-import { Keyboard, Pressable, StyleSheet, TextInput, View } from 'react-native'
+import { useCallback, useRef, useState } from 'react'
+import { Pressable, StyleSheet, TextInput, View } from 'react-native'
 import Animated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
 import { FullScreenEditor } from './FullScreenEditor'
+import { useSafeKeyboardHandler } from '@/lib/native/safeProviders'
 
 const COLLAPSED_HEIGHT = 48
 const EXPANDED_HEIGHT = 130
-const ANIM_DURATION = 200
+const FALLBACK_ANIM_DURATION = 200
 
 interface MemoInputProps {
   onSubmit?: (content: string, tags: string[], resources: string[], aiSummary?: string) => void
@@ -41,43 +43,67 @@ export function MemoInput({
   const wrapperHeight = useSharedValue(COLLAPSED_HEIGHT)
   const expandProgress = useSharedValue(0)
 
-  useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', () => {
-      wrapperHeight.value = withTiming(EXPANDED_HEIGHT, {
-        duration: ANIM_DURATION,
-        easing: Easing.out(Easing.cubic),
-      })
-      expandProgress.value = withTiming(1, {
-        duration: ANIM_DURATION,
-        easing: Easing.out(Easing.cubic),
-      })
-    })
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      inputRef.current?.blur()
-      wrapperHeight.value = withTiming(COLLAPSED_HEIGHT, {
-        duration: ANIM_DURATION,
-        easing: Easing.out(Easing.cubic),
-      })
-      expandProgress.value = withTiming(0, {
-        duration: ANIM_DURATION,
-        easing: Easing.out(Easing.cubic),
-      })
-    })
-    return () => {
-      showSub.remove()
-      hideSub.remove()
-    }
-  }, [wrapperHeight, expandProgress])
+  const blurInput = useCallback(() => {
+    inputRef.current?.blur()
+  }, [])
 
-  const handleFocus = () => {
+  // Keep the input expansion on the UI thread and in sync with the native keyboard progress.
+  useSafeKeyboardHandler(
+    {
+      onStart: e => {
+        'worklet'
+        const progress = e.height > 0 ? 1 : 0
+        const duration = e.duration > 0 ? e.duration : FALLBACK_ANIM_DURATION
+        const timingConfig = {
+          duration,
+          easing: Easing.out(Easing.cubic),
+        }
+        wrapperHeight.value = withTiming(
+          COLLAPSED_HEIGHT + (EXPANDED_HEIGHT - COLLAPSED_HEIGHT) * progress,
+          timingConfig
+        )
+        expandProgress.value = withTiming(progress, timingConfig)
+      },
+      onMove: e => {
+        'worklet'
+        wrapperHeight.value = COLLAPSED_HEIGHT + (EXPANDED_HEIGHT - COLLAPSED_HEIGHT) * e.progress
+        expandProgress.value = e.progress
+      },
+      onInteractive: e => {
+        'worklet'
+        wrapperHeight.value = COLLAPSED_HEIGHT + (EXPANDED_HEIGHT - COLLAPSED_HEIGHT) * e.progress
+        expandProgress.value = e.progress
+      },
+      onEnd: e => {
+        'worklet'
+        const progress = e.height > 0 ? 1 : 0
+        const duration = e.duration > 0 ? e.duration : FALLBACK_ANIM_DURATION
+        const timingConfig = {
+          duration,
+          easing: Easing.out(Easing.cubic),
+        }
+        wrapperHeight.value = withTiming(
+          COLLAPSED_HEIGHT + (EXPANDED_HEIGHT - COLLAPSED_HEIGHT) * progress,
+          timingConfig
+        )
+        expandProgress.value = withTiming(progress, timingConfig)
+        if (e.height === 0) {
+          runOnJS(blurInput)()
+        }
+      },
+    },
+    []
+  )
+
+  const handleFocus = useCallback(() => {
     setIsFocused(true)
     onFocusChange?.(true)
-  }
+  }, [onFocusChange])
 
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
     setIsFocused(false)
     onFocusChange?.(false)
-  }
+  }, [onFocusChange])
 
   const wrapperAnimStyle = useAnimatedStyle(() => ({
     height: wrapperHeight.value,
@@ -89,23 +115,21 @@ export function MemoInput({
     overflow: 'hidden' as const,
   }))
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (!text.trim() || disabled) return
     onSubmit?.(text, [], [])
     setText('')
-    inputRef.current?.blur()
-  }
+    blurInput()
+  }, [text, disabled, onSubmit, blurInput])
 
-  const handleFullScreenSubmit = (
-    content: string,
-    submitTags: string[],
-    resources: string[],
-    aiSummary?: string
-  ) => {
-    onSubmit?.(content, submitTags, resources, aiSummary)
-    setIsFullScreenVisible(false)
-    setText('')
-  }
+  const handleFullScreenSubmit = useCallback(
+    (content: string, submitTags: string[], resources: string[], aiSummary?: string) => {
+      onSubmit?.(content, submitTags, resources, aiSummary)
+      setIsFullScreenVisible(false)
+      setText('')
+    },
+    [onSubmit]
+  )
 
   const hasText = text.trim().length > 0
 

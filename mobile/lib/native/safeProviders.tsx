@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react'
+import type { KeyboardHandler } from 'react-native-keyboard-controller'
 import { Animated, ScrollView, View } from 'react-native'
 
 // ─── Safe BootSplash ─────────────────────────────────────────────
@@ -212,13 +213,7 @@ export function SafeKeyboardAwareScrollView({
   )
 }
 
-type KeyboardHandlerCallbacks = {
-  onStart?: (e: { height: number }) => void
-  onMove?: (e: { height: number }) => void
-  onEnd?: (e: { height: number }) => void
-}
-
-export function useSafeKeyboardHandler(handlers: KeyboardHandlerCallbacks, deps: any[] = []) {
+export function useSafeKeyboardHandler(handlers: KeyboardHandler, deps: unknown[] = []) {
   if (!keyboardControllerModule) {
     return
   }

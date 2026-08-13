@@ -6,6 +6,7 @@ import {
   BottomSheetScrollView,
   type BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet'
+import { useFocusEffect } from 'expo-router'
 import { Calendar, Filter } from 'lucide-react-native'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -33,12 +34,22 @@ export function SearchFilters({
   onArchivedChange,
 }: SearchFiltersProps) {
   const { theme } = useThemeStore()
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const sheetRef = useRef<BottomSheetModal>(null)
+  const [isScreenFocused, setIsScreenFocused] = useState(false)
   const [activeDateTarget, setActiveDateTarget] = useState<'start' | 'end' | null>(null)
 
-  // Force full remount of BottomSheetModal on language change to prevent auto re-present
-  const sheetKey = `filter-sheet-${i18n.language}`
+  useFocusEffect(
+    useCallback(() => {
+      setIsScreenFocused(true)
+
+      return () => {
+        sheetRef.current?.dismiss()
+        setActiveDateTarget(null)
+        setIsScreenFocused(false)
+      }
+    }, [])
+  )
 
   const [tempSelectedTags, setTempSelectedTags] = useState<string[]>(selectedTags)
   const [tempIsArchived, setTempIsArchived] = useState<boolean | undefined>(isArchived)
@@ -149,156 +160,156 @@ export function SearchFilters({
         </TouchableOpacity>
       </View>
 
-      <BottomSheetModal
-        key={sheetKey}
-        ref={sheetRef}
-        index={0}
-        snapPoints={snapPoints}
-        enablePanDownToClose
-        backdropComponent={renderBackdrop}
-        backgroundStyle={sheetBgStyle}
-        handleIndicatorStyle={sheetIndicatorStyle}
-        keyboardBehavior="interactive"
-        onChange={() => {}}
-      >
-        <BottomSheetScrollView
-          style={styles.modalBody}
-          contentContainerStyle={styles.modalBodyContent}
+      {isScreenFocused && (
+        <BottomSheetModal
+          ref={sheetRef}
+          index={0}
+          snapPoints={snapPoints}
+          enablePanDownToClose
+          backdropComponent={renderBackdrop}
+          backgroundStyle={sheetBgStyle}
+          handleIndicatorStyle={sheetIndicatorStyle}
+          keyboardBehavior="interactive"
         >
-          <View style={{ flex: 1 }}>
-            <View style={styles.filterSection}>
-              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-                {t('search.archiveStatus')}
-              </Text>
-              <View style={styles.archiveOptions}>
-                {archiveOptions.map(option => (
-                  <TouchableOpacity
-                    key={String(option.value)}
-                    style={[
-                      styles.archiveOption,
-                      {
-                        backgroundColor:
-                          tempIsArchived === option.value ? theme.primary : theme.surfaceMuted,
-                        borderColor: 'transparent',
-                        borderRadius: theme.radius.medium,
-                      },
-                    ]}
-                    onPress={() => setTempIsArchived(option.value as boolean | undefined)}
-                  >
-                    <Text
-                      style={[
-                        styles.archiveOptionText,
-                        { color: tempIsArchived === option.value ? theme.onPrimary : theme.text },
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {availableTags.length > 0 && (
+          <BottomSheetScrollView
+            style={styles.modalBody}
+            contentContainerStyle={styles.modalBodyContent}
+          >
+            <View style={{ flex: 1 }}>
               <View style={styles.filterSection}>
                 <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-                  {t('searchFilters.tags')}
+                  {t('search.archiveStatus')}
                 </Text>
-                <View style={styles.tagsContainer}>
-                  {availableTags.map(tag => (
-                    <TouchableOpacity key={tag} onPress={() => toggleTag(tag)}>
-                      <Badge
-                        text={tag}
-                        variant={tempSelectedTags.includes(tag) ? 'solid' : 'outline'}
-                      />
+                <View style={styles.archiveOptions}>
+                  {archiveOptions.map(option => (
+                    <TouchableOpacity
+                      key={String(option.value)}
+                      style={[
+                        styles.archiveOption,
+                        {
+                          backgroundColor:
+                            tempIsArchived === option.value ? theme.primary : theme.surfaceMuted,
+                          borderColor: 'transparent',
+                          borderRadius: theme.radius.medium,
+                        },
+                      ]}
+                      onPress={() => setTempIsArchived(option.value as boolean | undefined)}
+                    >
+                      <Text
+                        style={[
+                          styles.archiveOptionText,
+                          { color: tempIsArchived === option.value ? theme.onPrimary : theme.text },
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               </View>
-            )}
 
-            <View style={styles.filterSection}>
-              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-                {t('searchFilters.dateRange')}
-              </Text>
-              <View style={styles.dateRangeContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.dateButton,
-                    {
-                      backgroundColor: theme.surfaceMuted,
-                      borderColor: 'transparent',
-                      borderRadius: theme.radius.medium,
-                    },
-                  ]}
-                  onPress={() => setActiveDateTarget('start')}
-                >
-                  <Calendar size={16} color={theme.textSecondary} />
-                  <Text
-                    style={[
-                      styles.dateButtonText,
-                      { color: tempStartDate ? theme.text : theme.textSecondary },
-                    ]}
-                  >
-                    {formatDate(tempStartDate) || t('searchFilters.startDate')}
+              {availableTags.length > 0 && (
+                <View style={styles.filterSection}>
+                  <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+                    {t('searchFilters.tags')}
                   </Text>
-                </TouchableOpacity>
-                <Text style={[styles.dateSeparator, { color: theme.textSecondary }]}>
-                  {t('searchFilters.to')}
+                  <View style={styles.tagsContainer}>
+                    {availableTags.map(tag => (
+                      <TouchableOpacity key={tag} onPress={() => toggleTag(tag)}>
+                        <Badge
+                          text={tag}
+                          variant={tempSelectedTags.includes(tag) ? 'solid' : 'outline'}
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.filterSection}>
+                <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+                  {t('searchFilters.dateRange')}
                 </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.dateButton,
-                    {
-                      backgroundColor: theme.surfaceMuted,
-                      borderColor: 'transparent',
-                      borderRadius: theme.radius.medium,
-                    },
-                  ]}
-                  onPress={() => setActiveDateTarget('end')}
-                >
-                  <Calendar size={16} color={theme.textSecondary} />
-                  <Text
+                <View style={styles.dateRangeContainer}>
+                  <TouchableOpacity
                     style={[
-                      styles.dateButtonText,
-                      { color: tempEndDate ? theme.text : theme.textSecondary },
+                      styles.dateButton,
+                      {
+                        backgroundColor: theme.surfaceMuted,
+                        borderColor: 'transparent',
+                        borderRadius: theme.radius.medium,
+                      },
                     ]}
+                    onPress={() => setActiveDateTarget('start')}
                   >
-                    {formatDate(tempEndDate) || t('searchFilters.endDate')}
+                    <Calendar size={16} color={theme.textSecondary} />
+                    <Text
+                      style={[
+                        styles.dateButtonText,
+                        { color: tempStartDate ? theme.text : theme.textSecondary },
+                      ]}
+                    >
+                      {formatDate(tempStartDate) || t('searchFilters.startDate')}
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.dateSeparator, { color: theme.textSecondary }]}>
+                    {t('searchFilters.to')}
                   </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.dateButton,
+                      {
+                        backgroundColor: theme.surfaceMuted,
+                        borderColor: 'transparent',
+                        borderRadius: theme.radius.medium,
+                      },
+                    ]}
+                    onPress={() => setActiveDateTarget('end')}
+                  >
+                    <Calendar size={16} color={theme.textSecondary} />
+                    <Text
+                      style={[
+                        styles.dateButtonText,
+                        { color: tempEndDate ? theme.text : theme.textSecondary },
+                      ]}
+                    >
+                      {formatDate(tempEndDate) || t('searchFilters.endDate')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-          <View style={[styles.modalFooter, { borderTopColor: theme.border }]}>
-            <TouchableOpacity
-              style={[
-                styles.resetButton,
-                {
-                  backgroundColor: theme.surfaceMuted,
-                  borderColor: 'transparent',
-                  borderRadius: theme.radius.medium,
-                },
-              ]}
-              onPress={clearFilters}
-            >
-              <Text style={[styles.resetButtonText, { color: theme.text }]}>
-                {t('common.reset')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.applyButton,
-                { backgroundColor: theme.primary, borderRadius: theme.radius.medium },
-              ]}
-              onPress={handleApplyFilters}
-            >
-              <Text style={[styles.applyButtonText, { color: theme.onPrimary }]}>
-                {t('common.apply')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </BottomSheetScrollView>
-      </BottomSheetModal>
+            <View style={[styles.modalFooter, { borderTopColor: theme.border }]}>
+              <TouchableOpacity
+                style={[
+                  styles.resetButton,
+                  {
+                    backgroundColor: theme.surfaceMuted,
+                    borderColor: 'transparent',
+                    borderRadius: theme.radius.medium,
+                  },
+                ]}
+                onPress={clearFilters}
+              >
+                <Text style={[styles.resetButtonText, { color: theme.text }]}>
+                  {t('common.reset')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.applyButton,
+                  { backgroundColor: theme.primary, borderRadius: theme.radius.medium },
+                ]}
+                onPress={handleApplyFilters}
+              >
+                <Text style={[styles.applyButtonText, { color: theme.onPrimary }]}>
+                  {t('common.apply')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </BottomSheetScrollView>
+        </BottomSheetModal>
+      )}
 
       <DatePickerSheet
         visible={activeDateTarget !== null}
