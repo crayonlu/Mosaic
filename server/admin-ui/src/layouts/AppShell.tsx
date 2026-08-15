@@ -4,6 +4,8 @@ import {
   ChartLine,
   GearSix,
   List,
+  Monitor,
+  Moon,
   Robot,
   SignOut,
   Sun,
@@ -145,7 +147,13 @@ function Topbar() {
             className="flex size-[40px] items-center justify-center rounded-md text-ink-secondary transition-colors hover:bg-subtle hover:text-ink md:size-8"
             aria-label={themeLabel}
           >
-            <Sun size={16} />
+            {theme.preference === "dark" ? (
+              <Moon size={16} />
+            ) : theme.preference === "light" ? (
+              <Sun size={16} />
+            ) : (
+              <Monitor size={16} />
+            )}
           </button>
         </AppTooltip>
         <button

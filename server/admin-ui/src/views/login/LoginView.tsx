@@ -1,4 +1,13 @@
-import { Eye, EyeSlash, Globe, Lock, Sun, User } from "@phosphor-icons/react"
+import {
+  Eye,
+  EyeSlash,
+  Globe,
+  Lock,
+  Monitor,
+  Moon,
+  Sun,
+  User,
+} from "@phosphor-icons/react"
 import { useState, type FormEvent, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -79,7 +88,13 @@ export default function LoginView() {
             className="flex size-10 items-center justify-center rounded-md text-ink-tertiary transition-colors hover:bg-subtle hover:text-ink"
             aria-label={t("nav.theme")}
           >
-            <Sun size={16} />
+            {theme.preference === "dark" ? (
+              <Moon size={16} />
+            ) : theme.preference === "light" ? (
+              <Sun size={16} />
+            ) : (
+              <Monitor size={16} />
+            )}
           </button>
         </AppTooltip>
       </div>

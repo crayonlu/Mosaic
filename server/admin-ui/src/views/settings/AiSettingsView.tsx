@@ -191,31 +191,46 @@ function ChatFormFields({
           }
         />
       </Field>
-      <div className="flex flex-col gap-3">
-        <span className="text-[13px] font-medium text-ink">
-          {t("aiSettings.capabilities")}
-        </span>
-        <span className="-mt-2 text-xs text-ink-tertiary">
-          {t("aiSettings.capabilitiesDesc")}
-        </span>
-        <label className="flex cursor-pointer items-center gap-2.5">
-          <AppSwitch
-            checked={form.supportsVision}
-            onCheckedChange={(v) => onChange({ ...form, supportsVision: v })}
-          />
-          <span className="text-[13px] text-ink">{t("aiSettings.vision")}</span>
-        </label>
-        <label className="flex cursor-pointer items-center gap-2.5">
-          <AppSwitch
-            checked={form.supportsThinking}
-            onCheckedChange={(v) => onChange({ ...form, supportsThinking: v })}
-          />
-          <span className="text-[13px] text-ink">
-            {t("aiSettings.thinking")}
+      <div className="space-y-3">
+        <div>
+          <span className="text-[13px] font-medium text-ink">
+            {t("aiSettings.capabilities")}
           </span>
-        </label>
+          <span className="block text-xs text-ink-tertiary">
+            {t("aiSettings.capabilitiesDesc")}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <CapabilityRow
+            label={t("aiSettings.vision")}
+            checked={form.supportsVision}
+            onChange={(v) => onChange({ ...form, supportsVision: v })}
+          />
+          <CapabilityRow
+            label={t("aiSettings.thinking")}
+            checked={form.supportsThinking}
+            onChange={(v) => onChange({ ...form, supportsThinking: v })}
+          />
+        </div>
       </div>
     </div>
+  )
+}
+
+function CapabilityRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string
+  checked: boolean
+  onChange: (v: boolean) => void
+}) {
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md bg-subtle px-3 py-2.5">
+      <span className="text-[13px] font-medium text-ink">{label}</span>
+      <AppSwitch checked={checked} onCheckedChange={onChange} />
+    </label>
   )
 }
 
