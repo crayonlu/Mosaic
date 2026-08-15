@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useRef } from 'react'
 import type { KeyboardHandler } from 'react-native-keyboard-controller'
 import { Animated, ScrollView, View } from 'react-native'
 
@@ -218,4 +218,13 @@ export function useSafeKeyboardHandler(handlers: KeyboardHandler, deps: unknown[
     return
   }
   keyboardControllerModule.useKeyboardHandler(handlers, deps)
+}
+
+/** RN Animated (native driver) keyboard progress — safe no-op when the module is missing. */
+export function useSafeKeyboardAnimation() {
+  const fallback = useRef(new Animated.Value(0)).current
+  if (!keyboardControllerModule) {
+    return { progress: fallback, height: fallback }
+  }
+  return keyboardControllerModule.useKeyboardAnimation()
 }

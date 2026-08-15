@@ -5,14 +5,13 @@ import { toast } from '@/components/ui'
 import { useConnection } from '@/hooks/useConnection'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
-import { SafeKeyboardStickyView } from '@/lib/native/safeProviders'
+import { SafeKeyboardStickyView, useSafeKeyboardAnimation } from '@/lib/native/safeProviders'
 import { useCreateMemo, useDeleteMemo } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { type MemoWithResources } from '@mosaic/api'
 import { router } from 'expo-router'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { StyleSheet, View } from 'react-native'
+import { Animated, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const TAB_BAR_HEIGHT = 54
@@ -25,10 +24,19 @@ export default function HomeScreen() {
   const { confirm } = useToastConfirm()
   const { mutateAsync: createMemo, isPending: isCreating } = useCreateMemo()
   const { mutateAsync: deleteMemo, isPending: isDeleting } = useDeleteMemo()
-  const [inputFocused, setInputFocused] = useState(false)
   const insets = useSafeAreaInsets()
+  const { progress } = useSafeKeyboardAnimation()
 
   const isPending = isCreating || isDeleting
+
+  // Fade the input frame border in/out in sync with the keyboard animation via the
+  // RN Animated native driver (an overlay whose opacity follows keyboard progress).
+  // Flipping the border on focus/blur is wrong (blur fires only after the keyboard
+  // fully collapses), and per-frame Reanimated prop updates cause frame drops here.
+  const borderFadeOpacity = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  })
 
   const handleMemoPress = (memo: MemoWithResources) => {
     router.push({ pathname: '/memo/[id]', params: { id: memo.id } })
@@ -95,17 +103,19 @@ export default function HomeScreen() {
             styles.inputContainer,
             {
               backgroundColor: theme.background,
-              borderColor: inputFocused ? theme.border : 'transparent',
-              borderTopLeftRadius: inputFocused ? 12 : 0,
-              borderTopRightRadius: inputFocused ? 12 : 0,
-              paddingVertical: inputFocused ? 12 : 8,
             },
           ]}
         >
-          <MemoInput
-            onSubmit={handleSubmit}
-            onFocusChange={setInputFocused}
-            disabled={!canUseNetwork || isPending}
+          <MemoInput onSubmit={handleSubmit} disabled={!canUseNetwork || isPending} />
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.inputBorder,
+              {
+                borderColor: theme.border,
+                opacity: borderFadeOpacity,
+              },
+            ]}
           />
         </View>
       </SafeKeyboardStickyView>
@@ -129,7 +139,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   inputContainer: {
-    paddingHorizontal: 12,
+    padding: 12,
+  },
+  inputBorder: {
+    ...StyleSheet.absoluteFillObject,
     borderWidth: 1,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
 })

@@ -14,12 +14,6 @@ import { Pencil, Trash2 } from 'lucide-react-native'
 import React, { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native'
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
 
 const TEXT_MAX_HEIGHT = 160
 
@@ -47,25 +41,9 @@ export const MemoCard = React.memo(
   }: MemoCardProps) {
     const { theme } = useThemeStore()
     const { t } = useTranslation()
-    const { headers: authHeaders, ready: authReady } = useAuthHeaders()
+    const { headers: authHeaders } = useAuthHeaders()
     const [isOverflowing, setIsOverflowing] = useState(false)
     const localUriByResourceId = useLocalResourceUriStore(state => state.localUriByResourceId)
-
-    // Press scale animation
-    const scale = useSharedValue(1)
-    const animatedStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value }],
-    }))
-
-    const handlePressIn = useCallback(() => {
-      if (showPressFeedback) {
-        scale.value = withTiming(0.99, { duration: 120, easing: Easing.out(Easing.cubic) })
-      }
-    }, [showPressFeedback, scale])
-
-    const handlePressOut = useCallback(() => {
-      scale.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) })
-    }, [scale])
 
     const handleTextLayout = useCallback(
       (e: LayoutChangeEvent) => {
@@ -105,120 +83,112 @@ export const MemoCard = React.memo(
     // so text fades to truly transparent, never clashing with page-level
     // gradients (e.g., mood-based diary background).
     return (
-      <Animated.View style={animatedStyle}>
-        <Pressable
-          onPress={onPress}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          disabled={!onPress}
-          style={({ pressed }) => [
-            styles.container,
-            {
-              backgroundColor: isSelected
-                ? theme.surface
-                : pressed && showPressFeedback
-                  ? theme.surfaceMuted
-                  : 'transparent',
-              borderRadius: theme.radius.medium,
-            },
-          ]}
-        >
-          {showSemanticBadge && (
-            <View
-              style={[
-                styles.semanticBadge,
-                { backgroundColor: theme.semantic.infoSoft, borderColor: theme.info },
-              ]}
-            >
-              <Text style={[styles.semanticBadgeText, { color: theme.info }]}>
-                {t('components.memoCard.semantic')}
-              </Text>
-            </View>
-          )}
-          <View style={styles.contentContainer}>
-            {displayContent && (
-              <View style={styles.textContentOuter}>
-                {isOverflowing ? (
-                  <MaskedView
-                    style={{ maxHeight: TEXT_MAX_HEIGHT }}
-                    maskElement={
-                      <LinearGradient
-                        colors={['white', 'transparent']}
-                        locations={[0.7, 1]}
-                        style={{ flex: 1 }}
-                      />
-                    }
-                  >
-                    <View>
-                      <MarkdownRenderer content={displayContent} />
-                    </View>
-                  </MaskedView>
-                ) : (
-                  <View onLayout={handleTextLayout}>
+      <Pressable
+        onPress={onPress}
+        disabled={!onPress}
+        style={({ pressed }) => [
+          styles.container,
+          {
+            backgroundColor: isSelected
+              ? theme.surface
+              : pressed && showPressFeedback
+                ? theme.surfaceMuted
+                : 'transparent',
+            borderRadius: theme.radius.medium,
+          },
+        ]}
+      >
+        {showSemanticBadge && (
+          <View
+            style={[
+              styles.semanticBadge,
+              { backgroundColor: theme.semantic.infoSoft, borderColor: theme.info },
+            ]}
+          >
+            <Text style={[styles.semanticBadgeText, { color: theme.info }]}>
+              {t('components.memoCard.semantic')}
+            </Text>
+          </View>
+        )}
+        <View style={styles.contentContainer}>
+          {displayContent && (
+            <View style={styles.textContentOuter}>
+              {isOverflowing ? (
+                <MaskedView
+                  style={{ maxHeight: TEXT_MAX_HEIGHT }}
+                  maskElement={
+                    <LinearGradient
+                      colors={['white', 'transparent']}
+                      locations={[0.7, 1]}
+                      style={{ flex: 1 }}
+                    />
+                  }
+                >
+                  <View>
                     <MarkdownRenderer content={displayContent} />
                   </View>
+                </MaskedView>
+              ) : (
+                <View onLayout={handleTextLayout}>
+                  <MarkdownRenderer content={displayContent} />
+                </View>
+              )}
+            </View>
+          )}
+
+          {mediaItems.length > 0 && (
+            <View style={styles.imageGridContainer}>
+              <DraggableImageGrid items={mediaItems} authHeaders={authHeaders} draggable={false} />
+            </View>
+          )}
+        </View>
+
+        {(memo.tags.length > 0 || showActions || showTimestamp) && (
+          <View style={styles.metadataContainer}>
+            {memo.tags.length > 0 && (
+              <View style={styles.tagsRow}>
+                {memo.tags.slice(0, 3).map(tag => (
+                  <Badge key={tag} text={`#${tag}`} variant="outline" size="small" />
+                ))}
+                {memo.tags.length > 3 && (
+                  <Text style={[styles.moreTags, { color: theme.textSecondary }]}>
+                    +{memo.tags.length - 3}
+                  </Text>
                 )}
               </View>
             )}
 
-            {mediaItems.length > 0 && (
-              <View style={styles.imageGridContainer}>
-                <DraggableImageGrid
-                  items={mediaItems}
-                  authHeaders={authHeaders}
-                  draggable={false}
-                />
-              </View>
-            )}
-          </View>
-
-          {(memo.tags.length > 0 || showActions || showTimestamp) && (
-            <View style={styles.metadataContainer}>
-              {memo.tags.length > 0 && (
-                <View style={styles.tagsRow}>
-                  {memo.tags.slice(0, 3).map(tag => (
-                    <Badge key={tag} text={`#${tag}`} variant="outline" size="small" />
-                  ))}
-                  {memo.tags.length > 3 && (
-                    <Text style={[styles.moreTags, { color: theme.textSecondary }]}>
-                      +{memo.tags.length - 3}
-                    </Text>
+            <View style={[styles.rightSection, memo.tags.length === 0 ? { width: '100%' } : {}]}>
+              {showTimestamp && (
+                <Text style={[styles.timestamp, { color: theme.textSecondary }]}>
+                  {formattedTime}
+                </Text>
+              )}
+              {(memo.revisionCount ?? 0) > 1 && (
+                <View style={[styles.editedBadge, { backgroundColor: theme.surfaceMuted }]}>
+                  <Pencil size={10} color={theme.textSecondary} strokeWidth={2} />
+                  <Text style={[styles.editedBadgeText, { color: theme.textSecondary }]}>
+                    {t('components.memoCard.edited')}
+                  </Text>
+                </View>
+              )}
+              {showActions && (
+                <View style={styles.actionsContainer}>
+                  {onDelete && (
+                    <Pressable
+                      onPress={handleDelete}
+                      style={styles.actionButton}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Trash2 size={16} color={theme.textSecondary} strokeWidth={2} />
+                    </Pressable>
                   )}
                 </View>
               )}
-
-              <View style={[styles.rightSection, memo.tags.length === 0 ? { width: '100%' } : {}]}>
-                {showTimestamp && (
-                  <Text style={[styles.timestamp, { color: theme.textSecondary }]}>
-                    {formattedTime}
-                  </Text>
-                )}
-                {(memo.revisionCount ?? 0) > 1 && (
-                  <View style={[styles.editedBadge, { backgroundColor: theme.surfaceMuted }]}>
-                    <Pencil size={10} color={theme.textSecondary} strokeWidth={2} />
-                    <Text style={[styles.editedBadgeText, { color: theme.textSecondary }]}>
-                      {t('components.memoCard.edited')}
-                    </Text>
-                  </View>
-                )}
-                {showActions && (
-                  <View style={styles.actionsContainer}>
-                    {onDelete && (
-                      <Pressable
-                        onPress={handleDelete}
-                        style={styles.actionButton}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <Trash2 size={16} color={theme.textSecondary} strokeWidth={2} />
-                      </Pressable>
-                    )}
-                  </View>
-                )}
-              </View>
             </View>
-          )}
-        </Pressable>
-      </Animated.View>
+          </View>
+        )}
+      </Pressable>
     )
   },
   (prevProps, nextProps) => {

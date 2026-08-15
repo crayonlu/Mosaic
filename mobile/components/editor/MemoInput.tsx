@@ -3,19 +3,13 @@ import { useThemeStore } from '@/stores/themeStore'
 import { ArrowUp, Maximize2 } from 'lucide-react-native'
 import { useCallback, useRef, useState } from 'react'
 import { Pressable, StyleSheet, TextInput, View } from 'react-native'
-import Animated, {
-  Easing,
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
+import { runOnJS } from 'react-native-reanimated'
 import { FullScreenEditor } from './FullScreenEditor'
 import { useSafeKeyboardHandler } from '@/lib/native/safeProviders'
 
 const COLLAPSED_HEIGHT = 48
 const EXPANDED_HEIGHT = 130
-const FALLBACK_ANIM_DURATION = 200
+const TOOLBAR_HEIGHT = 40
 
 interface MemoInputProps {
   onSubmit?: (content: string, tags: string[], resources: string[], aiSummary?: string) => void
@@ -40,53 +34,24 @@ export function MemoInput({
   const [text, setText] = useState('')
   const [isFocused, setIsFocused] = useState(false)
 
-  const wrapperHeight = useSharedValue(COLLAPSED_HEIGHT)
-  const expandProgress = useSharedValue(0)
-
   const blurInput = useCallback(() => {
     inputRef.current?.blur()
   }, [])
 
-  // Keep the input expansion on the UI thread and in sync with the native keyboard progress.
+  // The wrapper height is static (snapped on focus/blur): animating height from the
+  // keyboard progress relayouts the subtree every frame and causes frame drops.
   useSafeKeyboardHandler(
     {
       onStart: e => {
         'worklet'
-        const progress = e.height > 0 ? 1 : 0
-        const duration = e.duration > 0 ? e.duration : FALLBACK_ANIM_DURATION
-        const timingConfig = {
-          duration,
-          easing: Easing.out(Easing.cubic),
+        // Collapse the input as soon as the keyboard starts hiding, so it does not
+        // stay expanded until blur (blur fires only after the keyboard is gone).
+        if (e.progress === 0) {
+          runOnJS(blurInput)()
         }
-        wrapperHeight.value = withTiming(
-          COLLAPSED_HEIGHT + (EXPANDED_HEIGHT - COLLAPSED_HEIGHT) * progress,
-          timingConfig
-        )
-        expandProgress.value = withTiming(progress, timingConfig)
-      },
-      onMove: e => {
-        'worklet'
-        wrapperHeight.value = COLLAPSED_HEIGHT + (EXPANDED_HEIGHT - COLLAPSED_HEIGHT) * e.progress
-        expandProgress.value = e.progress
-      },
-      onInteractive: e => {
-        'worklet'
-        wrapperHeight.value = COLLAPSED_HEIGHT + (EXPANDED_HEIGHT - COLLAPSED_HEIGHT) * e.progress
-        expandProgress.value = e.progress
       },
       onEnd: e => {
         'worklet'
-        const progress = e.height > 0 ? 1 : 0
-        const duration = e.duration > 0 ? e.duration : FALLBACK_ANIM_DURATION
-        const timingConfig = {
-          duration,
-          easing: Easing.out(Easing.cubic),
-        }
-        wrapperHeight.value = withTiming(
-          COLLAPSED_HEIGHT + (EXPANDED_HEIGHT - COLLAPSED_HEIGHT) * progress,
-          timingConfig
-        )
-        expandProgress.value = withTiming(progress, timingConfig)
         if (e.height === 0) {
           runOnJS(blurInput)()
         }
@@ -104,16 +69,6 @@ export function MemoInput({
     setIsFocused(false)
     onFocusChange?.(false)
   }, [onFocusChange])
-
-  const wrapperAnimStyle = useAnimatedStyle(() => ({
-    height: wrapperHeight.value,
-  }))
-
-  const toolbarAnimStyle = useAnimatedStyle(() => ({
-    opacity: expandProgress.value,
-    height: expandProgress.value * 40,
-    overflow: 'hidden' as const,
-  }))
 
   const handleSubmit = useCallback(() => {
     if (!text.trim() || disabled) return
@@ -135,18 +90,17 @@ export function MemoInput({
 
   return (
     <>
-      <Animated.View
+      <View
         style={[
           styles.wrapper,
           {
             backgroundColor: theme.surfaceMuted,
-            borderColor: isFocused ? theme.border : 'transparent',
             borderRadius: theme.radius.medium,
             opacity: disabled ? theme.state.disabledOpacity : 1,
             paddingTop: 12,
-            paddingBottom: isFocused ? 4 : 12,
+            height: isFocused ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
+            borderColor: 'transparent',
           },
-          wrapperAnimStyle,
         ]}
       >
         {/* Input area: single-line collapsed, multiline expanded */}
@@ -185,8 +139,14 @@ export function MemoInput({
           )}
         </View>
 
-        {/* Toolbar — only visible when expanded, animated height */}
-        <Animated.View style={[styles.toolbar, toolbarAnimStyle]}>
+        {/* Toolbar — only visible when expanded, height snapped with focus */}
+        <View
+          style={[
+            styles.toolbar,
+            { height: isFocused ? TOOLBAR_HEIGHT : 0 },
+            { opacity: isFocused ? 1 : 0 },
+          ]}
+        >
           <Pressable
             onPress={() => setIsFullScreenVisible(true)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -212,8 +172,8 @@ export function MemoInput({
               strokeWidth={2.5}
             />
           </Pressable>
-        </Animated.View>
-      </Animated.View>
+        </View>
+      </View>
 
       <FullScreenEditor
         visible={isFullScreenVisible}
@@ -232,6 +192,7 @@ const styles = StyleSheet.create({
   wrapper: {
     borderWidth: 1,
     paddingHorizontal: 14,
+    paddingBottom: 12,
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',

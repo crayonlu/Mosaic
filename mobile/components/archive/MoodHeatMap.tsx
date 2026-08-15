@@ -6,7 +6,6 @@ import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -89,7 +88,7 @@ function HeatMapSkeleton() {
   )
 }
 
-function AnimatedDayCell({
+function DayCell({
   cell,
   borderColor,
   onPress,
@@ -98,34 +97,18 @@ function AnimatedDayCell({
   borderColor: string
   onPress: () => void
 }) {
-  const scale = useSharedValue(1)
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }))
-
-  const handlePressIn = () => {
-    scale.value = withTiming(0.92, { duration: 100, easing: Easing.out(Easing.cubic) })
-  }
-
-  const handlePressOut = () => {
-    scale.value = withTiming(1, { duration: 160, easing: Easing.out(Easing.cubic) })
-  }
-
+  // Plain View on purpose: 180+ Reanimated-backed cells in the list header made
+  // scrolling janky on Android (each cell registered shared-value/animated-style
+  // worklets that Fabric had to diff on every mount).
   return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-    >
-      <Animated.View
+    <Pressable onPress={onPress} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
+      <View
         style={[
           styles.cell,
           {
             backgroundColor: cell.color === 'transparent' ? 'transparent' : cell.color,
             borderColor,
           },
-          animStyle,
         ]}
       />
     </Pressable>
@@ -279,7 +262,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
             <View key={weekIndex} style={styles.weekRow}>
               {week.map((cell, dayIndex) =>
                 cell.date ? (
-                  <AnimatedDayCell
+                  <DayCell
                     key={dayIndex}
                     cell={cell}
                     borderColor={theme.border}

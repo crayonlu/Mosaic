@@ -40,7 +40,8 @@ export function useAppUpdate() {
     try {
       const release = await checkLatestRelease()
       if (!release) {
-        setState(prev => ({ ...prev, checking: false }))
+        // No releases published — app is up to date.
+        setState(prev => ({ ...prev, checking: false, hasUpdate: false }))
         return
       }
 
@@ -63,9 +64,13 @@ export function useAppUpdate() {
     }
   }, [])
 
-  const downloadAndInstall = useCallback(async () => {
+  /**
+   * Download and install the latest release.
+   * Resolves null on success, or the error message on failure.
+   */
+  const downloadAndInstall = useCallback(async (): Promise<string | null> => {
     const { releaseInfo } = state
-    if (!releaseInfo) return
+    if (!releaseInfo) return 'No update available'
 
     setState(prev => ({ ...prev, downloading: true, downloadProgress: 0, error: null }))
 
@@ -76,13 +81,16 @@ export function useAppUpdate() {
 
       setState(prev => ({ ...prev, downloading: false, downloadProgress: null }))
       await installApk(file)
+      return null
     } catch (error: any) {
+      const message = error?.message ?? 'Download failed'
       setState(prev => ({
         ...prev,
         downloading: false,
         downloadProgress: null,
-        error: error?.message ?? 'Download failed',
+        error: message,
       }))
+      return message
     }
   }, [state.releaseInfo])
 

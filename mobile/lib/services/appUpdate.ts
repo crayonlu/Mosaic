@@ -39,42 +39,50 @@ export function isNewerVersion(remote: string, local: string): boolean {
 }
 
 /**
- * Check GitHub Releases for the latest version
+ * Check GitHub Releases for the latest version.
+ * Throws on genuine failures (network, HTTP errors, missing APK asset) so callers
+ * can show an error state instead of silently treating a failed check as up-to-date.
+ * Returns null only when the repo has no releases at all (HTTP 404).
  */
 export async function checkLatestRelease(): Promise<ReleaseInfo | null> {
+  let response: Response
   try {
-    const response = await fetch(GITHUB_RELEASES_URL, {
+    response = await fetch(GITHUB_RELEASES_URL, {
       headers: { Accept: 'application/vnd.github.v3+json' },
     })
-
-    if (!response.ok) {
-      console.warn('[appUpdate] GitHub API responded with', response.status)
-      return null
-    }
-
-    const data = await response.json()
-    const tagName: string = data.tag_name ?? ''
-    const version = tagName.replace(/^v/, '')
-
-    // Find APK asset
-    const apkAsset = (data.assets ?? []).find((asset: any) => asset.name?.endsWith('.apk'))
-
-    if (!apkAsset) {
-      console.warn('[appUpdate] No APK asset found in release')
-      return null
-    }
-
-    return {
-      version,
-      tagName,
-      downloadUrl: apkAsset.browser_download_url,
-      releaseNotes: data.body ?? '',
-      publishedAt: data.published_at ?? '',
-      fileSize: apkAsset.size,
-    }
   } catch (error) {
-    console.warn('[appUpdate] Failed to check release:', error)
+    throw new Error(`Failed to reach GitHub: ${(error as Error)?.message ?? 'network error'}`)
+  }
+
+  if (response.status === 404) {
+    // No releases published yet — the app is up to date.
     return null
+  }
+
+  if (!response.ok) {
+    console.warn('[appUpdate] GitHub API responded with', response.status)
+    throw new Error(`GitHub returned HTTP ${response.status}`)
+  }
+
+  const data = await response.json()
+  const tagName: string = data.tag_name ?? ''
+  const version = tagName.replace(/^v/, '')
+
+  // Find APK asset
+  const apkAsset = (data.assets ?? []).find((asset: any) => asset.name?.endsWith('.apk'))
+
+  if (!apkAsset) {
+    console.warn('[appUpdate] No APK asset found in release')
+    throw new Error('No APK asset in the latest release')
+  }
+
+  return {
+    version,
+    tagName,
+    downloadUrl: apkAsset.browser_download_url,
+    releaseNotes: data.body ?? '',
+    publishedAt: data.published_at ?? '',
+    fileSize: apkAsset.size,
   }
 }
 

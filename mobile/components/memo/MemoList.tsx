@@ -14,32 +14,25 @@ import {
   Text,
   View,
 } from 'react-native'
-import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 import { MemoCard } from './MemoCard'
 
 const ListMemoCard = React.memo(function ListMemoCard({
   memo: initialMemo,
   onPress,
   onDelete,
-  index,
 }: {
   memo: MemoWithResources
   onPress: (memo: MemoWithResources) => void
   onDelete: (id: string) => void
-  index: number
 }) {
   // Read from normalized cache so all pages share the same object reference
   const { data: cachedMemo } = useMemoQuery(initialMemo.id)
   const memo = cachedMemo ?? initialMemo
   const handlePress = useCallback(() => onPress(memo), [memo, onPress])
   return (
-    <Animated.View
-      entering={FadeIn.delay(index < 8 ? index * 30 : 0)
-        .duration(200)
-        .easing(Easing.out(Easing.cubic))}
-    >
+    <View>
       <MemoCard memo={memo} onPress={handlePress} onDelete={onDelete} />
-    </Animated.View>
+    </View>
   )
 })
 
@@ -180,8 +173,8 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
   )
 
   const renderItem = useCallback(
-    ({ item, index }: { item: MemoWithResources; index: number }) => (
-      <ListMemoCard memo={item} onPress={onMemoPress} onDelete={handleDelete} index={index} />
+    ({ item }: { item: MemoWithResources }) => (
+      <ListMemoCard memo={item} onPress={onMemoPress} onDelete={handleDelete} />
     ),
     [onMemoPress, handleDelete]
   )
@@ -245,9 +238,8 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
       renderSectionHeader={renderSectionHeader}
       keyExtractor={item => item.id}
       contentContainerStyle={styles.listContent}
-      maxToRenderPerBatch={15}
-      removeClippedSubviews={true}
-      updateCellsBatchingPeriod={50}
+      maxToRenderPerBatch={10}
+      updateCellsBatchingPeriod={80}
       windowSize={7}
       ListHeaderComponent={headerComponent}
       ListEmptyComponent={renderEmptyState}

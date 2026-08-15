@@ -20,6 +20,7 @@ import { Bot, Cog, Info, Lock, LogOut, ShieldCheck, Trash } from 'lucide-react-n
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  ActivityIndicator,
   TouchableOpacity as RNTouchableOpacity,
   ScrollView,
   StyleSheet,
@@ -172,6 +173,17 @@ export default function SettingsScreen() {
   const [totalStorageSize, setTotalStorageSize] = useState(0)
   const [isLoadingStorage, setIsLoadingStorage] = useState(false)
   const [clearingId, setClearingId] = useState<string | null>(null)
+
+  const handleInstallUpdate = useCallback(async () => {
+    const errorMessage = await appUpdate.downloadAndInstall()
+    if (errorMessage) {
+      toast.show({
+        type: 'error',
+        title: t('settings.downloadFailed'),
+        message: errorMessage,
+      })
+    }
+  }, [appUpdate, t])
 
   useEffect(() => {
     loadPushStatus()
@@ -645,7 +657,7 @@ export default function SettingsScreen() {
               styles.updateBadge,
               { backgroundColor: theme.primary, borderRadius: theme.radius.small },
             ]}
-            onPress={appUpdate.downloadAndInstall}
+            onPress={handleInstallUpdate}
           >
             <Text style={[styles.updateBadgeText, { color: theme.onPrimary }]}>
               {t('settings.update')}
@@ -669,18 +681,13 @@ export default function SettingsScreen() {
         <Text style={[styles.aboutLabel, { color: theme.textSecondary }]}>
           {t('settings.updateStatus')}
         </Text>
-        <View style={{ flex: 1, alignItems: 'flex-end' }}>
+        <View style={styles.aboutStatusValue}>
           {appUpdate.checking && (
             <Text style={[styles.aboutValue, { color: theme.textSecondary }]}>
               {t('settings.checkingUpdate')}
             </Text>
           )}
-          {appUpdate.hasUpdate && !appUpdate.downloading && (
-            <Text style={[styles.aboutValue, { color: theme.primary }]}>
-              v{appUpdate.latestVersion} {t('settings.updateAvailable')}
-            </Text>
-          )}
-          {appUpdate.downloading && appUpdate.downloadProgress !== null && (
+          {!appUpdate.checking && appUpdate.downloading && appUpdate.downloadProgress !== null && (
             <View style={[styles.progressContainer, { alignSelf: 'stretch' }]}>
               <View
                 style={[
@@ -704,27 +711,59 @@ export default function SettingsScreen() {
               </Text>
             </View>
           )}
-          {!appUpdate.checking && !appUpdate.hasUpdate && !appUpdate.downloading && (
-            <Text style={[styles.aboutValue, { color: theme.textSecondary }]}>
-              {t('settings.upToDate')}
+          {!appUpdate.checking && !appUpdate.downloading && appUpdate.hasUpdate && (
+            <Text style={[styles.aboutValue, { color: theme.primary }]}>
+              v{appUpdate.latestVersion} {t('settings.updateAvailable')}
             </Text>
           )}
+          {!appUpdate.checking &&
+            !appUpdate.downloading &&
+            !appUpdate.hasUpdate &&
+            appUpdate.error && (
+              <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                <Text style={[styles.aboutValue, { color: theme.error }]}>
+                  {t('settings.checkFailed')}
+                </Text>
+                <Text style={[styles.aboutErrorDetail, { color: theme.textSecondary }]}>
+                  {appUpdate.error}
+                </Text>
+              </View>
+            )}
+          {!appUpdate.checking &&
+            !appUpdate.downloading &&
+            !appUpdate.hasUpdate &&
+            !appUpdate.error && (
+              <Text style={[styles.aboutValue, { color: theme.textSecondary }]}>
+                {t('settings.upToDate')}
+              </Text>
+            )}
         </View>
       </View>
-      {(appUpdate.hasUpdate || (!appUpdate.checking && !appUpdate.downloading)) && (
-        <TouchableOpacity
-          style={[
-            styles.aboutActionBtn,
-            { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border },
-          ]}
-          onPress={appUpdate.hasUpdate ? appUpdate.downloadAndInstall : appUpdate.checkForUpdate}
-          disabled={appUpdate.downloading}
-        >
-          <Text style={[styles.aboutActionText, { color: theme.primary }]}>
-            {appUpdate.hasUpdate ? t('settings.installUpdate') : t('settings.checkUpdate')}
-          </Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        style={[
+          styles.aboutActionBtn,
+          {
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: theme.border,
+            opacity: appUpdate.checking || appUpdate.downloading ? theme.state.disabledOpacity : 1,
+          },
+        ]}
+        onPress={appUpdate.hasUpdate ? handleInstallUpdate : appUpdate.checkForUpdate}
+        disabled={appUpdate.checking || appUpdate.downloading}
+      >
+        {appUpdate.checking ? <ActivityIndicator size="small" color={theme.primary} /> : null}
+        <Text style={[styles.aboutActionText, { color: theme.primary }]}>
+          {appUpdate.checking
+            ? t('settings.checking')
+            : appUpdate.hasUpdate && appUpdate.downloading
+              ? t('settings.downloading')
+              : appUpdate.hasUpdate
+                ? t('settings.installUpdate')
+                : appUpdate.error
+                  ? t('settings.checkAgain')
+                  : t('settings.checkUpdate')}
+        </Text>
+      </TouchableOpacity>
     </SettingsSection>
   )
 
@@ -1067,8 +1106,10 @@ const styles = StyleSheet.create({
     minWidth: 32,
   },
   updateBadge: {
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 4,
   },
   updateBadgeText: {
     fontSize: 12,
@@ -1089,8 +1130,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
+  // Fixed height so the status row does not jitter when its content switches
+  // between a single line of text, the download progress bar, or an error block.
+  aboutStatusValue: {
+    flex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    minHeight: 20,
+  },
+  aboutErrorDetail: {
+    fontSize: 11,
+    maxWidth: 220,
+    textAlign: 'right',
+  },
   aboutActionBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 44,
     paddingVertical: 12,
   },
   aboutActionText: {
