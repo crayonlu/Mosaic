@@ -15,7 +15,13 @@ import {
 } from "@phosphor-icons/react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom"
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router-dom"
 import i18n from "../lib/i18n"
 import { cn } from "../lib/utils"
 import { useAuthStore } from "../stores/authStore"
@@ -132,12 +138,6 @@ function Topbar() {
         >
           <List size={18} />
         </button>
-        <Link to="/overview" className="flex items-center gap-2 md:hidden">
-          <AppLogo className="size-5" />
-          <span className="text-[15px] font-semibold tracking-[-0.3px] text-ink">
-            Mosaic
-          </span>
-        </Link>
       </div>
       <div className="flex items-center gap-1.5">
         <AppTooltip content={t("nav.theme")}>
@@ -196,7 +196,7 @@ function Topbar() {
       <Drawer.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
         <Drawer.Portal>
           <Drawer.Backdrop className="animate-fade-in fixed inset-0 z-50 bg-black/20 backdrop-blur-[2px]" />
-          <Drawer.Popup className="fixed inset-y-0 left-0 z-50 w-64 bg-surface shadow-modal md:hidden">
+          <Drawer.Popup className="animate-drawer-in fixed inset-y-0 left-0 z-50 w-64 bg-surface shadow-modal md:hidden">
             <div className="flex h-14 items-center gap-2 border-b border-hairline px-4">
               <AppLogo className="size-5" />
               <span className="text-[15px] font-semibold tracking-[-0.3px] text-ink">
@@ -214,12 +214,16 @@ function Topbar() {
 }
 
 export default function AppShell() {
+  const location = useLocation()
   return (
     <div className="flex min-h-screen flex-col bg-canvas md:flex-row">
       <Sidebar />
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="mx-auto w-full max-w-300 flex-1 px-4 py-5 md:px-6">
+        <main
+          key={location.pathname}
+          className="animate-page-in mx-auto w-full max-w-300 flex-1 px-4 py-5 md:px-6"
+        >
           <Outlet />
         </main>
       </div>

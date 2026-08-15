@@ -210,7 +210,7 @@ export default function BotsView() {
           }
         />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="animate-fade-in overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse">
             <thead>
               <tr className="border-b border-hairline text-left">
@@ -408,11 +408,7 @@ export default function BotsView() {
             />
           </Field>
 
-          <label className="flex cursor-pointer items-center gap-3">
-            <AppSwitch
-              checked={form.autoReply}
-              onCheckedChange={(v) => setForm((f) => ({ ...f, autoReply: v }))}
-            />
+          <label className="flex cursor-pointer items-center justify-between gap-3">
             <div>
               <span className="text-[13px] font-medium text-ink">
                 {t("bots.autoReply")}
@@ -421,6 +417,10 @@ export default function BotsView() {
                 {t("bots.autoReplyDesc")}
               </p>
             </div>
+            <AppSwitch
+              checked={form.autoReply}
+              onCheckedChange={(v) => setForm((f) => ({ ...f, autoReply: v }))}
+            />
           </label>
 
           <Field label={t("bots.model")}>

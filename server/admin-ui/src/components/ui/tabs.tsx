@@ -28,20 +28,27 @@ export function AppTabs({
       onValueChange={onValueChange}
       className={cn("flex flex-col", className)}
     >
-      <Tabs.List className="flex shrink-0 gap-1 border-b border-hairline">
+      <Tabs.List className="relative flex shrink-0 gap-1 border-b border-hairline">
         {tabs.map((tab) => (
           <Tabs.Tab
             key={tab.value}
             value={tab.value}
             className={cn(
-              "-mb-px flex cursor-pointer items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium transition-colors outline-none",
-              "border-transparent text-ink-tertiary hover:text-ink",
-              "data-[selected]:border-primary data-[selected]:text-ink"
+              "flex cursor-pointer items-center gap-1.5 px-3 py-2 text-[13px] font-medium transition-colors outline-none",
+              "text-ink-tertiary hover:text-ink",
+              "data-[selected]:text-ink"
             )}
           >
             {tab.label}
           </Tabs.Tab>
         ))}
+        <Tabs.Indicator
+          className="absolute -bottom-px h-0.5 rounded-full bg-primary transition-[left,width] duration-200 ease-out"
+          style={{
+            left: "var(--active-tab-left)",
+            width: "var(--active-tab-width)",
+          }}
+        />
       </Tabs.List>
       {children}
     </Tabs.Root>

@@ -281,7 +281,7 @@ export default function UsersView() {
         </div>
       ) : users.error ? (
         <ErrorState message={users.error} onRetry={users.refetch} />
-      ) : !users.data || users.data.users.length === 0 ? (
+      ) : !users.data?.users || users.data.users.length === 0 ? (
         <EmptyState
           icon={<UsersThree size={18} />}
           title={t("users.empty")}
@@ -294,7 +294,7 @@ export default function UsersView() {
         />
       ) : (
         <>
-          <div className="overflow-x-auto">
+          <div className="animate-fade-in overflow-x-auto">
             <table className="w-full min-w-[640px] border-collapse">
               <thead>
                 <tr className="border-b border-hairline text-left">
@@ -601,27 +601,27 @@ export default function UsersView() {
                   <span className="text-[13px] font-medium text-ink">
                     {t("aiSettings.capabilities")}
                   </span>
-                  <label className="flex cursor-pointer items-center gap-2.5">
+                  <label className="flex cursor-pointer items-center justify-between gap-3">
+                    <span className="text-[13px] text-ink">
+                      {t("aiSettings.vision")}
+                    </span>
                     <AppSwitch
                       checked={aiForm.supportsVision}
                       onCheckedChange={(v) =>
                         setAiForm((f) => ({ ...f, supportsVision: v }))
                       }
                     />
-                    <span className="text-[13px] text-ink">
-                      {t("aiSettings.vision")}
-                    </span>
                   </label>
-                  <label className="flex cursor-pointer items-center gap-2.5">
+                  <label className="flex cursor-pointer items-center justify-between gap-3">
+                    <span className="text-[13px] text-ink">
+                      {t("aiSettings.thinking")}
+                    </span>
                     <AppSwitch
                       checked={aiForm.supportsThinking}
                       onCheckedChange={(v) =>
                         setAiForm((f) => ({ ...f, supportsThinking: v }))
                       }
                     />
-                    <span className="text-[13px] text-ink">
-                      {t("aiSettings.thinking")}
-                    </span>
                   </label>
                 </div>
                 <Button

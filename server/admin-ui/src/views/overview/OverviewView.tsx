@@ -152,19 +152,19 @@ function AdminOverview() {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-2 gap-x-4 gap-y-6 lg:grid-cols-4">
+      <div className="animate-fade-in grid grid-cols-2 gap-x-4 gap-y-6 lg:grid-cols-4">
         {kpiDefs.map((def, i) => (
           <KpiCell
             key={def.label}
             label={def.label}
             icon={def.icon}
             value={
-              stats.data
+              stats.data?.memos
                 ? [
                     stats.data.memos.total,
-                    stats.data.diaries.total,
-                    stats.data.resources.total,
-                    stats.data.bots.total,
+                    stats.data.diaries?.total ?? 0,
+                    stats.data.resources?.total ?? 0,
+                    stats.data.bots?.total ?? 0,
                   ][i]
                 : 0
             }
@@ -193,7 +193,7 @@ function AdminOverview() {
           </div>
         ) : activity.error ? (
           <ErrorState message={activity.error} onRetry={activity.refetch} />
-        ) : !activity.data || activity.data.entries.length === 0 ? (
+        ) : !activity.data?.entries || activity.data.entries.length === 0 ? (
           <EmptyState title={t("overview.noActivity")} />
         ) : (
           <ul className="divide-y divide-hairline">

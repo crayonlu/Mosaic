@@ -124,6 +124,14 @@ function createClient(basePath: string) {
     const url = buildUrl(basePath, req)
     const options: FetchOptions = {
       headers: { "Content-Type": "application/json" },
+      parseResponse: (text: string) => {
+        if (!text.trim()) return null
+        try {
+          return JSON.parse(text)
+        } catch {
+          throw new Error(`invalid JSON response from ${url}`)
+        }
+      },
       onRequest(ctx: { options: FetchOptions }) {
         attachToken(ctx.options)
       },
