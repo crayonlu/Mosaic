@@ -57,7 +57,6 @@ function onResponseError({
   options: FetchOptions & { [RETRY_FLAG]?: boolean }
 }) {
   if (response.status === 401) {
-    // Prevent infinite retry: if this request was already a retry, bail out
     if (options[RETRY_FLAG]) {
       clearToken()
       window.location.href = "/admin/login"
@@ -118,6 +117,14 @@ function createClient(basePath: string) {
         attachToken(ctx.options)
       },
       onResponseError,
+      parseResponse: (responseText: string) => {
+        if (!responseText) return null
+        try {
+          return JSON.parse(responseText)
+        } catch {
+          throw new Error("Invalid JSON response from server")
+        }
+      },
       ...opts,
     }
     return ofetch(url, options)
@@ -126,6 +133,16 @@ function createClient(basePath: string) {
 
 export const api = createClient("/api")
 export const adminApi = createClient("/admin/api")
+
+export function isProxyMediaUrl(src: string) {
+  try {
+    return (
+      new URL(src, window.location.origin).origin === window.location.origin
+    )
+  } catch {
+    return false
+  }
+}
 
 export interface LoginResponse {
   accessToken: string
@@ -170,6 +187,13 @@ export interface UpdateManagedUserRequest {
   resetPassword?: string
 }
 
+export interface UsersResponse {
+  users: ManagedUser[]
+  total: number
+  page: number
+  pageSize: number
+}
+
 export interface StatsSummary {
   memos: { total: number; thisMonth: number }
   diaries: { total: number; thisMonth: number }
@@ -190,4 +214,51 @@ export interface ActivityEntry {
 
 export interface ActivityResponse {
   entries: ActivityEntry[]
+}
+
+export interface HealthResponse {
+  uptime: string
+  storageType: string
+  storageUsedFormatted: string
+  dbSizeFormatted: string
+}
+
+export interface MemoryStats {
+  totalMemos: number
+  indexedMemos: number
+}
+
+export interface BotData {
+  id: string
+  name: string
+  description: string
+  autoReply: boolean
+  tags: string[]
+  avatarUrl: string
+  model?: string
+}
+
+export interface AutomationSettings {
+  autoTagEnabled: boolean
+  autoSummaryEnabled: boolean
+  autoDiaryEnabled: boolean
+  autoDiaryMinMemos: number
+  autoDiaryMinChars: number
+  appTimezone: string
+}
+
+export interface AiConfigItem {
+  provider?: string
+  baseUrl?: string
+  apiKey?: string
+  model?: string
+  embeddingDim?: number | null
+  maxTokens?: number | null
+  supportsVision?: boolean
+  supportsThinking?: boolean
+}
+
+export interface AiConfigResponse {
+  bot?: AiConfigItem
+  embedding?: AiConfigItem
 }

@@ -2,10 +2,6 @@ type OpenAICompatibleResponse = {
   data?: Array<{ id?: string }>
 }
 
-type AnthropicCompatibleResponse = {
-  models?: Array<{ id?: string; api_name?: string; name?: string }>
-}
-
 export async function fetchAvailableModels(baseUrl: string, apiKey?: string): Promise<string[]> {
   if (!baseUrl) return []
 
@@ -21,18 +17,11 @@ export async function fetchAvailableModels(baseUrl: string, apiKey?: string): Pr
     throw new Error(String(res.status))
   }
 
-  const json = ((await res.json()) ?? {}) as OpenAICompatibleResponse & AnthropicCompatibleResponse
+  const json = ((await res.json()) ?? {}) as OpenAICompatibleResponse
 
   if (Array.isArray(json.data)) {
     return json.data
       .map(model => model.id ?? '')
-      .filter(Boolean)
-      .sort()
-  }
-
-  if (Array.isArray(json.models)) {
-    return json.models
-      .map(model => model.id ?? model.api_name ?? model.name ?? '')
       .filter(Boolean)
       .sort()
   }

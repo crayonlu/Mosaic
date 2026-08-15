@@ -1,24 +1,25 @@
-import { Input as InputPrimitive } from "@base-ui/react/input"
-import * as React from "react"
+import { forwardRef, type InputHTMLAttributes } from "react"
+import { cn } from "../../lib/utils"
 
-import { cn } from "@/lib/utils"
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  error?: boolean
+}
 
-function Input({
-  className,
-  type,
-  ...props
-}: React.ComponentProps<typeof InputPrimitive>) {
-  return (
-    <InputPrimitive
-      type={type}
-      data-slot="input"
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ className, error, ...props }, ref) => (
+    <input
+      ref={ref}
       className={cn(
-        "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm",
+        "h-[40px] w-full rounded-md bg-subtle px-3 text-base text-ink transition-colors duration-150 outline-none md:h-9 md:text-sm",
+        "placeholder:text-ink-tertiary",
+        "focus:bg-surface focus:ring-1 focus:ring-primary/50 focus:ring-inset",
+        "disabled:pointer-events-none disabled:opacity-50",
+        error && "ring-1 ring-error/60 ring-inset",
         className
       )}
       {...props}
     />
   )
-}
+)
 
-export { Input }
+Input.displayName = "Input"

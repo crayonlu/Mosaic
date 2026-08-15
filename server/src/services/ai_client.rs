@@ -63,43 +63,23 @@ impl AiClient {
 
         let target_model = bot_model.unwrap_or(&config.model);
 
-        let (url, body) = match config.provider.as_str() {
-            "anthropic" => {
-                let url = format!("{}/messages", base_url);
-                let body = json!({
-                    "model": target_model,
-                    "max_tokens": config.max_tokens.unwrap_or(512),
-                    "system": system_prompt,
-                    "messages": messages,
-                });
-                (url, body)
-            }
-            _ => {
-                let url = format!("{}/chat/completions", base_url);
-                let mut full_messages: Vec<serde_json::Value> =
-                    vec![json!({ "role": "system", "content": system_prompt })];
-                full_messages.extend(messages);
-                let body = json!({
-                    "model": target_model,
-                    "messages": full_messages,
-                    "max_tokens": config.max_tokens.unwrap_or(512),
-                    "temperature": 0.8,
-                });
-                (url, body)
-            }
-        };
+        let url = format!("{}/chat/completions", base_url);
+        let mut full_messages: Vec<serde_json::Value> =
+            vec![json!({ "role": "system", "content": system_prompt })];
+        full_messages.extend(messages);
+        let body = json!({
+            "model": target_model,
+            "messages": full_messages,
+            "max_tokens": config.max_tokens.unwrap_or(512),
+            "temperature": 0.8,
+        });
 
-        let mut request = self.client.post(&url).json(&body);
-
-        request = match config.provider.as_str() {
-            "anthropic" => request
-                .header("x-api-key", &config.api_key)
-                .header("anthropic-version", "2023-06-01")
-                .header("content-type", "application/json"),
-            _ => request
-                .header("Authorization", format!("Bearer {}", config.api_key))
-                .header("content-type", "application/json"),
-        };
+        let request = self
+            .client
+            .post(&url)
+            .json(&body)
+            .header("Authorization", format!("Bearer {}", config.api_key))
+            .header("content-type", "application/json");
 
         let response = request.send().await?;
 
@@ -113,56 +93,22 @@ impl AiClient {
 
         let json: serde_json::Value = response.json().await?;
 
-        let (content, thinking_content) = match config.provider.as_str() {
-            "anthropic" => {
-                let mut thinking_parts: Vec<String> = Vec::new();
-                let mut text_content = String::new();
-                if let Some(contents) = json.get("content").and_then(Value::as_array) {
-                    for item in contents {
-                        match item.get("type").and_then(Value::as_str) {
-                            Some("thinking") => {
-                                if let Some(t) = item.get("thinking").and_then(Value::as_str) {
-                                    thinking_parts.push(t.to_string());
-                                }
-                            }
-                            Some("text") => {
-                                if let Some(t) = item.get("text").and_then(Value::as_str) {
-                                    text_content.push_str(t);
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-                (
-                    text_content,
-                    if thinking_parts.is_empty() {
-                        None
-                    } else {
-                        Some(thinking_parts.join("\n"))
-                    },
+        let message = json
+            .get("choices")
+            .and_then(Value::as_array)
+            .and_then(|choices| choices.first())
+            .and_then(|choice| choice.get("message"))
+            .ok_or_else(|| {
+                format!(
+                    "AI response missing choices[0].message for provider {}",
+                    config.provider
                 )
-            }
-            _ => {
-                let message = json
-                    .get("choices")
-                    .and_then(Value::as_array)
-                    .and_then(|choices| choices.first())
-                    .and_then(|choice| choice.get("message"))
-                    .ok_or_else(|| {
-                        format!(
-                            "AI response missing choices[0].message for provider {}",
-                            config.provider
-                        )
-                    })?;
-                let content = extract_message_text(message.get("content"));
-                let thinking = message
-                    .get("reasoning_content")
-                    .and_then(Value::as_str)
-                    .map(str::to_string);
-                (content, thinking)
-            }
-        };
+            })?;
+        let content = extract_message_text(message.get("content"));
+        let thinking_content = message
+            .get("reasoning_content")
+            .and_then(Value::as_str)
+            .map(str::to_string);
 
         if content.trim().is_empty() {
             return Err(format!(
@@ -248,41 +194,23 @@ impl AiClient {
     pub fn build_user_message(
         text: &str,
         images: &[AiImageInput],
-        provider: &str,
+        _provider: &str,
     ) -> serde_json::Value {
         if images.is_empty() {
             return json!({ "role": "user", "content": text });
         }
 
-        match provider {
-            "anthropic" => {
-                let mut content = vec![json!({ "type": "text", "text": text })];
-                content.extend(images.iter().map(|image| {
-                    json!({
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": image.mime_type,
-                            "data": general_purpose::STANDARD.encode(&image.data),
-                        }
-                    })
-                }));
-                json!({ "role": "user", "content": content })
-            }
-            _ => {
-                let mut content = vec![json!({ "type": "text", "text": text })];
-                content.extend(images.iter().map(|image| {
-                    let encoded = general_purpose::STANDARD.encode(&image.data);
-                    json!({
-                        "type": "image_url",
-                        "image_url": {
-                            "url": format!("data:{};base64,{}", image.mime_type, encoded),
-                        }
-                    })
-                }));
-                json!({ "role": "user", "content": content })
-            }
-        }
+        let mut content = vec![json!({ "type": "text", "text": text })];
+        content.extend(images.iter().map(|image| {
+            let encoded = general_purpose::STANDARD.encode(&image.data);
+            json!({
+                "type": "image_url",
+                "image_url": {
+                    "url": format!("data:{};base64,{}", image.mime_type, encoded),
+                }
+            })
+        }));
+        json!({ "role": "user", "content": content })
     }
 }
 

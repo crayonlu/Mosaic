@@ -1,17 +1,12 @@
-import { cn } from "@/lib/utils"
-import { Loader2Icon } from "lucide-react"
-import { useTranslation } from "react-i18next"
+import { Spinner as PhosphorSpinner } from "@phosphor-icons/react"
+import { cn } from "../../lib/utils"
 
-function Spinner({ className, ...props }: React.SVGAttributes<SVGSVGElement>) {
-  const { t } = useTranslation()
-  return (
-    <Loader2Icon
-      role="status"
-      aria-label={t("common.loading")}
-      className={cn("size-4 animate-spin", className)}
-      {...props}
-    />
-  )
+export function LoadingSpinner({
+  className,
+  size = 16,
+}: {
+  className?: string
+  size?: number
+}) {
+  return <PhosphorSpinner size={size} className={cn("spinner", className)} />
 }
-
-export { Spinner }

@@ -12,8 +12,8 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!getToken()) return <Navigate to="/login" replace />
 
-  if (mustChangePassword && location.pathname !== "/change-password") {
-    return <Navigate to="/change-password" replace />
+  if (mustChangePassword && location.pathname !== "/account") {
+    return <Navigate to="/account" replace />
   }
 
   return <>{children}</>

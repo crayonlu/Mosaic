@@ -3,25 +3,27 @@ import { initReactI18next } from "react-i18next"
 import en from "../../locales/en.json"
 import zh from "../../locales/zh.json"
 
-const resources = {
-  en: { translation: en },
-  zh: { translation: zh },
-} as const
+const LOCALE_KEY = "admin-ui-locale"
 
-let storedLocale: string | null = null
-try {
-  storedLocale = localStorage.getItem("admin-ui-locale")
-} catch {
-  /* ignore */
+function detectInitial() {
+  const stored = localStorage.getItem(LOCALE_KEY)
+  if (stored === "zh" || stored === "en") return stored
+  return navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en"
 }
 
 i18n.use(initReactI18next).init({
-  resources,
-  lng: storedLocale || (navigator.language.startsWith("zh") ? "zh" : "en"),
-  fallbackLng: "en",
-  interpolation: {
-    escapeValue: false,
+  resources: {
+    en: { translation: en },
+    zh: { translation: zh },
   },
+  lng: detectInitial(),
+  fallbackLng: "en",
+  interpolation: { escapeValue: false },
+})
+
+i18n.on("languageChanged", (lng) => {
+  document.documentElement.lang = lng === "zh" ? "zh-CN" : "en"
+  localStorage.setItem(LOCALE_KEY, lng)
 })
 
 export default i18n
