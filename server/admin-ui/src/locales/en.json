@@ -159,6 +159,8 @@
   },
   "aiSettings": {
     "title": "AI Settings",
+    "modelConfig": "Model config",
+    "modelConfigDesc": "Chat model drives bot replies, embedding model powers memory indexing; other users can have their own chat model in their user details",
     "chatModel": "Chat model",
     "chatModelDesc": "Chat model for the admin account's bots; other users can have their own in their user details",
     "embeddingModel": "Embedding model",
@@ -197,6 +199,7 @@
     "timezone": "Timezone",
     "timezonePlaceholder": "IANA timezone for date grouping and bot time (e.g. Asia/Shanghai)",
     "saveSettings": "Save settings",
+    "saveAll": "Save all settings",
     "memoryTitle": "Memory index",
     "memoryDesc": "Vector index progress; backfill vectorizes all historical memos",
     "backfill": "Backfill",

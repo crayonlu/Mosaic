@@ -52,14 +52,17 @@ export function TabPanel({
   value,
   children,
   className,
+  keepMounted,
 }: {
   value: string
   children: ReactNode
   className?: string
+  keepMounted?: boolean
 }) {
   return (
     <Tabs.Panel
       value={value}
+      keepMounted={keepMounted}
       className={cn("flex-1 pt-4 outline-none", className)}
     >
       {children}

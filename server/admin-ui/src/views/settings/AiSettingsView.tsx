@@ -17,6 +17,7 @@ import { PageHeader } from "../../components/ui/page-header"
 import { ProgressBar } from "../../components/ui/progress"
 import { Skeleton } from "../../components/ui/skeleton"
 import { AppSwitch } from "../../components/ui/switch"
+import { AppTabs, TabPanel } from "../../components/ui/tabs"
 import { useAuthStore } from "../../stores/authStore"
 import { useAsyncData } from "../../hooks/useAsyncData"
 import { useToast } from "../../hooks/useToast"
@@ -77,13 +78,15 @@ async function fetchModelInfo(
   return body.data?.find((m) => m.id === model) ?? null
 }
 
-function KeyInput({
+function KeyField({
+  label,
   value,
   onChange,
   show,
   onToggleShow,
   placeholder,
 }: {
+  label: string
   value: string
   onChange: (v: string) => void
   show: boolean
@@ -91,81 +94,57 @@ function KeyInput({
   placeholder: string
 }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <Input
-        type={show ? "text" : "password"}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoComplete="off"
-        className="flex-1"
-      />
-      <button
-        type="button"
-        onClick={onToggleShow}
-        className="flex size-10 shrink-0 items-center justify-center rounded-md text-ink-tertiary transition-colors hover:bg-subtle hover:text-ink md:size-9"
-        aria-label="Toggle key visibility"
-      >
-        {show ? <EyeSlash size={15} /> : <Eye size={15} />}
-      </button>
-    </div>
+    <Field label={label}>
+      <div className="flex items-center gap-1 rounded-md bg-subtle px-3 transition-colors focus-within:bg-surface focus-within:ring-1 focus-within:ring-primary/50 focus-within:ring-inset">
+        <input
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoComplete="off"
+          className="h-[40px] w-full min-w-0 bg-transparent text-base text-ink outline-none placeholder:text-ink-tertiary md:h-9 md:text-sm"
+        />
+        <button
+          type="button"
+          onClick={onToggleShow}
+          className="flex size-8 shrink-0 items-center justify-center rounded-md text-ink-tertiary transition-colors hover:bg-ink/5 hover:text-ink"
+          aria-label="Toggle key visibility"
+        >
+          {show ? <EyeSlash size={15} /> : <Eye size={15} />}
+        </button>
+      </div>
+    </Field>
   )
 }
 
-function ChatSection({
-  config,
-  currentUserId,
+function ChatFormFields({
+  form,
+  onChange,
 }: {
-  config?: AiConfigItem
-  currentUserId?: string
+  form: ChatForm
+  onChange: (f: ChatForm) => void
 }) {
   const { t } = useTranslation()
-  const toast = useToast()
-  const [chat, setChat] = useState<ChatForm>(() => chatFromItem(config))
   const [showKey, setShowKey] = useState(false)
-  const [saving, setSaving] = useState(false)
 
   async function selectModel(model: string) {
-    setChat((f) => ({ ...f, model }))
-    if (!model || !chat.baseUrl || !chat.apiKey) return
+    onChange({ ...form, model })
+    if (!model || !form.baseUrl || !form.apiKey) return
     try {
-      const info = await fetchModelInfo(chat.baseUrl, chat.apiKey, model)
+      const info = await fetchModelInfo(form.baseUrl, form.apiKey, model)
       if (!info) return
-      setChat((f) => ({
-        ...f,
+      onChange({
+        ...form,
+        model,
         supportsVision:
           info.input_modalities?.includes("image") ||
           info.input_modalities?.includes("video") ||
-          f.supportsVision,
+          form.supportsVision,
         supportsThinking:
-          info.features?.includes("reasoning") || f.supportsThinking,
-      }))
+          info.features?.includes("reasoning") || form.supportsThinking,
+      })
     } catch {
       void 0
-    }
-  }
-
-  async function save() {
-    if (!currentUserId) return
-    setSaving(true)
-    try {
-      await adminApi(`/users/${currentUserId}/ai-config`, {
-        method: "PUT",
-        body: {
-          provider: "openai",
-          baseUrl: chat.baseUrl,
-          apiKey: chat.apiKey,
-          model: chat.model,
-          maxTokens: chat.maxTokens,
-          supportsVision: chat.supportsVision,
-          supportsThinking: chat.supportsThinking,
-        },
-      })
-      toast.success(t("aiSettings.saved"))
-    } catch {
-      toast.error(t("aiSettings.saveFailed"))
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -173,26 +152,25 @@ function ChatSection({
     <div className="space-y-4">
       <Field label={t("aiSettings.baseUrl")}>
         <Input
-          value={chat.baseUrl}
-          onChange={(e) => setChat((f) => ({ ...f, baseUrl: e.target.value }))}
+          value={form.baseUrl}
+          onChange={(e) => onChange({ ...form, baseUrl: e.target.value })}
           placeholder={t("aiSettings.apiUrlPlaceholder")}
         />
       </Field>
-      <Field label={t("aiSettings.apiKey")}>
-        <KeyInput
-          value={chat.apiKey}
-          onChange={(v) => setChat((f) => ({ ...f, apiKey: v }))}
-          show={showKey}
-          onToggleShow={() => setShowKey((v) => !v)}
-          placeholder={t("aiSettings.apiKeyPlaceholder")}
-        />
-      </Field>
+      <KeyField
+        label={t("aiSettings.apiKey")}
+        value={form.apiKey}
+        onChange={(v) => onChange({ ...form, apiKey: v })}
+        show={showKey}
+        onToggleShow={() => setShowKey((v) => !v)}
+        placeholder={t("aiSettings.apiKeyPlaceholder")}
+      />
       <Field label={t("aiSettings.model")}>
         <ModelCombobox
-          value={chat.model}
+          value={form.model}
           onChange={(m) => void selectModel(m)}
-          baseUrl={chat.baseUrl}
-          apiKey={chat.apiKey}
+          baseUrl={form.baseUrl}
+          apiKey={form.apiKey}
           placeholder={t("aiSettings.modelPlaceholder")}
         />
       </Field>
@@ -204,12 +182,12 @@ function ChatSection({
           type="number"
           min={1}
           max={128000}
-          value={chat.maxTokens ?? ""}
+          value={form.maxTokens ?? ""}
           onChange={(e) =>
-            setChat((f) => ({
-              ...f,
+            onChange({
+              ...form,
               maxTokens: e.target.value ? Number(e.target.value) : undefined,
-            }))
+            })
           }
         />
       </Field>
@@ -222,88 +200,58 @@ function ChatSection({
         </span>
         <label className="flex cursor-pointer items-center gap-2.5">
           <AppSwitch
-            checked={chat.supportsVision}
-            onCheckedChange={(v) =>
-              setChat((f) => ({ ...f, supportsVision: v }))
-            }
+            checked={form.supportsVision}
+            onCheckedChange={(v) => onChange({ ...form, supportsVision: v })}
           />
           <span className="text-[13px] text-ink">{t("aiSettings.vision")}</span>
         </label>
         <label className="flex cursor-pointer items-center gap-2.5">
           <AppSwitch
-            checked={chat.supportsThinking}
-            onCheckedChange={(v) =>
-              setChat((f) => ({ ...f, supportsThinking: v }))
-            }
+            checked={form.supportsThinking}
+            onCheckedChange={(v) => onChange({ ...form, supportsThinking: v })}
           />
           <span className="text-[13px] text-ink">
             {t("aiSettings.thinking")}
           </span>
         </label>
       </div>
-      <Button disabled={saving} onClick={() => void save()}>
-        {saving ? t("common.saving") : t("aiSettings.save")}
-      </Button>
     </div>
   )
 }
 
-function EmbeddingSection({ config }: { config?: AiConfigItem }) {
+function EmbeddingFormFields({
+  form,
+  onChange,
+}: {
+  form: EmbeddingForm
+  onChange: (f: EmbeddingForm) => void
+}) {
   const { t } = useTranslation()
-  const toast = useToast()
-  const [embedding, setEmbedding] = useState<EmbeddingForm>(() =>
-    embeddingFromItem(config)
-  )
   const [showKey, setShowKey] = useState(false)
-  const [saving, setSaving] = useState(false)
-
-  async function save() {
-    setSaving(true)
-    try {
-      await adminApi("/ai-config/embedding", {
-        method: "PUT",
-        body: {
-          provider: "openai",
-          baseUrl: embedding.baseUrl,
-          apiKey: embedding.apiKey,
-          model: embedding.model,
-          embeddingDim: embedding.embeddingDim,
-        },
-      })
-      toast.success(t("aiSettings.saved"))
-    } catch {
-      toast.error(t("aiSettings.saveFailed"))
-    } finally {
-      setSaving(false)
-    }
-  }
 
   return (
     <div className="space-y-4">
       <Field label={t("aiSettings.baseUrl")}>
         <Input
-          value={embedding.baseUrl}
-          onChange={(e) =>
-            setEmbedding((f) => ({ ...f, baseUrl: e.target.value }))
-          }
+          value={form.baseUrl}
+          onChange={(e) => onChange({ ...form, baseUrl: e.target.value })}
           placeholder={t("aiSettings.apiUrlPlaceholder")}
         />
       </Field>
-      <Field label={t("aiSettings.apiKey")}>
-        <KeyInput
-          value={embedding.apiKey}
-          onChange={(v) => setEmbedding((f) => ({ ...f, apiKey: v }))}
-          show={showKey}
-          onToggleShow={() => setShowKey((v) => !v)}
-          placeholder={t("aiSettings.apiKeyPlaceholder")}
-        />
-      </Field>
+      <KeyField
+        label={t("aiSettings.apiKey")}
+        value={form.apiKey}
+        onChange={(v) => onChange({ ...form, apiKey: v })}
+        show={showKey}
+        onToggleShow={() => setShowKey((v) => !v)}
+        placeholder={t("aiSettings.apiKeyPlaceholder")}
+      />
       <Field label={t("aiSettings.model")}>
         <ModelCombobox
-          value={embedding.model}
-          onChange={(model) => setEmbedding((f) => ({ ...f, model }))}
-          baseUrl={embedding.baseUrl}
-          apiKey={embedding.apiKey}
+          value={form.model}
+          onChange={(model) => onChange({ ...form, model })}
+          baseUrl={form.baseUrl}
+          apiKey={form.apiKey}
           placeholder={t("aiSettings.modelPlaceholder")}
         />
       </Field>
@@ -314,124 +262,15 @@ function EmbeddingSection({ config }: { config?: AiConfigItem }) {
         <Input
           type="number"
           min={1}
-          value={embedding.embeddingDim ?? ""}
+          value={form.embeddingDim ?? ""}
           onChange={(e) =>
-            setEmbedding((f) => ({
-              ...f,
+            onChange({
+              ...form,
               embeddingDim: e.target.value ? Number(e.target.value) : undefined,
-            }))
+            })
           }
         />
       </Field>
-      <Button disabled={saving} onClick={() => void save()}>
-        {saving ? t("common.saving") : t("aiSettings.save")}
-      </Button>
-    </div>
-  )
-}
-
-function AutomationSection({ initial }: { initial: AutomationSettings }) {
-  const { t } = useTranslation()
-  const toast = useToast()
-  const [settings, setSettings] = useState<AutomationSettings>(() => initial)
-  const [saving, setSaving] = useState(false)
-
-  async function save() {
-    setSaving(true)
-    try {
-      await adminApi("/settings", { method: "PUT", body: settings })
-      toast.success(t("aiSettings.saved"))
-    } catch {
-      toast.error(t("aiSettings.saveFailed"))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="space-y-5">
-      <SettingRow
-        label={t("aiSettings.autoTag")}
-        description={t("aiSettings.autoTagDesc")}
-      >
-        <AppSwitch
-          checked={settings.autoTagEnabled}
-          onCheckedChange={(v) =>
-            setSettings((s) => ({ ...s, autoTagEnabled: v }))
-          }
-        />
-      </SettingRow>
-      <SettingRow
-        label={t("aiSettings.autoSummary")}
-        description={t("aiSettings.autoSummaryDesc")}
-      >
-        <AppSwitch
-          checked={settings.autoSummaryEnabled}
-          onCheckedChange={(v) =>
-            setSettings((s) => ({ ...s, autoSummaryEnabled: v }))
-          }
-        />
-      </SettingRow>
-      <SettingRow
-        label={t("aiSettings.autoDiary")}
-        description={t("aiSettings.autoDiaryDesc")}
-      >
-        <AppSwitch
-          checked={settings.autoDiaryEnabled}
-          onCheckedChange={(v) =>
-            setSettings((s) => ({ ...s, autoDiaryEnabled: v }))
-          }
-        />
-      </SettingRow>
-      <SettingRow
-        label={t("aiSettings.minMemos")}
-        description={t("aiSettings.minMemosDesc")}
-      >
-        <Input
-          type="number"
-          min={1}
-          value={settings.autoDiaryMinMemos}
-          onChange={(e) =>
-            setSettings((s) => ({
-              ...s,
-              autoDiaryMinMemos: Number(e.target.value) || 1,
-            }))
-          }
-          className="w-24 text-right"
-        />
-      </SettingRow>
-      <SettingRow
-        label={t("aiSettings.minChars")}
-        description={t("aiSettings.minCharsDesc")}
-      >
-        <Input
-          type="number"
-          min={1}
-          value={settings.autoDiaryMinChars}
-          onChange={(e) =>
-            setSettings((s) => ({
-              ...s,
-              autoDiaryMinChars: Number(e.target.value) || 1,
-            }))
-          }
-          className="w-24 text-right"
-        />
-      </SettingRow>
-      <SettingRow
-        label={t("aiSettings.timezone")}
-        description={t("aiSettings.timezonePlaceholder")}
-      >
-        <Input
-          value={settings.appTimezone}
-          onChange={(e) =>
-            setSettings((s) => ({ ...s, appTimezone: e.target.value }))
-          }
-          className="w-44 text-right"
-        />
-      </SettingRow>
-      <Button variant="secondary" disabled={saving} onClick={() => void save()}>
-        {saving ? t("common.saving") : t("aiSettings.saveSettings")}
-      </Button>
     </div>
   )
 }
@@ -518,6 +357,7 @@ function MemorySection() {
 
 export default function AiSettingsView() {
   const { t } = useTranslation()
+  const toast = useToast()
   const currentUser = useAuthStore((s) => s.user)
 
   const config = useAsyncData<{ bot?: AiConfigItem; embedding?: AiConfigItem }>(
@@ -534,27 +374,73 @@ export default function AiSettingsView() {
     useCallback(() => adminApi("/settings") as Promise<AutomationSettings>, [])
   )
 
-  const chatSection =
-    config.loading && !config.data ? (
-      <Skeleton className="h-64" />
-    ) : config.error ? (
-      <ErrorState message={config.error} onRetry={config.refetch} />
-    ) : (
-      <ChatSection
-        key="chat"
-        config={config.data?.bot}
-        currentUserId={currentUser?.id}
-      />
-    )
+  const [tab, setTab] = useState<"chat" | "embedding">("chat")
+  const [chat, setChat] = useState<ChatForm>(() => chatFromItem(undefined))
+  const [embedding, setEmbedding] = useState<EmbeddingForm>(() =>
+    embeddingFromItem(undefined)
+  )
+  const [settings, setSettings] = useState<AutomationSettings>({
+    autoTagEnabled: true,
+    autoSummaryEnabled: false,
+    autoDiaryEnabled: true,
+    autoDiaryMinMemos: 2,
+    autoDiaryMinChars: 150,
+    appTimezone: "Asia/Shanghai",
+  })
+  const [hydrated, setHydrated] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
 
-  const embeddingSection =
-    config.loading && !config.data ? (
-      <Skeleton className="h-48" />
-    ) : config.error ? (
-      <ErrorState message={config.error} onRetry={config.refetch} />
-    ) : (
-      <EmbeddingSection key="embedding" config={config.data?.embedding} />
-    )
+  if (config.data && !hydrated) {
+    setChat(chatFromItem(config.data.bot))
+    setEmbedding(embeddingFromItem(config.data.embedding))
+    setHydrated(true)
+  }
+  if (automation.data && !hydrated) {
+    setSettings(automation.data)
+    setHydrated(true)
+  }
+
+  const canSave = !!config.data && !!automation.data
+
+  async function saveAll() {
+    if (!currentUser) return
+    setSaving(true)
+    setSaveError(false)
+    const results = await Promise.allSettled([
+      adminApi(`/users/${currentUser.id}/ai-config`, {
+        method: "PUT",
+        body: {
+          provider: "openai",
+          baseUrl: chat.baseUrl,
+          apiKey: chat.apiKey,
+          model: chat.model,
+          maxTokens: chat.maxTokens,
+          supportsVision: chat.supportsVision,
+          supportsThinking: chat.supportsThinking,
+        },
+      }),
+      adminApi("/ai-config/embedding", {
+        method: "PUT",
+        body: {
+          provider: "openai",
+          baseUrl: embedding.baseUrl,
+          apiKey: embedding.apiKey,
+          model: embedding.model,
+          embeddingDim: embedding.embeddingDim,
+        },
+      }),
+      adminApi("/settings", { method: "PUT", body: settings }),
+    ])
+    setSaving(false)
+    const failed = results.filter((r) => r.status === "rejected").length
+    if (failed === 0) {
+      toast.success(t("aiSettings.saved"))
+    } else {
+      setSaveError(true)
+      toast.error(`${failed} ${t("aiSettings.saveFailed")}`)
+    }
+  }
 
   const automationSection =
     automation.loading && !automation.data ? (
@@ -562,19 +448,87 @@ export default function AiSettingsView() {
     ) : automation.error ? (
       <ErrorState message={automation.error} onRetry={automation.refetch} />
     ) : (
-      <AutomationSection
-        key="automation"
-        initial={
-          automation.data ?? {
-            autoTagEnabled: true,
-            autoSummaryEnabled: false,
-            autoDiaryEnabled: true,
-            autoDiaryMinMemos: 2,
-            autoDiaryMinChars: 150,
-            appTimezone: "Asia/Shanghai",
-          }
-        }
-      />
+      <div className="space-y-5">
+        <SettingRow
+          label={t("aiSettings.autoTag")}
+          description={t("aiSettings.autoTagDesc")}
+        >
+          <AppSwitch
+            checked={settings.autoTagEnabled}
+            onCheckedChange={(v) =>
+              setSettings((s) => ({ ...s, autoTagEnabled: v }))
+            }
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("aiSettings.autoSummary")}
+          description={t("aiSettings.autoSummaryDesc")}
+        >
+          <AppSwitch
+            checked={settings.autoSummaryEnabled}
+            onCheckedChange={(v) =>
+              setSettings((s) => ({ ...s, autoSummaryEnabled: v }))
+            }
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("aiSettings.autoDiary")}
+          description={t("aiSettings.autoDiaryDesc")}
+        >
+          <AppSwitch
+            checked={settings.autoDiaryEnabled}
+            onCheckedChange={(v) =>
+              setSettings((s) => ({ ...s, autoDiaryEnabled: v }))
+            }
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("aiSettings.minMemos")}
+          description={t("aiSettings.minMemosDesc")}
+        >
+          <Input
+            type="number"
+            min={1}
+            value={settings.autoDiaryMinMemos}
+            onChange={(e) =>
+              setSettings((s) => ({
+                ...s,
+                autoDiaryMinMemos: Number(e.target.value) || 1,
+              }))
+            }
+            className="w-24 text-right"
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("aiSettings.minChars")}
+          description={t("aiSettings.minCharsDesc")}
+        >
+          <Input
+            type="number"
+            min={1}
+            value={settings.autoDiaryMinChars}
+            onChange={(e) =>
+              setSettings((s) => ({
+                ...s,
+                autoDiaryMinChars: Number(e.target.value) || 1,
+              }))
+            }
+            className="w-24 text-right"
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("aiSettings.timezone")}
+          description={t("aiSettings.timezonePlaceholder")}
+        >
+          <Input
+            value={settings.appTimezone}
+            onChange={(e) =>
+              setSettings((s) => ({ ...s, appTimezone: e.target.value }))
+            }
+            className="w-44 text-right"
+          />
+        </SettingRow>
+      </div>
     )
 
   return (
@@ -584,25 +538,33 @@ export default function AiSettingsView() {
       <section className="space-y-4">
         <div>
           <h2 className="text-[15px] font-semibold text-ink">
-            {t("aiSettings.chatModel")}
+            {t("aiSettings.modelConfig")}
           </h2>
           <p className="mt-0.5 text-xs text-ink-tertiary">
-            {t("aiSettings.chatModelDesc")}
+            {t("aiSettings.modelConfigDesc")}
           </p>
         </div>
-        {chatSection}
-      </section>
-
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-[15px] font-semibold text-ink">
-            {t("aiSettings.embeddingModel")}
-          </h2>
-          <p className="mt-0.5 text-xs text-ink-tertiary">
-            {t("aiSettings.embeddingModelDesc")}
-          </p>
-        </div>
-        {embeddingSection}
+        {config.loading && !config.data ? (
+          <Skeleton className="h-72" />
+        ) : config.error ? (
+          <ErrorState message={config.error} onRetry={config.refetch} />
+        ) : (
+          <AppTabs
+            value={tab}
+            onValueChange={(v) => setTab(v as "chat" | "embedding")}
+            tabs={[
+              { value: "chat", label: t("aiSettings.chatModel") },
+              { value: "embedding", label: t("aiSettings.embeddingModel") },
+            ]}
+          >
+            <TabPanel value="chat" keepMounted>
+              <ChatFormFields form={chat} onChange={setChat} />
+            </TabPanel>
+            <TabPanel value="embedding" keepMounted>
+              <EmbeddingFormFields form={embedding} onChange={setEmbedding} />
+            </TabPanel>
+          </AppTabs>
+        )}
       </section>
 
       <section className="space-y-4">
@@ -623,6 +585,19 @@ export default function AiSettingsView() {
         </h2>
         {automationSection}
       </section>
+
+      <div className="flex flex-col gap-2 border-t border-hairline pt-6">
+        {saveError && (
+          <p className="text-[13px] text-error">{t("aiSettings.saveFailed")}</p>
+        )}
+        <Button
+          className="w-full"
+          disabled={saving || !canSave}
+          onClick={() => void saveAll()}
+        >
+          {saving ? t("common.saving") : t("aiSettings.saveAll")}
+        </Button>
+      </div>
     </div>
   )
 }

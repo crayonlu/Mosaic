@@ -159,6 +159,8 @@
   },
   "aiSettings": {
     "title": "AI 设置",
+    "modelConfig": "模型配置",
+    "modelConfigDesc": "对话模型用于 Bot 回复，Embedding 模型用于记忆索引；其他用户可在其详情中单独配置对话模型",
     "chatModel": "对话模型",
     "chatModelDesc": "管理员账号的 Bot 对话模型，其他用户可在其详情中单独配置",
     "embeddingModel": "Embedding 模型",
@@ -197,6 +199,7 @@
     "timezone": "业务时区",
     "timezonePlaceholder": "IANA 时区名称，用于日期分组与 Bot 时间（如 Asia/Shanghai）",
     "saveSettings": "保存设置",
+    "saveAll": "保存全部设置",
     "memoryTitle": "记忆索引",
     "memoryDesc": "向量索引进度，补充索引会将全部历史 Memo 向量化",
     "backfill": "补充索引",
