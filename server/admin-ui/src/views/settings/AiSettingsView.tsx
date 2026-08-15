@@ -578,7 +578,7 @@ export default function AiSettingsView() {
     )
 
   return (
-    <div className="max-w-2xl space-y-10">
+    <div className="mx-auto max-w-2xl space-y-10">
       <PageHeader title={t("aiSettings.title")} />
 
       <section className="space-y-4">

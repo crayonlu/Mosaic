@@ -74,7 +74,7 @@ export default function AccountView() {
         <h2 className="text-[15px] font-semibold text-ink">
           {t("account.profile")}
         </h2>
-        <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-4">
           <Field label={t("account.username")}>
             <div className="flex h-10 items-center rounded-md bg-subtle px-3 text-sm text-ink md:h-9">
               {user?.username ?? "—"}

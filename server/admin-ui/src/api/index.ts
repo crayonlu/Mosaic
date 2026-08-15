@@ -44,7 +44,39 @@ function buildUrl(basePath: string, request: FetchRequest): FetchRequest {
   return server ? `${server}${basePath}${request}` : `${basePath}${request}`
 }
 
-let refreshPromise: Promise<void> | null = null
+let refreshPromise: Promise<boolean> | null = null
+
+async function performRefresh(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise
+  refreshPromise = (async () => {
+    try {
+      const refresh = localStorage.getItem(REFRESH_KEY)
+      if (!refresh) return false
+      const server = getServerUrl()
+      const refreshUrl = server
+        ? `${server}/api/auth/refresh`
+        : "/api/auth/refresh"
+      const res: RefreshTokenResponse = await ofetch(refreshUrl, {
+        method: "POST",
+        body: { refreshToken: refresh },
+      })
+      setToken(res.accessToken, res.refreshToken)
+      return true
+    } catch {
+      return false
+    } finally {
+      refreshPromise = null
+    }
+  })()
+  return refreshPromise
+}
+
+/** 供鉴权媒体等非 ofetch 请求使用:刷新成功后返回新 access token,失败返回 null */
+export async function refreshAccessToken(): Promise<string | null> {
+  const ok = await performRefresh()
+  return ok ? getToken() : null
+}
+
 const RETRY_FLAG = "__retried"
 
 function onResponseError({
@@ -62,49 +94,28 @@ function onResponseError({
       window.location.href = "/admin/login"
       return
     }
-
-    const refresh = localStorage.getItem(REFRESH_KEY)
-    if (refresh) {
-      if (!refreshPromise) {
-        refreshPromise = (async () => {
-          try {
-            const server = getServerUrl()
-            const refreshUrl = server
-              ? `${server}/api/auth/refresh`
-              : "/api/auth/refresh"
-            const res: RefreshTokenResponse = await ofetch(refreshUrl, {
-              method: "POST",
-              body: { refreshToken: refresh },
-            })
-            setToken(res.accessToken, res.refreshToken)
-          } catch {
-            clearToken()
-            window.location.href = "/admin/login"
-          } finally {
-            refreshPromise = null
-          }
-        })()
-      }
-      return refreshPromise.then(() => {
-        const token = getToken()
-        if (token) {
-          const retryOptions: FetchOptions & { [RETRY_FLAG]?: boolean } = {
-            ...options,
-            [RETRY_FLAG]: true,
-          }
-          retryOptions.headers = new Headers(options.headers)
-          ;(retryOptions.headers as Headers).set(
-            "Authorization",
-            `Bearer ${token}`
-          )
-          return ofetch(request, retryOptions)
-        }
+    return performRefresh().then((ok) => {
+      if (!ok) {
         clearToken()
         window.location.href = "/admin/login"
-      })
-    }
-    clearToken()
-    window.location.href = "/admin/login"
+        return
+      }
+      const token = getToken()
+      if (token) {
+        const retryOptions: FetchOptions & { [RETRY_FLAG]?: boolean } = {
+          ...options,
+          [RETRY_FLAG]: true,
+        }
+        retryOptions.headers = new Headers(options.headers)
+        ;(retryOptions.headers as Headers).set(
+          "Authorization",
+          `Bearer ${token}`
+        )
+        return ofetch(request, retryOptions)
+      }
+      clearToken()
+      window.location.href = "/admin/login"
+    })
   }
 }
 
@@ -117,14 +128,6 @@ function createClient(basePath: string) {
         attachToken(ctx.options)
       },
       onResponseError,
-      parseResponse: (responseText: string) => {
-        if (!responseText) return null
-        try {
-          return JSON.parse(responseText)
-        } catch {
-          throw new Error("Invalid JSON response from server")
-        }
-      },
       ...opts,
     }
     return ofetch(url, options)
@@ -133,16 +136,6 @@ function createClient(basePath: string) {
 
 export const api = createClient("/api")
 export const adminApi = createClient("/admin/api")
-
-export function isProxyMediaUrl(src: string) {
-  try {
-    return (
-      new URL(src, window.location.origin).origin === window.location.origin
-    )
-  } catch {
-    return false
-  }
-}
 
 export interface LoginResponse {
   accessToken: string

@@ -120,7 +120,7 @@ function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b border-hairline bg-canvas/90 px-4 backdrop-blur-sm md:px-6">
+    <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b border-hairline bg-canvas/90 pr-4 backdrop-blur-sm md:px-6">
       <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"
