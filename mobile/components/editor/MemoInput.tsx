@@ -139,40 +139,38 @@ export function MemoInput({
           )}
         </View>
 
-        {/* Toolbar — only visible when expanded, height snapped with focus */}
-        <View
-          style={[
-            styles.toolbar,
-            { height: isFocused ? TOOLBAR_HEIGHT : 0 },
-            { opacity: isFocused ? 1 : 0 },
-          ]}
-        >
-          <Pressable
-            onPress={() => setIsFullScreenVisible(true)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            disabled={disabled}
-            style={styles.toolbarButton}
-          >
-            <Maximize2 size={18} color={theme.textSecondary} strokeWidth={1.8} />
-          </Pressable>
+        {/* Toolbar — only mounted when expanded. When collapsed it must not exist in the
+            tree: its zero-height buttons would still intercept touches (a disabled
+            Pressable swallows taps) and block the inline expand button below. */}
+        {isFocused && (
+          <View style={styles.toolbar}>
+            <Pressable
+              onPress={() => setIsFullScreenVisible(true)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              disabled={disabled}
+              style={styles.toolbarButton}
+            >
+              <Maximize2 size={18} color={theme.textSecondary} strokeWidth={1.8} />
+            </Pressable>
 
-          <Pressable
-            onPress={handleSubmit}
-            disabled={disabled || !hasText}
-            style={[
-              styles.sendButton,
-              {
-                backgroundColor: hasText ? theme.primary : theme.surfaceMuted,
-              },
-            ]}
-          >
-            <ArrowUp
-              size={18}
-              color={hasText ? theme.onPrimary : theme.textSecondary}
-              strokeWidth={2.5}
-            />
-          </Pressable>
-        </View>
+            <Pressable
+              onPress={handleSubmit}
+              disabled={disabled || !hasText}
+              style={[
+                styles.sendButton,
+                {
+                  backgroundColor: hasText ? theme.primary : theme.surfaceMuted,
+                },
+              ]}
+            >
+              <ArrowUp
+                size={18}
+                color={hasText ? theme.onPrimary : theme.textSecondary}
+                strokeWidth={2.5}
+              />
+            </Pressable>
+          </View>
+        )}
       </View>
 
       <FullScreenEditor
@@ -223,6 +221,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    height: TOOLBAR_HEIGHT,
   },
   toolbarButton: {
     padding: 4,
