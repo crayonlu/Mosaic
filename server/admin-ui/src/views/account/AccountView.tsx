@@ -1,5 +1,5 @@
 import { Info } from "@phosphor-icons/react"
-import { useState, type FormEvent } from "react"
+import { useState, type FormEvent, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { api, setToken } from "../../api"
@@ -60,7 +60,7 @@ export default function AccountView() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-xl space-y-10">
       <PageHeader title={t("account.title")} />
 
       {mustChangePassword && (
@@ -74,26 +74,25 @@ export default function AccountView() {
         <h2 className="text-[15px] font-semibold text-ink">
           {t("account.profile")}
         </h2>
-        <div className="flex flex-col gap-4">
-          <Field label={t("account.username")}>
-            <div className="flex h-10 items-center rounded-md bg-subtle px-3 text-sm text-ink md:h-9">
-              {user?.username ?? "—"}
-            </div>
-          </Field>
-          <Field label={t("account.role")}>
-            <div className="flex h-10 items-center md:h-9">
+        <div className="divide-y divide-hairline">
+          <ProfileRow
+            label={t("account.username")}
+            value={user?.username ?? "—"}
+          />
+          <ProfileRow
+            label={t("account.role")}
+            value={
               <Badge variant={user?.role === "admin" ? "neutral" : "outline"}>
                 {user?.role === "admin"
                   ? t("account.admin")
                   : t("account.user")}
               </Badge>
-            </div>
-          </Field>
-          <Field label={t("account.memberSince")}>
-            <div className="flex h-10 items-center rounded-md bg-subtle px-3 text-sm text-ink md:h-9">
-              {user ? formatDate(user.createdAt, "s") : "—"}
-            </div>
-          </Field>
+            }
+          />
+          <ProfileRow
+            label={t("account.memberSince")}
+            value={user ? formatDate(user.createdAt, "s") : "—"}
+          />
         </div>
       </section>
 
@@ -101,7 +100,7 @@ export default function AccountView() {
         <h2 className="text-[15px] font-semibold text-ink">
           {t("account.changePassword")}
         </h2>
-        <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <Field label={t("account.oldPassword")}>
             <Input
               type="password"
@@ -126,11 +125,22 @@ export default function AccountView() {
               autoComplete="new-password"
             />
           </Field>
-          <Button type="submit" disabled={saving}>
+          <Button type="submit" className="w-full" disabled={saving}>
             {saving ? t("common.saving") : t("account.submit")}
           </Button>
         </form>
       </section>
+    </div>
+  )
+}
+
+function ProfileRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-6 py-3">
+      <span className="text-[13px] text-ink-secondary">{label}</span>
+      <span className="min-w-0 truncate text-[13px] font-medium text-ink">
+        {value}
+      </span>
     </div>
   )
 }
