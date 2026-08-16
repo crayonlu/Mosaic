@@ -14,6 +14,10 @@ export const botsApi = {
     return apiClient.get<Bot[]>('/api/bots')
   },
 
+  get(id: string): Promise<Bot> {
+    return apiClient.get<Bot>(`/api/bots/${id}`)
+  },
+
   create(data: CreateBotRequest): Promise<Bot> {
     return apiClient.post<Bot>('/api/bots', data)
   },

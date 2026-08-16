@@ -1,6 +1,6 @@
 {
   "name": "mosaic-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "MCP server for Mosaic — journaling, diary, and memory app. Query memos, diaries, bots, stats, and AI features via Model Context Protocol.",
   "type": "module",
@@ -16,17 +16,20 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "start": "node dist/index.js",
+    "smoke": "node scripts/mcp-smoke.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json}\""
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "axios": "^1.13.5",
     "zod": "^3.25.0"
   },
   "devDependencies": {
+    "@mosaic/api": "workspace:*",
     "@types/node": "^22.0.0",
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",

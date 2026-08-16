@@ -8,4 +8,6 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   platform: 'node',
+  noExternal: ['@mosaic/api'],
+  external: ['axios'],
 })

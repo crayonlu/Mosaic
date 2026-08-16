@@ -6,6 +6,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./node": "./src/node.ts",
     "./types/*": "./src/types/*"
   },
   "dependencies": {

@@ -62,6 +62,39 @@ export interface AdminAiConfigResponse {
   embedding: ServerAiConfig
 }
 
+export interface AppSettingsPayload {
+  autoTagEnabled: boolean
+  autoSummaryEnabled: boolean
+  autoDiaryEnabled: boolean
+  autoDiaryMinMemos: number
+  autoDiaryMinChars: number
+  appTimezone: string
+}
+
+export interface AdminHealthResponse {
+  uptime: string
+  startedAt: number
+  version: string
+  storageType: string
+  storageUsed: number
+  storageUsedFormatted: string
+  dbSize: number
+  dbSizeFormatted: string
+}
+
+export interface ActivityEntry {
+  timestamp: number
+  action: string
+  entityType: string
+  entityId: string | null
+  level: string
+  detail: string
+}
+
+export interface ActivityResponse {
+  entries: ActivityEntry[]
+}
+
 export const adminApi = {
   getAiConfig(): Promise<AdminAiConfigResponse> {
     return apiClient.get<AdminAiConfigResponse>('/admin/api/ai-config')
@@ -87,5 +120,25 @@ export const adminApi = {
 
   updateUser(id: string, data: UpdateManagedUserRequest): Promise<ManagedUser> {
     return apiClient.request<ManagedUser>('PATCH', `/admin/api/users/${id}`, { body: data })
+  },
+
+  getSettings(): Promise<AppSettingsPayload> {
+    return apiClient.get<AppSettingsPayload>('/admin/api/settings')
+  },
+
+  updateSettings(data: AppSettingsPayload): Promise<AppSettingsPayload> {
+    return apiClient.put<AppSettingsPayload>('/admin/api/settings', data)
+  },
+
+  health(): Promise<AdminHealthResponse> {
+    return apiClient.get<AdminHealthResponse>('/admin/api/health')
+  },
+
+  activity(limit = 50, level?: string): Promise<ActivityResponse> {
+    const query: Record<string, unknown> = { limit }
+    if (level) {
+      query.level = level
+    }
+    return apiClient.get<ActivityResponse>('/admin/api/activity', query)
   },
 }

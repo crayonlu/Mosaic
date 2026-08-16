@@ -1,6 +1,7 @@
 import { z } from 'zod/v3'
-import type { MosaicClient } from '../client.js'
+import { aiApi } from '@mosaic/api/node'
 import { jsonResult, textResult } from '../result.js'
+import type { McpToolDefinition } from './types.js'
 
 // ── Summarize ────────────────────────────────────────
 export const summarizeSchema = {
@@ -8,10 +9,9 @@ export const summarizeSchema = {
 }
 
 export async function handleSummarize(
-  client: MosaicClient,
   args: z.infer<ReturnType<typeof z.object<typeof summarizeSchema>>>
 ) {
-  const result = await client.summarize(args.content)
+  const result = await aiApi.summarize(args.content)
   return textResult(result.summary)
 }
 
@@ -22,9 +22,25 @@ export const suggestTagsSchema = {
 }
 
 export async function handleSuggestTags(
-  client: MosaicClient,
   args: z.infer<ReturnType<typeof z.object<typeof suggestTagsSchema>>>
 ) {
-  const result = await client.suggestTags(args.content, args.existingTags)
+  const result = await aiApi.suggestTags(args.content, args.existingTags)
   return jsonResult(result)
 }
+
+export const aiTools: McpToolDefinition[] = [
+  {
+    name: 'ai_summarize',
+    title: 'Summarize Content',
+    description: 'Use AI to generate a summary of provided text content.',
+    inputSchema: summarizeSchema,
+    handler: args => handleSummarize(args as Parameters<typeof handleSummarize>[0]),
+  },
+  {
+    name: 'ai_suggest_tags',
+    title: 'Suggest Tags',
+    description: 'Use AI to suggest relevant tags for provided content.',
+    inputSchema: suggestTagsSchema,
+    handler: args => handleSuggestTags(args as Parameters<typeof handleSuggestTags>[0]),
+  },
+]

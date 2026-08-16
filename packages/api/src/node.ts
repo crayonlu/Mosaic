@@ -1,4 +1,5 @@
-// API exports
+// Node-safe API exports (no React Query hooks).
+// Import from '@mosaic/api/node' in non-React (Node/Bun) environments.
 export {
   adminApi,
   type ActivityEntry,
@@ -22,9 +23,6 @@ export { memoryApi } from './memory'
 export { memosApi } from './memos'
 export { resourcesApi, toAbsoluteUrl, uploadResourceFiles } from './resources'
 export { statsApi } from './stats'
-
-// Hooks exports
-export * from './hooks'
 
 // Type exports
 export * from './types'
