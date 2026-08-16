@@ -5,17 +5,33 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { useMemoTags, useSearchMemos } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import type { Memo } from '@mosaic/api'
-import { router } from 'expo-router'
-import { useCallback, useMemo, useState } from 'react'
+import { router, useLocalSearchParams } from 'expo-router'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 
 export default function SearchScreen() {
   const { theme } = useThemeStore()
+  const tagParam = useLocalSearchParams<{ tag?: string | string[] }>().tag
+  const incomingTag =
+    typeof tagParam === 'string' ? tagParam : Array.isArray(tagParam) ? tagParam[0] : undefined
+
   const [query, setQuery] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isArchived, setIsArchived] = useState<boolean | undefined>(undefined)
   const [startDate, setStartDate] = useState<string | undefined>(undefined)
   const [endDate, setEndDate] = useState<string | undefined>(undefined)
+
+  // Consume a tag passed via navigation (e.g. tapping a tag on the memo detail screen):
+  // show all memos with that tag, then clear the param so the same tag can be tapped again.
+  useEffect(() => {
+    if (!incomingTag) return
+    setQuery('')
+    setIsArchived(undefined)
+    setStartDate(undefined)
+    setEndDate(undefined)
+    setSelectedTags([incomingTag])
+    router.setParams({ tag: undefined })
+  }, [incomingTag, router])
 
   const debouncedQuery = useDebounce(query, 300)
 

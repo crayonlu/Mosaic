@@ -436,6 +436,7 @@
     "createdAt": "创建于 {{time}}",
     "noTags": "暂无标签",
     "revisionNumber": "第 {{n}} 版",
+    "tagFilterLabel": "查看 #{{tag}} 标签的所有 memo",
     "updatedAt": "更新于 {{time}}"
   },
   "modelCombobox": {

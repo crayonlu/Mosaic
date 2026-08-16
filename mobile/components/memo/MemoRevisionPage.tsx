@@ -12,7 +12,7 @@ import type { BotReply, MemoRevision, MemoWithResources } from '@mosaic/api'
 import { resourcesApi } from '@mosaic/api'
 import { router } from 'expo-router'
 import { useMemo } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, { Easing, FadeIn } from 'react-native-reanimated'
 
 interface MemoRevisionPageProps {
@@ -22,6 +22,7 @@ interface MemoRevisionPageProps {
   botReplies?: BotReply[]
   onBotReply: (reply: BotReply) => void
   onSaveAISummary?: (text: string) => Promise<void>
+  onTagPress?: (tag: string) => void
 }
 
 export function MemoRevisionPage({
@@ -31,6 +32,7 @@ export function MemoRevisionPage({
   botReplies,
   onBotReply,
   onSaveAISummary,
+  onTagPress,
 }: MemoRevisionPageProps) {
   const { t } = useTranslation()
   const { theme } = useThemeStore()
@@ -112,10 +114,24 @@ export function MemoRevisionPage({
 
       <View style={styles.tagsContainer}>
         {tags.length > 0 ? (
-          tags.map((tag, i) => (
-            <View key={tag} style={[styles.tag, { backgroundColor: theme.surfaceMuted }]}>
+          tags.map(tag => (
+            <Pressable
+              key={tag}
+              onPress={onTagPress ? () => onTagPress(tag) : undefined}
+              disabled={!onTagPress}
+              hitSlop={6}
+              style={({ pressed }) => [
+                styles.tag,
+                { backgroundColor: theme.surfaceMuted },
+                pressed && onTagPress ? styles.tagPressed : null,
+              ]}
+              accessibilityRole={onTagPress ? 'button' : undefined}
+              accessibilityLabel={
+                onTagPress ? t('memoRevision.tagFilterLabel', { tag }) : undefined
+              }
+            >
               <Text style={[styles.tagText, { color: theme.textSecondary }]}>#{tag}</Text>
-            </View>
+            </Pressable>
           ))
         ) : (
           <Text style={[styles.tagText, { color: theme.textTertiary }]}>
@@ -173,6 +189,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
+  },
+  tagPressed: {
+    opacity: 0.6,
   },
   tagText: {
     fontSize: 13,

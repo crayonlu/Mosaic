@@ -123,6 +123,10 @@ export default function MemoDetailScreen() {
     setShowEditor(true)
   }, [memo])
 
+  const handleTagPress = useCallback((tag: string) => {
+    router.push({ pathname: '/search', params: { tag } })
+  }, [])
+
   const handleBotReply = useCallback((reply: BotReply) => {
     setBotReply(reply)
     setThreadVisible(true)
@@ -288,6 +292,7 @@ export default function MemoDetailScreen() {
           botReplies={botReplies}
           onBotReply={handleBotReply}
           onSaveAISummary={handleSaveAISummary}
+          onTagPress={handleTagPress}
         />
         <BotThreadSheet
           visible={threadVisible}
@@ -359,6 +364,7 @@ export default function MemoDetailScreen() {
                 botReplies={isLatest ? botReplies : []}
                 onBotReply={handleBotReply}
                 onSaveAISummary={isLatest ? handleSaveAISummary : undefined}
+                onTagPress={handleTagPress}
               />
             </View>
           )

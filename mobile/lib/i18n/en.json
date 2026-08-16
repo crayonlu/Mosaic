@@ -436,6 +436,7 @@
     "createdAt": "Created {{time}}",
     "noTags": "No tags",
     "revisionNumber": "Version {{n}}",
+    "tagFilterLabel": "View all memos with tag #{{tag}}",
     "updatedAt": "Updated {{time}}"
   },
   "modelCombobox": {
