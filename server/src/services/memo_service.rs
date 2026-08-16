@@ -507,16 +507,26 @@ impl MemoService {
         // concurrent deletes could bring revision count below 1.
         let mut tx = self.pool.begin().await?;
 
-        // Join memos to ensure the user owns this memo before locking its revisions.
+        // Lock the memo row to serialize concurrent revision deletes on this
+        // memo, and verify ownership in the same query. FOR UPDATE cannot be
+        // applied to the aggregate count below, so the lock lives here.
+        let memo_locked: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM memos WHERE id = $1 AND user_id = $2 FOR UPDATE")
+                .bind(memo_id)
+                .bind(user_uuid)
+                .fetch_optional(&mut *tx)
+                .await?;
+
+        if memo_locked.is_none() {
+            return Err(AppError::MemoNotFound);
+        }
+
         let count: (i64,) = sqlx::query_as(
             "SELECT COUNT(*)
-             FROM memo_revisions mr
-             INNER JOIN memos m ON m.id = mr.memo_id
-             WHERE mr.memo_id = $1 AND m.user_id = $2 AND mr.is_deleted = false
-             FOR UPDATE",
+             FROM memo_revisions
+             WHERE memo_id = $1 AND is_deleted = false",
         )
         .bind(memo_id)
-        .bind(user_uuid)
         .fetch_one(&mut *tx)
         .await?;
 

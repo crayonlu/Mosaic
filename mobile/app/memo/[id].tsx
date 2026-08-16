@@ -1,7 +1,7 @@
 import { BotThreadSheet } from '@/components/bot/BotThreadSheet'
 import { FullScreenEditor } from '@/components/editor/FullScreenEditor'
 import { MemoRevisionPage } from '@/components/memo/MemoRevisionPage'
-import { ScreenHeader } from '@/components/ui'
+import { HeaderActionMenu, ScreenHeader } from '@/components/ui'
 import { toast } from '@/components/ui/Toast'
 import { useToastConfirm } from '@/hooks/useToastConfirm'
 import { useDeleteRevision, useMemoDetail } from '@/lib/query/hooks/useMemos'
@@ -14,7 +14,7 @@ import {
   type UpdateMemoRequest,
 } from '@mosaic/api'
 import { router, useLocalSearchParams } from 'expo-router'
-import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react-native'
+import { ChevronLeft, ChevronRight, MoreVertical, Pencil, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useMemo as useRNMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
@@ -92,36 +92,31 @@ export default function MemoDetailScreen() {
     }
   }, [currentPage, totalPages])
 
-  const handleDelete = useCallback(() => {
+  const handleDeleteRevision = useCallback(() => {
     if (!memo) return
-    const canDeleteRevision = pages.length > 1 && !isOnLatest
-
-    const doDeleteRevision = async () => {
-      const rev = pages[currentPage]
-      if (!rev) return
+    const rev = pages[currentPage]
+    if (!rev) return
+    confirm(t('memo.versionDeleteConfirm'), async () => {
       try {
         await deleteRevision({ memoId: memo.id, revisionId: rev.id })
         toast.show({ type: 'success', title: t('memo.versionDeleted') })
       } catch {
         toast.show({ type: 'error', title: t('memo.versionDeleteFailed') })
       }
-    }
+    })
+  }, [t, memo, pages, currentPage, deleteRevision, confirm])
 
-    const doDeleteMemo = async () => {
+  const handleDeleteMemo = useCallback(() => {
+    if (!memo) return
+    confirm(t('memo.deleteConfirm'), async () => {
       try {
         await deleteMemo(memo.id)
         router.back()
       } catch {
         toast.show({ type: 'error', title: t('memo.deleteFailed') })
       }
-    }
-
-    if (canDeleteRevision) {
-      confirm(t('memo.versionDeleteConfirm'), doDeleteRevision)
-    } else {
-      confirm(t('memo.deleteConfirm'), doDeleteMemo)
-    }
-  }, [t, memo, pages, currentPage, isOnLatest, deleteRevision, deleteMemo, confirm])
+    })
+  }, [t, memo, deleteMemo, confirm])
 
   const handleEdit = useCallback(() => {
     if (!memo) return
@@ -183,24 +178,34 @@ export default function MemoDetailScreen() {
       }
       right={
         <View style={styles.headerRight}>
-          {isOnLatest && (
+          {isOnLatest ? (
+            <HeaderActionMenu
+              accessibilityLabel={t('memo.moreActions')}
+              trigger={<MoreVertical size={20} color={theme.text} strokeWidth={2} />}
+              items={[
+                {
+                  label: t('memo.editMemo'),
+                  icon: <Pencil size={16} color={theme.text} strokeWidth={2} />,
+                  onPress: handleEdit,
+                },
+                {
+                  label: t('common.delete'),
+                  icon: <Trash2 size={16} color={theme.error} strokeWidth={2} />,
+                  destructive: true,
+                  onPress: handleDeleteMemo,
+                },
+              ]}
+            />
+          ) : (
             <Pressable
-              onPress={handleEdit}
+              onPress={handleDeleteRevision}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               style={{ padding: 4 }}
-              accessibilityLabel={t('memo.editMemo')}
+              accessibilityLabel={t('common.delete')}
             >
-              <Pencil size={18} color={theme.text} strokeWidth={2} />
+              <Trash2 size={18} color={theme.text} strokeWidth={2} />
             </Pressable>
           )}
-          <Pressable
-            onPress={handleDelete}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={{ padding: 4 }}
-            accessibilityLabel={t('common.delete')}
-          >
-            <Trash2 size={18} color={theme.text} strokeWidth={2} />
-          </Pressable>
         </View>
       }
     />
