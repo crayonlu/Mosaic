@@ -1091,7 +1091,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 4,
   },
   progressBar: {
     flex: 1,
@@ -1104,6 +1103,7 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 11,
     minWidth: 32,
+    textAlign: 'right',
   },
   updateBadge: {
     height: 18,
