@@ -19,7 +19,7 @@
     },
     "mobile": {
       "name": "@mosaic/mobile",
-      "version": "1.0.11",
+      "version": "1.0.14",
       "dependencies": {
         "@gorhom/bottom-sheet": "^5.2.8",
         "@mosaic/api": "workspace:*",
@@ -122,17 +122,17 @@
     },
     "packages/mcp-server": {
       "name": "mosaic-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "bin": {
         "mosaic-mcp": "dist/index.js",
       },
       "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",
-        "@mosaic/api": "workspace:*",
         "axios": "^1.13.5",
         "zod": "^3.25.0",
       },
       "devDependencies": {
+        "@mosaic/api": "workspace:*",
         "@types/node": "^22.0.0",
         "eslint": "^9.0.0",
         "prettier": "^3.0.0",

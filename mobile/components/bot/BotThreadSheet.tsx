@@ -151,7 +151,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
     { id: string; progress: number }[]
   >([])
   const [pendingMessage, setPendingMessage] = useState<PendingMessage | null>(null)
-  const [isFocused, setIsFocused] = useState(false)
+  const inputRef = useRef<TextInput>(null)
 
   useEffect(() => {
     if (!visible) {
@@ -160,6 +160,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       setUploadCandidates({})
       setUploadProgressItems([])
       setPendingMessage(null)
+      inputRef.current?.blur()
     }
   }, [visible])
 
@@ -206,7 +207,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       ...Object.fromEntries(selected.map(item => [item.key, item])),
     }))
     setMediaItems(prev => [...prev, ...selected])
-  }, [mediaItems.length])
+  }, [mediaItems.length, t])
 
   const handleSend = useCallback(async () => {
     const question = text.trim()
@@ -259,10 +260,11 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       setText(question)
       setMediaItems(sentMediaItems)
       setUploadCandidates(sentUploadCandidates)
+      setUploadProgressItems([])
       setPendingMessage(null)
       toast.error(error instanceof Error ? error.message : t('botThread.sendFailed'))
     }
-  }, [isPending, latestReplyId, mediaItems, replyToBot, text, uploadCandidates])
+  }, [isPending, latestReplyId, mediaItems, replyToBot, t, text, uploadCandidates])
 
   const removeMediaItem = useCallback((key: string) => {
     setMediaItems(prev => prev.filter(item => item.key !== key))
@@ -400,10 +402,8 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                   styles.replyBar,
                   {
                     backgroundColor: theme.background,
-                    borderColor: theme.border,
-                    height: isFocused ? undefined : 48,
-                    paddingVertical: 28,
-                    borderWidth: 1,
+                    borderTopColor: theme.border,
+                    paddingBottom: Math.max(insets.bottom, 8),
                   },
                 ]}
               >
@@ -444,24 +444,25 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                     style={styles.imageBtn}
                     onPress={handlePickImages}
                     disabled={isPending || mediaItems.length >= 4}
+                    hitSlop={8}
                   >
                     <ImagePlus size={18} color={theme.textSecondary} />
                   </TouchableOpacity>
                   <TextInput
+                    ref={inputRef}
                     style={[
                       styles.input,
                       { color: theme.text, fontSize: theme.typography.bodyLarge.fontSize },
-                      !isFocused && styles.inputCollapsed,
                     ]}
                     value={text}
                     onChangeText={setText}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
                     placeholder={t('botThread.askPlaceholder')}
                     placeholderTextColor={theme.textSecondary}
-                    multiline={isFocused}
-                    textAlignVertical={isFocused ? 'top' : 'center'}
+                    multiline
+                    textAlignVertical="top"
                     maxLength={500}
+                    editable={!isPending}
+                    blurOnSubmit={false}
                   />
                   <TouchableOpacity
                     style={[
@@ -473,6 +474,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
                     ]}
                     onPress={handleSend}
                     disabled={(!text.trim() && mediaItems.length === 0) || isPending}
+                    hitSlop={8}
                   >
                     <Send
                       size={18}
@@ -550,31 +552,32 @@ const styles = StyleSheet.create({
   },
   replyBar: {
     paddingHorizontal: 14,
-    overflow: 'hidden',
-  },
-  inputRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
     gap: 8,
   },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    minHeight: 40,
+  },
   imageBtn: {
-    padding: 4,
+    padding: 8,
     flexShrink: 0,
   },
   input: {
     flex: 1,
-    paddingVertical: 0,
+    minHeight: 36,
+    maxHeight: 100,
+    paddingVertical: 8,
     paddingHorizontal: 0,
     includeFontPadding: false,
-    maxHeight: 100,
-  },
-  inputCollapsed: {
-    height: 28,
   },
   mediaStrip: {
     gap: 8,
     paddingRight: 2,
+    paddingBottom: 2,
   },
   mediaThumb: {
     width: 58,
