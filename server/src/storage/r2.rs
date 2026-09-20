@@ -31,8 +31,11 @@ impl R2Storage {
 
 #[async_trait]
 impl Storage for R2Storage {
-    async fn upload(&self, path: &str, data: Bytes, _mime_type: &str) -> anyhow::Result<String> {
-        self.operator.write(path, data).await?;
+    async fn upload(&self, path: &str, data: Bytes, mime_type: &str) -> anyhow::Result<String> {
+        self.operator
+            .write_with(path, data)
+            .content_type(mime_type)
+            .await?;
         Ok(path.to_string())
     }
 

@@ -6,16 +6,14 @@ use uuid::Uuid;
 pub const THUMBNAIL_STORAGE_PATH_KEY: &str = "thumbnailStoragePath";
 pub const THUMBNAIL_MIME_TYPE_KEY: &str = "thumbnailMimeType";
 
-pub fn resolve_mime_type(declared: &str, filename: &str, data: &[u8]) -> String {
+pub fn resolve_mime_type(declared: &str, _filename: &str, data: &[u8]) -> String {
     let sniffed = sniff_image_mime_type(data);
     if declared.starts_with("image/") {
         return sniffed.unwrap_or_else(|| declared.to_string());
     }
 
     if is_generic_mime_type(declared) {
-        return sniffed
-            .or_else(|| mime_type_from_extension(filename))
-            .unwrap_or_else(|| declared.to_string());
+        return sniffed.unwrap_or_else(|| "application/octet-stream".to_string());
     }
 
     declared.to_string()
@@ -42,17 +40,6 @@ fn sniff_image_mime_type(data: &[u8]) -> Option<String> {
     }
 
     None
-}
-
-fn mime_type_from_extension(filename: &str) -> Option<String> {
-    let extension = filename.rsplit('.').next()?.to_ascii_lowercase();
-    match extension.as_str() {
-        "jpg" | "jpeg" => Some("image/jpeg".to_string()),
-        "png" => Some("image/png".to_string()),
-        "gif" => Some("image/gif".to_string()),
-        "webp" => Some("image/webp".to_string()),
-        _ => None,
-    }
 }
 
 pub fn build_download_route(resource_id: Uuid) -> String {
@@ -201,6 +188,22 @@ mod tests {
         assert_eq!(
             resolve_mime_type("text/plain", "notes.txt", b"hello"),
             "text/plain"
+        );
+    }
+
+    #[test]
+    fn keeps_generic_mime_for_unrecognized_bytes_even_with_image_extension() {
+        assert_eq!(
+            resolve_mime_type("application/octet-stream", "payload.png", b"not an image"),
+            "application/octet-stream"
+        );
+    }
+
+    #[test]
+    fn uses_octet_stream_for_empty_mime_and_unrecognized_bytes() {
+        assert_eq!(
+            resolve_mime_type("", "payload.bin", b"unknown bytes"),
+            "application/octet-stream"
         );
     }
 }

@@ -69,7 +69,7 @@ pub async fn upload_resource(
 
     let mut memo_id: Option<uuid::Uuid> = None;
     let mut filename = String::new();
-    let mut mime_type = String::from("image/jpeg");
+    let mut mime_type = String::from("application/octet-stream");
     let mut metadata = empty_metadata();
     // Stream to a temporary file instead of buffering in memory
     let mut temp_file = match NamedTempFile::new() {
