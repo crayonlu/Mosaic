@@ -261,6 +261,7 @@ async function main() {
       captured.uploadFields.length === 1 &&
         captured.uploadFields[0].contentType.startsWith('multipart/form-data') &&
         captured.uploadFields[0].body.includes('pixel.png') &&
+        captured.uploadFields[0].body.includes('Content-Type: image/png') &&
         captured.uploadFields[0].body.includes('width'),
       captured.uploadFields[0]?.contentType ?? 'no upload seen'
     )

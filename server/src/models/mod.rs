@@ -51,9 +51,9 @@ pub use memory::{
     BotMemoryContext, BotMemoryDebugContext, MemoryStatsResponse, RelatedMemoContext,
 };
 pub use resource::{
-    build_download_route, build_thumbnail_route, thumbnail_mime_type, thumbnail_storage_path,
-    with_thumbnail_metadata, ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse,
-    Resource, ResourceResponse,
+    build_download_route, build_thumbnail_route, resolve_mime_type, thumbnail_mime_type,
+    thumbnail_storage_path, with_thumbnail_metadata, ConfirmUploadRequest, CreateResourceRequest,
+    PresignedUploadResponse, Resource, ResourceResponse,
 };
 pub use server_ai_config::{ServerAiConfig, ServerAiConfigPayload, ServerAiConfigResponse};
 pub use stats::{

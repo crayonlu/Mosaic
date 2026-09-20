@@ -55,11 +55,12 @@ export async function handleUploadResource(
     )
   }
 
+  const mimeType = args.mimeType ?? 'image/jpeg'
   const result = await resourcesApi.upload(
     {
-      data: new Blob([data]),
+      data: new Blob([data], { type: mimeType }),
       name: args.filename,
-      type: args.mimeType ?? 'image/jpeg',
+      type: mimeType,
     },
     {
       memoId: args.memoId,

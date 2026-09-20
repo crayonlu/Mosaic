@@ -6,6 +6,55 @@ use uuid::Uuid;
 pub const THUMBNAIL_STORAGE_PATH_KEY: &str = "thumbnailStoragePath";
 pub const THUMBNAIL_MIME_TYPE_KEY: &str = "thumbnailMimeType";
 
+pub fn resolve_mime_type(declared: &str, filename: &str, data: &[u8]) -> String {
+    let sniffed = sniff_image_mime_type(data);
+    if declared.starts_with("image/") {
+        return sniffed.unwrap_or_else(|| declared.to_string());
+    }
+
+    if is_generic_mime_type(declared) {
+        return sniffed
+            .or_else(|| mime_type_from_extension(filename))
+            .unwrap_or_else(|| declared.to_string());
+    }
+
+    declared.to_string()
+}
+
+fn is_generic_mime_type(mime_type: &str) -> bool {
+    mime_type.is_empty()
+        || mime_type.eq_ignore_ascii_case("application/octet-stream")
+        || mime_type.eq_ignore_ascii_case("application/binary")
+}
+
+fn sniff_image_mime_type(data: &[u8]) -> Option<String> {
+    if data.starts_with(&[0xff, 0xd8, 0xff]) {
+        return Some("image/jpeg".to_string());
+    }
+    if data.starts_with(b"\x89PNG\r\n\x1a\n") {
+        return Some("image/png".to_string());
+    }
+    if data.starts_with(b"GIF87a") || data.starts_with(b"GIF89a") {
+        return Some("image/gif".to_string());
+    }
+    if data.len() >= 12 && &data[..4] == b"RIFF" && &data[8..12] == b"WEBP" {
+        return Some("image/webp".to_string());
+    }
+
+    None
+}
+
+fn mime_type_from_extension(filename: &str) -> Option<String> {
+    let extension = filename.rsplit('.').next()?.to_ascii_lowercase();
+    match extension.as_str() {
+        "jpg" | "jpeg" => Some("image/jpeg".to_string()),
+        "png" => Some("image/png".to_string()),
+        "gif" => Some("image/gif".to_string()),
+        "webp" => Some("image/webp".to_string()),
+        _ => None,
+    }
+}
+
 pub fn build_download_route(resource_id: Uuid) -> String {
     format!("/api/resources/{}/download", resource_id)
 }
@@ -121,4 +170,37 @@ pub struct PresignedUploadResponse {
 #[serde(rename_all = "camelCase")]
 pub struct ConfirmUploadRequest {
     pub resource_id: Uuid,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::resolve_mime_type;
+
+    #[test]
+    fn resolves_octet_stream_jpeg_from_file_signature() {
+        let jpeg = [0xff, 0xd8, 0xff, 0xe0];
+
+        assert_eq!(
+            resolve_mime_type("application/octet-stream", "avatar.jpg", &jpeg),
+            "image/jpeg"
+        );
+    }
+
+    #[test]
+    fn resolves_octet_stream_png_from_file_signature() {
+        let png = b"\x89PNG\r\n\x1a\n";
+
+        assert_eq!(
+            resolve_mime_type("application/octet-stream", "avatar.png", png),
+            "image/png"
+        );
+    }
+
+    #[test]
+    fn keeps_non_generic_declared_mime_type_for_non_images() {
+        assert_eq!(
+            resolve_mime_type("text/plain", "notes.txt", b"hello"),
+            "text/plain"
+        );
+    }
 }

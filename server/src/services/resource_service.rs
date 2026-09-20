@@ -1,9 +1,9 @@
 use crate::config::Config;
 use crate::error::AppError;
 use crate::models::{
-    build_download_route, build_thumbnail_route, thumbnail_mime_type, thumbnail_storage_path,
-    with_thumbnail_metadata, ConfirmUploadRequest, CreateResourceRequest, PresignedUploadResponse,
-    Resource, ResourceResponse,
+    build_download_route, build_thumbnail_route, resolve_mime_type, thumbnail_mime_type,
+    thumbnail_storage_path, with_thumbnail_metadata, ConfirmUploadRequest, CreateResourceRequest,
+    PresignedUploadResponse, Resource, ResourceResponse,
 };
 use crate::services::ai_client::{AiClient, AiConfig, AiImageInput};
 use crate::services::retry::with_retry;
@@ -418,11 +418,12 @@ impl ResourceService {
         }
 
         let mut metadata = req.metadata.unwrap_or_else(empty_metadata);
+        let mime_type = resolve_mime_type(&req.mime_type, &req.filename, &data);
         let resource_id = Uuid::new_v4();
         let storage_path = format!("resources/{}/{}", user_id, resource_id);
 
         self.storage
-            .upload(&storage_path, data.clone(), &req.mime_type)
+            .upload(&storage_path, data.clone(), &mime_type)
             .await
             .map_err(|e| AppError::Storage(e.to_string()))?;
 
@@ -431,7 +432,7 @@ impl ResourceService {
         let user_id_owned = user_id.to_string();
         let resource_id_owned = resource_id;
         let data_owned = data.clone().to_vec();
-        let mime_type_owned = req.mime_type.clone();
+        let mime_type_owned = mime_type.clone();
 
         tokio::spawn(async move {
             let _ = Self::process_transcoding(
@@ -446,7 +447,7 @@ impl ResourceService {
         });
 
         if let Some(thumbnail_path) = self
-            .try_generate_thumbnail(user_id, resource_id, &req.mime_type, &data)
+            .try_generate_thumbnail(user_id, resource_id, &mime_type, &data)
             .await
         {
             metadata = with_thumbnail_metadata(metadata, thumbnail_path, "image/jpeg".to_string());
@@ -463,8 +464,8 @@ impl ResourceService {
         .bind(memo_id)
         .bind(user_uuid)
         .bind(&req.filename)
-        .bind(if req.mime_type.starts_with("video/") { "video" } else { "image" })
-        .bind(&req.mime_type)
+        .bind(if mime_type.starts_with("video/") { "video" } else { "image" })
+        .bind(&mime_type)
         .bind(req.file_size)
         .bind(match self.config.storage_type {
             crate::config::StorageType::Local => "local",
@@ -478,7 +479,7 @@ impl ResourceService {
         .await?;
 
         // Spawn async AI description generation for images (fire-and-forget)
-        if req.mime_type.starts_with("image/")
+        if mime_type.starts_with("image/")
             && self.ai_client.is_some()
             && self.user_ai_config_service.is_some()
         {
@@ -488,7 +489,7 @@ impl ResourceService {
             let storage = self.storage.clone();
             let rid = resource_id;
             let sp = storage_path.clone();
-            let mime = req.mime_type.clone();
+            let mime = mime_type.clone();
             let uid = user_uuid;
             tokio::spawn(async move {
                 Self::generate_ai_description(
