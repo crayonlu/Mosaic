@@ -36,7 +36,9 @@
     "done": "Done",
     "loading": "Loading…",
     "noMore": "No more",
-    "reset": "Reset"
+    "reset": "Reset",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "setup": {
     "subtitle": "Complete initial setup and start your smart note-taking journey",

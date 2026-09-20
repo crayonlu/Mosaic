@@ -1,6 +1,7 @@
 import { useThemeStore } from '@/stores/themeStore'
 import { Eye, EyeOff } from 'lucide-react-native'
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Keyboard,
   StyleSheet,
@@ -21,6 +22,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
   { label, error, showPasswordToggle, style, ...props },
   ref
 ) {
+  const { t } = useTranslation()
   const { theme } = useThemeStore()
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
@@ -84,6 +86,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
         ]}
       >
         <TextInput
+          {...props}
           ref={setRef}
           style={[
             styles.input,
@@ -94,8 +97,8 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             },
             style,
           ]}
-          placeholderTextColor={theme.textSecondary}
-          secureTextEntry={showPasswordToggle && !passwordVisible}
+          placeholderTextColor={props.placeholderTextColor ?? theme.textSecondary}
+          secureTextEntry={showPasswordToggle ? !passwordVisible : props.secureTextEntry}
           onFocus={e => {
             setIsFocused(true)
             isFocusedRef.current = true
@@ -106,12 +109,15 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             isFocusedRef.current = false
             props.onBlur?.(e)
           }}
-          {...props}
         />
         {showPasswordToggle && (
           <TouchableOpacity
             style={styles.toggleButton}
             onPress={() => setPasswordVisible(!passwordVisible)}
+            accessibilityRole="button"
+            accessibilityLabel={
+              passwordVisible ? t('common.hidePassword') : t('common.showPassword')
+            }
           >
             {passwordVisible ? (
               <EyeOff size={20} color={theme.textSecondary} />

@@ -69,6 +69,7 @@ export default function ForceChangePassword() {
             value={oldPassword}
             onChangeText={setOldPassword}
             secureTextEntry
+            showPasswordToggle
             autoComplete="password"
           />
           <Input
@@ -76,6 +77,7 @@ export default function ForceChangePassword() {
             value={newPassword}
             onChangeText={setNewPassword}
             secureTextEntry
+            showPasswordToggle
             autoComplete="new-password"
           />
           <Input
@@ -83,6 +85,7 @@ export default function ForceChangePassword() {
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
+            showPasswordToggle
             autoComplete="new-password"
           />
           <Button
