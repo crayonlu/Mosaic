@@ -151,7 +151,7 @@ export default function BotsView() {
       const fd = new FormData()
       fd.append("file", file)
       const options: FetchOptions = { method: "POST", body: fd, headers: {} }
-      const res = (await api("/resources", options)) as {
+      const res = (await api("/resources/upload", options)) as {
         url?: string
         thumbnailUrl?: string
       }
