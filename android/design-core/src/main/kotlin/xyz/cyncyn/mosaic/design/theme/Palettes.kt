@@ -1,0 +1,276 @@
+package xyz.cyncyn.mosaic.design.theme
+
+import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.Color
+import xyz.cyncyn.mosaic.design.token.MosaicColors
+
+/**
+ * Palette layer (raw values) of the token system. Four candidate directions,
+ * each with a light and dark variant. UI code never reads these directly —
+ * [MosaicTheme] maps them onto the semantic roles in [toSemantic].
+ *
+ * Every text-bearing color was picked to pass WCAG AA (>= 4.5:1) against its
+ * canvas for body text; tertiary is intentionally softer and reserved for
+ * large/secondary metadata.
+ */
+@Immutable
+data class Palette(
+    val canvas: Color,
+    val surface: Color,
+    val surfaceMuted: Color,
+    val surfaceStrong: Color,
+    val ink: Color,
+    val inkSecondary: Color,
+    val inkTertiary: Color,
+    val accent: Color,
+    val accentSoft: Color,
+    val onAccent: Color,
+    val link: Color,
+    val border: Color,
+    val borderStrong: Color,
+    val scrim: Color,
+    val success: Color,
+    val successContainer: Color,
+    val error: Color,
+    val errorContainer: Color,
+    val warning: Color,
+    val warningContainer: Color,
+    val info: Color,
+    val infoContainer: Color,
+)
+
+private val terracottaLight = Palette(
+    canvas = Color(0xFFF7F3EA),
+    surface = Color(0xFFFDFBF5),
+    surfaceMuted = Color(0xFFEFE9DC),
+    surfaceStrong = Color(0xFFE5DECC),
+    ink = Color(0xFF211E1A),
+    inkSecondary = Color(0xFF6B655C),
+    inkTertiary = Color(0xFF98917F),
+    accent = Color(0xFFB34A2F),
+    accentSoft = Color(0xFFF0DCD1),
+    onAccent = Color(0xFFFDF9F5),
+    link = Color(0xFF9C4028),
+    border = Color(0xFFE6DFCE),
+    borderStrong = Color(0xFFCFC5AE),
+    scrim = Color(0x99201A12),
+    success = Color(0xFF3E7C5B),
+    successContainer = Color(0xFFDFEDE4),
+    error = Color(0xFFB3402E),
+    errorContainer = Color(0xFFF6E1DC),
+    warning = Color(0xFF8F6418),
+    warningContainer = Color(0xFFF3E8CF),
+    info = Color(0xFF3D6A8A),
+    infoContainer = Color(0xFFE0EAF1),
+)
+
+private val terracottaDark = Palette(
+    canvas = Color(0xFF191512),
+    surface = Color(0xFF221D18),
+    surfaceMuted = Color(0xFF2B241D),
+    surfaceStrong = Color(0xFF342C22),
+    ink = Color(0xFFEFE9DE),
+    inkSecondary = Color(0xFFACA496),
+    inkTertiary = Color(0xFF7E766A),
+    accent = Color(0xFFE07A5A),
+    accentSoft = Color(0xFF3E2820),
+    onAccent = Color(0xFF2A130C),
+    link = Color(0xFFE09270),
+    border = Color(0xFF332D25),
+    borderStrong = Color(0xFF4A4238),
+    scrim = Color(0xB30F0C09),
+    success = Color(0xFF7FB89A),
+    successContainer = Color(0xFF22352B),
+    error = Color(0xFFE0897A),
+    errorContainer = Color(0xFF3A231E),
+    warning = Color(0xFFD8B36A),
+    warningContainer = Color(0xFF352B18),
+    info = Color(0xFF8FB3CC),
+    infoContainer = Color(0xFF1F2C36),
+)
+
+private val inkLight = Palette(
+    canvas = Color(0xFFF6F4EF),
+    surface = Color(0xFFFCFBF8),
+    surfaceMuted = Color(0xFFECE9E0),
+    surfaceStrong = Color(0xFFDFDACC),
+    ink = Color(0xFF26231F),
+    inkSecondary = Color(0xFF6F6A5A),
+    inkTertiary = Color(0xFF9C968A),
+    accent = Color(0xFF26231F),
+    accentSoft = Color(0xFFE7E3D8),
+    onAccent = Color(0xFFF6F4EF),
+    link = Color(0xFF26231F),
+    border = Color(0xFFE5E1D6),
+    borderStrong = Color(0xFFCCC7B9),
+    scrim = Color(0x99211F1B),
+    success = Color(0xFF3E7C5B),
+    successContainer = Color(0xFFE2EDE6),
+    error = Color(0xFFB3402E),
+    errorContainer = Color(0xFFF5E3DE),
+    warning = Color(0xFF8F6418),
+    warningContainer = Color(0xFFF2E9D2),
+    info = Color(0xFF3D6A8A),
+    infoContainer = Color(0xFFE2EAF1),
+)
+
+private val inkDark = Palette(
+    canvas = Color(0xFF171614),
+    surface = Color(0xFF201F1B),
+    surfaceMuted = Color(0xFF2A2824),
+    surfaceStrong = Color(0xFF34312A),
+    ink = Color(0xFFEAE7E0),
+    inkSecondary = Color(0xFFABA69A),
+    inkTertiary = Color(0xFF7E7A70),
+    accent = Color(0xFFEAE7E0),
+    accentSoft = Color(0xFF33312B),
+    onAccent = Color(0xFF171614),
+    link = Color(0xFFD9D5CB),
+    border = Color(0xFF2E2C27),
+    borderStrong = Color(0xFF45423A),
+    scrim = Color(0xB312110E),
+    success = Color(0xFF84B89B),
+    successContainer = Color(0xFF223327),
+    error = Color(0xFFE0897A),
+    errorContainer = Color(0xFF38221D),
+    warning = Color(0xFFD5B169),
+    warningContainer = Color(0xFF332A16),
+    info = Color(0xFF8FB0C9),
+    infoContainer = Color(0xFF1E2A34),
+)
+
+private val sageLight = Palette(
+    canvas = Color(0xFFF4F4ED),
+    surface = Color(0xFFFBFBF5),
+    surfaceMuted = Color(0xFFEAEBE0),
+    surfaceStrong = Color(0xFFDCE0D0),
+    ink = Color(0xFF1F231D),
+    inkSecondary = Color(0xFF676D60),
+    inkTertiary = Color(0xFF959B8C),
+    accent = Color(0xFF3E6B4F),
+    accentSoft = Color(0xFFDCE7DA),
+    onAccent = Color(0xFFF4F8F3),
+    link = Color(0xFF35593F),
+    border = Color(0xFFDEE0D3),
+    borderStrong = Color(0xFFC1C7B3),
+    scrim = Color(0x991C201A),
+    success = Color(0xFF2F7D55),
+    successContainer = Color(0xFFDCEDE2),
+    error = Color(0xFFB3402E),
+    errorContainer = Color(0xFFF5E3DE),
+    warning = Color(0xFF8F6418),
+    warningContainer = Color(0xFFF1E9D1),
+    info = Color(0xFF3D6A8A),
+    infoContainer = Color(0xFFE1EAF1),
+)
+
+private val sageDark = Palette(
+    canvas = Color(0xFF141813),
+    surface = Color(0xFF1D211B),
+    surfaceMuted = Color(0xFF262B22),
+    surfaceStrong = Color(0xFF303629),
+    ink = Color(0xFFE4E8DE),
+    inkSecondary = Color(0xFFA3A99B),
+    inkTertiary = Color(0xFF7A8072),
+    accent = Color(0xFF85AF92),
+    accentSoft = Color(0xFF263329),
+    onAccent = Color(0xFF0F2318),
+    link = Color(0xFF9CC2A7),
+    border = Color(0xFF2E332A),
+    borderStrong = Color(0xFF42493A),
+    scrim = Color(0xB30F120F),
+    success = Color(0xFF7FB89A),
+    successContainer = Color(0xFF1F3126),
+    error = Color(0xFFE0897A),
+    errorContainer = Color(0xFF38221D),
+    warning = Color(0xFFD5B169),
+    warningContainer = Color(0xFF322914),
+    info = Color(0xFF8FB0C9),
+    infoContainer = Color(0xFF1D2933),
+)
+
+private val indigoLight = Palette(
+    canvas = Color(0xFFF5F3EC),
+    surface = Color(0xFFFCFAF4),
+    surfaceMuted = Color(0xFFEBE9E1),
+    surfaceStrong = Color(0xFFDEDCCF),
+    ink = Color(0xFF1D2027),
+    inkSecondary = Color(0xFF616875),
+    inkTertiary = Color(0xFF939AA8),
+    accent = Color(0xFF3D5A80),
+    accentSoft = Color(0xFFD9E2EE),
+    onAccent = Color(0xFFF2F6FB),
+    link = Color(0xFF33517A),
+    border = Color(0xFFE0DDD0),
+    borderStrong = Color(0xFFC3C1B3),
+    scrim = Color(0x99171B22),
+    success = Color(0xFF3E7C5B),
+    successContainer = Color(0xFFE0EDE5),
+    error = Color(0xFFB3402E),
+    errorContainer = Color(0xFFF5E2DD),
+    warning = Color(0xFF8F6418),
+    warningContainer = Color(0xFFF2E9D2),
+    info = Color(0xFF3D6A8A),
+    infoContainer = Color(0xFFE1EAF1),
+)
+
+private val indigoDark = Palette(
+    canvas = Color(0xFF13161B),
+    surface = Color(0xFF1B1F26),
+    surfaceMuted = Color(0xFF242932),
+    surfaceStrong = Color(0xFF2F3540),
+    ink = Color(0xFFE2E6ED),
+    inkSecondary = Color(0xFF9CA3B0),
+    inkTertiary = Color(0xFF757D8C),
+    accent = Color(0xFF93AECE),
+    accentSoft = Color(0xFF252F3D),
+    onAccent = Color(0xFF0F1B29),
+    link = Color(0xFFA9C1DC),
+    border = Color(0xFF2B303A),
+    borderStrong = Color(0xFF3E4552),
+    scrim = Color(0xB30D0F14),
+    success = Color(0xFF7FB89A),
+    successContainer = Color(0xFF1E3024),
+    error = Color(0xFFE0897A),
+    errorContainer = Color(0xFF37211C),
+    warning = Color(0xFFD5B169),
+    warningContainer = Color(0xFF322914),
+    info = Color(0xFF8FB0C9),
+    infoContainer = Color(0xFF1C2832),
+)
+
+fun palette(direction: ThemeDirection, dark: Boolean): Palette = when (direction) {
+    ThemeDirection.Terracotta -> if (dark) terracottaDark else terracottaLight
+    ThemeDirection.Ink -> if (dark) inkDark else inkLight
+    ThemeDirection.Sage -> if (dark) sageDark else sageLight
+    ThemeDirection.Indigo -> if (dark) indigoDark else indigoLight
+}
+
+private fun toSemantic(p: Palette, dark: Boolean): MosaicColors = MosaicColors(
+    background = p.canvas,
+    surface = p.surface,
+    surfaceMuted = p.surfaceMuted,
+    surfaceStrong = p.surfaceStrong,
+    text = p.ink,
+    textSecondary = p.inkSecondary,
+    textTertiary = p.inkTertiary,
+    primary = p.accent,
+    primarySoft = p.accentSoft,
+    onPrimary = p.onAccent,
+    link = p.link,
+    border = p.border,
+    borderStrong = p.borderStrong,
+    success = p.success,
+    successContainer = p.successContainer,
+    error = p.error,
+    errorContainer = p.errorContainer,
+    warning = p.warning,
+    warningContainer = p.warningContainer,
+    info = p.info,
+    infoContainer = p.infoContainer,
+    scrim = p.scrim,
+    isDark = dark,
+)
+
+fun semanticColors(direction: ThemeDirection, dark: Boolean): MosaicColors =
+    toSemantic(palette(direction, dark), dark)
