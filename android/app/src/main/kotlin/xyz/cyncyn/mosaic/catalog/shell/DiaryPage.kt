@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -111,6 +113,7 @@ private fun DayPage(repo: DataRepository, date: LocalDate) {
     val effectiveSummary = summary ?: diaryState?.summary ?: ""
     val effectiveMoodKey = moodKey ?: diaryState?.moodKey ?: "calm"
     val effectiveScore = moodScore ?: diaryState?.moodScore ?: 60
+    val dirty = summary != null || moodKey != null || moodScore != null
 
     Column(
         Modifier
@@ -161,8 +164,8 @@ private fun DayPage(repo: DataRepository, date: LocalDate) {
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MosaicButton(
-                    text = if (saving) "保存中…" else "保存日记",
-                    enabled = !saving,
+                    text = if (saving) "保存中…" else if (dirty) "保存日记" else "已同步",
+                    enabled = !saving && dirty,
                     onClick = {
                         scope.launch {
                             saving = true
@@ -250,11 +253,18 @@ private fun FlowRowChips(selectedKey: String, onSelect: (MoodKey) -> Unit) {
 private fun MoodDragBar(score: Int, onScoreChange: (Int) -> Unit) {
     val colors = MosaicTheme.colors
     val fillToken = moodTokens(colors.isDark).getValue(MoodKey.Calm)
+    var trackWidth by remember { mutableStateOf(1f) }
+    val density = LocalDensity.current
+    val knobSize = with(density) { 20.dp.toPx() }
+    val knobOffset = with(density) {
+        ((trackWidth - knobSize) * (score / 100f)).toDp()
+    }
 
     Box(
         Modifier
             .fillMaxWidth()
             .height(28.dp)
+            .onSizeChanged { trackWidth = it.width.toFloat().coerceAtLeast(1f) }
             .clip(MosaicTheme.shapes.pill)
             .background(colors.surfaceStrong)
             .pointerInput(Unit) {
@@ -278,7 +288,7 @@ private fun MoodDragBar(score: Int, onScoreChange: (Int) -> Unit) {
         Box(
             Modifier
                 .align(Alignment.CenterStart)
-                .padding(start = ((score / 100f) * 280).dp.coerceAtMost(268.dp))
+                .offset(x = knobOffset)
                 .size(20.dp)
                 .clip(CircleShape)
                 .background(colors.primary)

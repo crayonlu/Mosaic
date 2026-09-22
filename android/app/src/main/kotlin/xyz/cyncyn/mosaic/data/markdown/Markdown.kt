@@ -8,6 +8,33 @@ package xyz.cyncyn.mosaic.data.markdown
 
 enum class MarkdownBlockType { Heading, Paragraph, CodeFence, Quote, ListItem, Rule }
 
+// No regex here on purpose: per-line Pattern/Matcher creation stalled the main
+// thread (ANR) during composition. Plain string scans are interpreter-fast.
+
+private fun headingOf(line: String): Pair<Int, String>? {
+    var level = 0
+    while (level < line.length && line[level] == '#') level += 1
+    if (level !in 1..6) return null
+    if (level >= line.length || line[level] != ' ') return null
+    return level to line.substring(level + 1).trim()
+}
+
+private fun bulletItemOf(line: String): String? {
+    if (line.isEmpty()) return null
+    if (line[0] !in "-*+") return null
+    if (line.length < 2 || line[1] != ' ') return null
+    return line.substring(2).trim()
+}
+
+private fun orderedItemOf(line: String): String? {
+    var i = 0
+    while (i < line.length && line[i].isDigit()) i += 1
+    if (i == 0 || i + 1 >= line.length) return null
+    if (line[i] != '.' && line[i] != ')') return null
+    if (line[i + 1] != ' ') return null
+    return line.substring(i + 2).trim()
+}
+
 data class MarkdownBlock(
     val type: MarkdownBlockType,
     val text: String = "",
@@ -61,13 +88,13 @@ fun splitMarkdownBlocks(source: String): List<MarkdownBlock> {
         }
 
         // heading
-        val heading = Regex("^(#{1,6})\\s+(.*)$").find(trimmed)
+        val heading = headingOf(trimmed)
         if (heading != null) {
             blocks.add(
                 MarkdownBlock(
                     type = MarkdownBlockType.Heading,
-                    text = heading.groupValues[2].trim(),
-                    level = heading.groupValues[1].length,
+                    text = heading.second,
+                    level = heading.first,
                 ),
             )
             i += 1
@@ -86,19 +113,17 @@ fun splitMarkdownBlocks(source: String): List<MarkdownBlock> {
         }
 
         // lists (bullet or ordered)
-        val bullet = Regex("^[-*+]\\s+(.*)$")
-        val ordered = Regex("^(\\d+)[.)]\\s+(.*)$")
-        if (bullet.find(trimmed) != null || ordered.find(trimmed) != null) {
+        if (bulletItemOf(trimmed) != null || orderedItemOf(trimmed) != null) {
             val items = mutableListOf<String>()
             while (i < lines.size) {
                 val current = at(i).trim()
                 if (current.isEmpty()) break
-                val b = bullet.find(current)
-                val o = ordered.find(current)
+                val b = bulletItemOf(current)
+                val o = orderedItemOf(current)
                 if (b != null) {
-                    items.add(b.groupValues[1])
+                    items.add(b)
                 } else if (o != null) {
-                    items.add(o.groupValues[2])
+                    items.add(o)
                 } else if (items.isNotEmpty() && current.startsWith("  ")) {
                     // continuation of the previous item
                     items[items.size - 1] = items.last() + " " + current.trim()
@@ -118,7 +143,7 @@ fun splitMarkdownBlocks(source: String): List<MarkdownBlock> {
             val currentTrim = current.trim()
             if (currentTrim.isEmpty()) break
             if (currentTrim.startsWith("```") || currentTrim == "---" || currentTrim.startsWith("#") ||
-                currentTrim.startsWith(">") || bullet.find(currentTrim) != null || ordered.find(currentTrim) != null
+                currentTrim.startsWith(">") || bulletItemOf(currentTrim) != null || orderedItemOf(currentTrim) != null
             ) {
                 break
             }

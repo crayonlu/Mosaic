@@ -62,7 +62,9 @@ fun MemoDetailScreen(
     val context = LocalContext.current
 
     val detailState by produceState<MemoDetail?>(initialValue = null, key1 = memoId) {
-        value = runCatching { repo.memoDetail(memoId) }.getOrNull()
+        value = runCatching { repo.memoDetail(memoId) }
+            .onFailure { e -> android.util.Log.w("MosaicDetail", "detail load failed for $memoId", e) }
+            .getOrNull()
     }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
 
@@ -101,16 +103,16 @@ fun MemoDetailScreen(
             )
             Box(
                 Modifier
-                    .size(40.dp)
                     .clip(MosaicTheme.shapes.pill)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = MosaicPressIndication,
-                        onClick = { confirmDelete = true },
-                    ),
+                        onClick = { confirmDelete = !confirmDelete },
+                    )
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                MosaicText(text = "✕", style = MosaicTheme.typography.title, color = if (confirmDelete) colors.error else colors.textTertiary)
+                MosaicText(text = "删除", style = MosaicTheme.typography.label, color = colors.error)
             }
         }
 

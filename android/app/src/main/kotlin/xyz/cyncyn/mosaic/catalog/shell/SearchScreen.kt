@@ -126,6 +126,12 @@ fun SearchScreen(
                     onValueChange = { query = it },
                     textStyle = MosaicTheme.typography.body.copy(color = colors.text),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(colors.text),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Search,
+                    ),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                        onSearch = { runSearch() },
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(focusRequester),

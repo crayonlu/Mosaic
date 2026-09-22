@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,7 +33,13 @@ import xyz.cyncyn.mosaic.data.markdown.splitMarkdownBlocks
 /** Renders markdown blocks with design tokens only (no Material, no WebView). */
 @Composable
 fun MarkdownBody(source: String, modifier: Modifier = Modifier) {
-    val blocks = remember(source) { splitMarkdownBlocks(source) }
+    // Parsing runs off the main thread; the first frame renders empty rather
+    // than stalling composition on a cold parse.
+    val blocks by produceState(initialValue = emptyList(), key1 = source) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            splitMarkdownBlocks(source)
+        }
+    }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         blocks.forEach { block -> MarkdownBlockView(block) }
     }
@@ -93,20 +101,25 @@ private fun MarkdownBlockView(block: MarkdownBlock) {
     }
 }
 
+private val BOLD_RE = Regex("\\*\\*(.+?)\\*\\*|__(.+?)__")
+private val ITALIC_RE = Regex("(?<!\\*)\\*([^*\\s][^*]*?)\\*(?!\\*)")
+private val STRIKE_RE = Regex("~~(.+?)~~")
+private val INLINE_CODE_RE = Regex("`([^`]+)`")
+
 /** Inline markdown: **bold**, *italic*, `code`, ~~strike~~. */
 fun inlineAnnotated(text: String, linkColor: androidx.compose.ui.graphics.Color, codeColor: androidx.compose.ui.graphics.Color): AnnotatedString =
     buildAnnotatedString {
         append(text)
-        for (match in Regex("\\*\\*(.+?)\\*\\*|__(.+?)__").findAll(text)) {
+        for (match in BOLD_RE.findAll(text)) {
             addStyle(SpanStyle(fontWeight = FontWeight.Bold), match.range.first, match.range.last + 1)
         }
-        for (match in Regex("(?<!\\*)\\*([^*\\s][^*]*?)\\*(?!\\*)").findAll(text)) {
+        for (match in ITALIC_RE.findAll(text)) {
             addStyle(SpanStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic), match.range.first, match.range.last + 1)
         }
-        for (match in Regex("~~(.+?)~~").findAll(text)) {
+        for (match in STRIKE_RE.findAll(text)) {
             addStyle(SpanStyle(textDecoration = TextDecoration.LineThrough), match.range.first, match.range.last + 1)
         }
-        for (match in Regex("`([^`]+)`").findAll(text)) {
+        for (match in INLINE_CODE_RE.findAll(text)) {
             addStyle(SpanStyle(background = codeColor.copy(alpha = 0.14f), fontWeight = FontWeight.Medium), match.range.first, match.range.last + 1)
         }
     }

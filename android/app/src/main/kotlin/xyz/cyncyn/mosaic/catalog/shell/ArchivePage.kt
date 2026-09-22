@@ -197,6 +197,16 @@ internal fun ArchivePage(repo: DataRepository, onOpenMemo: (String) -> Unit) {
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            if (visible.isEmpty()) {
+                item {
+                    MosaicText(
+                        text = "这个筛选下没有记录",
+                        style = MosaicTheme.typography.body,
+                        color = colors.textTertiary,
+                        modifier = Modifier.padding(vertical = 40.dp),
+                    )
+                }
+            }
             items(visible.size, key = { visible[it].id }) { index ->
                 val memo = visible[index]
                 Row(verticalAlignment = Alignment.CenterVertically) {
