@@ -19,7 +19,7 @@
     },
     "mobile": {
       "name": "@mosaic/mobile",
-      "version": "1.0.14",
+      "version": "1.0.15",
       "dependencies": {
         "@gorhom/bottom-sheet": "^5.2.8",
         "@mosaic/api": "workspace:*",
