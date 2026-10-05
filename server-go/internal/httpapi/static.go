@@ -17,14 +17,14 @@ const adminStaticDir = "static/admin"
 // redirects to /admin/, /admin/static/* serves files, and every other
 // /admin/... path falls back to the SPA entry point.
 func registerStaticRoutes(r chi.Router) {
-	r.Get("/admin", handleAdminRedirect)
+	serve(r, "/admin", map[string]http.HandlerFunc{http.MethodGet: handleAdminRedirect})
 	// chi's "/admin/*" does not match the bare "/admin/" path, so it is
 	// registered explicitly; the previous server served it from the SPA
 	// fallback.
-	r.Get("/admin/", handleAdminSPAFallback)
+	serve(r, "/admin/", map[string]http.HandlerFunc{http.MethodGet: handleAdminSPAFallback})
 	r.Handle("/admin/static/*",
 		http.StripPrefix("/admin/static/", http.FileServer(http.Dir(adminStaticDir))))
-	r.Get("/admin/*", handleAdminSPAFallback)
+	serve(r, "/admin/*", map[string]http.HandlerFunc{http.MethodGet: handleAdminSPAFallback})
 }
 
 func handleAdminRedirect(w http.ResponseWriter, _ *http.Request) {

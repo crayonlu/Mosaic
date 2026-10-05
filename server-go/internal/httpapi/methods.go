@@ -25,6 +25,9 @@ var methodOrder = []string{
 // and fail on the invalid parameter — and its own 405 lists only a subset of
 // the allowed verbs. Registering the unsupported verbs explicitly restores both
 // the status and the header.
+//
+// A GET route also answers HEAD, which is what the previous server did: the
+// container healthcheck uses `wget --spider`, and that sends HEAD.
 func serve(r chi.Router, pattern string, handlers map[string]http.HandlerFunc) {
 	served := make([]string, 0, len(handlers))
 	for _, method := range methodOrder {
@@ -36,7 +39,24 @@ func serve(r chi.Router, pattern string, handlers map[string]http.HandlerFunc) {
 		r.Method(method, pattern, handler)
 	}
 
+	// HEAD shares the GET handler; the HTTP server discards the body it writes.
+	// The previous server's router answered HEAD for every GET route, and the
+	// container healthcheck relies on it.
+	if get, ok := handlers[http.MethodGet]; ok {
+		r.Method(http.MethodHead, pattern, get)
+
+		ordered := make([]string, 0, len(served)+1)
+		for _, method := range served {
+			ordered = append(ordered, method)
+			if method == http.MethodGet {
+				ordered = append(ordered, http.MethodHead)
+			}
+		}
+		served = ordered
+	}
+
 	allow := strings.Join(served, ", ")
+
 	notAllowed := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Allow", allow)
 		w.WriteHeader(http.StatusMethodNotAllowed)

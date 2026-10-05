@@ -47,7 +47,9 @@ func New(deps Deps) http.Handler {
 	router.Use(RequestLogger())
 	router.Use(CORS(deps.AllowedOrigins))
 
-	router.Get("/health", handleHealth)
+	serve(router, "/health", map[string]http.HandlerFunc{
+		http.MethodGet: handleHealth,
+	})
 	registerStaticRoutes(router)
 
 	router.Route("/api/auth", func(r chi.Router) {

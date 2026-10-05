@@ -222,20 +222,20 @@ func TestWrongMethodIsRejectedWith405(t *testing.T) {
 
 	cases := []struct{ method, path, allow string }{
 		// Plain method mismatches.
-		{http.MethodPatch, "/api/memos", "GET, POST"},
-		{http.MethodDelete, "/api/memos", "GET, POST"},
-		{http.MethodPost, "/api/auth/me", "GET"},
+		{http.MethodPatch, "/api/memos", "GET, HEAD, POST"},
+		{http.MethodDelete, "/api/memos", "GET, HEAD, POST"},
+		{http.MethodPost, "/api/auth/me", "GET, HEAD"},
 		{http.MethodGet, "/api/sync/pull", "POST"},
-		{http.MethodDelete, "/api/diaries/2026-01-02", "GET, POST, PUT"},
-		{http.MethodPost, "/api/stats/summary", "GET"},
-		{http.MethodPatch, "/api/bots", "GET, POST"},
-		{http.MethodPost, "/api/resources", "GET"},
+		{http.MethodDelete, "/api/diaries/2026-01-02", "GET, HEAD, POST, PUT"},
+		{http.MethodPost, "/api/stats/summary", "GET, HEAD"},
+		{http.MethodPatch, "/api/bots", "GET, HEAD, POST"},
+		{http.MethodPost, "/api/resources", "GET, HEAD"},
 
 		// Literal paths shadowed by a parameterised sibling. Without the 405
 		// shim these fall through to /memos/{id} and answer 400 instead.
-		{http.MethodPut, "/api/memos/tags", "GET"},
-		{http.MethodDelete, "/api/memos/tags", "GET"},
-		{http.MethodPut, "/api/memos/search", "GET"},
+		{http.MethodPut, "/api/memos/tags", "GET, HEAD"},
+		{http.MethodDelete, "/api/memos/tags", "GET, HEAD"},
+		{http.MethodPut, "/api/memos/search", "GET, HEAD"},
 		{http.MethodGet, "/api/memos/clip", "POST"},
 		{http.MethodGet, "/api/bots/reorder", "PUT"},
 		{http.MethodDelete, "/api/bots/reorder", "PUT"},
