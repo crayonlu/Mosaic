@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useMemoryContext } from '@/lib/query'
 import { stringUtils } from '@/lib/utils'
 import { useThemeStore } from '@/stores/themeStore'
-import type { BotReply } from '@mosaic/api'
+import { toAbsoluteUrl, type BotReply } from '@mosaic/api'
 import dayjs from 'dayjs'
 import { Image } from 'expo-image'
 import { ArrowRight, ChevronDown, ChevronUp, FileText, Lightbulb } from 'lucide-react-native'
@@ -174,7 +174,7 @@ export function BotReplyCard({
               <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
                 {reply.bot.avatarUrl ? (
                   <Image
-                    source={{ uri: reply.bot.avatarUrl, headers: authHeaders }}
+                    source={{ uri: toAbsoluteUrl(reply.bot.avatarUrl), headers: authHeaders }}
                     style={styles.avatarImg}
                     contentFit="cover"
                   />

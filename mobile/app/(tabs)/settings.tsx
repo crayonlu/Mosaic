@@ -13,7 +13,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useLocaleStore } from '@/stores/localeStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { useImageQualityStore } from '@/stores/imageQualityStore'
-import { authApi, resourcesApi } from '@mosaic/api'
+import { authApi, resourcesApi, toAbsoluteUrl } from '@mosaic/api'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 import { Bot, Cog, Info, Lock, LogOut, ShieldCheck, Trash } from 'lucide-react-native'
@@ -335,7 +335,7 @@ export default function SettingsScreen() {
   }
 
   const renderAccountSection = () => {
-    const avatarUrl = `${serverUrl}${user?.avatarUrl}`
+    const avatarUrl = toAbsoluteUrl(user?.avatarUrl)
     return (
       <View style={[styles.section]}>
         <View style={[styles.card, { backgroundColor: theme.surface }]}>
@@ -421,7 +421,7 @@ export default function SettingsScreen() {
           >
             <View style={[styles.botAvatar, { backgroundColor: theme.primary }]}>
               {bot.avatarUrl ? (
-                <BotAvatarImageWithAuth avatarUrl={bot.avatarUrl} />
+                <BotAvatarImageWithAuth avatarUrl={toAbsoluteUrl(bot.avatarUrl)} />
               ) : (
                 <Text style={[styles.botAvatarText, { color: theme.onPrimary }]}>
                   {bot.name.charAt(0).toUpperCase()}
