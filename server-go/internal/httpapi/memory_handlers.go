@@ -114,12 +114,12 @@ func memoryContextHandler(memory *service.MemoryService) http.HandlerFunc {
 			return
 		}
 		query := r.URL.Query()
-		memoID, err := requiredUUIDParam(query.Get("memoId"), "memoId")
+		memoID, err := requiredUUIDParam(firstPresent(query, "memo_id", "memoId"), "memo_id")
 		if err != nil {
 			writeError(w, r, err)
 			return
 		}
-		botID, err := requiredUUIDParam(query.Get("botId"), "botId")
+		botID, err := requiredUUIDParam(firstPresent(query, "bot_id", "botId"), "bot_id")
 		if err != nil {
 			writeError(w, r, err)
 			return

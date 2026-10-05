@@ -166,7 +166,9 @@ func TestMemoryContextRequiresIDs(t *testing.T) {
 	}
 	var body errorBody
 	decodeBody(t, rec, &body)
-	if body.Message != "Invalid input: memoId is required" {
+	// The previous server read this parameter as memo_id, and the shipped
+	// client sends that spelling, so that is the name the rejection reports.
+	if body.Message != "Invalid input: memo_id is required" {
 		t.Errorf("message = %q", body.Message)
 	}
 }

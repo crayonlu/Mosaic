@@ -36,7 +36,7 @@ func handleAdminListUsers(adminSvc *service.AdminService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
 		page := int64(queryInt(query.Get("page"), 1))
-		pageSize := int64(queryInt(query.Get("pageSize"), 50))
+		pageSize := int64(queryInt(firstPresent(query, "page_size", "pageSize"), 50))
 
 		users, total, err := adminSvc.ListUsers(r.Context(), int(page), int(pageSize))
 		if err != nil {
