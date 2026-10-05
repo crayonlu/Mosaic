@@ -1,0 +1,3 @@
+-- +goose Up
+ALTER TABLE bots
+DROP COLUMN IF EXISTS vision_enabled;
