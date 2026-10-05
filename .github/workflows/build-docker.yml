@@ -13,6 +13,7 @@ on:
   push:
     tags:
       - 'v*'
+      - 'server-v*'
 
   workflow_dispatch:
     inputs:
@@ -81,7 +82,7 @@ jobs:
             type=sha,prefix=
             type=ref,event=branch
             type=ref,event=tag
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/server-v') }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
