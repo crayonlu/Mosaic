@@ -95,12 +95,32 @@ func TestBuildMemoryPrefixTrimsToBudget(t *testing.T) {
 	if !strings.Contains(prefix, "today") {
 		t.Errorf("prefix missing today label: %q", prefix[:40])
 	}
-	if strings.Contains(prefix, "b") {
+	if strings.Contains(prefix, second.SummaryExcerpt) {
 		t.Error("prefix included the second entry beyond the character budget")
 	}
 	if !strings.HasPrefix(prefix, "---MEMORY START---") ||
 		!strings.HasSuffix(prefix, "---MEMORY END---") {
 		t.Errorf("unexpected prefix envelope: %q", prefix)
+	}
+}
+
+func TestBuildMemoryPrefixPreservesRecordBoundariesAndDates(t *testing.T) {
+	loc := time.FixedZone("Asia/Shanghai", 8*60*60)
+	now := time.Date(2030, 1, 20, 16, 0, 0, 0, loc).UnixMilli()
+	first, second := uuid.New(), uuid.New()
+	memos := []domain.RelatedMemoContext{
+		{MemoID: first, SummaryExcerpt: "Historical test excerpt A", CreatedAt: time.Date(2030, 1, 10, 17, 0, 0, 0, time.UTC).UnixMilli()},
+		{MemoID: second, SummaryExcerpt: "Historical test excerpt B", CreatedAt: time.Date(2029, 12, 5, 12, 0, 0, 0, loc).UnixMilli()},
+	}
+	prefix := BuildMemoryPrefix(memos, now, loc)
+	for _, want := range []string{
+		"2030-01-11", "2029-12-05", first.String(), second.String(),
+		"Historical test excerpt A", "Historical test excerpt B", "possibly AI summaries", "only when directly relevant",
+		"Dates describe past records", "unnamed people may be unrelated",
+	} {
+		if !strings.Contains(prefix, want) {
+			t.Errorf("prefix missing %q", want)
+		}
 	}
 }
 

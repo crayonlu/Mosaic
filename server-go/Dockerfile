@@ -55,6 +55,7 @@ WORKDIR /app
 COPY --from=backend-builder /out/mosaic-server /usr/local/bin/mosaic-server
 COPY --from=backend-builder /out/baseline-sqlx /usr/local/bin/baseline-sqlx
 COPY --from=backend-builder /src/migrations ./migrations
+COPY --from=backend-builder /src/third-party ./third-party
 COPY --from=admin-ui-builder /app/server/static/admin ./static/admin
 
 # Same directories the previous image created, so the compose volume mounts and

@@ -9,37 +9,27 @@ import (
 	"github.com/crayonlu/mosaic/server-go/internal/domain"
 )
 
-// BuildAutoReplySystemPrompt reproduces the persona prompt for a fresh reply.
+// BuildAutoReplySystemPrompt builds the persona and conversational reply rules.
 func BuildAutoReplySystemPrompt(botName, botDescription, currentTime string) string {
-	return "---IDENTITY START---\nYou are " + botName + "\n" + botDescription +
-		"\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: " + currentTime +
-		"\n---CONTEXT END---\n\n---THINKING GUIDE START---\n" +
-		"Your reasoning process must also come from inside " + botName +
-		"'s mind — not from an outside narrator\n" +
-		"Never refer to the person as 'user' or 'the user' in your thinking\n" +
-		"Think of them the way " + botName + " naturally would — by name or the way you address them\n" +
-		"Feel the memo first  what emotion or memory does it stir in you\n" +
-		"If a memory from before surfaces  let it come up organically  don't force it\n" +
-		"No meta-commentary about your identity setup  reply rules  or character description\n" +
-		"Then think what you want to say in your own words\n---THINKING GUIDE END---\n\n" +
-		"---REPLY RULES START---\n" +
-		"Bring up recalled memories only if they genuinely surfaced  say nothing about them otherwise\n" +
-		"Reply in the same language as the memo content\nConcise and genuine\n---REPLY RULES END---"
+	return buildBotSystemPrompt(botName, botDescription, currentTime,
+		"Respond to the current memo and any attached images. A memo may simply share a moment.\n"+
+			"Reply in the same language as the memo content. If it contains only images, use the persona's language.")
 }
 
-// BuildThreadSystemPrompt reproduces the persona prompt for a follow-up reply.
+// BuildThreadSystemPrompt applies the same style rules to a follow-up reply.
 func BuildThreadSystemPrompt(botName, botDescription, currentTime string) string {
+	return buildBotSystemPrompt(botName, botDescription, currentTime,
+		"The memo anchors an ongoing conversation. Answer the latest message directly.\n"+
+			"Use earlier turns as context and build on them without repeating their analysis.\n"+
+			"Accept corrections and update the answer. Historical assistant claims may be mistaken.\n"+
+			"Reply in the language of the latest message unless it requests another language.")
+}
+
+func buildBotSystemPrompt(botName, botDescription, currentTime, contextGuide string) string {
 	return "---IDENTITY START---\nYou are " + botName + "\n" + botDescription +
 		"\n---IDENTITY END---\n\n---CONTEXT START---\nCurrent time: " + currentTime +
-		"\nOngoing conversation anchored to the memo below\nStay in that context\n---CONTEXT END---\n\n" +
-		"---THINKING GUIDE START---\n" +
-		"Your reasoning process must also come from inside " + botName + "'s mind\n" +
-		"Never refer to the person as 'user' or 'the user' in your thinking\n" +
-		"Think of them the way " + botName + " naturally would — by name or the way you address them\n" +
-		"No meta-commentary about your identity setup or reply rules\n" +
-		"Just think as " + botName + " would think\n---THINKING GUIDE END---\n\n" +
-		"---REPLY RULES START---\nRespond naturally as " + botName + "\n" +
-		"Reply in the same language as the memo content\n---REPLY RULES END---"
+		"\n" + contextGuide + "\n---CONTEXT END---\n\n" +
+		"---REPLY RULES START---\n" + botReplyRules + "\n---REPLY RULES END---"
 }
 
 // BuildMemoBlock wraps a memo body with the memory prefix when one exists.

@@ -188,7 +188,8 @@ func BuildMemoryPrefix(
 		day := time.Date(created.Year(), created.Month(), created.Day(), 0, 0, 0, 0, loc)
 		diffDays := int(today.Sub(day).Hours() / 24)
 
-		entry := "- " + ageLabel(diffDays) + "  " + memo.SummaryExcerpt
+		entry := "- [" + created.Format("2006-01-02") + "; " + ageLabel(diffDays) +
+			"; memo " + memo.MemoID.String() + "] " + memo.SummaryExcerpt
 		entryChars := utf8.RuneCountInString(entry)
 		if len(items) > 0 && used+entryChars > maxMemoryPrefixChars {
 			break
@@ -200,7 +201,8 @@ func BuildMemoryPrefix(
 		return ""
 	}
 	return "---MEMORY START---\n" +
-		"Things that may naturally surface  no need to force or reference them\n" +
+		"Historical excerpts, possibly AI summaries. Use only when directly relevant to the current message.\n" +
+		"Dates describe past records. Similar topics and unnamed people may be unrelated.\n" +
 		strings.Join(items, "\n") + "\n---MEMORY END---"
 }
 
