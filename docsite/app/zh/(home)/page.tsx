@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { Book, Heart, Server, ArrowRight, GitFork } from 'lucide-react';
+import Link from 'next/link'
+import { Book, Heart, Server, ArrowRight, GitFork } from 'lucide-react'
 
 const features = [
   {
@@ -15,9 +15,9 @@ const features = [
   {
     icon: Server,
     title: '自主托管',
-    desc: 'Rust 后端 —— 你的数据完全由你掌控，隐私无忧。',
+    desc: 'Go 后端 —— 你的数据完全由你掌控，隐私无忧。',
   },
-];
+]
 
 export default function ZhHomePage() {
   return (
@@ -60,7 +60,7 @@ export default function ZhHomePage() {
       {/* Features Section */}
       <section className="w-full max-w-5xl px-4 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {features.map((feature) => (
+          {features.map(feature => (
             <div
               key={feature.title}
               className="feature-card rounded-xl border bg-card p-6 text-left"
@@ -69,13 +69,11 @@ export default function ZhHomePage() {
                 <feature.icon className="w-5 h-5 text-primary" />
               </div>
               <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {feature.desc}
-              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
             </div>
           ))}
         </div>
       </section>
     </div>
-  );
+  )
 }

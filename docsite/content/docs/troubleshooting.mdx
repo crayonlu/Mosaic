@@ -9,21 +9,24 @@ description: Common issues and solutions when using Mosaic
 
 ### Server won't start
 
-**Symptoms**: Docker container exits immediately, or `cargo run` fails.
+**Symptoms**: Docker container exits immediately, or `go run ./cmd/mosaic-server` fails.
 
 **Solutions**:
 
 1. **Database not reachable**: Check that PostgreSQL is running and `DATABASE_URL` is correct
+
    ```bash
    psql $DATABASE_URL -c "SELECT 1"
    ```
 
 2. **Port already in use**: Change the `PORT` environment variable or stop the conflicting process
+
    ```bash
    lsof -i :8080  # Check what's using port 8080
    ```
 
 3. **Missing pgvector extension**: Ensure PostgreSQL has the `vector` extension
+
    ```bash
    psql -d mosaic -c "CREATE EXTENSION IF NOT EXISTS vector;"
    ```
@@ -96,10 +99,10 @@ docker compose logs postgres
 
 ```bash
 # Check current migration state
-psql -d mosaic -c "SELECT * FROM _sqlx_migrations ORDER BY version;"
+psql -d mosaic -c "SELECT * FROM goose_db_version ORDER BY version_id;"
 
 # Manually run a migration if needed
-psql -d mosaic -f server/migrations/20260119083515_init_tables.sql
+psql -d mosaic -f server-go/migrations/20260119083515_init_tables.sql
 ```
 
 ### Reset the database

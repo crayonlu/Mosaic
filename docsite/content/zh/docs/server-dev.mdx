@@ -1,15 +1,17 @@
 ---
 title: 服务端开发
-description: 如何在本地搭建和运行 Mosaic 服务端开发环境
+description: 如何在本地搭建和运行 Mosaic Go 服务端开发环境
 ---
 
 # 服务端开发
 
-Mosaic 服务端使用 **Rust** + **Actix Web** + **SQLx** 构建。
+Mosaic 的生产服务端使用 **Go** + **chi** + **pgx** + **goose** 构建。本文介绍本地开发环境搭建。
+
+> 想找 Rust 版本？它位于 `server/`，作为参考实现保留，并非已部署的后端。
 
 ## 前置条件
 
-- Rust（最新稳定版，通过 rustup 安装）
+- Go 1.26+
 - PostgreSQL 15+，带 pgvector 扩展
 - FFmpeg（可选，用于视频处理）
 
@@ -19,7 +21,7 @@ Mosaic 服务端使用 **Rust** + **Actix Web** + **SQLx** 构建。
 
 ```bash
 git clone https://github.com/crayonlu/Mosaic
-cd Mosaic/server
+cd Mosaic/server-go
 ```
 
 ### 2. 配置环境变量
@@ -46,67 +48,68 @@ psql -d mosaic -c "CREATE EXTENSION IF NOT EXISTS vector;"
 ### 4. 启动服务端
 
 ```bash
-cargo run
+go run ./cmd/mosaic-server
 ```
 
 服务端会自动：
+
 1. 从 `.env` 读取配置
 2. 连接 PostgreSQL
-3. 自动运行待执行的数据库迁移
+3. 通过 goose 应用待执行的数据库迁移
 4. 在配置的端口上启动监听（默认：8080）
 
 ## 项目结构
 
 ```
-server/
-├── src/
-│   ├── main.rs            # 入口点与应用初始化
-│   ├── config.rs          # 环境变量配置
-│   ├── database.rs        # 数据库连接池与迁移
-│   ├── error.rs           # 错误类型
-│   ├── middleware/        # 认证、CORS、日志
-│   ├── models/            # 数据模型
-│   ├── routes/            # API 端点
-│   ├── services/          # 业务逻辑
-│   ├── admin/             # 管理 API 与面板
-│   └── storage/           # 文件存储（本地/S3）
-├── migrations/            # SQL 迁移文件
-├── admin-ui/              # 管理面板前端（React/Shadcn）
-├── Cargo.toml
+server-go/
+├── cmd/
+│   ├── mosaic-server/     # 入口点
+│   └── baseline-sqlx/     # 一次性迁移记账
+├── internal/
+│   ├── config/      # 环境变量配置
+│   ├── httpapi/     # 路由、处理器、中间件
+│   ├── service/     # 业务逻辑
+│   ├── store/       # PostgreSQL 数据访问
+│   ├── domain/      # 类型与共享契约
+│   ├── adapters/    # AI 与外部集成
+│   ├── auth/        # JWT 与密码哈希
+│   ├── media/       # 图片与视频处理
+│   └── storage/     # 文件存储（本地/S3）
+├── migrations/      # SQL 迁移文件
+├── third-party/     # 附带许可证
+├── Dockerfile
 └── .env.example
 ```
 
 ## 主要依赖
 
-| 库 | 用途 |
-|----|------|
-| **actix-web** | HTTP 服务端框架 |
-| **sqlx** | PostgreSQL 客户端，支持编译时查询检查 |
-| **jsonwebtoken** | JWT 认证 |
-| **bcrypt** | 密码哈希 |
-| **pgvector** | 向量嵌入，用于语义搜索 |
-| **opendal** | 对象存储抽象层（S3/R2） |
-| **reqwest** | HTTP 客户端，用于外部 AI API 调用 |
-| **image** | 图片处理（缩略图） |
+| 包                      | 用途                    |
+| ----------------------- | ----------------------- |
+| **chi**                 | HTTP 路由               |
+| **pgx**                 | PostgreSQL 驱动与连接池 |
+| **goose**               | 迁移执行器              |
+| **golang-jwt**          | JWT 认证                |
+| **golang.org/x/crypto** | 密码哈希                |
+| **pgvector**            | 向量嵌入，用于语义搜索  |
 
 ## 常用命令
 
 ```bash
-cargo run              # 启动服务端
-cargo check            # 编译检查（快速）
-cargo build            # 构建二进制文件
-cargo test             # 运行测试
-cargo clippy           # 代码检查
+go run ./cmd/mosaic-server   # 启动服务端
+go build ./...               # 构建所有包
+go test ./...                # 运行测试
+go vet ./...                 # 静态检查
 ```
 
 ## 数据库迁移
 
-迁移文件位于 `server/migrations/`，服务端启动时自动执行。每个迁移是一个带时间戳的 SQL 文件。添加新迁移：
+迁移文件位于 `server-go/migrations/`（进入该目录后即 `migrations/`），服务端启动时通过
+goose 自动执行。每个迁移是带时间戳的 SQL 文件，必须以 `-- +goose Up` 指令开头；
+`-- +goose Down` 段可选。已执行集合记录在 `goose_db_version` 表中。添加新迁移：
 
 ```bash
-touch server/migrations/$(date -u +"%Y%m%d%H%M%S")_your_description.sql
+touch migrations/$(date -u +"%Y%m%d%H%M%S")_your_description.sql
 ```
 
-在文件中编写 SQL。下次重启服务端时会自动应用。
-
-> **注意**：SQLx 使用编译时查询验证。修改迁移后，运行 `cargo sqlx prepare` 更新离线查询缓存，否则服务端可能因无法连接数据库而编译失败。
+在文件中编写 `-- +goose Up` 的 SQL，下次重启服务端时会自动应用。Go 目录镜像了 Rust
+目录的迁移并加上 goose 指令；两者的 SQL 主体一致。

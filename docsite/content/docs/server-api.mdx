@@ -5,13 +5,21 @@ description: Complete Mosaic server API documentation
 
 # API Reference
 
-> Version: v2.6 | Updated: 2026-06-06
+> Baseline: Go server `server-v1.1.5` · Updated: 2026-10-06 · Source adds the `GET /openapi.json` entry
+
+The production backend is the **Go** server (`server-go/`). The same contract is
+served as an **OpenAPI 3.1** document at `http://localhost:8080/openapi.json`;
+see [OpenAPI](/docs/openapi).
 
 ## Base URL
 
 Default: `http://localhost:8080`
 
-All API endpoints return JSON. Authentication uses Bearer tokens.
+Most endpoints return JSON (`application/json`); uploads use
+`multipart/form-data`, and the download endpoints
+(`/api/resources/:id/download`, `/api/resources/:id/thumbnail`,
+`/api/avatars/:id/download`) return binary data with Range and ETag support.
+Authentication uses Bearer tokens.
 
 ## Authentication
 
@@ -36,9 +44,23 @@ Response:
 {
   "accessToken": "eyJ...",
   "refreshToken": "eyJ...",
-  "user": { "id": "uuid", "username": "admin", "avatarUrl": null }
+  "user": {
+    "id": "uuid",
+    "username": "admin",
+    "avatarUrl": null,
+    "role": "admin",
+    "mustChangePassword": false,
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+  },
+  "mustChangePassword": false
 }
 ```
+
+`user.role` is `admin` or `user`. While `mustChangePassword` is `true`, authenticated
+`/api/*` access is limited to `GET /api/auth/me` and `POST /api/auth/change-password`.
+The other application endpoints return `403`. Admin API access uses a separate
+administrator-role check.
 
 ### POST /api/auth/refresh
 
@@ -48,13 +70,16 @@ Response:
 
 ### GET /api/auth/me
 
-Returns current user info.
+Returns current user info (`UserResponse`, including `role` and
+`mustChangePassword`).
 
 ### POST /api/auth/change-password
 
 ```json
 { "oldPassword": "old", "newPassword": "new" }
 ```
+
+Returns `200` with new `accessToken` and `refreshToken`; save the replacement tokens.
 
 ### PUT /api/auth/update-user
 
@@ -77,7 +102,13 @@ Update avatar by URL (non-upload).
 ### POST /api/memos
 
 ```json
-{ "content": "# My note", "tags": ["work"], "diaryDate": "2026-05-16", "resourceIds": [], "aiSummary": null }
+{
+  "content": "# My note",
+  "tags": ["work"],
+  "diaryDate": "2026-05-16",
+  "resourceIds": [],
+  "aiSummary": null
+}
 ```
 
 ### GET /api/memos
@@ -152,6 +183,8 @@ List all configured bots.
 { "name": "Assistant", "description": "My bot", "tags": ["helper"], "autoReply": true }
 ```
 
+Creates a bot. Returns `201 Created`.
+
 ### GET /api/bots/:id
 
 Get bot detail.
@@ -161,6 +194,8 @@ Get bot detail.
 Update bot configuration. Supports `null` to clear `avatarUrl`, `model`, `aiConfig`.
 
 ### DELETE /api/bots/:id
+
+Returns `204 No Content`.
 
 ### PUT /api/bots/reorder
 
@@ -178,7 +213,7 @@ Get full conversation thread with thinking content.
 
 ### POST /api/memos/:id/trigger-replies
 
-Manually trigger auto-replies for a memo.
+Manually trigger auto-replies for a memo. Returns `202 Accepted`.
 
 ### POST /api/bot-replies/:id/reply
 
@@ -187,6 +222,8 @@ Reply to a bot in a thread.
 ```json
 { "question": "Tell me more", "resourceIds": ["img-uuid"] }
 ```
+
+Returns `201 Created`.
 
 ## Memory System
 
@@ -200,7 +237,8 @@ Memory retrieval activity log. Query: `limit` (default 20).
 
 ### GET /api/memory/context
 
-Retrieved memos for debugging. Query: `memoId`, `botId` (required), `limit`.
+Retrieved memos for debugging. Query: `memo_id` (alias `memoId`) and `bot_id`
+(alias `botId`), both required, plus `limit`.
 
 ### GET /api/memos/:id/memory-contexts
 
@@ -230,8 +268,10 @@ Returns diary with memos for that date.
 
 ### POST /api/diaries/:date
 
+`moodScore` is required and must be between 1 and 10.
+
 ```json
-{ "moodKey": "joy", "moodScore": 80, "summary": "Great day!" }
+{ "moodKey": "joy", "moodScore": 8, "summary": "Great day!" }
 ```
 
 ### PUT /api/diaries/:date
@@ -251,7 +291,7 @@ Update diary summary only.
 Update diary mood only.
 
 ```json
-{ "moodKey": "calm", "moodScore": 72 }
+{ "moodKey": "calm", "moodScore": 7 }
 ```
 
 ## Resources
@@ -374,7 +414,7 @@ Backfill memory embeddings (admin only).
 
 ### GET /admin/api/settings
 
-Get app settings (auto-tag, auto-diary, timezone, etc.).
+Get app settings (auto-tag, auto-diary, timezone as `appTimezone`, etc.).
 
 ### PUT /admin/api/settings
 

@@ -5,65 +5,61 @@ description: Complete reference for all server configuration options
 
 # Environment Variables
 
-The Mosaic server is configured through environment variables. Copy and modify the example file:
+The Mosaic server is configured through environment variables. Copy the example
+file, edit it, then start the server from `server-go/`:
 
 ```bash
-cp server/.env.example server/.env
+cp server-go/.env.example server-go/.env
+cd server-go && go run ./cmd/mosaic-server
 ```
+
+The server loads `.env` from its working directory and refuses to start when a
+required variable is missing.
 
 ## Required
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string (with `?sslmode=disable` for local) | `postgres://mosaic:mosaic@localhost:5432/mosaic` |
-| `JWT_SECRET` | Secret key for signing JWT tokens | `your-super-secret-jwt-key-change-in-production` |
+| Variable         | Description                                                       | Example                                          |
+| ---------------- | ----------------------------------------------------------------- | ------------------------------------------------ |
+| `DATABASE_URL`   | PostgreSQL connection string (with `?sslmode=disable` for local)  | `postgres://mosaic:mosaic@localhost:5432/mosaic` |
+| `JWT_SECRET`     | Secret key for signing JWT tokens                                 | `your-super-secret-jwt-key-change-in-production` |
+| `ADMIN_PASSWORD` | Password for the bootstrap admin account. No default; must be set | `change-me-in-production`                        |
 
 ## Server
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `8080` | HTTP server listen port |
-| `ADMIN_USERNAME` | `admin` | Admin dashboard username |
-| `ADMIN_PASSWORD` | `admin123` | Admin dashboard password |
+| Variable          | Default        | Description                                                                       |
+| ----------------- | -------------- | --------------------------------------------------------------------------------- |
+| `PORT`            | `8080`         | HTTP server listen port                                                           |
+| `ADMIN_USERNAME`  | `admin`        | Bootstrap admin account username                                                  |
+| `MIGRATIONS_DIR`  | `./migrations` | Directory the server reads SQL migrations from                                    |
+| `ALLOWED_ORIGINS` | (empty)        | Comma-separated CORS origins. Empty allows any origin and is for development only |
 
 ## Storage
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `STORAGE_TYPE` | `local` | Storage backend: `local` or `r2` |
-| `LOCAL_STORAGE_PATH` | `./storage` | Directory for local file storage |
-| `FFMPEG_BINARY` | `ffmpeg` | FFmpeg binary path for video processing |
+| Variable             | Default     | Description                             |
+| -------------------- | ----------- | --------------------------------------- |
+| `STORAGE_TYPE`       | `local`     | Storage backend: `local` or `r2`        |
+| `LOCAL_STORAGE_PATH` | `./storage` | Directory for local file storage        |
+| `FFMPEG_BINARY`      | `ffmpeg`    | FFmpeg binary path for video processing |
 
 ### Cloudflare R2 (when `STORAGE_TYPE=r2`)
 
-| Variable | Description |
-|----------|-------------|
-| `R2_ENDPOINT` | R2 endpoint URL |
-| `R2_BUCKET` | R2 bucket name |
-| `R2_ACCESS_KEY_ID` | R2 access key ID |
+| Variable               | Description          |
+| ---------------------- | -------------------- |
+| `R2_ENDPOINT`          | R2 endpoint URL      |
+| `R2_BUCKET`            | R2 bucket name       |
+| `R2_ACCESS_KEY_ID`     | R2 access key ID     |
 | `R2_SECRET_ACCESS_KEY` | R2 secret access key |
 
 ## AI
 
-| Variable | Default | Description |
-|----------|---------|-------------|
+| Variable       | Default                       | Description                                                             |
+| -------------- | ----------------------------- | ----------------------------------------------------------------------- |
 | `HTML2LLM_URL` | `https://html2llm.cyncyn.xyz` | External service for HTML-to-markdown conversion used in LLM processing |
 
 ## Docker Compose
 
-When using Docker Compose, the `POSTGRES_PASSWORD` is also needed for the PostgreSQL service:
+When using Docker Compose, the `POSTGRES_PASSWORD` is also needed for the PostgreSQL service. `JWT_SECRET` and `ADMIN_PASSWORD` must be set too — the Compose file refuses to start without them:
 
-```yaml
-services:
-  postgres:
-    image: pgvector/pgvector:pg15
-    environment:
-      POSTGRES_USER: mosaic
-      POSTGRES_PASSWORD: mosaic_password
-      POSTGRES_DB: mosaic
-  mosaic-server:
-    image: ghcr.io/crayonlu/mosaic-server:latest
-    ports:
-      - '8080:8080'
-    env_file: .env
-```
+Use [`server/docker-compose.yml`](https://github.com/crayonlu/Mosaic/blob/main/server/docker-compose.yml)
+with the configuration above. It sets the container database URL, waits for
+PostgreSQL, and mounts persistent data. See [Server Deployment](/docs/server-deployment).

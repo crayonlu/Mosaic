@@ -9,21 +9,25 @@ Mosaic integrates AI for automatic tagging, summaries, diary generation, and con
 
 ## Architecture
 
-Mosaic supports two parallel AI configurations:
+Mosaic separates per-user chat configuration from server-wide embeddings:
 
-| Config Key | Purpose | Model Type |
-|-----------|---------|------------|
-| `bot` | Chat generation, tagging, summarization, diary generation | GPT-4o, Claude, etc. |
-| `embedding` | Generating vector embeddings for semantic search | text-embedding-3-small, etc. |
+| Config Key  | Purpose                                                  | Model Type                   |
+| ----------- | -------------------------------------------------------- | ---------------------------- |
+| `bot`       | Current user: chat, tagging, summaries, diary generation | GPT-4o, Claude, etc.         |
+| `embedding` | Generating vector embeddings for semantic search         | text-embedding-3-small, etc. |
 
-Each config can use a different provider. For example, use OpenAI for chat and a local Ollama model for embeddings.
+Chat features read `user_ai_configs`. In the administrator AI panel, `bot` edits
+the signed-in administrator’s chat configuration. Manage another user’s chat
+configuration through the Users page or `/admin/api/users/{userId}/ai-config`.
+Users can manage their own configuration at `/api/user/ai-config`. The
+`embedding` configuration is shared server-wide. Each may use its own provider.
 
 ## Supported Providers
 
-| Provider | Protocol | Examples |
-|----------|----------|----------|
+| Provider              | Protocol                             | Examples                                |
+| --------------------- | ------------------------------------ | --------------------------------------- |
 | **OpenAI-compatible** | `/chat/completions` with Bearer auth | OpenAI, Ollama, Groq, Together AI, vLLM |
-| **Anthropic** | `/messages` with x-api-key auth | Claude 3.5 Sonnet, Claude Opus |
+| **Anthropic**         | `/messages` with x-api-key auth      | Claude 3.5 Sonnet, Claude Opus          |
 
 ## Available Features
 
@@ -53,7 +57,7 @@ Automatically generates daily diary entries from memos created that day.
   - `auto_diary_min_memos` — Minimum memos to trigger (default: 2)
   - `auto_diary_min_chars` — Minimum total character count (default: 150)
 - **Trigger**: After a memo is created meeting the thresholds
-- **Locking**: Once auto-generated, the diary entry is locked to prevent overwrites
+- **Locking**: Manual edits lock a diary against automatic regeneration
 
 ### Bot Replies
 
@@ -62,6 +66,25 @@ AI-powered bots that reply to your memos automatically.
 - **Per-bot setting**: Each bot has an `auto_reply` toggle
 - **Trigger**: Keyword matching on memo content
 - **Context**: Bots can be configured to use memory (previous memos) via the Memory System
+
+The first reply and every follow-up share one set of general conversational
+rules — there are no per-bot few-shot examples. The rules keep the bot's own
+persona, humour and manner of address, but also:
+
+- **Answer what was actually said.** A casual remark, joke or photo usually gets
+  a brief reaction of one to four sentences; advice is offered when it is asked
+  for or when a concrete risk needs attention.
+- **Do not read minds.** An unspoken motive stays unknown. The reply describes
+  observable behaviour and keeps uncertainty about motives and causes.
+- **Avoid empty filler.** Skip repeated summaries, stock reassurance, forced
+  profundity and rhetorical reframing such as "not X but Y".
+- **Use old memories carefully.** Retrieved memories are treated as possibly
+  relevant historical excerpts. One is mentioned only when it clearly helps the
+  current topic, its timestamp is preserved, and pronoun references across
+  records are never merged without evidence. The current message outweighs older
+  context.
+
+Reasoning, drafts and internal commentary stay out of the reply.
 
 ## Configuration
 
@@ -76,15 +99,15 @@ AI-powered bots that reply to your memos automatically.
 ### Via API
 
 ```json
-PUT /admin/ai-config/bot
+PUT /admin/api/ai-config/bot
 {
   "provider": "openai",
-  "base_url": "https://api.openai.com/v1",
-  "api_key": "sk-...",
+  "baseUrl": "https://api.openai.com/v1",
+  "apiKey": "sk-...",
   "model": "gpt-4o",
   "temperature": 0.7,
-  "max_tokens": 2048,
-  "timeout_seconds": 30
+  "maxTokens": 2048,
+  "timeoutSeconds": 30
 }
 ```
 

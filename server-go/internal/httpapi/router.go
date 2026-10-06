@@ -50,6 +50,9 @@ func New(deps Deps) http.Handler {
 	serve(router, "/health", map[string]http.HandlerFunc{
 		http.MethodGet: handleHealth,
 	})
+	serve(router, "/openapi.json", map[string]http.HandlerFunc{
+		http.MethodGet: handleOpenAPI,
+	})
 	registerStaticRoutes(router)
 
 	router.Route("/api/auth", func(r chi.Router) {

@@ -1,0 +1,71 @@
+---
+title: OpenAPI
+description: 将 Mosaic OpenAPI 3.1 文档导入 Swagger Editor 或 Postman
+---
+
+# OpenAPI
+
+运行中的服务端会以 **OpenAPI 3.1** 文档形式发布其 HTTP 接口契约：
+
+- 实时端点：[`http://localhost:8080/openapi.json`](http://localhost:8080/openapi.json)
+- 仓库中的规范源文件：[`server-go/internal/httpapi/openapi.json`](https://github.com/crayonlu/Mosaic/blob/main/server-go/internal/httpapi/openapi.json)
+
+`GET /openapi.json` 是公共端点 —— 无需认证，返回 JSON。端口跟随 `PORT`，若服务端
+运行在其他端口，则在该端口提供该文档。
+
+该文档在构建时嵌入服务端二进制（`//go:embed`）。若运行中的镜像是在此入口添加之前构建
+的，`/openapi.json` 会返回 `404`；只有用新镜像重新部署后，该端点才会出现。
+
+## 导入 Swagger Editor
+
+1. 打开 [editor.swagger.io](https://editor.swagger.io)。
+2. 选择 **File → Import URL**（或将保存的副本通过 **File → Import File** 粘贴）。
+3. 填入 `http://localhost:8080/openapi.json`。
+
+导入成功后会列出所有操作，且不报校验错误。Swagger Editor 用于校验和浏览文档；其
+**Authorize** 和 try-it-out 请求能否到达你的服务端，取决于编辑器的网络可达性与你设置的
+服务端地址，因此这些请求只能视为尽力而为。需要发送真实请求时，请在能够访问服务端的
+环境中使用 Swagger UI 或 Postman。
+
+## 导入 Postman
+
+1. 在 Postman 中点击 **Import**。
+2. 选择 **Link** 标签，填入 `http://localhost:8080/openapi.json`；或选择 **File**
+   标签并选取保存的 JSON 副本。
+3. 导入为新 collection，然后把 collection 指向你的服务端再发送请求。
+
+## 服务端地址与本地访问
+
+文档声明的服务端地址是相对值（`/`）。远端工具导入后，该相对值会解析为工具自身站点，
+请求因此会打到工具站而不是 Mosaic。请把服务端地址显式设置为你的实例 —— 例如在
+Swagger UI 或 Swagger Editor 中填 `http://localhost:8080`，或在 Postman 中设置
+`baseUrl` collection 变量。
+
+本地访问存在常见限制：
+
+- 明文 HTTP 的 `http://localhost:8080` 只能从本机访问。从其他设备访问时，请用主机的
+  局域网地址打开页面；需要加入 `ALLOWED_ORIGINS` 的是**调用页面的来源**（例如
+  `https://editor.swagger.io` 或你自己的 UI 来源），而不是服务端的局域网地址 —— 服务端
+  地址不是 origin，不应写入。
+- 浏览器将 `http://localhost` 和 `http://127.0.0.1` 视为潜在可信来源，因此 HTTPS 页面
+  通常仍可请求 `http://localhost`。拦截只针对其他明文 HTTP 目标（例如局域网 IP）：
+  HTTPS 页面无法请求这些地址。此时请下载 JSON 并以文件方式导入，或为服务端启用 HTTPS。
+- 携带 `Authorization` 头会触发浏览器 CORS 预检。调用方来源必须被服务端 CORS 策略
+  允许；`ALLOWED_ORIGINS` 为空时才为宽松模式（仅限开发）。
+
+## 示例请求
+
+以下均为虚构示例，除非你替换为自己的值：
+
+```bash
+curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "http://localhost:8080/api/memos?page=1&pageSize=5"
+```
+
+`GET /api/memos` 返回分页信封（`items`、`total`、`page`、`pageSize`、`totalPages`）；
+`GET /api/memos/search` 使用另一种结构。每个响应的准确结构以该文档为准。
+
+## 说明
+
+- 该文档由服务端直接输出 —— 生成或读取它都不需要额外工具或依赖。
+- `docs/server-api.md` 仍是同一份契约的叙述式参考文档。

@@ -15,7 +15,7 @@ The database has the following core tables:
 
 ```sql
 -- User accounts
-users (id UUID, username VARCHAR, password_hash VARCHAR, avatar_url VARCHAR, created_at BIGINT, updated_at BIGINT)
+users (id UUID, username VARCHAR, password_hash VARCHAR, avatar_url VARCHAR, role VARCHAR, is_active BOOLEAN, must_change_password BOOLEAN, created_at BIGINT, updated_at BIGINT)
 
 -- Authentication tokens
 refresh_tokens (id UUID, user_id UUID REFERENCES users, token VARCHAR, expires_at BIGINT, created_at BIGINT)
@@ -25,7 +25,7 @@ refresh_tokens (id UUID, user_id UUID REFERENCES users, token VARCHAR, expires_a
 
 ```sql
 -- Notes
-memos (id UUID, user_id UUID, content TEXT, tags JSONB, is_archived BOOLEAN, is_deleted BOOLEAN, diary_date DATE, created_at BIGINT, updated_at BIGINT, revision_count INT)
+memos (id UUID, user_id UUID, content TEXT, tags JSONB, is_archived BOOLEAN, is_deleted BOOLEAN, diary_date DATE, ai_summary TEXT, created_at BIGINT, updated_at BIGINT, revision_count INT)
 
 -- Revision history
 memo_revisions (id UUID, memo_id UUID, user_id UUID, revision_number INT, content TEXT, tags JSONB, ai_summary TEXT, is_deleted BOOLEAN, created_at BIGINT)
@@ -38,21 +38,28 @@ resources (id UUID, memo_id UUID REFERENCES memos, filename VARCHAR, resource_ty
 
 ```sql
 -- Daily mood summaries
-diaries (date DATE, user_id UUID, summary TEXT, mood_key VARCHAR, mood_score INT, generation_source VARCHAR, auto_generation_locked BOOLEAN, generated_from_memo_ids JSONB, is_deleted BOOLEAN, created_at BIGINT, updated_at BIGINT)
+diaries (date DATE, user_id UUID, summary TEXT, mood_key VARCHAR, mood_score INT, generation_source VARCHAR, auto_generation_locked BOOLEAN, generated_from_memo_ids JSONB, last_auto_generated_at BIGINT, is_deleted BOOLEAN, created_at BIGINT, updated_at BIGINT)
 ```
 
 ### AI System
 
 ```sql
 -- Vector embeddings for semantic search (requires pgvector)
-memo_embeddings (memo_id UUID PRIMARY KEY REFERENCES memos, source_text TEXT, provider VARCHAR, model VARCHAR, embedding vector(1536), updated_at BIGINT)
+memo_embeddings (memo_id UUID PRIMARY KEY REFERENCES memos, source_text TEXT, provider VARCHAR, model VARCHAR, embedding vector, updated_at BIGINT)
 
 -- AI provider configurations
 server_ai_configs (key VARCHAR PRIMARY KEY, provider VARCHAR, base_url VARCHAR, api_key TEXT, model VARCHAR, temperature FLOAT, max_tokens INT, timeout_seconds INT, updated_at BIGINT)
 
+user_ai_configs (user_id UUID PRIMARY KEY REFERENCES users, provider VARCHAR, base_url VARCHAR, api_key TEXT, model VARCHAR, temperature FLOAT, max_tokens INT, timeout_seconds INT, updated_at BIGINT)
+
 -- Scheduled diary generation
 ai_diary_jobs (user_id UUID, target_date DATE, run_after_ms BIGINT, status VARCHAR, last_error TEXT, created_at BIGINT, updated_at BIGINT)
 ```
+
+Chat features use per-user `user_ai_configs`; embedding configuration is server-wide.
+The embedding column has no fixed dimension; keep stored vectors consistent with
+the configured embedding model. These snippets summarize the schema; migrations
+contain the complete column definitions and constraints.
 
 ### Bots
 
@@ -61,7 +68,7 @@ ai_diary_jobs (user_id UUID, target_date DATE, run_after_ms BIGINT, status VARCH
 bots (id UUID, user_id UUID, name VARCHAR, avatar_url VARCHAR, description TEXT, tags JSONB, auto_reply BOOLEAN, sort_order INT, is_deleted BOOLEAN, created_at BIGINT, updated_at BIGINT)
 
 -- Bot replies
-bot_replies (id UUID, memo_id UUID REFERENCES memos, bot_id UUID REFERENCES bots, content TEXT, parent_reply_id UUID, user_question TEXT, revision_id UUID, created_at BIGINT)
+bot_replies (id UUID, memo_id UUID REFERENCES memos, bot_id UUID REFERENCES bots, content TEXT, thinking_content TEXT, parent_reply_id UUID, user_question TEXT, revision_id UUID, created_at BIGINT)
 
 -- Bot reply attachments
 bot_reply_resources (reply_id UUID, resource_id UUID, sort_order INT, created_at BIGINT)
@@ -83,27 +90,30 @@ app_settings (key VARCHAR PRIMARY KEY, value TEXT, updated_at BIGINT)
 
 ## Migrations
 
-Migrations are located in `server/migrations/` and run automatically on server startup.
+Migrations are located in `server-go/migrations/` and run automatically on server startup via goose.
 
 **Key migrations** (chronological):
 
-| Migration | Description |
-|-----------|-------------|
-| `init_tables` | Users, memos, resources, diaries, refresh_tokens |
-| `add_bot_system` | Bot and bot_replies tables |
-| `add_sync_support` | sync_cursors + soft-delete columns |
-| `add_bot_memory_core` | memo_embeddings (pgvector) |
-| `add_ai_config_to_bots` | AI config assignment |
-| `add_server_ai_config` | server_ai_configs table |
-| `app_settings` | App-wide settings |
-| `create_memo_revisions` | Version history for memos |
+| Migration               | Description                                      |
+| ----------------------- | ------------------------------------------------ |
+| `init_tables`           | Users, memos, resources, diaries, refresh_tokens |
+| `add_bot_system`        | Bot and bot_replies tables                       |
+| `add_sync_support`      | sync_cursors + soft-delete columns               |
+| `add_bot_memory_core`   | memo_embeddings (pgvector)                       |
+| `add_ai_config_to_bots` | AI config assignment                             |
+| `add_server_ai_config`  | server_ai_configs table                          |
+| `app_settings`          | App-wide settings                                |
+| `create_memo_revisions` | Version history for memos                        |
 
 ### Adding a new migration
 
 ```bash
-touch server/migrations/$(date -u +"%Y%m%d%H%M%S")_description.sql
+touch server-go/migrations/$(date -u +"%Y%m%d%H%M%S")_description.sql
 ```
 
 Write SQL in the file. It will run automatically on next server restart.
 
-> After changing migrations, run `cargo sqlx prepare` to update the offline query cache for compilation.
+> The applied set is recorded in the `goose_db_version` table. Each migration
+> must start with a `-- +goose Up` directive. The Go tree mirrors the Rust
+> reference tree's migrations and adds those directives; the SQL bodies are the
+> same.

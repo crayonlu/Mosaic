@@ -57,7 +57,8 @@ https://github.com/user-attachments/assets/982fb136-55f1-4412-96c6-8d2d3e9937e2
 ```
 Mosaic/
 ├── mobile/      # Expo 移动应用
-├── server/      # Rust 后端服务
+├── server-go/   # Go 后端服务（生产环境）
+├── server/      # Rust 后端（参考实现）+ 共享管理后台
 ├── packages/    # 共享包
 │   ├── api/     # API 类型定义
 │   └── utils/   # 工具函数
@@ -66,7 +67,8 @@ Mosaic/
 
 ## 技术架构
 
-- 服务端：Rust + Actix Web + PostgreSQL
+- 服务端：Go（chi + pgx）+ PostgreSQL + pgvector —— `server-go/` 为生产后端
+- 参考实现：`server/` 中的 Rust + Actix Web + SQLx，读取同一套数据库结构、遵循同一份接口契约；该目录同时存放 Go 镜像构建时复用的共享管理后台
 - AI 集成：支持多种 AI 服务提供商
 
 ---
@@ -76,7 +78,7 @@ Mosaic/
 1. 考虑到数据安全，你首先需要在你自己的服务器上部署自己的 Mosaic 后端服务，用来管理自己的私人数据
    1. `mkdir mosaic-server`
    2. `cd mosaic-server`
-   3. 在此文件夹下创建`.env`文件，内容参考 [.env.example](./server/.env.example)，并根据你的需要修改其中的配置项（记得修改账号名称和密码）
+   3. 在此文件夹下创建`.env`文件，内容参考 [.env.example](./server-go/.env.example)，并根据你的需要修改其中的配置项（记得修改账号名称和密码）
    4. 同样在此文件夹下创建`docker-compose.yml`文件，直接复制 [docker-compose.yml](./server/docker-compose.yml) 即可
    5. 回到mosaic-server文件夹，执行 `docker-compose up -d` 启动即可
    6. **注意**：如果遇到文件上传权限问题，执行 `chown -R 1000:1000 ~/mosaic-server/storage ~/mosaic-server/logs` 修复目录权限
@@ -84,6 +86,12 @@ Mosaic/
 2. 下载release中的客户端连接你自己的服务器即可
 
 ---
+
+## API 文档
+
+生产后端位于 `server-go/`。接口说明见 [API 文档](./docs/server-api.md)，
+机器可读契约见 [OpenAPI 3.1 规范](./server-go/internal/httpapi/openapi.json)。
+更新后的 Go 二进制通过公开的 `/openapi.json` 提供规范（GET 和 HEAD）。
 
 ## 开源协议
 

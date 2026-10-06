@@ -57,7 +57,8 @@ https://github.com/user-attachments/assets/982fb136-55f1-4412-96c6-8d2d3e9937e2
 ```
 Mosaic/
 ├── mobile/      # Expo mobile application
-├── server/      # Rust backend service
+├── server-go/   # Go backend service (production)
+├── server/      # Rust backend (reference implementation) + shared admin UI
 ├── packages/    # Shared packages
 │   ├── api/     # API type definitions
 │   └── utils/   # Utility functions
@@ -67,7 +68,8 @@ Mosaic/
 ## Technical Architecture
 
 - Mobile: Expo React Native
-- Server: Rust + Actix Web + PostgreSQL
+- Server: Go (chi + pgx) + PostgreSQL + pgvector — the production backend in `server-go/`
+- Reference: Rust + Actix Web + SQLx in `server/`. It reads the same schema and serves the same contract, and its tree also holds the shared admin UI that the Go image builds
 - AI Integration: Supports multiple AI service providers
 
 ---
@@ -77,7 +79,7 @@ Mosaic/
 1. For data security, you first need to deploy your own Mosaic backend service on your own server to manage your private data
    1. `mkdir mosaic-server`
    2. `cd mosaic-server`
-   3. Create a `.env` file in this folder, refer to [.env.example](./server/.env.example) for content, and modify the configuration items as needed (remember to change the username and password)
+   3. Create a `.env` file in this folder, refer to [.env.example](./server-go/.env.example) for content, and modify the configuration items as needed (remember to change the username and password)
    4. Also create a `docker-compose.yml` file in this folder, simply copy [docker-compose.yml](./server/docker-compose.yml)
    5. Go back to the mosaic-server folder and run `docker-compose up -d` to start
    6. **Note**: If you encounter permission issues with file uploads, run `chown -R 1000:1000 ~/mosaic-server/storage ~/mosaic-server/logs` to fix directory permissions
@@ -85,6 +87,12 @@ Mosaic/
 2. Download the client from releases and connect to your own server
 
 ---
+
+## API Documentation
+
+The production backend is in `server-go/`. See the [API reference](./docs/server-api.md)
+and [OpenAPI 3.1 document](./server-go/internal/httpapi/openapi.json). The updated Go
+binary serves the public specification at `/openapi.json` (GET and HEAD).
 
 ## License
 

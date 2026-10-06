@@ -1,15 +1,18 @@
 # Mosaic Server API 文档
 
-> 版本：v2.6
-> 更新时间：2026-06-06
-> 基于 `server/src/routes/`、`server/src/models/`、`server/src/main.rs` 及 `packages/api/src/` 实际实现
+> 对照基线：Go 服务端 `server-v1.1.5`；本次源码新增 OpenAPI 入口
+> 更新时间：2026-10-06
+> 基于 `server-go/internal/httpapi/`、`server-go/internal/service/` 及 `packages/api/src/` 实际实现
+> 机器可读规范：[OpenAPI 3.1](../server-go/internal/httpapi/openapi.json)，运行时入口 `GET /openapi.json`。规范契约版本与发布标签独立。本文示例均为虚构。
 
 ## 1. 基础信息
 
 - Base URL（本地默认）：`http://localhost:8080`
 - 健康检查：`GET /health`
 - 认证接口前缀：`/api/auth`
-- 业务接口前缀：`/api`（借由 `configure_*_routes` 注册）
+- 业务接口前缀：`/api`（chi 路由注册）
+- OpenAPI：`GET /openapi.json`，无需鉴权，嵌入服务端二进制，无需额外文件部署
+- 所有 GET API 均支持 HEAD；HEAD 返回同样状态和响应头，省略响应体
 - 管理 API 前缀：`/admin/api`（需要管理员权限）
 - Content-Type：
   - JSON 接口使用 `application/json`
@@ -19,13 +22,13 @@
 
 ### 2.1 鉴权方式
 
-除 `GET /health`、`POST /api/auth/login`、`POST /api/auth/refresh` 外，其余接口均需携带：
+`GET /health`、`GET /openapi.json`、`POST /api/auth/login`、`POST /api/auth/refresh` 无需鉴权。业务接口需携带：
 
 ```http
 Authorization: Bearer <access_token>
 ```
 
-管理后台 `/admin/api/*` 也需要同样的 Bearer token。
+管理后台 `/admin/api/*` 需要管理员 Bearer token。待修改初始密码的 token 可访问 `/api/auth/me` 和 `/api/auth/change-password`；其余 `/api/*` 业务接口会返回 403，需先修改密码。当前管理 API 单独检查管理员角色。
 
 ### 2.2 Token 生命周期
 
@@ -41,8 +44,9 @@ Authorization: Bearer <access_token>
 
 ### 3.1 命名风格
 
-- JSON 字段采用 `camelCase`（Rust 端使用 `#[serde(rename_all = "camelCase")]`）
-- 查询参数统一采用 `camelCase`（如 `startDate`、`pageSize`）
+- JSON 字段采用 `camelCase`（Go JSON tags 固定字段名）
+- 查询参数按接口契约使用：大多数为 `camelCase`；memory context 使用 `memo_id`、`bot_id`，兼容 `memoId`、`botId`；管理员用户分页使用 `page_size`，兼容 `pageSize`
+- 搜索兼容 `start_date`、`end_date`、`is_archived`、`page_size` 与 `tags[]`。同时提供同一字段的两种拼写时，优先级以接口说明和规范为准
 
 ### 3.2 时间与日期
 
@@ -60,7 +64,7 @@ Authorization: Bearer <access_token>
 
 ### 4.1 统一错误结构（AppError）
 
-多数服务错误返回：
+处理器中的多数服务错误返回：
 
 ```json
 {
@@ -69,10 +73,13 @@ Authorization: Bearer <access_token>
 }
 ```
 
+鉴权中间件拒绝使用 `text/plain`，如 `Unauthorized`。AI 辅助接口和上传体积超限错误可返回单字段 `{"error":"..."}`。客户端应结合 Content-Type 和状态码处理。
+
 ### 4.2 状态码映射
 
 - `401`：未授权 / Token 无效 / Token 过期
-- `404`：用户 / memo / diary / resource 不存在
+- `403`：权限不足、账户需修改密码
+- `404`：请求的实体不存在；日记按日期读取的空状态例外，返回 `200` 和 JSON `null`
 - `400`：参数不合法
 - `500`：数据库、存储或内部错误
 
@@ -82,14 +89,14 @@ Authorization: Bearer <access_token>
 
 ### GET /health
 
-无需鉴权，路由直接注册在根 scope。
+无需鉴权，路由直接注册在根路径。`version` 是构建时注入值；当前 Docker 构建未注入时会显示 `dev`，发布版本应核验镜像标签与摘要。
 
 响应示例：
 
 ```json
 {
   "status": "ok",
-  "version": "0.1.0"
+  "version": "dev"
 }
 ```
 
@@ -122,9 +129,12 @@ Authorization: Bearer <access_token>
     "id": "uuid",
     "username": "admin",
     "avatarUrl": null,
+    "role": "admin",
+    "mustChangePassword": false,
     "createdAt": 1700000000000,
     "updatedAt": 1700000000000
-  }
+  },
+  "mustChangePassword": false
 }
 ```
 
@@ -168,7 +178,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-成功返回：`200`（空 body）
+成功返回：`200`，响应为 `{ "accessToken": "...", "refreshToken": "..." }`。客户端应保存新 token。
 
 ### 6.5 PUT /api/auth/update-user
 
@@ -203,13 +213,15 @@ Authorization: Bearer <access_token>
 
 #### UserResponse
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | string (uuid) | |
-| username | string | |
-| avatarUrl | string? | 头像下载 URL |
-| createdAt | number | 毫秒时间戳 |
-| updatedAt | number | 毫秒时间戳 |
+| 字段               | 类型          | 说明               |
+| ------------------ | ------------- | ------------------ |
+| id                 | string (uuid) |                    |
+| username           | string        |                    |
+| avatarUrl          | string?       | 头像下载 URL       |
+| role               | string        | admin 或 user      |
+| mustChangePassword | boolean       | 是否需修改初始密码 |
+| createdAt          | number        | 毫秒时间戳         |
+| updatedAt          | number        | 毫秒时间戳         |
 
 ---
 
@@ -241,13 +253,13 @@ Authorization: Bearer <access_token>
 
 Query 参数（`ListMemosQuery`）：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| page | number? | 默认 1 |
-| pageSize | number? | 默认 20 |
-| archived | boolean? | 筛选归档状态 |
+| 参数      | 类型                 | 说明           |
+| --------- | -------------------- | -------------- |
+| page      | number?              | 默认 1         |
+| pageSize  | number?              | 默认 20        |
+| archived  | boolean?             | 筛选归档状态   |
 | diaryDate | string (YYYY-MM-DD)? | 按日记日期筛选 |
-| search | string? | 全文搜索 |
+| search    | string?              | 全文搜索       |
 
 返回：`PaginatedResponse<MemoWithResources>`
 
@@ -265,9 +277,9 @@ Query 参数（`ListMemosQuery`）：
 
 ```json
 {
-  "memo": { /* MemoWithResources */ },
-  "revisions": [ /* MemoRevision[] */ ],
-  "botReplies": [ /* BotReplyResponse[] */ ]
+  "memo": {/* MemoWithResources */},
+  "revisions": [/* MemoRevision[] */],
+  "botReplies": [/* BotReplyResponse[] */]
 }
 ```
 
@@ -289,6 +301,7 @@ Query 参数（`ListMemosQuery`）：
 ```
 
 说明：
+
 - `diaryDate` 传 `null` 可清除日记日期绑定
 - `aiSummary` 传 `null` 可清除 AI 摘要
 
@@ -333,15 +346,15 @@ Query 参数（`ListMemosQuery`）：
 
 Query 参数：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| query | string | **必填**。搜索关键词 |
-| tags / tags[] | string? | 可重复，每次传一个值 |
-| startDate | string (YYYY-MM-DD)? | 起始日期 |
-| endDate | string (YYYY-MM-DD)? | 结束日期 |
-| isArchived | boolean? | 是否归档 |
-| page | number? | 默认 1 |
-| pageSize | number? | 默认 50 |
+| 参数          | 类型                 | 说明                 |
+| ------------- | -------------------- | -------------------- |
+| query         | string               | **必填**。搜索关键词 |
+| tags / tags[] | string?              | 可重复，每次传一个值 |
+| startDate     | string (YYYY-MM-DD)? | 起始日期             |
+| endDate       | string (YYYY-MM-DD)? | 结束日期             |
+| isArchived    | boolean?             | 是否归档             |
+| page          | number?              | 默认 1               |
+| pageSize      | number?              | 默认 50              |
 
 返回：`SearchMemosResponse`
 
@@ -369,7 +382,7 @@ Query 参数：
 }
 ```
 
-> 注意：搜索返回的不是 `PaginatedResponse`，而是独立结构体，包含 `semanticEnabled` 字段表示语义搜索是否可用。
+> 注意：搜索返回的不是 `PaginatedResponse`，而是独立结构体，包含 `semanticEnabled` 字段表示此次查询是否使用了查询向量。短查询或向量生成失败时可退回关键词搜索。
 
 ### 7.11 GET /api/memos/tags
 
@@ -400,13 +413,13 @@ Query 参数：
 }
 ```
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| clipType | "url" \| "text" \| "image" | 必填 |
-| url | string? | clipType=url 时需要 |
-| content | string? | clipType=text 时需要 |
-| resourceId | string? | clipType=image 时需要 |
-| userNote | string? | 用户备注，会拼入 AI 提示词 |
+| 字段       | 类型                       | 说明                       |
+| ---------- | -------------------------- | -------------------------- |
+| clipType   | "url" \| "text" \| "image" | 必填                       |
+| url        | string?                    | clipType=url 时需要        |
+| content    | string?                    | clipType=text 时需要       |
+| resourceId | string?                    | clipType=image 时需要      |
+| userNote   | string?                    | 用户备注，会拼入 AI 提示词 |
 
 返回：`ClipResult`
 
@@ -452,55 +465,55 @@ Query 参数：
 
 #### MemoWithResources
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | string (uuid) | |
-| content | string | |
-| tags | string[] | |
-| isArchived | boolean | |
-| diaryDate | string? | YYYY-MM-DD |
-| aiSummary | string? | AI 摘要 |
-| createdAt | number | 毫秒时间戳 |
-| updatedAt | number | 毫秒时间戳 |
-| revisionCount | number | 修订版本数 |
-| resources | Resource[] | 关联资源 |
+| 字段          | 类型          | 说明       |
+| ------------- | ------------- | ---------- |
+| id            | string (uuid) |            |
+| content       | string        |            |
+| tags          | string[]      |            |
+| isArchived    | boolean       |            |
+| diaryDate     | string?       | YYYY-MM-DD |
+| aiSummary     | string?       | AI 摘要    |
+| createdAt     | number        | 毫秒时间戳 |
+| updatedAt     | number        | 毫秒时间戳 |
+| revisionCount | number        | 修订版本数 |
+| resources     | Resource[]    | 关联资源   |
 
 #### Memo（搜索结果中的精简格式）
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | string (uuid) | |
-| content | string | |
-| tags | string[] | |
-| isArchived | boolean | |
-| diaryDate | string? | |
-| aiSummary | string? | |
-| createdAt | number | |
-| updatedAt | number | |
-| revisionCount | number | |
-| semanticScore | number? | 语义搜索相关性分数 |
-| keywordScore | number? | 关键词搜索相关性分数 |
-| matchType | "keyword" \| "semantic" \| "hybrid"? | 匹配方式 |
+| 字段          | 类型                                 | 说明                 |
+| ------------- | ------------------------------------ | -------------------- |
+| id            | string (uuid)                        |                      |
+| content       | string                               |                      |
+| tags          | string[]                             |                      |
+| isArchived    | boolean                              |                      |
+| diaryDate     | string?                              |                      |
+| aiSummary     | string?                              |                      |
+| createdAt     | number                               |                      |
+| updatedAt     | number                               |                      |
+| revisionCount | number                               |                      |
+| semanticScore | number?                              | 语义搜索相关性分数   |
+| keywordScore  | number?                              | 关键词搜索相关性分数 |
+| matchType     | "keyword" \| "semantic" \| "hybrid"? | 匹配方式             |
 
 #### MemoDetail
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| memo | MemoWithResources | |
-| revisions | MemoRevision[] | |
-| botReplies | BotReply[] | Bot 回复列表 |
+| 字段       | 类型              | 说明         |
+| ---------- | ----------------- | ------------ |
+| memo       | MemoWithResources |              |
+| revisions  | MemoRevision[]    |              |
+| botReplies | BotReply[]        | Bot 回复列表 |
 
 #### MemoRevision
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | string (uuid) | |
-| memoId | string (uuid) | |
-| revisionNumber | number | 版本号 |
-| content | string | |
-| tags | string[] | |
-| aiSummary | string? | |
-| createdAt | number | |
+| 字段           | 类型          | 说明   |
+| -------------- | ------------- | ------ |
+| id             | string (uuid) |        |
+| memoId         | string (uuid) |        |
+| revisionNumber | number        | 版本号 |
+| content        | string        |        |
+| tags           | string[]      |        |
+| aiSummary      | string?       |        |
+| createdAt      | number        |        |
 
 ---
 
@@ -514,12 +527,12 @@ Query 参数：
 
 Query 参数（`ListDiariesQuery`）：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| page | number? | 默认 1 |
-| pageSize | number? | 默认 20 |
-| startDate | string (YYYY-MM-DD)? | |
-| endDate | string (YYYY-MM-DD)? | |
+| 参数      | 类型                 | 说明    |
+| --------- | -------------------- | ------- |
+| page      | number?              | 默认 1  |
+| pageSize  | number?              | 默认 20 |
+| startDate | string (YYYY-MM-DD)? |         |
+| endDate   | string (YYYY-MM-DD)? |         |
 
 返回：`PaginatedResponse<DiaryResponse>`
 
@@ -535,7 +548,7 @@ Query 参数（`ListDiariesQuery`）：
 
 创建或覆盖当日日记。
 
-路径中的 `date` 为准（请求体内 `date` 会被服务端覆盖为路径值）。
+路径中的 `date` 为准（请求体内 `date` 会被服务端覆盖为路径值）。`moodScore` 必填，范围为 1–10。
 
 请求体（`CreateDiaryRequest`）：
 
@@ -544,7 +557,7 @@ Query 参数（`ListDiariesQuery`）：
   "date": "2026-02-24",
   "summary": "今天状态不错",
   "moodKey": "joy",
-  "moodScore": 80
+  "moodScore": 8
 }
 ```
 
@@ -558,7 +571,7 @@ Query 参数（`ListDiariesQuery`）：
 {
   "summary": "新的摘要",
   "moodKey": "calm",
-  "moodScore": 72
+  "moodScore": 7
 }
 ```
 
@@ -583,7 +596,7 @@ Query 参数（`ListDiariesQuery`）：
 ```json
 {
   "moodKey": "calm",
-  "moodScore": 72
+  "moodScore": 7
 }
 ```
 
@@ -591,31 +604,31 @@ Query 参数（`ListDiariesQuery`）：
 
 #### DiaryResponse
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| date | string | YYYY-MM-DD |
-| summary | string | |
-| moodKey | "joy" \| "calm" \| "neutral" \| "sadness" \| "anxiety" \| "anger" \| "focus" \| "tired" | |
-| moodScore | number | 0-100 |
-| generationSource | string | 生成来源（"ai" / "manual" 等） |
-| autoGenerationLocked | boolean | 自动生成锁定状态 |
-| generatedFromMemoIds | string[] | 生成时引用的 memo ID 列表 |
-| lastAutoGeneratedAt | number? | 上次自动生成时间 |
-| createdAt | number | |
-| updatedAt | number | |
+| 字段                 | 类型                                                                                    | 说明                           |
+| -------------------- | --------------------------------------------------------------------------------------- | ------------------------------ |
+| date                 | string                                                                                  | YYYY-MM-DD                     |
+| summary              | string                                                                                  |                                |
+| moodKey              | "joy" \| "calm" \| "neutral" \| "sadness" \| "anxiety" \| "anger" \| "focus" \| "tired" |                                |
+| moodScore            | number                                                                                  | 1-10                           |
+| generationSource     | string                                                                                  | 生成来源（"ai" / "manual" 等） |
+| autoGenerationLocked | boolean                                                                                 | 自动生成锁定状态               |
+| generatedFromMemoIds | string[]                                                                                | 生成时引用的 memo ID 列表      |
+| lastAutoGeneratedAt  | number?                                                                                 | 上次自动生成时间               |
+| createdAt            | number                                                                                  |                                |
+| updatedAt            | number                                                                                  |                                |
 
 #### DiaryWithMemosResponse
 
 继承 `DiaryResponse` 所有字段，另加：
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
+| 字段  | 类型                | 说明                  |
+| ----- | ------------------- | --------------------- |
 | memos | MemoWithResources[] | 该日记日期关联的 memo |
 
 #### MoodKey 枚举
 
 ```typescript
-'joy' | 'calm' | 'neutral' | 'sadness' | 'anxiety' | 'anger' | 'focus' | 'tired'
+;'joy' | 'calm' | 'neutral' | 'sadness' | 'anxiety' | 'anger' | 'focus' | 'tired'
 ```
 
 ---
@@ -630,9 +643,9 @@ Query 参数（`ListDiariesQuery`）：
 
 Query 参数：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| page | number? | 默认 1 |
+| 参数     | 类型    | 说明     |
+| -------- | ------- | -------- |
+| page     | number? | 默认 1   |
 | pageSize | number? | 默认 100 |
 
 返回：`PaginatedResponse<ResourceResponse>`
@@ -708,8 +721,8 @@ Query 参数：
 
 Query 参数：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
+| 参数    | 类型              | 说明                 |
+| ------- | ----------------- | -------------------- |
 | variant | "thumb" \| "opt"? | 缩略图或优化后的变体 |
 
 ### 9.7 GET /api/resources/{id}/thumbnail
@@ -730,19 +743,19 @@ Query 参数：
 
 #### ResourceResponse
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | string (uuid) | |
-| memoId | string? | 关联 memo |
-| filename | string | |
-| resourceType | "image" \| "video" | |
-| mimeType | string | |
-| fileSize | number | 字节 |
-| storageType | string | "local" \| "r2" |
-| url | string | 可访问的下载 URL |
-| thumbnailUrl | string? | 缩略图 URL（处理完成后提供） |
-| metadata | object | 元数据（宽高、时长等） |
-| createdAt | number | |
+| 字段         | 类型               | 说明                         |
+| ------------ | ------------------ | ---------------------------- |
+| id           | string (uuid)      |                              |
+| memoId       | string?            | 关联 memo                    |
+| filename     | string             |                              |
+| resourceType | "image" \| "video" |                              |
+| mimeType     | string             |                              |
+| fileSize     | number             | 字节                         |
+| storageType  | string             | "local" \| "r2"              |
+| url          | string             | 可访问的下载 URL             |
+| thumbnailUrl | string?            | 缩略图 URL（处理完成后提供） |
+| metadata     | object             | 元数据（宽高、时长等）       |
+| createdAt    | number             |                              |
 
 ---
 
@@ -778,7 +791,7 @@ Query 参数：
 - `model` 可选，为空则使用 AI config 默认模型
 - `avatarUrl` 可选
 
-返回：`Bot`
+成功返回：`201`，响应：`Bot`
 
 ### 10.3 GET /api/bots/{id}
 
@@ -813,7 +826,7 @@ Query 参数：
 
 删除 bot。
 
-成功返回：`200`（空 body）
+成功返回：`204`（空 body）
 
 ### 10.6 PUT /api/bots/reorder
 
@@ -874,9 +887,9 @@ Query 参数：
 
 ### 10.9 POST /api/memos/{id}/trigger-replies
 
-手动触发 Bot 对此 memo 自动回复。
+手动触发启用自动回复的 Bot 对此 memo 生成回复。使用后台任务并通过 PostgreSQL advisory lock 防止重复并发触发。无需请求体；`botIds` 不作为筛选参数。
 
-成功返回：`200`
+成功返回：`202`（空 body）
 
 ### 10.10 POST /api/bot-replies/{id}/reply
 
@@ -892,69 +905,70 @@ Query 参数：
 ```
 
 - `resourceIds` 可选，用于传入图片等资源
+- 成功返回 `201`，响应为新生成的 `BotReply` 节点
 
 ### 数据结构
 
 #### Bot
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | string (uuid) | |
-| name | string | |
-| avatarUrl | string? | |
-| description | string | |
-| tags | string[] | |
-| autoReply | boolean | 是否自动回复匹配的 memo |
-| sortOrder | number | 排序序号 |
-| model | string? | 使用的模型名（覆盖 AI config 默认） |
-| aiConfig | object? | 自定义 AI 配置参数 |
-| createdAt | number | |
-| updatedAt | number | |
-| memoryStats | BotMemoryStats? | |
+| 字段        | 类型            | 说明                                |
+| ----------- | --------------- | ----------------------------------- |
+| id          | string (uuid)   |                                     |
+| name        | string          |                                     |
+| avatarUrl   | string?         |                                     |
+| description | string          |                                     |
+| tags        | string[]        |                                     |
+| autoReply   | boolean         | 是否自动回复匹配的 memo             |
+| sortOrder   | number          | 排序序号                            |
+| model       | string?         | 使用的模型名（覆盖 AI config 默认） |
+| aiConfig    | object?         | 自定义 AI 配置参数                  |
+| createdAt   | number          |                                     |
+| updatedAt   | number          |                                     |
+| memoryStats | BotMemoryStats? |                                     |
 
 #### BotMemoryStats
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| totalContextsBuilt | number | 已构建的上下文数 |
-| lastContextAt | number? | 上次构建时间 |
+| 字段               | 类型    | 说明             |
+| ------------------ | ------- | ---------------- |
+| totalContextsBuilt | number  | 已构建的上下文数 |
+| lastContextAt      | number? | 上次构建时间     |
 
 #### BotReply
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | string (uuid) | |
-| memoId | string (uuid) | |
-| bot | BotSummary | 摘要信息 |
-| content | string | 回复内容 |
-| thinkingContent | string? | AI 思考过程 |
-| parentReplyId | string? | 父回复 ID（用于构建线程树） |
-| userQuestion | string? | 用户的追问原文 |
-| revisionNumber | number? | |
-| createdAt | number | |
-| children | BotReply[] | 子回复（嵌套结构） |
-| threadCount | number | 线程总回复数 |
-| latestReplyId | string | 线程中最新的回复 ID |
+| 字段            | 类型          | 说明                                                |
+| --------------- | ------------- | --------------------------------------------------- |
+| id              | string (uuid) |                                                     |
+| memoId          | string (uuid) |                                                     |
+| bot             | BotSummary    | 摘要信息                                            |
+| content         | string        | 回复内容                                            |
+| thinkingContent | string?       | AI 思考过程                                         |
+| parentReplyId   | string?       | 父回复 ID（用于构建线程树）                         |
+| userQuestion    | string?       | 用户的追问原文                                      |
+| revisionNumber  | number?       |                                                     |
+| createdAt       | number        |                                                     |
+| children        | BotReply[]    | 子回复（嵌套结构）                                  |
+| threadCount     | number        | 同 memo、bot、revision 线程的总回复数，包含整条线程 |
+| latestReplyId   | string        | 同 memo、bot、revision 线程中最新的回复 ID          |
 
 #### BotThreadMessage
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | string (uuid) | |
-| role | "user" \| "assistant" | |
-| content | string | |
-| thinkingContent | string? | |
-| resourceIds | string[] | 关联的资源 ID |
-| createdAt | number | |
+| 字段            | 类型                  | 说明          |
+| --------------- | --------------------- | ------------- |
+| id              | string (uuid)         |               |
+| role            | "user" \| "assistant" |               |
+| content         | string                |               |
+| thinkingContent | string?               |               |
+| resourceIds     | string[]              | 关联的资源 ID |
+| createdAt       | number                |               |
 
 #### BotThread
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| memoId | string (uuid) | |
-| bot | BotSummary | |
-| messages | BotThreadMessage[] | 线性消息列表 |
-| latestReplyId | string | |
+| 字段          | 类型               | 说明         |
+| ------------- | ------------------ | ------------ |
+| memoId        | string (uuid)      |              |
+| bot           | BotSummary         |              |
+| messages      | BotThreadMessage[] | 线性消息列表 |
+| latestReplyId | string             |              |
 
 ---
 
@@ -981,8 +995,8 @@ Query 参数：
 
 Query 参数：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
+| 参数  | 类型    | 说明                |
+| ----- | ------- | ------------------- |
 | limit | number? | 返回条目数，默认 20 |
 
 返回：`MemoryActivityEntry[]`
@@ -1003,31 +1017,31 @@ Query 参数：
 
 ### 11.3 GET /api/memory/context
 
-获取指定 memo+bot 的内存上下文（调试用）。
+获取指定 memo+bot 的记忆上下文。`retrievedMemos` 为该 bot 已记录的检索结果；`similarMemos` 和 `debug` 为当前重新检索的结果。每个必填标识传一种拼写即可；同时传两种时 snake_case 优先。
 
 Query 参数：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| memoId | string (uuid) | **必填** |
-| botId | string (uuid) | **必填** |
-| limit | number? | 限制返回的上下文条数 |
+| 参数    | 类型          | 说明                  |
+| ------- | ------------- | --------------------- |
+| memo_id | string (uuid) | **必填**，兼容 memoId |
+| bot_id  | string (uuid) | **必填**，兼容 botId  |
+| limit   | number?       | 限制返回的上下文条数  |
 
-返回：
+返回结构：
 
 ```json
 {
-  "retrievedMemos": [
-    {
-      "id": "memo-uuid",
-      "excerpt": "摘要或截取的内容",
-      "score": 0.85,
-      "reason": "recent",
-      "createdAt": 1700000000000
-    }
-  ]
+  "retrievedMemos": [],
+  "similarMemos": [],
+  "debug": {
+    "candidateCount": 0,
+    "retrievedMemoIds": [],
+    "promptChars": 0
+  }
 }
 ```
+
+两个记录数组中的条目含 `id`、`excerpt`、`score`、`reason`、`createdAt`。
 
 ### 11.4 GET /api/memos/{id}/memory-contexts
 
@@ -1035,8 +1049,8 @@ Query 参数：
 
 Query 参数：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
+| 参数  | 类型    | 说明                      |
+| ----- | ------- | ------------------------- |
 | limit | number? | 每个 Bot 的上下文条数限制 |
 
 返回：
@@ -1045,10 +1059,10 @@ Query 参数：
 {
   "contexts": {
     "bot-uuid-1": {
-      "retrievedMemos": [ /* RetrievedMemoItem[] */ ]
+      "retrievedMemos": [/* RetrievedMemoItem[] */]
     },
     "bot-uuid-2": {
-      "retrievedMemos": [ /* RetrievedMemoItem[] */ ]
+      "retrievedMemos": [/* RetrievedMemoItem[] */]
     }
   }
 }
@@ -1090,7 +1104,7 @@ Query 参数：
   },
   "changes": {
     "memo": {
-      "updated": [ /* JSON 对象数组 */ ],
+      "updated": [/* JSON 对象数组 */],
       "deletedIds": ["deleted-uuid"]
     },
     "diary": { "updated": [], "deletedIds": [] },
@@ -1100,7 +1114,7 @@ Query 参数：
 }
 ```
 
-> 每次 pull 每种实体最多返回 200 条变更。需更新游标后继续 pull。
+> 每次 pull 每种实体最多查询 200 条变更（包含删除标记）。当前返回游标推进到服务器时间，且未提供截断标记；若积压超过上限，后续 pull 可能跳过未返回的记录。大规模首次同步需核对完整性，见 [已知问题](./known.md)。
 
 ---
 
@@ -1114,10 +1128,10 @@ Query 参数：
 
 Query 参数（必填）：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| startDate | string (YYYY-MM-DD) | |
-| endDate | string (YYYY-MM-DD) | |
+| 参数      | 类型                | 说明 |
+| --------- | ------------------- | ---- |
+| startDate | string (YYYY-MM-DD) |      |
+| endDate   | string (YYYY-MM-DD) |      |
 
 返回：
 
@@ -1126,7 +1140,7 @@ Query 参数（必填）：
   "dates": ["2026-01-01", "2026-01-02"],
   "counts": [5, 3],
   "moods": ["joy", null],
-  "moodScores": [80, null]
+  "moodScores": [8, null]
 }
 ```
 
@@ -1144,7 +1158,7 @@ Query 参数同上。
     {
       "date": "2026-01-01",
       "moodKey": "joy",
-      "moodScore": 80,
+      "moodScore": 8,
       "summary": "日记摘要",
       "memoCount": 5,
       "color": "#ffcc00"
@@ -1163,24 +1177,20 @@ Query 参数同上。
 
 ```json
 {
-  "moods": [
-    { "moodKey": "joy", "count": 10, "percentage": 0.4 }
-  ],
-  "tags": [
-    { "tag": "work", "count": 20 }
-  ]
+  "moods": [{ "moodKey": "joy", "count": 10, "percentage": 0.4 }],
+  "tags": [{ "tag": "work", "count": 20 }]
 }
 ```
 
 ### 13.4 GET /api/stats/summary
 
-获取月度摘要。
+获取全量数据计数摘要。`year`、`month` 目前作为整数参数读取，聚合结果为全量计数，当前实现未按月份筛选。
 
 Query 参数（必填）：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| year | number | |
+| 参数  | 类型   | 说明 |
+| ----- | ------ | ---- |
+| year  | number |      |
 | month | number | 1-12 |
 
 返回：
@@ -1260,7 +1270,7 @@ AI 标签推荐。
 {
   "uptime": "1h 23m",
   "startedAt": 1700000000000,
-  "version": "0.1.0",
+  "version": "dev",
   "storageType": "local",
   "storageUsed": 12345678,
   "storageUsedFormatted": "11.8 MB",
@@ -1279,9 +1289,10 @@ AI 标签推荐。
 
 Query 参数：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| limit | number? | 默认 100 |
+| 参数  | 类型    | 说明         |
+| ----- | ------- | ------------ |
+| limit | number? | 默认 50      |
+| level | string? | 日志级别过滤 |
 
 ### 15.4 GET /admin/api/config
 
@@ -1296,7 +1307,7 @@ Query 参数：
 
 ### 15.5 GET /admin/api/ai-config
 
-获取 AI 配置（bot + embedding 两个配置键）。
+获取 AI 配置：`bot` 为当前登录管理员的用户对话配置，`embedding` 为服务端共享嵌入配置。
 
 ```json
 {
@@ -1304,7 +1315,7 @@ Query 参数：
     "key": "bot",
     "provider": "openai",
     "baseUrl": "https://api.openai.com/v1",
-    "apiKey": "sk-...",
+    "apiKey": "****demo",
     "model": "gpt-4o",
     "temperature": 0.7,
     "maxTokens": 4096,
@@ -1318,7 +1329,7 @@ Query 参数：
     "key": "embedding",
     "provider": "openai",
     "baseUrl": "https://api.openai.com/v1",
-    "apiKey": "sk-...",
+    "apiKey": "****demo",
     "model": "text-embedding-3-small",
     "temperature": null,
     "maxTokens": null,
@@ -1379,7 +1390,7 @@ Query 参数：
   "autoDiaryEnabled": true,
   "autoDiaryMinMemos": 2,
   "autoDiaryMinChars": 150,
-  "appTimeZone": "Asia/Shanghai"
+  "appTimezone": "Asia/Shanghai"
 }
 ```
 
@@ -1390,9 +1401,10 @@ Query 参数：
 请求体同 `GET /admin/api/settings` 返回格式。
 
 校验规则：
+
 - `autoDiaryMinMemos` >= 1
 - `autoDiaryMinChars` >= 1
-- `appTimeZone` 必须为合法 IANA 时区（如 `Asia/Shanghai`、`America/New_York`）
+- `appTimezone` 必须为合法 IANA 时区（如 `Asia/Shanghai`、`America/New_York`）
 
 ---
 
@@ -1465,3 +1477,57 @@ Query 参数：
 - `R2_ENDPOINT`、`R2_BUCKET`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`：R2 配置
 - `ADMIN_USERNAME`、`ADMIN_PASSWORD`：启动时自动确保管理员账号存在
 - `HTML2LLM_URL`：网页内容提取服务地址（Clip 功能使用）
+
+## 18. 用户 AI 配置
+
+### GET /api/ai-config
+
+返回当前用户 AI 配置，`apiKey` 是脱敏字符串。未设置时返回 `404`。
+
+### PUT /api/ai-config
+
+必填字段：`provider`、`baseUrl`、`apiKey`、`model`。可选：`temperature`、`maxTokens`、`timeoutSeconds`、`supportsVision`、`supportsThinking`。返回 `200` 和脱敏后的配置。客户端提交实际密钥，文档与测试不得包含真实凭证。
+
+### DELETE /api/ai-config
+
+删除当前用户配置，返回 `204` 空响应。
+
+## 19. 管理员用户接口
+
+全部需要管理员 token。
+
+| 方法与路径                              | 请求或查询                                      | 成功响应                          |
+| --------------------------------------- | ----------------------------------------------- | --------------------------------- |
+| GET /admin/api/users                    | page 默认 1，page_size 默认 50（兼容 pageSize） | 200；users、total、page、pageSize |
+| POST /admin/api/users                   | username、password                              | 201；托管用户                     |
+| PATCH /admin/api/users/{id}             | 可选 isActive、role、resetPassword              | 200；更新后的用户                 |
+| GET /admin/api/users/{userId}/ai-config | 用户 UUID 路径参数                              | 200；脱敏后的 AI 配置             |
+| PUT /admin/api/users/{userId}/ai-config | 同管理员 AI 配置请求字段                        | 200；脱敏后的 AI 配置             |
+
+托管用户字段：`id`、`username`、`avatarUrl`、`role`、`isActive`、`mustChangePassword`、`createdAt`、`updatedAt`。
+
+## 20. Bot 回复与记忆边界
+
+- 首次回复和追问共享通用表达规则，使用指令式约束，包含零条 few-shot 对话示例。
+- 日常分享采用简短回应；求建议或复杂问题按需展开。角色称呼、语气和幽默来自用户设置。
+- 对比句用于具体纠正或有效差异；避免固定反转、空泛升华、替用户判断隐藏动机和编造行为。
+- 追问优先回答最新消息，并支持纠正前文。
+- 记忆前缀包含记录日期和记录标识。共同话题不自动代表同一人物或事件；旧状态不自动代表当前状态。
+- 通用规则与公开测试仅含通用约束和虚构数据。实际记录只在所属用户的运行时请求上下文中使用。
+- 手动触发和 memo 写入产生的新回复使用当前规则，已存储的历史回复保留原文。
+
+## 21. OpenAPI 维护
+
+规范源文件：`server-go/internal/httpapi/openapi.json`（OpenAPI 3.1）。运行 Go 服务后可通过 `GET /openapi.json` 下载；接口在本次源码中新增，需要部署包含该文件的新版镜像后才可在运行服务访问。
+
+规范覆盖健康检查、认证、全部业务和管理 API，以及 GET 对应的 HEAD。管理后台 HTML 和静态资源作为页面路由单独维护。
+
+更新路由或 DTO 时同步更新规范，再运行：
+
+```bash
+cd server-go
+go test ./internal/httpapi -run TestOpenAPI
+go test ./...
+```
+
+回归检查验证规范引用、操作 ID、鉴权边界、必填路径参数、DTO 字段以及实际注册路由覆盖。鉴权中间件拒绝保留纯文本响应，文件下载支持 ETag、单区间 Range 和 304/206/416。

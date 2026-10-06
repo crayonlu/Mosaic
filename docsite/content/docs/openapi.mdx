@@ -1,0 +1,81 @@
+---
+title: OpenAPI
+description: Import the Mosaic OpenAPI 3.1 document into Swagger Editor or Postman
+---
+
+# OpenAPI
+
+The running server publishes its HTTP contract as an **OpenAPI 3.1** document:
+
+- Live endpoint: [`http://localhost:8080/openapi.json`](http://localhost:8080/openapi.json)
+- Spec source in this repository: [`server-go/internal/httpapi/openapi.json`](https://github.com/crayonlu/Mosaic/blob/main/server-go/internal/httpapi/openapi.json)
+
+`GET /openapi.json` is public — it needs no authentication and returns JSON. The
+port follows `PORT`, so a server started on another port serves it there instead.
+
+The document is embedded into the server binary at build time (`//go:embed`). An
+image built before this entry was added returns `404` for `/openapi.json`; the
+endpoint appears only after the server is redeployed with the new image.
+
+## Import into Swagger Editor
+
+1. Open [editor.swagger.io](https://editor.swagger.io).
+2. Choose **File → Import URL** (or paste a saved copy with **File → Import File**).
+3. Enter `http://localhost:8080/openapi.json`.
+
+A successful import lists the operations and reports no validation errors.
+Swagger Editor validates and browses the document; whether its **Authorize** and
+try-it-out calls reach your server depends on the editor's network access and on
+the server URL you set, so treat those calls as best-effort. For real requests,
+use Swagger UI or Postman running where it can reach the server.
+
+## Import into Postman
+
+1. In Postman, choose **Import**.
+2. Select the **Link** tab and enter `http://localhost:8080/openapi.json`, or the
+   **File** tab and pick a saved copy of the JSON.
+3. Import as a new collection, then point the collection at your server before
+   sending requests.
+
+## Server URL and Local Access
+
+The document declares a relative server URL (`/`). When a remote tool imports it,
+that relative value resolves against the tool's own origin, so requests would
+target the tool's site rather than Mosaic. Set the server URL explicitly to your
+instance — for example `http://localhost:8080` in Swagger UI or Swagger Editor,
+or a `baseUrl` collection variable in Postman.
+
+Local access has the usual limits:
+
+- A server on plain HTTP at `http://localhost:8080` is reachable only from the
+  same machine. From another device, browse to the host's LAN address; the
+  calling page's origin (for example `https://editor.swagger.io` or your own UI
+  origin) must be listed in `ALLOWED_ORIGINS`. The server's LAN address is not an
+  origin and does not belong there.
+- Browsers treat `http://localhost` and `http://127.0.0.1` as potentially
+  trustworthy, so an HTTPS page can usually still fetch `http://localhost`. The
+  block applies to other plain-HTTP targets, such as a LAN IP: a page served over
+  HTTPS cannot fetch those. Download the JSON and import the file, or serve your
+  server over HTTPS.
+- An `Authorization` header makes the browser send a CORS preflight. The calling
+  origin must be allowed by the server's CORS policy; `ALLOWED_ORIGINS` is
+  permissive only when it is empty (development).
+
+## Example Request
+
+Fictional values, unless you substitute your own:
+
+```bash
+curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "http://localhost:8080/api/memos?page=1&pageSize=5"
+```
+
+`GET /api/memos` returns a paginated envelope (`items`, `total`, `page`,
+`pageSize`, `totalPages`); `GET /api/memos/search` uses a different shape. The
+document is the source of truth for each response.
+
+## Notes
+
+- The document is emitted by the server directly — no extra tooling or
+  dependency is required to produce or read it.
+- `docs/server-api.md` remains the prose reference for the same contract.

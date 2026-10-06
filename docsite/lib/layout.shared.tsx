@@ -1,6 +1,6 @@
-import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
-import { appName, gitConfig } from './shared';
-import { LanguageSwitcher } from '@/components/language-switcher';
+import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared'
+import { appName, gitConfig } from './shared'
+import { LanguageSwitcher } from '@/components/language-switcher'
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -12,9 +12,9 @@ export function baseOptions(): BaseLayoutProps {
     links: [
       {
         type: 'custom',
-        on: 'nav',
+        on: 'all',
         children: <LanguageSwitcher />,
       },
     ],
-  };
+  }
 }

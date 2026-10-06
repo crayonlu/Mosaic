@@ -4,6 +4,14 @@ Both servers speak the same HTTP contract, read the same PostgreSQL schema, and
 serve the same `storage/` layout, so the cutover is a container swap plus one
 bookkeeping step. No schema change and no data migration are involved.
 
+## Status
+
+Cutover is complete. The Go server (built from `server-go/Dockerfile`) is the
+production backend, currently deployed as `server-v1.1.5`. The Rust server in
+`server/` is retained as a reference implementation and as the rollback target;
+it is no longer the default in CI. The runbook below is kept as the historical
+procedure, with the rollback section still valid.
+
 ## What was verified before writing this
 
 - The full endpoint contract: 78 endpoints, every one driven with four
@@ -13,12 +21,8 @@ bookkeeping step. No schema change and no data migration are involved.
   round-trip.
 - The built image: boots, answers `/health`, serves the admin UI and its SPA
   fallback, carries ffmpeg, and applies zero migrations.
-- A **real-provider smoke test** on a production clone using the owner's own
-  configuration (`moonshotai/kimi-k2.6` for chat, `qwen/qwen3-embedding-8b` for
-  embeddings): a real memo produced a real 4096-dimension embedding, real tags,
-  a real Chinese summary and a real bot reply; a real search ranked that memo
-  first as a hybrid match; a real clip returned the model's title, summary, tags
-  and refined body.
+- A real-provider smoke test verified embeddings, tags, summaries, bot replies,
+  hybrid search and web clipping. Configuration and database content are omitted.
 
 ## Preconditions
 
@@ -71,8 +75,8 @@ docker logs mosaic-server | grep -c '"msg":"migration applied"'   # must be 0
 
 ## Rollback
 
-The Rust server can be restarted at any time. Its migrations are byte-identical,
-so its SHA-384 checksums still match `_sqlx_migrations`; the extra
+The Rust migration files remain unchanged, so their SHA-384 checksums still
+match `_sqlx_migrations`. The Go copies add goose directives. The extra
 `goose_db_version` table is inert.
 
 ```bash
@@ -104,7 +108,8 @@ same, so it stays valid either way.
 
 ## Known gaps, unchanged by cutover
 
-Semantic and hybrid search exist, but the *memory* paths still fall back to
-recency when a memo has no embedding. `docs/server-api.md` remains incomplete
-relative to the served contract. The admin UI is served as built and was not
-rewritten.
+Semantic and hybrid search exist, but the _memory_ paths still fall back to
+recency when a memo has no embedding. The current HTTP contract is documented in `docs/server-api.md` and in
+`internal/httpapi/openapi.json`. The public `/openapi.json` endpoint is included
+in the source update and requires a new image deployment. The admin UI continues
+to use the shared build from `server/admin-ui/`.

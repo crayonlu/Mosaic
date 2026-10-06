@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { Book, Heart, Server, ArrowRight, GitFork } from 'lucide-react';
+import Link from 'next/link'
+import { Book, Heart, Server, ArrowRight, GitFork } from 'lucide-react'
 
 const features = [
   {
@@ -15,9 +15,9 @@ const features = [
   {
     icon: Server,
     title: 'Self-hosted',
-    desc: 'Rust backend — your data stays private and under your full control.',
+    desc: 'Go backend — your data stays private and under your full control.',
   },
-];
+]
 
 export default function HomePage() {
   return (
@@ -34,8 +34,7 @@ export default function HomePage() {
         </h1>
 
         <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10 leading-relaxed">
-          A digital second brain for notes, moods, and memories.{' '}
-          <br className="hidden md:inline" />
+          A digital second brain for notes, moods, and memories. <br className="hidden md:inline" />
           Open source, self-hosted, and built for lasting privacy.
         </p>
 
@@ -60,7 +59,7 @@ export default function HomePage() {
       {/* Features Section */}
       <section className="w-full max-w-5xl px-4 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {features.map((feature) => (
+          {features.map(feature => (
             <div
               key={feature.title}
               className="feature-card rounded-xl border bg-card p-6 text-left"
@@ -69,13 +68,11 @@ export default function HomePage() {
                 <feature.icon className="w-5 h-5 text-primary" />
               </div>
               <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {feature.desc}
-              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
             </div>
           ))}
         </div>
       </section>
     </div>
-  );
+  )
 }

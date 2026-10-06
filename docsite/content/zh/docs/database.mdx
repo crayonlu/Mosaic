@@ -13,7 +13,7 @@ Mosaic 使用 **PostgreSQL 15+** 和 **pgvector** 扩展支持语义搜索。
 
 ```sql
 -- 用户账户
-users (id UUID, username VARCHAR, password_hash VARCHAR, avatar_url VARCHAR, created_at BIGINT, updated_at BIGINT)
+users (id UUID, username VARCHAR, password_hash VARCHAR, avatar_url VARCHAR, role VARCHAR, is_active BOOLEAN, must_change_password BOOLEAN, created_at BIGINT, updated_at BIGINT)
 
 -- 认证令牌
 refresh_tokens (id UUID, user_id UUID REFERENCES users, token VARCHAR, expires_at BIGINT, created_at BIGINT)
@@ -23,7 +23,7 @@ refresh_tokens (id UUID, user_id UUID REFERENCES users, token VARCHAR, expires_a
 
 ```sql
 -- 笔记
-memos (id UUID, user_id UUID, content TEXT, tags JSONB, is_archived BOOLEAN, is_deleted BOOLEAN, diary_date DATE, created_at BIGINT, updated_at BIGINT, revision_count INT)
+memos (id UUID, user_id UUID, content TEXT, tags JSONB, is_archived BOOLEAN, is_deleted BOOLEAN, diary_date DATE, ai_summary TEXT, created_at BIGINT, updated_at BIGINT, revision_count INT)
 
 -- 版本历史
 memo_revisions (id UUID, memo_id UUID, user_id UUID, revision_number INT, content TEXT, tags JSONB, ai_summary TEXT, is_deleted BOOLEAN, created_at BIGINT)
@@ -36,21 +36,27 @@ resources (id UUID, memo_id UUID REFERENCES memos, filename VARCHAR, resource_ty
 
 ```sql
 -- 每日心情摘要
-diaries (date DATE, user_id UUID, summary TEXT, mood_key VARCHAR, mood_score INT, generation_source VARCHAR, auto_generation_locked BOOLEAN, generated_from_memo_ids JSONB, is_deleted BOOLEAN, created_at BIGINT, updated_at BIGINT)
+diaries (date DATE, user_id UUID, summary TEXT, mood_key VARCHAR, mood_score INT, generation_source VARCHAR, auto_generation_locked BOOLEAN, generated_from_memo_ids JSONB, last_auto_generated_at BIGINT, is_deleted BOOLEAN, created_at BIGINT, updated_at BIGINT)
 ```
 
 ### AI 系统
 
 ```sql
 -- 向量嵌入，用于语义搜索（需要 pgvector）
-memo_embeddings (memo_id UUID PRIMARY KEY REFERENCES memos, source_text TEXT, provider VARCHAR, model VARCHAR, embedding vector(1536), updated_at BIGINT)
+memo_embeddings (memo_id UUID PRIMARY KEY REFERENCES memos, source_text TEXT, provider VARCHAR, model VARCHAR, embedding vector, updated_at BIGINT)
 
 -- AI 提供者配置
 server_ai_configs (key VARCHAR PRIMARY KEY, provider VARCHAR, base_url VARCHAR, api_key TEXT, model VARCHAR, temperature FLOAT, max_tokens INT, timeout_seconds INT, updated_at BIGINT)
 
+user_ai_configs (user_id UUID PRIMARY KEY REFERENCES users, provider VARCHAR, base_url VARCHAR, api_key TEXT, model VARCHAR, temperature FLOAT, max_tokens INT, timeout_seconds INT, updated_at BIGINT)
+
 -- 定时日记生成任务
 ai_diary_jobs (user_id UUID, target_date DATE, run_after_ms BIGINT, status VARCHAR, last_error TEXT, created_at BIGINT, updated_at BIGINT)
 ```
+
+对话能力使用每用户的 `user_ai_configs`，嵌入配置由服务端统一管理。
+嵌入列未固定维度，已存向量需与配置的嵌入模型保持一致。以上片段为结构概览，
+完整字段定义与约束以迁移 SQL 为准。
 
 ### 机器人
 
@@ -59,7 +65,7 @@ ai_diary_jobs (user_id UUID, target_date DATE, run_after_ms BIGINT, status VARCH
 bots (id UUID, user_id UUID, name VARCHAR, avatar_url VARCHAR, description TEXT, tags JSONB, auto_reply BOOLEAN, sort_order INT, is_deleted BOOLEAN, created_at BIGINT, updated_at BIGINT)
 
 -- 机器人回复
-bot_replies (id UUID, memo_id UUID REFERENCES memos, bot_id UUID REFERENCES bots, content TEXT, parent_reply_id UUID, user_question TEXT, revision_id UUID, created_at BIGINT)
+bot_replies (id UUID, memo_id UUID REFERENCES memos, bot_id UUID REFERENCES bots, content TEXT, thinking_content TEXT, parent_reply_id UUID, user_question TEXT, revision_id UUID, created_at BIGINT)
 
 -- 机器人回复附件
 bot_reply_resources (reply_id UUID, resource_id UUID, sort_order INT, created_at BIGINT)
@@ -81,27 +87,28 @@ app_settings (key VARCHAR PRIMARY KEY, value TEXT, updated_at BIGINT)
 
 ## 迁移
 
-迁移文件位于 `server/migrations/`，服务端启动时自动执行。
+迁移文件位于 `server-go/migrations/`，服务端启动时通过 goose 自动执行。
 
 **主要迁移**（按时间顺序）：
 
-| 迁移 | 说明 |
-|------|------|
-| `init_tables` | 用户、笔记、资源、日记、刷新令牌 |
-| `add_bot_system` | 机器人和机器人回复表 |
-| `add_sync_support` | sync_cursors + 软删除列 |
-| `add_bot_memory_core` | memo_embeddings（pgvector） |
-| `add_ai_config_to_bots` | AI 配置分配 |
-| `add_server_ai_config` | server_ai_configs 表 |
-| `app_settings` | 应用全局设置 |
-| `create_memo_revisions` | 笔记版本历史 |
+| 迁移                    | 说明                             |
+| ----------------------- | -------------------------------- |
+| `init_tables`           | 用户、笔记、资源、日记、刷新令牌 |
+| `add_bot_system`        | 机器人和机器人回复表             |
+| `add_sync_support`      | sync_cursors + 软删除列          |
+| `add_bot_memory_core`   | memo_embeddings（pgvector）      |
+| `add_ai_config_to_bots` | AI 配置分配                      |
+| `add_server_ai_config`  | server_ai_configs 表             |
+| `app_settings`          | 应用全局设置                     |
+| `create_memo_revisions` | 笔记版本历史                     |
 
 ### 添加新迁移
 
 ```bash
-touch server/migrations/$(date -u +"%Y%m%d%H%M%S")_description.sql
+touch server-go/migrations/$(date -u +"%Y%m%d%H%M%S")_description.sql
 ```
 
 编写 SQL 后重启服务端即可自动执行。
 
-> 修改迁移后，运行 `cargo sqlx prepare` 更新离线查询缓存以确保编译通过。
+> 已执行集合记录在 `goose_db_version` 表中。每个迁移必须以 `-- +goose Up` 指令开头。
+> Go 目录镜像了 Rust 参考目录的迁移并加上这些指令；两者的 SQL 主体一致。

@@ -5,13 +5,20 @@ description: Mosaic 服务端 API 完整文档
 
 # API 参考
 
-> 版本：v2.6 | 更新日期：2026-05-16
+> 对照基线：Go 服务端 `server-v1.1.5` · 更新日期：2026-10-06 · 本次源码新增 `GET /openapi.json` 入口
+
+生产后端是 **Go** 服务端（`server-go/`）。同一份契约以 **OpenAPI 3.1** 文档形式提供于
+`http://localhost:8080/openapi.json`；参见 [OpenAPI](/zh/docs/openapi)。
 
 ## 基础信息
 
 Base URL：`http://localhost:8080`
 
 认证方式：Bearer Token
+
+多数接口返回 JSON（`application/json`）；上传使用 `multipart/form-data`，下载接口
+（`/api/resources/:id/download`、`/api/resources/:id/thumbnail`、
+`/api/avatars/:id/download`）返回二进制数据，支持 Range 与 ETag。
 
 ## 认证
 
@@ -27,9 +34,20 @@ Base URL：`http://localhost:8080`
 {
   "accessToken": "eyJ...",
   "refreshToken": "eyJ...",
-  "user": { "id": "uuid", "username": "admin" }
+  "user": {
+    "id": "uuid",
+    "username": "admin",
+    "role": "admin",
+    "mustChangePassword": false,
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+  },
+  "mustChangePassword": false
 }
 ```
+
+`user.role` 为 `admin` 或 `user`。当 `mustChangePassword` 为 `true` 时，该 token 仅能访问
+`GET /api/auth/me` 和 `POST /api/auth/change-password`，其余 `/api/*` 业务接口返回 `403`。管理 API 单独检查管理员角色。
 
 ### POST /api/auth/refresh
 
@@ -67,9 +85,21 @@ Base URL：`http://localhost:8080`
 { "name": "助手", "provider": "openai", "model": "gpt-4o", "systemPrompt": "你是一个助手" }
 ```
 
+创建 Bot。返回 `201 Created`。
+
 ### PUT /api/bots/:id
 
 ### DELETE /api/bots/:id
+
+返回 `204 No Content`。
+
+### POST /api/memos/:id/trigger-replies
+
+手动触发某条 Memo 的自动回复。返回 `202 Accepted`。
+
+### POST /api/bot-replies/:id/reply
+
+在线程中回复某个 Bot。返回 `201 Created`。
 
 ## 记忆系统
 
@@ -79,7 +109,8 @@ Embedding 统计信息。
 
 ### GET /api/memory/context
 
-调试用，查看检索到的相关 Memo。
+调试用，查看检索到的相关 Memo。Query：`memo_id`（别名 `memoId`）、`bot_id`（别名
+`botId`），均为必填，外加 `limit`。
 
 ## 日记
 
@@ -87,8 +118,10 @@ Embedding 统计信息。
 
 ### POST /api/diaries/:date
 
+`moodScore` 必填，范围为 1–10。
+
 ```json
-{ "moodKey": "happy", "moodScore": 80, "summary": "今天很开心！" }
+{ "moodKey": "happy", "moodScore": 8, "summary": "今天很开心！" }
 ```
 
 ## 资源
@@ -98,3 +131,13 @@ Embedding 统计信息。
 ### POST /api/resources/upload
 
 文件上传（multipart/form-data）。
+
+## 设置
+
+### GET /admin/api/settings
+
+获取应用设置（自动标签、自动日记、时区 `appTimezone` 等）。
+
+### PUT /admin/api/settings
+
+更新应用设置。

@@ -7,20 +7,31 @@ description: Deploying the Mosaic server
 
 ## Docker (Recommended)
 
-```yaml
-services:
-  postgres:
-    image: pgvector/pgvector:pg15
-    environment:
-      POSTGRES_USER: mosaic
-      POSTGRES_PASSWORD: mosaic
-      POSTGRES_DB: mosaic
-  mosaic-server:
-    image: ghcr.io/crayonlu/mosaic-server:latest
-    ports:
-      - '8080:8080'
-    env_file: .env
+The published `latest` image is built from `server-go/Dockerfile` and runs the
+Go server by default. The Rust reference image is built only when the build
+workflow is invoked with `server: rust`.
+
+Use the repository Compose file, which includes persistent volumes and database
+readiness checks. Copy it from your checkout into a deployment directory:
+
+```bash
+mkdir -p mosaic-deploy
+cp server/docker-compose.yml mosaic-deploy/docker-compose.yml
+cp server-go/.env.example mosaic-deploy/.env
+cd mosaic-deploy
 ```
+
+Set strong values for `POSTGRES_PASSWORD`, `JWT_SECRET` and `ADMIN_PASSWORD`
+in `.env`. Pin the verified image with `IMAGE_TAG=server-v1.1.5`. Then run:
+
+```bash
+docker compose up -d
+curl http://localhost:8080/health
+```
+
+The image path is `ghcr.io/crayonlu/mosaic/mosaic-server`. The storage bind mount
+and PostgreSQL volume must be included in backups. The new `/openapi.json`
+endpoint requires a subsequent release containing this source update.
 
 ## Reverse Proxy
 

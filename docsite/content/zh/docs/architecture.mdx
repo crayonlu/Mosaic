@@ -12,17 +12,22 @@ Mosaic 采用客户端-服务端架构，使用 Turborepo 和 Bun 管理 monorep
 ```
 Mosaic/
 ├── mobile/    # Expo React Native 移动端
-├── server/    # Rust 后端 (Actix Web + PostgreSQL)
+├── server-go/ # Go 后端（生产环境）
+├── server/    # Rust 后端（参考实现）+ 共享管理后台
 ├── packages/  # 共享 TypeScript 包
 └── docsite/   # 本文档站点
 ```
 
 ## 技术栈
 
-| 层 | 技术 |
-|:------|:-----------|
-| 移动端 | Expo (React Native) + TypeScript |
-| 服务端 | Rust + Actix Web + SQLx |
-| 数据库 | PostgreSQL + pgvector |
-| 包管理 | Bun |
-| 构建编排 | Turborepo |
+| 层         | 技术                             |
+| :--------- | :------------------------------- |
+| 移动端     | Expo (React Native) + TypeScript |
+| 服务端     | Go + chi + pgx                   |
+| 参考服务端 | Rust + Actix Web + SQLx          |
+| 数据库     | PostgreSQL + pgvector            |
+| 包管理     | Bun                              |
+| 构建编排   | Turborepo                        |
+
+`server-go/` 中的 Go 服务端是实际部署的后端，可直接替换 Rust 服务端：相同的数据库结构、
+相同的 `storage/` 布局、相同的 HTTP 接口契约以及相同的管理后台构建产物。

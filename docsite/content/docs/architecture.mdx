@@ -12,17 +12,23 @@ Mosaic follows a client-server monorepo structure.
 ```
 Mosaic/
 ├── mobile/    # Expo React Native app
-├── server/    # Rust backend (Actix Web + PostgreSQL)
+├── server-go/ # Go backend (production)
+├── server/    # Rust backend (reference implementation) + shared admin UI
 ├── packages/  # Shared TypeScript packages
 └── docsite/   # This documentation
 ```
 
 ## Technology Stack
 
-| Layer | Technology |
-|:------|:-----------|
-| Mobile | Expo (React Native) + TypeScript |
-| Server | Rust + Actix Web + SQLx |
-| Database | PostgreSQL + pgvector |
-| Package Manager | Bun |
-| Build Orchestration | Turborepo |
+| Layer               | Technology                       |
+| :------------------ | :------------------------------- |
+| Mobile              | Expo (React Native) + TypeScript |
+| Server              | Go + chi + pgx                   |
+| Reference server    | Rust + Actix Web + SQLx          |
+| Database            | PostgreSQL + pgvector            |
+| Package Manager     | Bun                              |
+| Build Orchestration | Turborepo                        |
+
+The Go server in `server-go/` is the deployed backend. It is a drop-in
+replacement for the Rust server: same schema, same `storage/` layout, same HTTP
+contract, and the same admin UI build.

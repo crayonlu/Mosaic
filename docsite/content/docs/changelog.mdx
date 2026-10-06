@@ -5,6 +5,15 @@ description: Release history
 
 # Changelog
 
+## Server v1.1.5
+
+### 🤖 Bot Replies
+
+- **One shared rule set for first replies and follow-ups.** A bot's initial reply and every later question in a thread now use the same general conversational rules instead of separate guidance. The rules keep each persona's voice while asking the model to answer only what was actually said, leave unspoken motives unknown, skip empty filler and forced profundity, and treat retrieved memories as possibly relevant excerpts — mentioning one only when it clearly helps the current topic.
+- **Calibrated memory use.** The timestamp of an older memory is preserved, and pronoun references across records are not merged without evidence. The current message outweighs older context.
+
+---
+
 ## v1.0.8 (2026-08-13)
 
 ### 📱 Mobile

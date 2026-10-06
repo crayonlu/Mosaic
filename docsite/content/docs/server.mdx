@@ -1,33 +1,55 @@
 ---
 title: Server
-description: Mosaic Rust backend overview
+description: Mosaic Go backend overview
 ---
 
 # Server
 
-The Mosaic server is built with **Rust**, **Actix Web**, and **PostgreSQL**.
+The Mosaic production server is built with **Go**, **chi**, **pgx**, and **PostgreSQL**.
+
+The Go server lives in `server-go/` and is what the published image runs. The `server/` tree is a **Rust reference implementation** (Actix Web + SQLx): it speaks the same HTTP contract and reads the same schema, and it also hosts the shared admin UI that the Go image builds and serves.
 
 ## Tech Stack
 
-- **Web Framework**: Actix Web
-- **Database ORM**: SQLx
+- **Web Framework**: chi
+- **Database Driver**: pgx
 - **Database**: PostgreSQL + pgvector
 - **Auth**: JWT (access + refresh tokens)
+- **Admin UI**: React build from `server/admin-ui/`, served by the Go server
 
 ## Project Structure
 
 ```
-server/
-├── src/           # Server source code
-├── migrations/    # SQL migrations
-└── admin-ui/      # Admin dashboard (Vite + React)
+server-go/
+├── cmd/
+│   ├── mosaic-server/    # Server entry point
+│   └── baseline-sqlx/    # One-time migration bookkeeping
+├── internal/
+│   ├── httpapi/    # Routing, handlers, middleware
+│   ├── service/    # Business logic
+│   ├── store/      # PostgreSQL access
+│   └── domain/     # Types and shared contracts
+└── migrations/     # SQL migrations
 ```
 
 ## API Endpoints
 
-| Endpoint | Description |
-|:---------|:------------|
-| `/api/auth/login` | User login |
-| `/api/memos` | Memo CRUD |
-| `/api/diaries` | Diary management |
-| `/api/bots` | Bot configuration |
+| Endpoint          | Description                             |
+| :---------------- | :-------------------------------------- |
+| `/api/auth/login` | User login                              |
+| `/api/memos`      | Memo CRUD                               |
+| `/api/diaries`    | Diary management                        |
+| `/api/bots`       | Bot configuration                       |
+| `/openapi.json`   | OpenAPI 3.1 document for the served API |
+
+## OpenAPI
+
+The running server exposes a machine-readable **OpenAPI 3.1** document at
+[`http://localhost:8080/openapi.json`](http://localhost:8080/openapi.json). See
+[OpenAPI](/docs/openapi) for how to import it into Swagger Editor or Postman.
+
+## Reference Implementation
+
+The Rust server in `server/` is kept for reference and rollback. It is not the
+deployed backend. See `server-go/CUTOVER.md` for the cutover notes and the
+rollback procedure.

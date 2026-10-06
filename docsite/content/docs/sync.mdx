@@ -25,7 +25,7 @@ The sync uses a **timestamp-based cursor** approach.
 The client sends its current cursors (timestamps) for each entity type:
 
 ```json
-POST /sync/pull
+POST /api/sync/pull
 {
   "clientId": "unique-device-id",
   "cursors": {
@@ -67,12 +67,12 @@ The client can push local changes to the server via standard CRUD API endpoints 
 
 ## Entity Types
 
-| Entity | Description | Deletion |
-|--------|-------------|----------|
-| **Memo** | Notes with content, tags, and AI summary | Soft delete (`is_deleted`) |
-| **Diary** | Daily mood summary entries | Soft delete (`is_deleted`) |
-| **Resource** | File attachments (images, videos) | Soft delete (`is_deleted`) |
-| **Bot** | AI bot configurations | Soft delete (`is_deleted`) |
+| Entity       | Description                              | Deletion                   |
+| ------------ | ---------------------------------------- | -------------------------- |
+| **Memo**     | Notes with content, tags, and AI summary | Soft delete (`is_deleted`) |
+| **Diary**    | Daily mood summary entries               | Soft delete (`is_deleted`) |
+| **Resource** | File attachments (images, videos)        | Soft delete (`is_deleted`) |
+| **Bot**      | AI bot configurations                    | Soft delete (`is_deleted`) |
 
 ## Conflict Resolution
 
@@ -80,7 +80,11 @@ Mosaic uses **last-writer-wins** based on the `updated_at` timestamp (millisecon
 
 ## Batch Size
 
-Each sync pull returns up to **200 records** per entity type. If there are more changes, the client should update its cursor from the response and pull again.
+Each pull queries up to **200 changed rows** per entity, including deletion markers.
+The current Go implementation advances response cursors to server time, without
+a truncation flag. An overfull batch can therefore skip records on subsequent
+pulls. Check completeness during large initial syncs; a reliable paginated
+backfill needs further server work.
 
 ## Sync Cursors
 

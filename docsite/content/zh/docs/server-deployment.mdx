@@ -7,20 +7,29 @@ description: 部署 Mosaic 后端服务
 
 ## Docker (推荐)
 
-```yaml
-services:
-  postgres:
-    image: pgvector/pgvector:pg15
-    environment:
-      POSTGRES_USER: mosaic
-      POSTGRES_PASSWORD: mosaic
-      POSTGRES_DB: mosaic
-  mosaic-server:
-    image: ghcr.io/crayonlu/mosaic-server:latest
-    ports:
-      - '8080:8080'
-    env_file: .env
+发布的 `latest` 镜像由 `server-go/Dockerfile` 构建，默认运行 Go 服务端。只有在构建
+工作流传入 `server: rust` 时才会构建 Rust 参考镜像。
+
+使用仓库提供的 Compose 文件，其中包含持久化卷和数据库就绪检查。
+从本地仓库复制到部署目录：
+
+```bash
+mkdir -p mosaic-deploy
+cp server/docker-compose.yml mosaic-deploy/docker-compose.yml
+cp server-go/.env.example mosaic-deploy/.env
+cd mosaic-deploy
 ```
+
+在 `.env` 中设置强 `POSTGRES_PASSWORD`、`JWT_SECRET` 和 `ADMIN_PASSWORD`，
+通过 `IMAGE_TAG=server-v1.1.5` 固定已验证镜像，然后运行：
+
+```bash
+docker compose up -d
+curl http://localhost:8080/health
+```
+
+镜像地址为 `ghcr.io/crayonlu/mosaic/mosaic-server`。备份应同时包含存储绑定目录
+和 PostgreSQL 数据卷。本次新增的 `/openapi.json` 入口需部署包含此次源码更新的后续版本。
 
 ## 反向代理
 

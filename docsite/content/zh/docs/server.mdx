@@ -1,33 +1,54 @@
 ---
 title: 服务端
-description: Mosaic Rust 后端概述
+description: Mosaic Go 后端概述
 ---
 
 # 服务端
 
-基于 **Rust**、**Actix Web** 和 **PostgreSQL** 构建。
+Mosaic 的生产服务端基于 **Go**、**chi**、**pgx** 和 **PostgreSQL** 构建。
+
+Go 服务端位于 `server-go/`，发布镜像运行的就是它。`server/` 目录是 **Rust 参考实现**（Actix Web + SQLx）：它遵循同一份 HTTP 接口契约、读取同一套数据库结构，同时存放 Go 镜像构建时复用的共享管理后台。
 
 ## 技术栈
 
-- **Web 框架**: Actix Web
-- **数据库 ORM**: SQLx
+- **Web 框架**: chi
+- **数据库驱动**: pgx
 - **数据库**: PostgreSQL + pgvector
 - **认证**: JWT (access + refresh token)
+- **管理后台**: `server/admin-ui/` 构建的 React 产物，由 Go 服务端直接 serve
 
 ## 项目结构
 
 ```
-server/
-├── src/           # 服务端源码
-├── migrations/    # SQL 迁移
-└── admin-ui/      # 管理后台 (Vite + React)
+server-go/
+├── cmd/
+│   ├── mosaic-server/    # 服务端入口
+│   └── baseline-sqlx/    # 一次性迁移记账
+├── internal/
+│   ├── httpapi/    # 路由、处理器、中间件
+│   ├── service/    # 业务逻辑
+│   ├── store/      # PostgreSQL 数据访问
+│   └── domain/     # 类型与共享契约
+└── migrations/     # SQL 迁移
 ```
 
 ## API 端点
 
-| 端点 | 说明 |
-|:---------|:------------|
-| `/api/auth/login` | 登录 |
-| `/api/memos` | 笔记 CRUD |
-| `/api/diaries` | 日记管理 |
-| `/api/bots` | Bot 配置 |
+| 端点              | 说明                           |
+| :---------------- | :----------------------------- |
+| `/api/auth/login` | 登录                           |
+| `/api/memos`      | 笔记 CRUD                      |
+| `/api/diaries`    | 日记管理                       |
+| `/api/bots`       | Bot 配置                       |
+| `/openapi.json`   | 已提供 API 的 OpenAPI 3.1 文档 |
+
+## OpenAPI
+
+运行中的服务端会在 [`http://localhost:8080/openapi.json`](http://localhost:8080/openapi.json)
+提供机器可读的 **OpenAPI 3.1** 文档。导入 Swagger Editor 或 Postman 的方法见
+[OpenAPI](/zh/docs/openapi)。
+
+## 参考实现
+
+`server/` 中的 Rust 服务端仅作参考与回滚用途，并非已部署的后端。切换说明与回滚步骤见
+`server-go/CUTOVER.md`。

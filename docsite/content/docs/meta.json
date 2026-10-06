@@ -1,0 +1,24 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "getting-started",
+    "server",
+    "server-dev",
+    "server-deployment",
+    "env-config",
+    "server-api",
+    "openapi",
+    "architecture",
+    "database",
+    "sync",
+    "mobile",
+    "mobile-build",
+    "ai-features",
+    "admin",
+    "privacy",
+    "faq",
+    "troubleshooting",
+    "changelog"
+  ]
+}
