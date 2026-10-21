@@ -24,7 +24,7 @@ export function MoodBackground() {
   const currentMoodIntensity = useMoodStore(s => s.currentMoodIntensity)
   const segments = useSegments()
 
-  const isDiariesTab = segments[0] === '(tabs)' && segments[1] === 'diaries'
+  const isDiariesTab = segments.at(0) === '(tabs)' && segments.at(1) === 'diaries'
 
   const moodColor = getMoodColorWithIntensity(currentMood, currentMoodIntensity)
 

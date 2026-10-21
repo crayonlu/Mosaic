@@ -150,7 +150,7 @@ export default function RootLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, isInitialized, segments])
 
-  const isDiariesTab = segments[0] === '(tabs)' && segments[1] === 'diaries'
+  const isDiariesTab = segments.at(0) === '(tabs)' && segments.at(1) === 'diaries'
 
   const isAppReady = isInitialized && !isLoading
 
