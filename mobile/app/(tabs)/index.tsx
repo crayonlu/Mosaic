@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   inputBorder: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 1,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,

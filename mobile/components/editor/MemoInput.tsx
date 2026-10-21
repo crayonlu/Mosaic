@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '@/stores/themeStore'
 import { ArrowUp, Maximize2 } from 'lucide-react-native'
-import { useCallback, useRef, useState } from 'react'
+import { type ComponentRef, useCallback, useRef, useState } from 'react'
 import { Pressable, StyleSheet, TextInput, View } from 'react-native'
 import { runOnJS } from 'react-native-reanimated'
 import { FullScreenEditor } from './FullScreenEditor'
@@ -29,7 +29,7 @@ export function MemoInput({
   const { t } = useTranslation()
   const { theme } = useThemeStore()
   const resolvedPlaceholder = placeholder ?? t('memoInput.placeholder')
-  const inputRef = useRef<TextInput>(null)
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null)
   const [isFullScreenVisible, setIsFullScreenVisible] = useState(false)
   const [text, setText] = useState('')
   const [isFocused, setIsFocused] = useState(false)

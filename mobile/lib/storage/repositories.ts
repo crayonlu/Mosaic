@@ -650,6 +650,7 @@ async function rowToMemo(db: any, row: any): Promise<Memo> {
     tags: tagRows.map((t: { tag: string }) => t.tag),
     isArchived: row.is_archived === 1,
     diaryDate: row.diary_date ?? undefined,
+    revisionCount: row.revision_count ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

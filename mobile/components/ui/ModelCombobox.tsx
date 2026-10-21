@@ -1,7 +1,7 @@
 import { useThemeStore } from '@/stores/themeStore'
 import { fetchAvailableModels } from '@mosaic/utils'
 import { ChevronDown, X } from 'lucide-react-native'
-import { useRef, useState } from 'react'
+import { type ComponentRef, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
@@ -41,7 +41,7 @@ export function ModelCombobox({
   const [loading, setLoading] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const searchRef = useRef<TextInput>(null)
+  const searchRef = useRef<ComponentRef<typeof TextInput>>(null)
 
   const loadModels = async () => {
     if (!baseUrl.trim()) return
@@ -102,7 +102,7 @@ export function ModelCombobox({
         statusBarTranslucent
         onRequestClose={() => setOpen(false)}
       >
-        <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
+        <StatusBar barStyle="dark-content" />
         <View
           style={[styles.sheet, { backgroundColor: theme.background, paddingTop: insets.top + 12 }]}
         >

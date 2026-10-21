@@ -74,7 +74,7 @@ export function TagInput({
   onTagsChange,
   content = '',
   suggestions = [],
-  placeholder = t('tagInput.placeholder'),
+  placeholder,
   maxTags = 10,
   appearance = 'default',
 }: TagInputProps) {
@@ -82,7 +82,7 @@ export function TagInput({
   const { theme } = useThemeStore()
   const isPlain = appearance === 'plain'
   const { isConnected } = useConnectionStore()
-  const effectivePlaceholder = placeholder || t('tag.placeholder')
+  const effectivePlaceholder = placeholder ?? t('tagInput.placeholder')
   const {
     suggestions: aiSuggestions,
     loading: aiLoading,

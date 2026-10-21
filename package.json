@@ -29,7 +29,13 @@
     "prepare": "husky"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^22.13.0 || ^24.3.0 || >=26.0.0"
+  },
+  "overrides": {
+    "expo-constants": "~58.0.12",
+    "expo-linking": "~58.0.13",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "repository": {
     "type": "git",
@@ -48,5 +54,9 @@
     "globals": "^17.6.0",
     "husky": "^9.1.7",
     "turbo": "^2.9.14"
+  },
+  "patchedDependencies": {
+    "react-native-draggable-grid@2.2.2": "patches/react-native-draggable-grid@2.2.2.patch",
+    "@react-native-masked-view/masked-view@0.3.2": "patches/@react-native-masked-view%2Fmasked-view@0.3.2.patch"
   }
 }

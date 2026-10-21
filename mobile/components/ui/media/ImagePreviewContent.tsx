@@ -282,7 +282,7 @@ export function ImagePreviewContent({
 
       const file = await File.downloadFileAsync(targetUri, Paths.cache, downloadOptions)
 
-      await MediaLibrary.saveToLibraryAsync(file.uri)
+      await MediaLibrary.Asset.create(file.uri)
       toast.show({ type: 'success', title: t('imagePreview.savedToGallery') })
     } catch {
       toast.error(t('imagePreview.downloadFailed'))
@@ -499,10 +499,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   originalImage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   downloadOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,

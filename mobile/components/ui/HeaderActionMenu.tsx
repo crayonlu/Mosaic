@@ -1,5 +1,5 @@
 import { useThemeStore } from '@/stores/themeStore'
-import type { ReactNode } from 'react'
+import type { ComponentRef, ReactNode } from 'react'
 import { useRef, useState } from 'react'
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 
@@ -19,7 +19,7 @@ interface HeaderActionMenuProps {
 /** Dropdown menu anchored below the header trigger, opened from a header button. */
 export function HeaderActionMenu({ trigger, items, accessibilityLabel }: HeaderActionMenuProps) {
   const { theme } = useThemeStore()
-  const triggerRef = useRef<View>(null)
+  const triggerRef = useRef<ComponentRef<typeof Pressable>>(null)
   const [open, setOpen] = useState(false)
   const [menuTop, setMenuTop] = useState(56)
 

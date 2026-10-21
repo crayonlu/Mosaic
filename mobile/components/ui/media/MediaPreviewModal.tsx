@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chromeLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   closeButton: {
     position: 'absolute',

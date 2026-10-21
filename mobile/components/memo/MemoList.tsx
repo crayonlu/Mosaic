@@ -241,8 +241,8 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
       maxToRenderPerBatch={10}
       updateCellsBatchingPeriod={80}
       windowSize={7}
-      ListHeaderComponent={headerComponent}
-      ListEmptyComponent={renderEmptyState}
+      ListHeaderComponent={headerComponent ?? undefined}
+      ListEmptyComponent={renderEmptyState ?? undefined}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -253,7 +253,7 @@ export function MemoList({ date, onMemoPress, onMemoDelete, headerComponent }: M
       }
       onEndReached={handleLoadMore}
       onEndReachedThreshold={0.3}
-      ListFooterComponent={renderFooter}
+      ListFooterComponent={renderFooter ?? undefined}
       stickySectionHeadersEnabled={false}
       showsVerticalScrollIndicator={false}
     />

@@ -5,6 +5,7 @@ import {
   useDeleteCustomPush,
   useSaveCustomPush,
 } from '@/lib/query/hooks/useCustomPush'
+import i18n from '@/lib/i18n'
 import { CustomPushData } from '@/lib/services/local-push/custom'
 import { useThemeStore } from '@/stores/themeStore'
 import { Bell, Clock, Trash2 } from 'lucide-react-native'
@@ -271,7 +272,7 @@ export default function CustomPushScreen() {
         statusBarTranslucent
         onRequestClose={() => setShowTimePicker(false)}
       >
-        <StatusBar backgroundColor="transparent" translucent />
+        <StatusBar />
         <View style={styles.timeOverlay}>
           <Pressable style={styles.timeBackdrop} onPress={() => setShowTimePicker(false)} />
           <View style={[styles.timeSheet, { backgroundColor: theme.background }]}>
@@ -398,7 +399,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   timeBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0, 0, 0, 0.24)',
   },
   timeSheet: {

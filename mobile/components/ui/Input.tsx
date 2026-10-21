@@ -1,6 +1,6 @@
 import { useThemeStore } from '@/stores/themeStore'
 import { Eye, EyeOff } from 'lucide-react-native'
-import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
+import { type ComponentRef, forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 import {
   Keyboard,
   StyleSheet,
@@ -17,18 +17,18 @@ interface InputProps extends TextInputProps {
   showPasswordToggle?: boolean
 }
 
-export const Input = forwardRef<TextInput, InputProps>(function Input(
+export const Input = forwardRef<ComponentRef<typeof TextInput>, InputProps>(function Input(
   { label, error, showPasswordToggle, style, ...props },
   ref
 ) {
   const { theme } = useThemeStore()
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
-  const inputRef = useRef<TextInput>(null)
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null)
   const isFocusedRef = useRef(false)
 
   const setRef = useCallback(
-    (node: TextInput | null) => {
+    (node: ComponentRef<typeof TextInput> | null) => {
       inputRef.current = node
       if (typeof ref === 'function') {
         ref(node)
@@ -62,7 +62,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
       hideSub.remove()
       showSub.remove()
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   const borderColor = error ? theme.error : isFocused ? theme.primary : 'transparent'
   const borderWidth = error || isFocused ? 1 : 0

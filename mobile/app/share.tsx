@@ -47,7 +47,7 @@ export default function ShareScreen() {
   const hasProcessed = useRef(false)
 
   const processShareIntent = useCallback(async () => {
-    if (!hasShareIntent || hasProcessed.current) return
+    if (!hasShareIntent || !shareIntent || hasProcessed.current) return
     hasProcessed.current = true
 
     try {

@@ -46,15 +46,19 @@ function createFallbackMMKV(): MMKVInstance {
 
 let mmkvInstance: MMKVInstance
 
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const mmkvModule = require('react-native-mmkv') as typeof import('react-native-mmkv')
-  mmkvInstance = mmkvModule.createMMKV({ id: 'mosaic-storage' })
-} catch {
-  console.warn(
-    '[MMKV] react-native-mmkv not available in Expo Go, using in-memory fallback. Data will not persist.'
-  )
+if (typeof window === 'undefined') {
   mmkvInstance = createFallbackMMKV()
+} else {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mmkvModule = require('react-native-mmkv') as typeof import('react-native-mmkv')
+    mmkvInstance = mmkvModule.createMMKV({ id: 'mosaic-storage' })
+  } catch {
+    console.warn(
+      '[MMKV] react-native-mmkv not available in Expo Go, using in-memory fallback. Data will not persist.'
+    )
+    mmkvInstance = createFallbackMMKV()
+  }
 }
 
 export const mmkv = mmkvInstance

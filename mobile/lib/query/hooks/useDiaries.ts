@@ -1,4 +1,4 @@
-import type { ListDiariesQuery } from '@mosaic/api'
+import type { DiaryWithMemosResponse, ListDiariesQuery } from '@mosaic/api'
 import { diariesApi } from '@mosaic/api'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
@@ -38,7 +38,7 @@ export function useDiaries(query: ListDiariesQuery = {}) {
 export function useDiary(date: string) {
   return useQuery({
     queryKey: ['diary', date],
-    queryFn: withOfflineFallback(() => diariesApi.get(date), {
+    queryFn: withOfflineFallback<DiaryWithMemosResponse>(() => diariesApi.get(date), {
       writeThrough: syncSingleDiary,
       fallback: () => fallbackSingleDiary(date),
     }),

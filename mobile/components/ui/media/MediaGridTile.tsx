@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   uploadOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   progressTrack: {
     position: 'absolute',

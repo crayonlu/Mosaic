@@ -96,7 +96,7 @@ export function DatePickerSheet({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <StatusBar backgroundColor="transparent" translucent />
+      <StatusBar />
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
 
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0, 0, 0, 0.24)',
   },
   sheet: {

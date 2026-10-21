@@ -18,8 +18,8 @@ config.resolver.extraNodeModules = {
   'react-native': path.resolve(projectNodeModules, 'react-native'),
 }
 
-config.resolver.unstable_enableSymlinks = true
 config.resolver.unstable_enablePackageExports = true
+config.resolver.assetExts.push('wasm')
 
 config.resolver.blockList = [/[/\\]server[/\\]target[/\\]/, /[/\\]\.git[/\\]/]
 

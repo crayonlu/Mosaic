@@ -217,8 +217,8 @@ export function MemoFeed({
       }
       onEndReached={handleLoadMore}
       onEndReachedThreshold={0.3}
-      ListFooterComponent={renderFooter}
-      ListHeaderComponent={headerComponent as React.ReactElement | null}
+      ListFooterComponent={renderFooter ?? undefined}
+      ListHeaderComponent={(headerComponent as React.ReactElement | null) ?? undefined}
       showsVerticalScrollIndicator={false}
     />
   )

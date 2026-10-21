@@ -33,9 +33,11 @@ export function Select({
   size = 'medium',
 }: SelectProps) {
   const { t } = useTranslation()
+  const { theme } = useThemeStore()
   const [isOpen, setIsOpen] = useState(false)
 
   const resolvedPlaceholder = placeholder ?? t('select.placeholder')
+  const selectedOption = options.find(option => option.value === value)
   const displayText = selectedOption?.label || resolvedPlaceholder
 
   const handleSelect = (optionValue: string) => {
@@ -96,7 +98,7 @@ export function Select({
         statusBarTranslucent
         onRequestClose={() => setIsOpen(false)}
       >
-        <StatusBar backgroundColor="transparent" translucent />
+        <StatusBar />
         <TouchableWithoutFeedback onPress={() => setIsOpen(false)}>
           <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
             <TouchableWithoutFeedback>

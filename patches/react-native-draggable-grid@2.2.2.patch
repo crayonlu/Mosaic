@@ -1,0 +1,13 @@
+diff --git a/src/draggable-grid.tsx b/src/draggable-grid.tsx
+index 213e515698c2bb0470ad8f9705fb12bc742e4c00..9c9fb52c577f6900fd6922b09b39b46b3711b1c9 100644
+--- a/src/draggable-grid.tsx
++++ b/src/draggable-grid.tsx
+@@ -52,7 +52,7 @@ interface IOrderMapItem {
+ interface IItem<DataType> {
+   key: string | number
+   itemData: DataType
+-  currentPosition: Animated.AnimatedValueXY
++  currentPosition: Animated.ValueXY
+ }
+ let activeBlockOffset = { x: 0, y: 0 }
+ 

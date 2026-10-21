@@ -1,6 +1,6 @@
 # 文档索引与常用命令
 
-> 更新时间：2026-10-06
+> 更新时间：2026-10-21
 
 ## 文档
 
@@ -16,7 +16,7 @@
 | 项目                      | 版本来源              | 当前版本        |
 | ------------------------- | --------------------- | --------------- |
 | 根 workspace              | `package.json`        | `1.2.1`         |
-| Mobile (`@mosaic/mobile`) | `mobile/package.json` | `1.0.15`        |
+| Mobile (`@mosaic/mobile`) | `mobile/package.json` | `1.0.16`        |
 | Go 服务端                 | 发布标签              | `server-v1.1.5` |
 
 OpenAPI 契约版本独立于发布标签。此次新增的 `/openapi.json` 入口需发布更新后的 Go 镜像后才能在部署环境使用。健康检查的 `version` 由构建参数注入；未注入时为 `dev`。

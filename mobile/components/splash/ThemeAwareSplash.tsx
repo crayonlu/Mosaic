@@ -15,7 +15,7 @@ export default function ThemeAwareSplash() {
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: '#EFE8DD',
     justifyContent: 'center',
     alignItems: 'center',

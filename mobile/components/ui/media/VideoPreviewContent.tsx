@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   thumbnailOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
   },
   thumbnail: {
@@ -350,10 +350,10 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   thumbnailMask: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   tapLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'space-between',
     zIndex: 3,
   },

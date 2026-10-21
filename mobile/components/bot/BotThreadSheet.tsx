@@ -18,7 +18,7 @@ import { resourcesApi, type BotReply } from '@mosaic/api'
 import { useImageQualityStore } from '@/stores/imageQualityStore'
 import { Image } from 'expo-image'
 import { ChevronDown, ChevronUp, ImagePlus, Lightbulb, Send, X } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Modal,
   ScrollView,
@@ -151,7 +151,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
     { id: string; progress: number }[]
   >([])
   const [pendingMessage, setPendingMessage] = useState<PendingMessage | null>(null)
-  const inputRef = useRef<TextInput>(null)
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null)
 
   useEffect(() => {
     if (!visible) {
@@ -284,7 +284,7 @@ export function BotThreadSheet({ visible, reply, onClose }: BotThreadSheetProps)
       onRequestClose={onClose}
     >
       <SafeKeyboardProvider>
-        <StatusBar backgroundColor="transparent" translucent barStyle="dark-content" />
+        <StatusBar barStyle="dark-content" />
         <View style={[styles.container, { backgroundColor: theme.background }]}>
           <View style={styles.content}>
             <View
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   uploadProgressOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0, 0, 0, 0.34)',
     alignItems: 'center',
     justifyContent: 'center',

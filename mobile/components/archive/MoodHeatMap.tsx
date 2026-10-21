@@ -3,7 +3,7 @@ import { useHeatmap } from '@/lib/query'
 import { useThemeStore } from '@/stores/themeStore'
 import { MOODS, getMoodColor } from '@mosaic/utils'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { type ComponentRef, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, {
   useAnimatedStyle,
@@ -119,7 +119,7 @@ export function MoodHeatMap({ onDateClick }: MoodHeatMapProps) {
   const { t } = useTranslation()
   const { theme } = useThemeStore()
   const { data: heatmapData, isLoading: loading } = useHeatmap()
-  const scrollViewRef = useRef<ScrollView>(null)
+  const scrollViewRef = useRef<ComponentRef<typeof ScrollView>>(null)
 
   const moodLegend = useMemo(() => MOODS, [])
 

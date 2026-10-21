@@ -156,7 +156,7 @@ export function SearchResults({
       }
       onEndReached={onLoadMore}
       onEndReachedThreshold={0.3}
-      ListFooterComponent={renderFooter}
+      ListFooterComponent={renderFooter ?? undefined}
       showsVerticalScrollIndicator={false}
     />
   )
