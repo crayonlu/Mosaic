@@ -20,10 +20,9 @@ RUN go mod download
 
 COPY server-go/ ./
 
-# The migrations directory the server reads at startup. It is copied from the
-# previous server's tree so both servers apply the identical files.
-COPY server/migrations ./migrations
-
+# The migrations directory the server reads at startup. The Go tree carries
+# goose-annotated copies of the previous server's files; the Docker build must
+# use those copies so goose can parse the Up sections.
 RUN go build -trimpath -ldflags "-s -w" -o /out/mosaic-server ./cmd/mosaic-server \
  && go build -trimpath -ldflags "-s -w" -o /out/baseline-sqlx ./cmd/baseline-sqlx
 
