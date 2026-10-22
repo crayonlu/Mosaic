@@ -900,12 +900,15 @@ Query 参数：
 ```json
 {
   "question": "能详细说说吗？",
-  "resourceIds": ["img-uuid"]
+  "resourceIds": ["img-uuid"],
+  "clientRequestId": "4f0c8e1a-7b2d-4c6e-9f3a-1d2b3c4d5e6f"
 }
 ```
 
 - `resourceIds` 可选，用于传入图片等资源
-- 成功返回 `201`，响应为新生成的 `BotReply` 节点
+- `clientRequestId` 可选。客户端为每次发送生成稳定 UUID；相同 ID 的重试不会再次生成，而是返回已有回复
+- 成功返回 `201`（本次生成完成）；相同 ID 的生成仍在进行时返回 `202`，重复请求返回 `200` 和已有节点
+- 线程中的 pending/failed 消息通过 `status` 和 `errorMessage` 暴露
 
 ### 数据结构
 
@@ -945,6 +948,9 @@ Query 参数：
 | parentReplyId   | string?       | 父回复 ID（用于构建线程树）                         |
 | userQuestion    | string?       | 用户的追问原文                                      |
 | revisionNumber  | number?       |                                                     |
+| clientRequestId | string?       | 客户端生成的幂等键                                  |
+| status          | "pending" \| "completed" \| "failed" | 回复生成状态 |
+| errorMessage    | string?       | 失败原因                                            |
 | createdAt       | number        |                                                     |
 | children        | BotReply[]    | 子回复（嵌套结构）                                  |
 | threadCount     | number        | 同 memo、bot、revision 线程的总回复数，包含整条线程 |
@@ -959,6 +965,9 @@ Query 参数：
 | content         | string                |               |
 | thinkingContent | string?               |               |
 | resourceIds     | string[]              | 关联的资源 ID |
+| clientRequestId | string?               | 客户端幂等键  |
+| status          | "pending" \| "completed" \| "failed" | 回复生成状态 |
+| errorMessage    | string?               | 失败原因      |
 | createdAt       | number                |               |
 
 #### BotThread

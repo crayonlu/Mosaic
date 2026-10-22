@@ -1,11 +1,12 @@
-import type {
-  CreateBotRequest,
-  ReorderBotsRequest,
-  ReplyToBotRequest,
-  UpdateBotRequest,
+import {
+  botsApi,
+  type BotThread,
+  type CreateBotRequest,
+  type ReorderBotsRequest,
+  type ReplyToBotRequest,
+  type UpdateBotRequest,
 } from '@mosaic/api'
-import { botsApi } from '@mosaic/api'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type UseQueryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 export function useBots() {
   return useQuery({
@@ -24,12 +25,16 @@ export function useBotReplies(memoId: string) {
   })
 }
 
-export function useBotThread(replyId?: string | null) {
+export function useBotThread(
+  replyId?: string | null,
+  options?: Pick<UseQueryOptions<BotThread>, 'refetchInterval'>
+) {
   return useQuery({
     queryKey: ['bot-thread', replyId],
     queryFn: () => botsApi.getBotThread(replyId as string),
     staleTime: 60 * 1000,
     enabled: !!replyId,
+    ...options,
   })
 }
 

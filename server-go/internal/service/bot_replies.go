@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -192,35 +194,89 @@ func (s *BotService) loadThread(
 	for _, row := range rows {
 		replies = append(replies, threadReply{Reply: row, ResourceIDs: resources[row.ID]})
 	}
+	latest := seed.ID
+	for _, row := range rows {
+		if row.Status == "" || row.Status == domain.BotReplyStatusCompleted {
+			latest = row.ID
+		}
+	}
 	return threadData{
 		memoID:        seed.MemoID,
 		bot:           domain.BotSummary{ID: bot.ID, Name: bot.Name, AvatarURL: bot.AvatarURL},
-		latestReplyID: rows[len(rows)-1].ID,
+		latestReplyID: latest,
 		replies:       replies,
 	}, nil
+}
+
+// reconcilePendingReplies marks abandoned pending turns failed so the client
+// stops waiting on a generation whose process disappeared.
+func (s *BotService) reconcilePendingReplies(
+	ctx context.Context,
+	userID uuid.UUID,
+	thread *threadData,
+) {
+	now := s.now()
+	staleBefore := now - int64(botReplyPendingTimeout/time.Millisecond)
+	for index := range thread.replies {
+		reply := &thread.replies[index].Reply
+		if reply.Status != domain.BotReplyStatusPending || reply.UpdatedAt >= staleBefore {
+			continue
+		}
+		message := "generation timed out"
+		if err := s.bots.FailReply(
+			context.WithoutCancel(ctx), reply.ID, reply.ClaimVersion, message, now,
+		); err != nil {
+			if errors.Is(err, domain.ErrNoRows) {
+				if refreshed, refreshErr := s.bots.ReplyByID(ctx, userID, reply.ID); refreshErr == nil {
+					*reply = refreshed
+				}
+				continue
+			}
+			slog.WarnContext(ctx, "failing stale bot reply", "replyId", reply.ID, "err", err)
+			continue
+		}
+		reply.Status = domain.BotReplyStatusFailed
+		reply.ErrorMessage = &message
+		reply.UpdatedAt = now
+	}
 }
 
 // BuildThreadMessages flattens a thread into user/assistant turns.
 func BuildThreadMessages(replies []threadReply) []domain.BotThreadMessage {
 	messages := make([]domain.BotThreadMessage, 0, len(replies)*2)
 	for _, reply := range replies {
+		status := reply.Reply.Status
+		if status == "" {
+			status = domain.BotReplyStatusCompleted
+		}
 		if reply.Reply.UserQuestion != nil {
 			messages = append(messages, domain.BotThreadMessage{
-				ID:          reply.Reply.ID,
-				Role:        "user",
-				Content:     *reply.Reply.UserQuestion,
-				ResourceIDs: resourceIDs(reply.ResourceIDs),
-				CreatedAt:   reply.Reply.CreatedAt,
+				ID:              reply.Reply.ID,
+				Role:            "user",
+				Content:         *reply.Reply.UserQuestion,
+				ResourceIDs:     resourceIDs(reply.ResourceIDs),
+				ClientRequestID: reply.Reply.ClientRequestID,
+				Status:          domain.BotReplyStatusCompleted,
+				CreatedAt:       reply.Reply.CreatedAt,
 			})
 		}
-		messages = append(messages, domain.BotThreadMessage{
+		assistant := domain.BotThreadMessage{
 			ID:              reply.Reply.ID,
 			Role:            "assistant",
-			Content:         reply.Reply.Content,
-			ThinkingContent: reply.Reply.ThinkingContent,
 			ResourceIDs:     []uuid.UUID{},
+			ClientRequestID: reply.Reply.ClientRequestID,
+			Status:          status,
 			CreatedAt:       reply.Reply.CreatedAt,
-		})
+		}
+		switch status {
+		case domain.BotReplyStatusPending:
+		case domain.BotReplyStatusFailed:
+			assistant.ErrorMessage = reply.Reply.ErrorMessage
+		default:
+			assistant.Content = reply.Reply.Content
+			assistant.ThinkingContent = reply.Reply.ThinkingContent
+		}
+		messages = append(messages, assistant)
 	}
 	return messages
 }

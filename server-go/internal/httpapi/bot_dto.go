@@ -48,6 +48,9 @@ type botReplyNodeResponse struct {
 	ParentReplyID   *string                `json:"parentReplyId"`
 	UserQuestion    *string                `json:"userQuestion"`
 	RevisionNumber  *int32                 `json:"revisionNumber"`
+	ClientRequestID *string                `json:"clientRequestId"`
+	Status          string                 `json:"status"`
+	ErrorMessage    *string                `json:"errorMessage"`
 	CreatedAt       int64                  `json:"createdAt"`
 	Children        []botReplyNodeResponse `json:"children"`
 	ThreadCount     int64                  `json:"threadCount"`
@@ -60,6 +63,9 @@ type botThreadMessageDTO struct {
 	Content         string   `json:"content"`
 	ThinkingContent *string  `json:"thinkingContent"`
 	ResourceIDs     []string `json:"resourceIds"`
+	ClientRequestID *string  `json:"clientRequestId"`
+	Status          string   `json:"status"`
+	ErrorMessage    *string  `json:"errorMessage"`
 	CreatedAt       int64    `json:"createdAt"`
 }
 
@@ -98,8 +104,9 @@ type reorderBotsRequest struct {
 }
 
 type replyToBotRequest struct {
-	Question    string   `json:"question" validate:"required"`
-	ResourceIDs []string `json:"resourceIds"`
+	Question        string   `json:"question" validate:"required"`
+	ResourceIDs     []string `json:"resourceIds"`
+	ClientRequestID *string  `json:"clientRequestId"`
 }
 
 func (req createBotRequest) toInput() service.CreateBotInput {
@@ -213,6 +220,9 @@ func toBotReplyNodeResponse(node domain.BotReplyNode) botReplyNodeResponse {
 		ParentReplyID:   botUUIDString(node.Reply.ParentReplyID),
 		UserQuestion:    node.Reply.UserQuestion,
 		RevisionNumber:  node.Reply.RevisionNumber,
+		ClientRequestID: botUUIDString(node.Reply.ClientRequestID),
+		Status:          node.Reply.Status,
+		ErrorMessage:    node.Reply.ErrorMessage,
 		CreatedAt:       node.Reply.CreatedAt,
 		Children:        children,
 		ThreadCount:     node.ThreadCount,
@@ -237,6 +247,9 @@ func toBotThreadResponse(thread domain.BotThread) botThreadResponse {
 			Content:         message.Content,
 			ThinkingContent: message.ThinkingContent,
 			ResourceIDs:     botUUIDStrings(message.ResourceIDs),
+			ClientRequestID: botUUIDString(message.ClientRequestID),
+			Status:          message.Status,
+			ErrorMessage:    message.ErrorMessage,
 			CreatedAt:       message.CreatedAt,
 		})
 	}

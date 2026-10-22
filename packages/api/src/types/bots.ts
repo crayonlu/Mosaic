@@ -24,6 +24,8 @@ export interface BotSummary {
   avatarUrl?: string
 }
 
+export type BotReplyStatus = 'pending' | 'completed' | 'failed'
+
 export interface BotReply {
   id: string
   memoId: string
@@ -37,6 +39,9 @@ export interface BotReply {
   children: BotReply[]
   threadCount: number
   latestReplyId: string
+  clientRequestId?: string | null
+  status?: BotReplyStatus
+  errorMessage?: string | null
 }
 
 export interface BotThreadMessage {
@@ -46,6 +51,9 @@ export interface BotThreadMessage {
   thinkingContent?: string
   resourceIds: string[]
   createdAt: number
+  clientRequestId?: string | null
+  status?: BotReplyStatus
+  errorMessage?: string | null
 }
 
 export interface BotThread {
@@ -83,4 +91,5 @@ export interface ReorderBotsRequest {
 export interface ReplyToBotRequest {
   question: string
   resourceIds?: string[]
+  clientRequestId?: string
 }

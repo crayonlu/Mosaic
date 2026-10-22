@@ -3,7 +3,9 @@ package httpapi
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -460,7 +462,8 @@ func (f *fakeBotStore) RepliesForMemo(
 	defer f.mu.Unlock()
 	replies := []domain.BotReply{}
 	for _, reply := range f.replies {
-		if reply.MemoID == memoID {
+		if reply.MemoID == memoID &&
+			(reply.Status == "" || reply.Status == domain.BotReplyStatusCompleted) {
 			replies = append(replies, reply)
 		}
 	}
@@ -563,6 +566,120 @@ func (f *fakeBotStore) InsertReply(_ context.Context, reply domain.BotReply) err
 	defer f.mu.Unlock()
 	f.replies[reply.ID] = reply
 	return nil
+}
+
+func (f *fakeBotStore) ReplyByClientRequestID(
+	_ context.Context,
+	userID, clientRequestID uuid.UUID,
+) (domain.BotReply, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, reply := range f.replies {
+		if reply.ClientRequestID == nil || *reply.ClientRequestID != clientRequestID {
+			continue
+		}
+		if bot, ok := f.bots[reply.BotID]; !ok || bot.UserID != userID {
+			break
+		}
+		return reply, nil
+	}
+	return domain.BotReply{}, domain.ErrNoRows
+}
+
+func (f *fakeBotStore) ClaimReply(
+	_ context.Context,
+	userID uuid.UUID,
+	reply domain.BotReply,
+) (domain.BotReply, bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if reply.ClientRequestID == nil {
+		return domain.BotReply{}, false, domain.InvalidInput("clientRequestId is required")
+	}
+	if reply.ClaimVersion == 0 {
+		reply.ClaimVersion = 1
+	}
+	for _, existing := range f.replies {
+		if existing.ClientRequestID != nil &&
+			*existing.ClientRequestID == *reply.ClientRequestID {
+			if bot, ok := f.bots[existing.BotID]; !ok || bot.UserID != userID {
+				break
+			}
+			return existing, false, nil
+		}
+	}
+	f.replies[reply.ID] = reply
+	return reply, true, nil
+}
+
+func (f *fakeBotStore) CompleteReply(
+	_ context.Context,
+	replyID uuid.UUID,
+	claimVersion int32,
+	content string,
+	thinkingContent *string,
+	now int64,
+) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	reply, ok := f.replies[replyID]
+	if !ok || reply.Status != domain.BotReplyStatusPending ||
+		reply.ClaimVersion != claimVersion {
+		return domain.ErrNoRows
+	}
+	reply.Content = content
+	reply.ThinkingContent = thinkingContent
+	reply.Status = domain.BotReplyStatusCompleted
+	reply.ErrorMessage = nil
+	reply.UpdatedAt = now
+	f.replies[replyID] = reply
+	return nil
+}
+
+func (f *fakeBotStore) FailReply(
+	_ context.Context,
+	replyID uuid.UUID,
+	claimVersion int32,
+	message string,
+	now int64,
+) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	reply, ok := f.replies[replyID]
+	if !ok || reply.Status != domain.BotReplyStatusPending ||
+		reply.ClaimVersion != claimVersion {
+		return domain.ErrNoRows
+	}
+	reply.Status = domain.BotReplyStatusFailed
+	reply.ErrorMessage = &message
+	reply.UpdatedAt = now
+	f.replies[replyID] = reply
+	return nil
+}
+
+func (f *fakeBotStore) ReclaimReply(
+	_ context.Context,
+	replyID uuid.UUID,
+	now, staleBefore int64,
+) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	reply, ok := f.replies[replyID]
+	if !ok {
+		return false, nil
+	}
+	if reply.Status != domain.BotReplyStatusFailed &&
+		!(reply.Status == domain.BotReplyStatusPending && reply.UpdatedAt < staleBefore) {
+		return false, nil
+	}
+	reply.Status = domain.BotReplyStatusPending
+	reply.Content = ""
+	reply.ThinkingContent = nil
+	reply.ErrorMessage = nil
+	reply.ClaimVersion++
+	reply.UpdatedAt = now
+	f.replies[replyID] = reply
+	return true, nil
 }
 
 func (f *fakeBotStore) InsertAutoReply(
@@ -715,4 +832,185 @@ func (f *fakeGenerationLocks) TryAcquire(
 		defer f.mu.Unlock()
 		delete(f.held, key)
 	}, true, nil
+}
+
+type countingCompletion struct {
+	mu          sync.Mutex
+	calls       int
+	started     chan struct{}
+	release     chan struct{}
+	startedOnce sync.Once
+}
+
+func (c *countingCompletion) Complete(
+	ctx context.Context,
+	_ service.CompletionRequest,
+) (service.CompletionResult, error) {
+	c.mu.Lock()
+	c.calls++
+	c.mu.Unlock()
+	if c.started != nil {
+		c.startedOnce.Do(func() { close(c.started) })
+	}
+	if c.release != nil {
+		select {
+		case <-c.release:
+		case <-ctx.Done():
+			return service.CompletionResult{}, ctx.Err()
+		}
+	}
+	return service.CompletionResult{Content: "generated"}, nil
+}
+
+func (c *countingCompletion) callCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.calls
+}
+
+func postBotReply(
+	t *testing.T,
+	handler http.Handler,
+	token, replyID, body string,
+) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(
+		http.MethodPost, "/bot-replies/"+replyID+"/reply", strings.NewReader(body),
+	)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	return rec
+}
+
+func replyTestSetup(
+	t *testing.T,
+	completion service.CompletionClient,
+) (*fakeBotStore, uuid.UUID, uuid.UUID, http.Handler, string) {
+	t.Helper()
+	userID := uuid.New()
+	memoID := uuid.New()
+	store := newFakeBotStore()
+	memos := newFakeBotMemoStore()
+	memos.memos[memoID] = domain.Memo{
+		ID: memoID, UserID: userID, Content: "memo", RevisionCount: 1,
+	}
+	svc := service.NewBotService(
+		store, memos, fakeMemoryBuilder{}, fakeChatConfigs{}, completion,
+		fakeBotImages{}, fakeTimezone{}, admin.NewActivityLog(10), newFakeGenerationLocks(),
+	)
+	router := newBotTestRouter(svc)
+	token := botToken(t, userID)
+	botID := store.seed(domain.Bot{
+		UserID: userID, Name: "Muse", CreatedAt: 1, UpdatedAt: 1,
+	})
+	store.seedReply(domain.BotReply{
+		ID: uuid.New(), MemoID: memoID, BotID: botID, Content: "root",
+		RevisionNumber: int32Pointer(1), Status: domain.BotReplyStatusCompleted,
+		CreatedAt: 100, UpdatedAt: 100,
+	})
+	return store, memoID, botID, router, token
+}
+
+func TestReplyToBotReplaysSameClientRequest(t *testing.T) {
+	completion := &countingCompletion{}
+	store, memoID, botID, router, token := replyTestSetup(t, completion)
+	root := domain.BotReply{}
+	for _, reply := range store.replies {
+		if reply.MemoID == memoID && reply.BotID == botID && reply.ParentReplyID == nil {
+			root = reply
+		}
+	}
+	requestID := uuid.New().String()
+	body := `{"question":"why","clientRequestId":"` + requestID + `"}`
+
+	first := postBotReply(t, router, token, root.ID.String(), body)
+	if first.Code != http.StatusCreated {
+		t.Fatalf("first status = %d (body %s)", first.Code, first.Body)
+	}
+	var firstNode botReplyNodeResponse
+	decodeBody(t, first, &firstNode)
+	if firstNode.Status != domain.BotReplyStatusCompleted {
+		t.Errorf("first status = %q", firstNode.Status)
+	}
+
+	second := postBotReply(t, router, token, root.ID.String(), body)
+	if second.Code != http.StatusCreated {
+		t.Fatalf("second status = %d (body %s)", second.Code, second.Body)
+	}
+	var secondNode botReplyNodeResponse
+	decodeBody(t, second, &secondNode)
+	if secondNode.ID != firstNode.ID {
+		t.Errorf("second reply id = %s, want %s", secondNode.ID, firstNode.ID)
+	}
+	if calls := completion.callCount(); calls != 1 {
+		t.Errorf("completion calls = %d, want 1", calls)
+	}
+}
+
+func TestReplyToBotReturnsPendingForConcurrentDuplicate(t *testing.T) {
+	completion := &countingCompletion{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+	store, memoID, botID, router, token := replyTestSetup(t, completion)
+	root := domain.BotReply{}
+	for _, reply := range store.replies {
+		if reply.MemoID == memoID && reply.BotID == botID && reply.ParentReplyID == nil {
+			root = reply
+		}
+	}
+	requestID := uuid.New().String()
+	body := `{"question":"why","clientRequestId":"` + requestID + `"}`
+
+	firstDone := make(chan *httptest.ResponseRecorder, 1)
+	go func() {
+		firstDone <- postBotReply(t, router, token, root.ID.String(), body)
+	}()
+	<-completion.started
+
+	second := postBotReply(t, router, token, root.ID.String(), body)
+	if second.Code != http.StatusAccepted {
+		t.Fatalf("duplicate status = %d (body %s)", second.Code, second.Body)
+	}
+	var pending botReplyNodeResponse
+	decodeBody(t, second, &pending)
+	if pending.Status != domain.BotReplyStatusPending {
+		t.Errorf("duplicate status = %q, want pending", pending.Status)
+	}
+
+	threadRec := getWithToken(t, router, "/bot-replies/"+root.ID.String()+"/thread", token)
+	if threadRec.Code != http.StatusOK {
+		t.Fatalf("thread status = %d (body %s)", threadRec.Code, threadRec.Body)
+	}
+	var conversation botThreadResponse
+	decodeBody(t, threadRec, &conversation)
+	var sawPending, sawQuestion bool
+	for _, message := range conversation.Messages {
+		if message.ClientRequestID == nil || *message.ClientRequestID != requestID {
+			continue
+		}
+		if message.Role == "user" {
+			sawQuestion = true
+		}
+		if message.Role == "assistant" && message.Status == domain.BotReplyStatusPending {
+			sawPending = true
+		}
+	}
+	if !sawQuestion || !sawPending {
+		t.Errorf("thread missing pending turn: question=%v pending=%v", sawQuestion, sawPending)
+	}
+	if conversation.LatestReplyID != root.ID.String() {
+		t.Errorf("thread latest = %s, want %s", conversation.LatestReplyID, root.ID)
+	}
+
+	close(completion.release)
+	first := <-firstDone
+	if first.Code != http.StatusCreated {
+		t.Fatalf("first status = %d (body %s)", first.Code, first.Body)
+	}
+	if calls := completion.callCount(); calls != 1 {
+		t.Errorf("completion calls = %d, want 1", calls)
+	}
 }

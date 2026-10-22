@@ -18,6 +18,10 @@ const (
 	maxAIQuestionImages = 4
 	maxThreadReplies    = 8
 	maxThreadImages     = 8
+
+	// A pending turn older than this is considered abandoned. The claim row is
+	// reclaimed on the next retry and reconciled as failed when a thread is read.
+	botReplyPendingTimeout = 6 * time.Minute
 )
 
 // ChatMessage is one turn handed to the provider.
@@ -212,6 +216,7 @@ func (s *BotService) generateOneAutoReply(
 	}
 
 	revision := memo.RevisionCount
+	now := s.now()
 	reply := domain.BotReply{
 		ID:              uuid.New(),
 		MemoID:          memo.ID,
@@ -219,7 +224,9 @@ func (s *BotService) generateOneAutoReply(
 		Content:         result.Content,
 		ThinkingContent: result.ThinkingContent,
 		RevisionNumber:  &revision,
-		CreatedAt:       s.now(),
+		Status:          domain.BotReplyStatusCompleted,
+		CreatedAt:       now,
+		UpdatedAt:       now,
 	}
 	inserted, err := s.bots.InsertAutoReply(ctx, reply, memo.RevisionCount)
 	if err != nil {
@@ -239,6 +246,7 @@ func (s *BotService) ReplyToBot(
 	parentReplyID uuid.UUID,
 	question string,
 	resourceIDs []uuid.UUID,
+	clientRequestID *uuid.UUID,
 ) (domain.BotReplyNode, error) {
 	id, err := uuid.Parse(userID)
 	if err != nil {
@@ -296,23 +304,6 @@ func (s *BotService) ReplyToBot(
 	memoryPrefix := ""
 	if hasContext {
 		memoryPrefix = BuildMemoryPrefix(memoryContext.SimilarMemos, s.now(), loc)
-		if err := s.memory.PersistForBot(
-			context.WithoutCancel(ctx), id, memo.ID, bot.ID, memoryContext,
-		); err != nil {
-			slog.WarnContext(ctx, "persisting memory context", "err", err)
-		}
-	}
-
-	result, err := s.completions.Complete(ctx, CompletionRequest{
-		Config: config,
-		SystemPrompt: BuildThreadSystemPrompt(
-			bot.Name, bot.Description, FormatCurrentTime(s.now(), loc)),
-		Messages: BuildThreadReplyMessages(
-			memo.Content, memoryPrefix, history, question, questionImages),
-		Model: derefString(bot.Model),
-	})
-	if err != nil {
-		return domain.BotReplyNode{}, wrapInternal(err)
 	}
 
 	revision := memo.RevisionCount
@@ -321,36 +312,203 @@ func (s *BotService) ReplyToBot(
 	}
 	now := s.now()
 	parentID := parentReplyID
-	newReply := domain.BotReply{
-		ID:              uuid.New(),
-		MemoID:          parent.MemoID,
-		BotID:           parent.BotID,
-		Content:         result.Content,
-		ThinkingContent: result.ThinkingContent,
-		ParentReplyID:   &parentID,
-		UserQuestion:    &question,
-		RevisionNumber:  &revision,
-		CreatedAt:       now,
-	}
-	if err := s.bots.InsertReply(ctx, newReply); err != nil {
-		return domain.BotReplyNode{}, domain.Internal(err)
-	}
-	if len(resourceIDs) > 0 {
-		if err := s.bots.InsertReplyResources(ctx, newReply.ID, resourceIDs, now); err != nil {
-			return domain.BotReplyNode{}, domain.Internal(err)
+
+	var reply domain.BotReply
+	claimed := false
+	if clientRequestID != nil {
+		reply, claimed, err = s.claimBotReply(
+			ctx, id, parent, parentID, question, revision, *clientRequestID, now,
+		)
+		if err != nil {
+			return domain.BotReplyNode{}, err
+		}
+		if !claimed {
+			return s.botReplyNode(reply, bot, thread, 0), nil
+		}
+		if len(resourceIDs) > 0 {
+			if err := s.bots.InsertReplyResources(ctx, reply.ID, resourceIDs, now); err != nil {
+				failCtx, cancelFail := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+				_ = s.bots.FailReply(
+					failCtx, reply.ID, reply.ClaimVersion, "failed to attach resources", s.now(),
+				)
+				cancelFail()
+				return domain.BotReplyNode{}, domain.Internal(err)
+			}
+		}
+	} else {
+		reply = domain.BotReply{
+			ID:             uuid.New(),
+			MemoID:         parent.MemoID,
+			BotID:          parent.BotID,
+			ParentReplyID:  &parentID,
+			UserQuestion:   &question,
+			RevisionNumber: &revision,
+			Status:         domain.BotReplyStatusCompleted,
+			CreatedAt:      now,
+			UpdatedAt:      now,
 		}
 	}
 
-	s.record("reply_to_bot", "bot_reply", newReply.ID, "User replied to bot: "+bot.Name)
+	if hasContext {
+		if err := s.memory.PersistForBot(
+			context.WithoutCancel(ctx), id, memo.ID, bot.ID, memoryContext,
+		); err != nil {
+			slog.WarnContext(ctx, "persisting memory context", "err", err)
+		}
+	}
+
+	genCtx := ctx
+	cancel := func() {}
+	if clientRequestID != nil {
+		genCtx, cancel = context.WithTimeout(context.WithoutCancel(ctx), 5*time.Minute)
+	}
+	defer cancel()
+
+	result, err := s.completions.Complete(genCtx, CompletionRequest{
+		Config: config,
+		SystemPrompt: BuildThreadSystemPrompt(
+			bot.Name, bot.Description, FormatCurrentTime(s.now(), loc)),
+		Messages: BuildThreadReplyMessages(
+			memo.Content, memoryPrefix, history, question, questionImages),
+		Model: derefString(bot.Model),
+	})
+	if err != nil {
+		if clientRequestID != nil {
+			failCtx, cancelFail := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+			_ = s.bots.FailReply(failCtx, reply.ID, reply.ClaimVersion, "generation failed", s.now())
+			cancelFail()
+		}
+		return domain.BotReplyNode{}, wrapInternal(err)
+	}
+
+	completedAt := s.now()
+	reply.Content = result.Content
+	reply.ThinkingContent = result.ThinkingContent
+	reply.Status = domain.BotReplyStatusCompleted
+	reply.ErrorMessage = nil
+	reply.UpdatedAt = completedAt
+
+	if clientRequestID != nil {
+		if err := s.bots.CompleteReply(
+			context.WithoutCancel(ctx), reply.ID, reply.ClaimVersion,
+			result.Content, result.ThinkingContent, completedAt,
+		); err != nil {
+			return domain.BotReplyNode{}, domain.Internal(err)
+		}
+	} else {
+		if err := s.bots.InsertReply(ctx, reply); err != nil {
+			return domain.BotReplyNode{}, domain.Internal(err)
+		}
+		if len(resourceIDs) > 0 {
+			if err := s.bots.InsertReplyResources(ctx, reply.ID, resourceIDs, now); err != nil {
+				return domain.BotReplyNode{}, domain.Internal(err)
+			}
+		}
+	}
+
+	s.record("reply_to_bot", "bot_reply", reply.ID, "User replied to bot: "+bot.Name)
+	return s.botReplyNode(reply, bot, thread, 1), nil
+}
+
+// claimBotReply resolves a client request id to the row that owns the
+// generation. It reports whether this caller won the claim and must run the
+// model. Completed rows are returned as-is, a live pending row is returned for
+// the caller to observe, and failed or stale rows are reclaimed atomically.
+func (s *BotService) claimBotReply(
+	ctx context.Context,
+	userID uuid.UUID,
+	parent domain.BotReply,
+	parentID uuid.UUID,
+	question string,
+	revision int32,
+	clientRequestID uuid.UUID,
+	now int64,
+) (domain.BotReply, bool, error) {
+	existing, err := s.bots.ReplyByClientRequestID(ctx, userID, clientRequestID)
+	if err == nil {
+		if existing.MemoID != parent.MemoID || existing.BotID != parent.BotID ||
+			existing.ParentReplyID == nil || *existing.ParentReplyID != parentID {
+			return domain.BotReply{}, false, domain.InvalidInput(
+				"clientRequestId was already used for another reply",
+			)
+		}
+		if existing.UserQuestion == nil || *existing.UserQuestion != question {
+			return domain.BotReply{}, false, domain.InvalidInput(
+				"clientRequestId was already used for another question",
+			)
+		}
+		if existing.Status == domain.BotReplyStatusCompleted {
+			return existing, false, nil
+		}
+		staleBefore := now - int64(botReplyPendingTimeout/time.Millisecond)
+		if existing.Status == domain.BotReplyStatusPending && existing.UpdatedAt >= staleBefore {
+			return existing, false, nil
+		}
+		reclaimed, err := s.bots.ReclaimReply(ctx, existing.ID, now, staleBefore)
+		if err != nil {
+			return domain.BotReply{}, false, domain.Internal(err)
+		}
+		if reclaimed {
+			existing.Status = domain.BotReplyStatusPending
+			existing.Content = ""
+			existing.ThinkingContent = nil
+			existing.ErrorMessage = nil
+			existing.ClaimVersion++
+			existing.UpdatedAt = now
+			return existing, true, nil
+		}
+		refreshed, err := s.bots.ReplyByClientRequestID(ctx, userID, clientRequestID)
+		if err != nil {
+			return domain.BotReply{}, false, domain.Internal(err)
+		}
+		return refreshed, false, nil
+	}
+	if !errors.Is(err, domain.ErrNoRows) {
+		return domain.BotReply{}, false, domain.Internal(err)
+	}
+
+	pending := domain.BotReply{
+		ID:              uuid.New(),
+		MemoID:          parent.MemoID,
+		BotID:           parent.BotID,
+		ParentReplyID:   &parentID,
+		UserQuestion:    &question,
+		RevisionNumber:  &revision,
+		ClientRequestID: &clientRequestID,
+		Status:          domain.BotReplyStatusPending,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}
+	claimedReply, inserted, err := s.bots.ClaimReply(ctx, userID, pending)
+	if errors.Is(err, domain.ErrNoRows) {
+		return domain.BotReply{}, false, domain.InvalidInput("clientRequestId is already in use")
+	}
+	if err != nil {
+		return domain.BotReply{}, false, domain.Internal(err)
+	}
+	if !inserted {
+		return claimedReply, false, nil
+	}
+	return claimedReply, true, nil
+}
+
+func (s *BotService) botReplyNode(
+	reply domain.BotReply,
+	bot domain.Bot,
+	thread threadData,
+	added int,
+) domain.BotReplyNode {
+	latest := thread.latestReplyID
+	if reply.Status == domain.BotReplyStatusCompleted && added > 0 {
+		latest = reply.ID
+	}
 	return domain.BotReplyNode{
-		Reply: newReply,
-		Bot: domain.BotSummary{
-			ID: bot.ID, Name: bot.Name, AvatarURL: bot.AvatarURL,
-		},
+		Reply:         reply,
+		Bot:           domain.BotSummary{ID: bot.ID, Name: bot.Name, AvatarURL: bot.AvatarURL},
 		Children:      []domain.BotReplyNode{},
-		ThreadCount:   int64(len(thread.replies) + 1),
-		LatestReplyID: newReply.ID,
-	}, nil
+		ThreadCount:   int64(len(thread.replies) + added),
+		LatestReplyID: latest,
+	}
 }
 
 func (s *BotService) buildThreadHistory(

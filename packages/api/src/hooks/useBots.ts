@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type UseQueryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { botsApi } from '../bots'
 import type {
+  BotThread,
   CreateBotRequest,
   ReorderBotsRequest,
   ReplyToBotRequest,
@@ -26,12 +27,16 @@ export function useBotReplies(memoId: string) {
   })
 }
 
-export function useBotThread(replyId?: string | null) {
+export function useBotThread(
+  replyId?: string | null,
+  options?: Pick<UseQueryOptions<BotThread>, 'refetchInterval'>
+) {
   return useQuery({
     queryKey: ['bot-thread', replyId],
     queryFn: () => botsApi.getBotThread(replyId as string),
     staleTime: 0,
     enabled: !!replyId,
+    ...options,
   })
 }
 

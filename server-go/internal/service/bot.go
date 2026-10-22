@@ -67,6 +67,11 @@ type BotStore interface {
 	ThreadReplies(ctx context.Context, memoID, botID, seedReplyID uuid.UUID) ([]domain.BotReply, error)
 	ResourceIDsForReplies(ctx context.Context, replyIDs []uuid.UUID) (map[uuid.UUID][]uuid.UUID, error)
 	InsertReply(ctx context.Context, reply domain.BotReply) error
+	ReplyByClientRequestID(ctx context.Context, userID, clientRequestID uuid.UUID) (domain.BotReply, error)
+	ClaimReply(ctx context.Context, userID uuid.UUID, reply domain.BotReply) (domain.BotReply, bool, error)
+	CompleteReply(ctx context.Context, replyID uuid.UUID, claimVersion int32, content string, thinkingContent *string, now int64) error
+	FailReply(ctx context.Context, replyID uuid.UUID, claimVersion int32, message string, now int64) error
+	ReclaimReply(ctx context.Context, replyID uuid.UUID, now, staleBefore int64) (bool, error)
 	InsertAutoReply(ctx context.Context, reply domain.BotReply, expectedRevision int32) (bool, error)
 	InsertReplyResources(ctx context.Context, replyID uuid.UUID, resourceIDs []uuid.UUID, now int64) error
 }
@@ -359,6 +364,7 @@ func (s *BotService) GetBotThread(
 	if err != nil {
 		return domain.BotThread{}, err
 	}
+	s.reconcilePendingReplies(ctx, id, &thread)
 	return domain.BotThread{
 		MemoID:        thread.memoID,
 		Bot:           thread.bot,

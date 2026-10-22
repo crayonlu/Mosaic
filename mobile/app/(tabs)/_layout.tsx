@@ -8,10 +8,11 @@ import { diariesApi } from '@mosaic/api'
 import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { Tabs } from 'expo-router'
+import type { BottomTabBarButtonProps } from 'expo-router/js-tabs'
 import { Book, Calendar, Files, Search, Settings } from 'lucide-react-native'
 import React, { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { StyleSheet, View } from 'react-native'
+import { Platform, Pressable, StyleSheet, View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -68,6 +69,14 @@ const tabIconStyles = StyleSheet.create({
   },
 })
 
+const TabBarButton = ({
+  android_ripple: _androidRipple,
+  pressOpacity: _pressOpacity,
+  hoverEffect: _hoverEffect,
+  ref: _ref,
+  ...props
+}: BottomTabBarButtonProps) => <Pressable {...props} />
+
 export default function TabLayout() {
   const { t } = useTranslation()
   const theme = useThemeStore(s => s.theme)
@@ -104,6 +113,7 @@ export default function TabLayout() {
           fontSize: 12,
           fontWeight: '500',
         },
+        tabBarButton: Platform.OS === 'web' ? undefined : TabBarButton,
         tabBarIconStyle: {
           marginTop: 0,
         },

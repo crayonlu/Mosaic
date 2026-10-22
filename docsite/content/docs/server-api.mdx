@@ -220,10 +220,17 @@ Manually trigger auto-replies for a memo. Returns `202 Accepted`.
 Reply to a bot in a thread.
 
 ```json
-{ "question": "Tell me more", "resourceIds": ["img-uuid"] }
+{
+  "question": "Tell me more",
+  "resourceIds": ["img-uuid"],
+  "clientRequestId": "4f0c8e1a-7b2d-4c6e-9f3a-1d2b3c4d5e6f"
+}
 ```
 
-Returns `201 Created`.
+`clientRequestId` is an optional stable UUID per send. Retries with the same value
+return the existing reply instead of generating again. Returns `201 Created` for a
+completed reply, `202 Accepted` while generation is in progress, and `200 OK` for
+a replayed row.
 
 ## Memory System
 

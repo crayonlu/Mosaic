@@ -32,6 +32,14 @@ type BotMemoryStats struct {
 	LastContextAt      *int64 `json:"lastContextAt"`
 }
 
+// Bot reply lifecycle. A follow-up is claimed as pending before the model is
+// called, so duplicate requests can observe the in-flight turn.
+const (
+	BotReplyStatusPending   = "pending"
+	BotReplyStatusCompleted = "completed"
+	BotReplyStatusFailed    = "failed"
+)
+
 // BotReply is one message a bot produced for a memo.
 type BotReply struct {
 	ID              uuid.UUID
@@ -42,7 +50,12 @@ type BotReply struct {
 	ParentReplyID   *uuid.UUID
 	UserQuestion    *string
 	RevisionNumber  *int32
+	ClientRequestID *uuid.UUID
+	Status          string
+	ErrorMessage    *string
+	ClaimVersion    int32
 	CreatedAt       int64
+	UpdatedAt       int64
 }
 
 // BotReplyNode is a reply plus the replies it spawned.
@@ -61,6 +74,9 @@ type BotThreadMessage struct {
 	Content         string      `json:"content"`
 	ThinkingContent *string     `json:"thinkingContent"`
 	ResourceIDs     []uuid.UUID `json:"resourceIds"`
+	ClientRequestID *uuid.UUID  `json:"clientRequestId"`
+	Status          string      `json:"status"`
+	ErrorMessage    *string     `json:"errorMessage"`
 	CreatedAt       int64       `json:"createdAt"`
 }
 

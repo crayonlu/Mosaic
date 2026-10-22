@@ -17,7 +17,12 @@ const botColumns = `id, user_id, name, avatar_url, description, tags, auto_reply
 
 // replyColumns is the shared select list for bot_replies rows.
 const replyColumns = `id, memo_id, bot_id, content, thinking_content,
-	parent_reply_id, user_question, revision_number, created_at`
+	parent_reply_id, user_question, revision_number, client_request_id, status,
+	error_message, claim_version, created_at, updated_at`
+
+const replyColumnsBR = `br.id, br.memo_id, br.bot_id, br.content, br.thinking_content,
+	br.parent_reply_id, br.user_question, br.revision_number, br.client_request_id,
+	br.status, br.error_message, br.claim_version, br.created_at, br.updated_at`
 
 // BotStore reads and writes bots, bot replies and the reply-resource links.
 type BotStore struct {
@@ -57,7 +62,8 @@ func scanReply(row pgx.Row) (domain.BotReply, error) {
 	err := row.Scan(
 		&reply.ID, &reply.MemoID, &reply.BotID, &reply.Content,
 		&reply.ThinkingContent, &reply.ParentReplyID, &reply.UserQuestion,
-		&reply.RevisionNumber, &reply.CreatedAt,
+		&reply.RevisionNumber, &reply.ClientRequestID, &reply.Status,
+		&reply.ErrorMessage, &reply.ClaimVersion, &reply.CreatedAt, &reply.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.BotReply{}, domain.ErrNoRows
@@ -236,10 +242,9 @@ func (s *BotStore) RepliesForMemo(
 	userID, memoID uuid.UUID,
 ) ([]domain.BotReply, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT br.id, br.memo_id, br.bot_id, br.content, br.thinking_content,
-			br.parent_reply_id, br.user_question, br.revision_number, br.created_at
+		`SELECT `+replyColumnsBR+`
 		 FROM bot_replies br JOIN bots b ON b.id = br.bot_id
-		 WHERE br.memo_id = $1 AND b.user_id = $2
+		 WHERE br.memo_id = $1 AND b.user_id = $2 AND br.status = 'completed'
 		 ORDER BY br.created_at ASC`, memoID, userID)
 	if err != nil {
 		return nil, err
@@ -279,8 +284,7 @@ func (s *BotStore) ReplyByID(
 	userID, replyID uuid.UUID,
 ) (domain.BotReply, error) {
 	return scanReply(s.pool.QueryRow(ctx,
-		`SELECT br.id, br.memo_id, br.bot_id, br.content, br.thinking_content,
-			br.parent_reply_id, br.user_question, br.revision_number, br.created_at
+		`SELECT `+replyColumnsBR+`
 		 FROM bot_replies br JOIN bots b ON b.id = br.bot_id
 		 WHERE br.id = $1 AND b.user_id = $2`, replyID, userID))
 }
@@ -304,8 +308,7 @@ func (s *BotStore) ThreadReplies(
 			SELECT edges.connected_id FROM thread_replies current
 			JOIN thread_edges edges ON edges.id = current.id
 		)
-		SELECT br.id, br.memo_id, br.bot_id, br.content, br.thinking_content,
-			br.parent_reply_id, br.user_question, br.revision_number, br.created_at
+		SELECT `+replyColumnsBR+`
 		FROM bot_replies br
 		WHERE br.memo_id = $1 AND br.bot_id = $2
 		  AND br.id IN (SELECT id FROM thread_replies)
@@ -341,16 +344,119 @@ func (s *BotStore) ResourceIDsForReplies(
 	return resources, rows.Err()
 }
 
-// InsertReply stores a manually produced reply.
+// InsertReply stores a completed reply. It is used for replies that do not
+// carry a client request id.
 func (s *BotStore) InsertReply(ctx context.Context, reply domain.BotReply) error {
 	_, err := s.pool.Exec(ctx,
 		`INSERT INTO bot_replies
 			(id, memo_id, bot_id, content, thinking_content, parent_reply_id,
-			 user_question, revision_number, created_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+			 user_question, revision_number, client_request_id, status, error_message,
+			 created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
 		reply.ID, reply.MemoID, reply.BotID, reply.Content, reply.ThinkingContent,
-		reply.ParentReplyID, reply.UserQuestion, reply.RevisionNumber, reply.CreatedAt)
+		reply.ParentReplyID, reply.UserQuestion, reply.RevisionNumber,
+		reply.ClientRequestID, reply.Status, reply.ErrorMessage,
+		reply.CreatedAt, reply.UpdatedAt)
 	return err
+}
+
+// ReplyByClientRequestID returns the reply claimed for a client request id,
+// scoped to the caller's bots.
+func (s *BotStore) ReplyByClientRequestID(
+	ctx context.Context,
+	userID, clientRequestID uuid.UUID,
+) (domain.BotReply, error) {
+	return scanReply(s.pool.QueryRow(ctx,
+		`SELECT `+replyColumnsBR+`
+		 FROM bot_replies br JOIN bots b ON b.id = br.bot_id
+		 WHERE br.client_request_id = $1 AND b.user_id = $2`,
+		clientRequestID, userID))
+}
+
+// ClaimReply inserts a pending reply for a client request id. The unique index
+// is the concurrency gate: exactly one caller wins and runs the model, every
+// duplicate receives the row already in flight.
+func (s *BotStore) ClaimReply(
+	ctx context.Context,
+	userID uuid.UUID,
+	reply domain.BotReply,
+) (domain.BotReply, bool, error) {
+	if reply.ClientRequestID == nil {
+		return domain.BotReply{}, false, domain.InvalidInput("clientRequestId is required")
+	}
+	claimed, err := scanReply(s.pool.QueryRow(ctx,
+		`INSERT INTO bot_replies
+			(id, memo_id, bot_id, content, thinking_content, parent_reply_id,
+			 user_question, revision_number, client_request_id, status, claim_version,
+			 created_at, updated_at)
+		 VALUES ($1, $2, $3, '', NULL, $4, $5, $6, $7, 'pending', 1, $8, $9)
+		 ON CONFLICT (client_request_id) DO NOTHING
+		 RETURNING `+replyColumns,
+		reply.ID, reply.MemoID, reply.BotID, reply.ParentReplyID, reply.UserQuestion,
+		reply.RevisionNumber, *reply.ClientRequestID, reply.CreatedAt, reply.UpdatedAt))
+	if err == nil {
+		return claimed, true, nil
+	}
+	if !errors.Is(err, domain.ErrNoRows) {
+		return domain.BotReply{}, false, err
+	}
+	existing, err := s.ReplyByClientRequestID(ctx, userID, *reply.ClientRequestID)
+	return existing, false, err
+}
+
+// CompleteReply stores the generated turn and marks the pending row complete.
+func (s *BotStore) CompleteReply(
+	ctx context.Context,
+	replyID uuid.UUID,
+	claimVersion int32,
+	content string,
+	thinkingContent *string,
+	now int64,
+) error {
+	_, err := s.pool.Exec(ctx,
+		`UPDATE bot_replies
+		 SET content = $3, thinking_content = $4, status = 'completed',
+		     error_message = NULL, updated_at = $5
+		 WHERE id = $1 AND claim_version = $2 AND status = 'pending'`,
+		replyID, claimVersion, content, thinkingContent, now)
+	return err
+}
+
+// FailReply marks a pending turn failed so a later request can reclaim it.
+func (s *BotStore) FailReply(
+	ctx context.Context,
+	replyID uuid.UUID,
+	claimVersion int32,
+	message string,
+	now int64,
+) error {
+	_, err := s.pool.Exec(ctx,
+		`UPDATE bot_replies
+		 SET status = 'failed', error_message = $3, updated_at = $4
+		 WHERE id = $1 AND claim_version = $2 AND status = 'pending'`,
+		replyID, claimVersion, message, now)
+	return err
+}
+
+// ReclaimReply makes a failed or stale pending row claimable again. The update
+// is conditional so two retries cannot both start a generation.
+func (s *BotStore) ReclaimReply(
+	ctx context.Context,
+	replyID uuid.UUID,
+	now, staleBefore int64,
+) (bool, error) {
+	tag, err := s.pool.Exec(ctx,
+		`UPDATE bot_replies
+		 SET status = 'pending', content = '', thinking_content = NULL,
+		     error_message = NULL, claim_version = claim_version + 1,
+		     updated_at = $2
+		 WHERE id = $1
+		   AND (status = 'failed' OR (status = 'pending' AND updated_at < $3))`,
+		replyID, now, staleBefore)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() == 1, nil
 }
 
 // InsertAutoReply stores an automatic reply only while the memo revision still
@@ -363,8 +469,8 @@ func (s *BotStore) InsertAutoReply(
 	tag, err := s.pool.Exec(ctx,
 		`INSERT INTO bot_replies
 			(id, memo_id, bot_id, content, thinking_content, parent_reply_id,
-			 user_question, revision_number, created_at)
-		 SELECT $1, $2, $3, $4, $5, NULL, NULL, $6, $7
+			 user_question, revision_number, status, created_at, updated_at)
+		 SELECT $1, $2, $3, $4, $5, NULL, NULL, $6, 'completed', $7, $8
 		 WHERE EXISTS (
 			SELECT 1 FROM memos
 			WHERE id = $2 AND is_deleted = FALSE AND revision_count = $6
@@ -376,7 +482,7 @@ func (s *BotStore) InsertAutoReply(
 			  AND revision_number = $6
 		 )`,
 		reply.ID, reply.MemoID, reply.BotID, reply.Content, reply.ThinkingContent,
-		expectedRevision, reply.CreatedAt)
+		expectedRevision, reply.CreatedAt, reply.UpdatedAt)
 	if err != nil {
 		return false, err
 	}

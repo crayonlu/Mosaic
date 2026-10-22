@@ -228,12 +228,30 @@ func replyToBotHandler(bots *service.BotService) http.HandlerFunc {
 			writeError(w, r, err)
 			return
 		}
-		node, err := bots.ReplyToBot(r.Context(), userID, replyID, req.Question, resourceIDs)
+		var clientRequestID *uuid.UUID
+		if req.ClientRequestID != nil && *req.ClientRequestID != "" {
+			parsed, err := uuid.Parse(*req.ClientRequestID)
+			if err != nil {
+				writeError(w, r, domain.InvalidInput("clientRequestId must be a UUID"))
+				return
+			}
+			clientRequestID = &parsed
+		}
+		node, err := bots.ReplyToBot(
+			r.Context(), userID, replyID, req.Question, resourceIDs, clientRequestID,
+		)
 		if err != nil {
 			writeError(w, r, err)
 			return
 		}
-		WriteJSON(w, http.StatusCreated, toBotReplyNodeResponse(node))
+		status := http.StatusCreated
+		switch node.Reply.Status {
+		case domain.BotReplyStatusPending:
+			status = http.StatusAccepted
+		case domain.BotReplyStatusFailed:
+			status = http.StatusOK
+		}
+		WriteJSON(w, status, toBotReplyNodeResponse(node))
 	}
 }
 

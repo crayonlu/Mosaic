@@ -99,7 +99,9 @@ Base URL：`http://localhost:8080`
 
 ### POST /api/bot-replies/:id/reply
 
-在线程中回复某个 Bot。返回 `201 Created`。
+在线程中回复某个 Bot。请求体可带 `clientRequestId`（客户端生成的稳定 UUID），相同 ID
+的重试会返回已有回复而不会重复生成。本次生成完成返回 `201 Created`，生成中返回
+`202 Accepted`，重放已有记录返回 `200 OK`。
 
 ## 记忆系统
 
